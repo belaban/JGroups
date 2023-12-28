@@ -1,16 +1,14 @@
 package org.jgroups.protocols.relay;
 
 
-import org.jgroups.Address;
-import org.jgroups.BaseMessage;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
+import org.jgroups.*;
 import org.jgroups.logging.Log;
-import org.jgroups.util.ByteArray;
+import org.jgroups.util.Headers;
 import org.jgroups.util.Util;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Objects;
 
 import static org.jgroups.protocols.relay.RelayHeader.DATA;
 
@@ -34,7 +32,7 @@ public class Route implements Comparable<Route> {
         this.bridge=bridge;
         this.relay=relay;
         this.log=log;
-        this.relay3=relay instanceof RELAY3;
+        this.relay3=Objects.requireNonNull(relay) instanceof RELAY3;
     }
 
     public JChannel bridge()         {return bridge;}
@@ -90,15 +88,19 @@ public class Route implements Comparable<Route> {
     protected Message createMessage(Address target, Address final_destination, Address original_sender,
                                     final Message msg, Collection<String> visited_sites) throws IOException {
         Message copy=relay.copy(msg).setDest(target).setSrc(null);
-        ByteArray marshalled_hdrs=((BaseMessage)copy).writeHeaders();
         RelayHeader tmp=msg.getHeader(relay.getId());
         RelayHeader hdr=tmp != null? tmp.copy().setFinalDestination(final_destination).setOriginalSender(original_sender)
           : new RelayHeader(DATA, final_destination, original_sender);
-        hdr.addToVisitedSites(visited_sites)
-          // to prevent local headers getting mixed up with bridge headers: https://issues.redhat.com/browse/JGRP-2729
-          .originalHeaders(marshalled_hdrs)
-          .originalFlags(copy.getFlags()); // store the original flags, will be restored at the receiver
-        copy.clearHeaders();
+          hdr.addToVisitedSites(visited_sites)
+            .originalFlags(copy.getFlags()); // store the original flags, will be restored at the receiver
+        if(relay3) {
+            // to prevent local headers getting mixed up with bridge headers: https://issues.redhat.com/browse/JGRP-2729
+            Header[] original_hdrs=((BaseMessage)copy).headers();
+            if(Headers.size(original_hdrs) > 0) {
+                hdr.originalHeaders(original_hdrs);
+                copy.clearHeaders();
+            }
+        }
         copy.putHeader(relay.getId(), hdr);
         return copy;
     }

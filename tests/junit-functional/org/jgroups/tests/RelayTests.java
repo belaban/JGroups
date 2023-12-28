@@ -41,6 +41,10 @@ public class RelayTests {
     }
 
     protected static Protocol[] defaultStack(RELAY relay) {
+        return defaultStack(relay, new STATE_TRANSFER());
+    }
+
+    protected static Protocol[] defaultStack(RELAY relay, Protocol state_transfer) {
         RELAY2 r2=relay instanceof RELAY2? (RELAY2)relay : null;
         RELAY3 r3=relay instanceof RELAY3? (RELAY3)relay : null;
         if(r3 != null)
@@ -59,7 +63,7 @@ public class RelayTests {
           new MFC().setMaxCredits(2_000_000).setMinThreshold(0.4),
           new FRAG2().setFragSize(1024),
           r2,
-          new STATE_TRANSFER()
+          state_transfer
         };
         return Util.combine(Protocol.class, protocols);
     }
@@ -111,7 +115,7 @@ public class RelayTests {
           .delaySitesDown(false); // for compatibility with testSitesUp()
         for(String site: sites) {
             SiteConfig cfg=new SiteConfig(site)
-              .addBridge(new RelayConfig.ProgrammaticBridgeConfig(bridge, defaultStack(null)));
+              .addBridge(new RelayConfig.ProgrammaticBridgeConfig(bridge, defaultStack(null, null)));
             relay.addSite(site, cfg);
         }
         return relay;
@@ -145,15 +149,17 @@ public class RelayTests {
     }
 
     protected static void waitUntilRoute(String site_name, boolean present,
-                                         long timeout, long interval, JChannel ch) throws Exception {
-        RELAY relay=ch.getProtocolStack().findProtocol(RELAY.class);
-        if(relay == null)
-            throw new IllegalArgumentException("protocol RELAY not found");
+                                         long timeout, long interval, JChannel ... channels) throws Exception {
+        for(JChannel ch: channels) {
+            RELAY relay=ch.getProtocolStack().findProtocol(RELAY.class);
+            if(relay == null)
+                throw new IllegalArgumentException("protocol RELAY not found");
 
-        Util.waitUntil(timeout, interval, () -> {
-            Route route=relay.getRoute(site_name);
-             return ((route != null && present) || (route == null && !present));
-        });
+            Util.waitUntil(timeout, interval, () -> {
+                Route route=relay.getRoute(site_name);
+                return ((route != null && present) || (route == null && !present));
+            });
+        }
     }
 
     protected static Route getRoute(JChannel ch, String site_name) {
@@ -208,6 +214,13 @@ public class RelayTests {
 
     protected static int receivedMessages(JChannel ch) {
         return getReceiver(ch).list().size();
+    }
+
+    protected static int receivedMessages(JChannel ... channels) {
+        int sum=0;
+        for(JChannel ch: channels)
+            sum+=receivedMessages(ch);
+        return sum;
     }
 
     protected static void assertNumMessages(int expected, JChannel ... channels) throws TimeoutException {
@@ -303,7 +316,7 @@ public class RelayTests {
             Object obj=msg.getObject();
             Data data=(Data)obj;
             if(data.type == Data.Type.REQ) {
-                Message rsp=new ObjectMessage(msg.src(), new Data(Data.Type.RSP,String.valueOf(ch.getAddress())));
+                Message rsp=new ObjectMessage(msg.src(), new Data(Data.Type.RSP, java.lang.String.valueOf(ch.getAddress())));
                 if(msg.isFlagSet(Message.Flag.NO_RELAY))
                     rsp.setFlag(Message.Flag.NO_RELAY);
                 try {
@@ -346,7 +359,7 @@ public class RelayTests {
     }
 
     protected static class Data implements SizeStreamable {
-        enum Type {REQ,RSP}
+        protected enum Type {REQ,RSP}
         protected Type   type;
         protected String payload;
 
@@ -374,7 +387,7 @@ public class RelayTests {
         }
 
         public String toString() {
-            return String.format("%s: %s", type, payload);
+            return java.lang.String.format("%s: %s", type, payload);
         }
     }
 }

@@ -385,7 +385,7 @@ public class DiagnosticsHandler extends ReceiverAdapter implements Closeable {
             try {
                 if(Util.isUp(i)) {
                     List<InterfaceAddress> inet_addrs=i.getInterfaceAddresses();
-                    if(inet_addrs != null && !inet_addrs.isEmpty()) { // fix for VM crash - suggested by JJalenak@netopia.com
+                    if(inet_addrs != null && !inet_addrs.isEmpty() && isCompatible(mcast_addr, inet_addrs)) { // fix for VM crash - suggested by JJalenak@netopia.com
                         s.joinGroup(group_addr, i);
                         log.trace("joined %s on %s", group_addr, i.getName());
                     }
@@ -396,7 +396,11 @@ public class DiagnosticsHandler extends ReceiverAdapter implements Closeable {
             }
         }
     }
-    
+
+    /** Checks if there's any address in the address list that's compatible (same address family) to addr */
+    protected static boolean isCompatible(InetAddress addr, List<InterfaceAddress> addrs) {
+        return addrs.stream().map(InterfaceAddress::getAddress).anyMatch(a -> Objects.equals(a.getClass(), addr.getClass()));
+    }
 
     public interface ProbeHandler {
         /**

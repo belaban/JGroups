@@ -944,8 +944,7 @@ public class ProtocolStack extends Protocol {
     }
 
     public Object down(Event evt) {
-        if(top_prot != null)
-            return top_prot.down(evt);
+        if(top_prot != null) return top_prot.down(evt);
         return null;
     }
 

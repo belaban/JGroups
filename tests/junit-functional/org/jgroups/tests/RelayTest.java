@@ -596,7 +596,7 @@ public class RelayTest extends RelayTests {
         b.send(null, "b-req"); // non site-master (A is SM)
         d.send(null, "d-req"); // non site-master (C is SM)
 
-        // all members in all sites should received the 2 multicasts:
+        // all members in all sites should receive the 2 multicasts:
         Util.waitUntil(5000, 200, () -> allChannels().stream().peek(RelayTests::printMessages)
           .map(ch -> getReceiver(ch).list())
           .allMatch(l -> l.size() >= 2));
@@ -610,7 +610,7 @@ public class RelayTest extends RelayTests {
 
     /** Tests sending of unicasts to different local members, varying between site masters and non site masters */
     public void testLocalUnicasts(Class<? extends RELAY> cl) throws Exception {
-        createSymmetricNetwork(cl, ch -> new UnicastResponseSender<>(ch).rawMsgs(true));
+        createSymmetricNetwork(cl, ch -> new UnicastResponseSender<>(ch).rawMsgs(true), LON);
         try(JChannel _c=createNode(cl, LON, "C", BRIDGE_CLUSTER, LON, NYC, SFO)){
             Util.waitUntilAllChannelsHaveSameView(5000, 100, a,b,_c);
             _c.setReceiver(new UnicastResponseSender<>(_c).rawMsgs(true));
@@ -658,7 +658,7 @@ public class RelayTest extends RelayTests {
 
     /** Sends unicasts between members of different sites */
     public void testUnicasts(Class<? extends RELAY> cl) throws Exception {
-        createSymmetricNetwork(cl, ch -> new UnicastResponseSender<>(ch).rawMsgs(true));
+        createSymmetricNetwork(cl, ch -> new UnicastResponseSender<>(ch).rawMsgs(true), LON, NYC);
 
         // because an address is not a SiteUUID in RELAY2 (just a regular address), A would not know C
         // we therefore wrap C's address into a SiteUUID (for RELAY2 only)
@@ -690,16 +690,17 @@ public class RelayTest extends RelayTests {
     /** Tests sending a large message across sites (from A:lon -> C:nyc); the fragmentation protocol should
      * fragment/unfragment it */
     public void testFragmentation(Class<? extends RELAY> cl) throws Exception {
-        createSymmetricNetwork(cl, ch -> new UnicastResponseSender<>(ch).rawMsgs(true));
+        createSymmetricNetwork(cl, ch -> new UnicastResponseSender<>(ch).rawMsgs(true), LON, NYC);
         String s="hello".repeat(1000);
-        a.send(b.getAddress(), new Data(REQ, s));
-        List<Message> list_a=getReceiver(a).list(), list_b=getReceiver(b).list();
-        Util.waitUntil(2000, 100, () -> list_a.size() == 1 && list_b.size() == 1);
+        Address target=addr(cl, c, NYC);
+        a.send(target, new Data(REQ, s));
+        List<Message> list_a=getReceiver(a).list(), list_c=getReceiver(c).list();
+        Util.waitUntil(2000, 100, () -> list_a.size() == 1 && list_c.size() == 1);
     }
 
     /** Tests state transfer between sites: from C:nyc to A:lon */
     public void testStateTransfer(Class<? extends RELAY> cl) throws Exception {
-        createSymmetricNetwork(cl, ch -> new MyReceiver<>().rawMsgs(true));
+        createSymmetricNetwork(cl, ch -> new MyReceiver<>().rawMsgs(true), LON, NYC);
         MyReceiver<Message> r_a=getReceiver(a);
         MyReceiver<Message> r_c=getReceiver(c);
 
@@ -709,7 +710,7 @@ public class RelayTest extends RelayTests {
 
         // because an address is not a SiteUUID in RELAY2 (just a regular address), A would not know C
         // we therefore wrap C's address into a SiteUUID (for RELAY2 only)
-        Address target=addr(cl, c, "nyc");
+        Address target=addr(cl, c, NYC);
         a.getState(target, 2000);
         assert r_a.state().size() == 2;
     }
@@ -744,12 +745,12 @@ public class RelayTest extends RelayTests {
                 ch.connect(SFO);
             Util.waitUntilAllChannelsHaveSameView(5000, 100, _g, _h, _i);
 
-            waitUntilRoute(NYC, true, 5000, 500, a);
-            waitUntilRoute(SFO, true, 5000, 500, a);
-            waitUntilRoute(LON, true, 5000, 500, d);
-            waitUntilRoute(SFO, true, 5000, 500, d);
-            waitUntilRoute(LON, true, 5000, 500, _g);
-            waitUntilRoute(NYC, true, 5000, 500, _g);
+            waitUntilRoute(NYC, true, 5000, 500, a,b);
+            waitUntilRoute(SFO, true, 5000, 500, a,b);
+            waitUntilRoute(LON, true, 5000, 500, d,e);
+            waitUntilRoute(SFO, true, 5000, 500, d,e);
+            waitUntilRoute(LON, true, 5000, 500, _g,_h);
+            waitUntilRoute(NYC, true, 5000, 500, _g,_h);
 
             assert Stream.of(a,b,d,e,_g,_h).map(ch -> ch.getProtocolStack().findProtocol(RELAY.class))
               .allMatch(r -> ((RELAY)r).isSiteMaster());
@@ -757,7 +758,7 @@ public class RelayTest extends RelayTests {
               .noneMatch(r -> ((RELAY)r).isSiteMaster());
 
 
-            generator.get().forEach(ch -> ch.setReceiver(new MyReceiver<Message>().rawMsgs(true)));
+            generator.get().forEach(ch -> ch.setReceiver(new MyReceiver<Message>().rawMsgs(true).name(ch.getName())));
 
             // A and B (site masters) multicast 1 message each: every receiver should have exactly 2 messages
             a.send(null, "from A");
@@ -770,37 +771,38 @@ public class RelayTest extends RelayTests {
             System.out.printf("received messages:\n%s\n", printMessages(generator.get()));
             generator.get().forEach(ch -> getReceiver(ch).reset());
 
-            // destination of SiteMaster(null) is only available in RELAY3:
-            if(cl.equals(RELAY3.class)) {
-                // send to all site masters, but only *one* site master from each site is picked
+            // cl must be RELAY3: destination of SiteMaster(null) is only available in RELAY3:
+            // send to all site masters, but only *one* site master from each site is picked
 
-                a.send(new SiteMaster(null), "from A");
-                b.send(new SiteMaster(null), "from B");
+            a.send(new SiteMaster(null), "from A");
+            b.send(new SiteMaster(null), "from B");
 
-                // A sends to itself, plus site masters from NYC (D or E) and SFO (G or H)
-                // B sends to itself, plus site masters from NYC (D or E) and SFO (G or H)
-                // -> the default SiteMasterPicker impl in RELAY pick a random site master / route; if we disabled
-                // this and always picked the first site master / route in the list, only D and G would
-                // receive messages (2 each); E and H would receive 0 messages
-                Util.waitUntil(3000, 100,
-                               () -> Stream.of(a,b).map(RelayTests::getReceiver).allMatch(r -> r.size() == 1));
+            // A sends to itself, plus site masters from NYC (D or E) and SFO (G or H)
+            // B sends to itself, plus site masters from NYC (D or E) and SFO (G or H)
+            // -> the default SiteMasterPicker impl in RELAY pick a random site master / route; if we disabled
+            // this and always picked the first site master / route in the list, only D and G would
+            // receive messages (2 each); E and H would receive 0 messages
+            Util.waitUntil(3000, 100,
+                           () -> Stream.of(a,b).map(RelayTests::getReceiver).allMatch(r -> r.size() == 1));
+            // D and E must receive a total of 2 messages (from A, from B):
+            Util.waitUntil(3000, 100, () -> RelayTests.receivedMessages(d,e) == 2, () -> msgs(d, e));
+            // G and H must receive a total of 2 messages (from A, from B):
+            Util.waitUntil(3000, 100, () -> RelayTests.receivedMessages(_g, _h) == 2, () -> msgs(_g,_h));
 
-                // all other site masters (D or E, G or H) get A's and B's message:
-                Util.waitUntil(3000, 100,
-                               () -> Stream.of(d,e,_g,_h)
-                                 // a site master receives 0, 1 or 2 messages:
-                                 .map(RelayTests::getReceiver).allMatch(r -> r.size() >= 0 && r.size() <= 2),
-                               () -> printMessages(generator.get()));
-                System.out.printf("-- received messages:\n%s\n", printMessages(generator.get()));
-                generator.get().forEach(ch -> getReceiver(ch).reset());
+            System.out.printf("-- received messages:\n%s\n", printMessages(generator.get()));
+            generator.get().forEach(ch -> getReceiver(ch).reset());
 
-                c.send(new SiteMaster(null), "from C");
-                // same as above: A or B receives 1 message, D or E and G or H
-                Util.waitUntil(3000, 100, () -> Stream.of(a,b,d,e,_g,_h).map(RelayTests::getReceiver)
-                  .allMatch(r -> r.size() >= 0 && r.size() <= 2), () -> printMessages(generator.get()));
-                System.out.printf("-- received messages:\n%s\n", printMessages(generator.get()));
-                generator.get().forEach(ch -> getReceiver(ch).reset());
-            }
+            c.send(new SiteMaster(null), "from C");
+            // same as above: {A or B} receives 1 message, {D or E} 1 and {G or H} 1 as well
+            Util.waitUntil(3000, 100, () -> RelayTests.receivedMessages(a,b) == 1, () -> msgs(a,b));
+
+            // D and E must receive a total of 2 messages (from A, from B):
+            Util.waitUntil(3000, 100, () -> RelayTests.receivedMessages(d,e) == 1, () -> msgs(d, e));
+            // G and H must receive a total of 2 messages (from A, from B):
+            Util.waitUntil(3000, 100, () -> RelayTests.receivedMessages(_g, _h) == 1, () -> msgs(_g,_h));
+
+            System.out.printf("-- received messages:\n%s\n", printMessages(generator.get()));
+            generator.get().forEach(ch -> getReceiver(ch).reset());
 
             // C sends a multicast; A *or* B (but not both) should forward it to the other sites NYC and SFO
             c.send(null, "from C");
@@ -819,8 +821,7 @@ public class RelayTest extends RelayTests {
     public void testFailover(Class<? extends RELAY> cl) throws Exception {
         if(cl.equals(RELAY2.class))
             return;
-        createSymmetricNetwork(cl, ch -> new MyReceiver<>().rawMsgs(true).verbose(true).name(ch.name()));
-        Util.close(f,e);
+        createSymmetricNetwork(cl, ch -> new MyReceiver<>().rawMsgs(true).verbose(true).name(ch.name()), LON, NYC);
         waitForBridgeView(2, 5000, 100, BRIDGE_CLUSTER, a,c);
         waitForSiteMasters(true, a, c);
 
@@ -852,8 +853,7 @@ public class RelayTest extends RelayTests {
     public void testFailover2(Class<? extends RELAY> cl) throws Exception {
         if(cl.equals(RELAY2.class))
             return;
-        createSymmetricNetwork(cl, ch -> new MyReceiver<>().rawMsgs(true).verbose(true).name(ch.name()));
-        Util.close(f,e);
+        createSymmetricNetwork(cl, ch -> new MyReceiver<>().rawMsgs(true).verbose(true).name(ch.name()), LON, NYC);
         waitForBridgeView(2, 5000, 100, BRIDGE_CLUSTER, a,c);
         waitForSiteMasters(true, a, c);
 
@@ -887,8 +887,7 @@ public class RelayTest extends RelayTests {
     public void testFailover3(Class<? extends RELAY> cl) throws Exception {
         if(cl.equals(RELAY2.class))
             return;
-        createSymmetricNetwork(cl, ch -> new MyReceiver<>().rawMsgs(true).verbose(true).name(ch.getName()));
-        Util.close(f,e);
+        createSymmetricNetwork(cl, ch -> new MyReceiver<>().rawMsgs(true).verbose(true).name(ch.getName()), LON, NYC);
         waitForBridgeView(2, 5000, 100, BRIDGE_CLUSTER, a,c);
         waitForSiteMasters(true, a, c);
 
@@ -916,8 +915,7 @@ public class RelayTest extends RelayTests {
     public void testFailover4(Class<? extends RELAY> cl) throws Exception {
         if(cl.equals(RELAY2.class))
             return;
-        createSymmetricNetwork(cl, ch -> new MyReceiver<>().rawMsgs(true).verbose(true).name(ch.name()));
-        Util.close(f, e);
+        createSymmetricNetwork(cl, ch -> new MyReceiver<>().rawMsgs(true).verbose(true).name(ch.name()), LON, NYC);
         waitForBridgeView(2, 5000, 100, BRIDGE_CLUSTER, a,c);
         waitForSiteMasters(true, a, c);
 
@@ -948,9 +946,8 @@ public class RelayTest extends RelayTests {
     protected void _testFailoverSiteDown(Class<? extends RELAY> cl, Supplier<Address> s) throws Exception {
         if(cl.equals(RELAY2.class))
             return;
-        createSymmetricNetwork(cl, ch -> new MyReceiver<>().rawMsgs(true).verbose(true));
+        createSymmetricNetwork(cl, ch -> new MyReceiver<>().rawMsgs(true).verbose(true), LON, NYC);
         Address target=s.get();
-        Util.close(f, e); // close NYC, we don't need it for this test
         waitForBridgeView(2, 5000, 100, BRIDGE_CLUSTER, a,c);
         waitForSiteMasters(true, a, c);
 
@@ -979,10 +976,9 @@ public class RelayTest extends RelayTests {
     }
 
     public void testSiteDown(Class<? extends RELAY> cl) throws Exception {
-        createSymmetricNetwork(cl, ch -> new MyReceiver<>().rawMsgs(true).verbose(true));
+        createSymmetricNetwork(cl, ch -> new MyReceiver<>().rawMsgs(true).verbose(true), LON, NYC);
         RELAY r=a.stack().findProtocol(RELAY.class);
         boolean relay2=cl.equals(RELAY2.class);
-        Util.close(f, e);
         waitForBridgeView(2, 5000, 100, BRIDGE_CLUSTER, a,c);
         waitForSiteMasters(true, a, c);
 
@@ -997,10 +993,9 @@ public class RelayTest extends RelayTests {
     public void testViewChange(Class<? extends RELAY> cl) throws Exception {
         if(cl.equals(RELAY2.class)) // since UNICAST3 is bypassed when RELAY2 is above it, we don't need to test RELAY2
             return;
-        createSymmetricNetwork(cl, ch -> new MyReceiver<>().rawMsgs(true).verbose(true).name(ch.name()));
+        createSymmetricNetwork(cl, ch -> new MyReceiver<>().rawMsgs(true).verbose(true).name(ch.name()), LON, NYC);
         UNICAST3 unicast=a.getProtocolStack().findProtocol(UNICAST3.class);
 
-        Util.close(f, e);
         waitForBridgeView(2, 5000, 100, BRIDGE_CLUSTER, a,c);
         waitForSiteMasters(true, a, c);
         a.send(b.address(), "hello");
@@ -1025,9 +1020,8 @@ public class RelayTest extends RelayTests {
     public void testViewChangeDuringRetransmission(Class<? extends RELAY> cl) throws Exception {
         if(cl.equals(RELAY2.class)) // since UNICAST3 is bypassed when RELAY2 is above it, we don't need to test RELAY2
             return;
-        createSymmetricNetwork(cl, ch -> new MyReceiver<>().rawMsgs(true).verbose(true).name(ch.name()));
+        createSymmetricNetwork(cl, ch -> new MyReceiver<>().rawMsgs(true).verbose(true).name(ch.name()), LON, NYC);
         UNICAST3 unicast=a.getProtocolStack().findProtocol(UNICAST3.class);
-        Util.close(f, e);
         waitForBridgeView(2, 5000, 100, BRIDGE_CLUSTER, a,c);
         waitForSiteMasters(true, a, c);
 
@@ -1084,27 +1078,37 @@ public class RelayTest extends RelayTests {
     }
 
 
-
-    protected void createSymmetricNetwork(Class<? extends RELAY> cl, Function<JChannel,Receiver> r) throws Exception {
-        a=createNode(cl, LON, "A", BRIDGE_CLUSTER, LON, NYC, SFO);
-        b=createNode(cl, LON, "B", BRIDGE_CLUSTER, LON, NYC, SFO);
-
-        c=createNode(cl, NYC, "C", BRIDGE_CLUSTER, LON, NYC, SFO);
-        d=createNode(cl, NYC, "D", BRIDGE_CLUSTER, LON, NYC, SFO);
-
-        e=createNode(cl, SFO, "E", BRIDGE_CLUSTER, LON, NYC, SFO);
-        f=createNode(cl, SFO, "F", BRIDGE_CLUSTER, LON, NYC, SFO);
-
+    protected void createSymmetricNetwork(Class<? extends RELAY> cl, Function<JChannel,Receiver> r, String...sites) throws Exception {
+        if(sites.length == 0 || Util.contains(LON, sites))
+            createLON(cl);
+        if(sites.length == 0 || Util.contains(NYC, sites))
+            createNYC(cl);
+        if(sites.length == 0 || Util.contains(SFO, sites))
+            createSFO(cl);
         if(r != null)
             allChannels().forEach(ch -> ch.setReceiver(r.apply(ch)));
+    }
 
+    protected void createLON(Class<? extends RELAY> cl) throws Exception {
+        a=createNode(cl, LON, "A", BRIDGE_CLUSTER, LON, NYC, SFO);
+        b=createNode(cl, LON, "B", BRIDGE_CLUSTER, LON, NYC, SFO);
         Util.waitUntilAllChannelsHaveSameView(5000, 200, a,b);
+    }
+
+    protected void createNYC(Class<? extends RELAY> cl) throws Exception {
+        c=createNode(cl, NYC, "C", BRIDGE_CLUSTER, LON, NYC, SFO);
+        d=createNode(cl, NYC, "D", BRIDGE_CLUSTER, LON, NYC, SFO);
         Util.waitUntilAllChannelsHaveSameView(5000, 200, c,d);
+    }
+
+    protected void createSFO(Class<? extends RELAY> cl) throws Exception {
+        e=createNode(cl, SFO, "E", BRIDGE_CLUSTER, LON, NYC, SFO);
+        f=createNode(cl, SFO, "F", BRIDGE_CLUSTER, LON, NYC, SFO);
         Util.waitUntilAllChannelsHaveSameView(5000, 200, e,f);
     }
 
     protected List<JChannel> allChannels() {
-        return Arrays.asList(a,b,c,d,e,f);
+        return Stream.of(a,b,c,d,e,f).filter(Objects::nonNull).collect(Collectors.toList());
     }
 
 

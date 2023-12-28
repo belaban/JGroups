@@ -4,7 +4,7 @@ import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.Header;
 import org.jgroups.util.Bits;
-import org.jgroups.util.ByteArray;
+import org.jgroups.util.Headers;
 import org.jgroups.util.Util;
 
 import java.io.DataInput;
@@ -35,7 +35,10 @@ public class RelayHeader extends Header {
     protected Set<String> visited_sites;
     // used with TOPO_REQ: when set, return the entire cache, otherwise only information about the local members
     protected boolean     return_entire_cache;
-    protected ByteArray   original_hdrs; // marshalled headers (https://issues.redhat.com/browse/JGRP-2729)
+
+    // marshalled headers (https://issues.redhat.com/browse/JGRP-2729),
+    // changed in https://issues.redhat.com/browse/JGRP-2744
+    protected Header[]    original_hdrs;
     protected short       original_flags;
 
 
@@ -63,8 +66,8 @@ public class RelayHeader extends Header {
     public boolean      hasSites()                     {return sites != null && !sites.isEmpty();}
     public boolean      returnEntireCache()            {return return_entire_cache;}
     public RelayHeader  returnEntireCache(boolean b)   {return_entire_cache=b; return this;}
-    public ByteArray    originalHeaders()              {return original_hdrs;}
-    public RelayHeader  originalHeaders(ByteArray ba)  {original_hdrs=ba; return this;}
+    public Header[]     originalHeaders()              {return original_hdrs;}
+    public RelayHeader  originalHeaders(Header[] hdrs) {original_hdrs=hdrs; return this;}
     public short        originalFlags()                {return original_flags;}
     public RelayHeader  originalFlags(short fl)        {original_flags=fl; return this;}
 
@@ -128,7 +131,8 @@ public class RelayHeader extends Header {
         assertNonNullSites();
         return Global.BYTE_SIZE*2 + Util.size(final_dest) + Util.size(original_sender) +
           sizeOf(sites) + sizeOf(visited_sites) +
-          Global.BYTE_SIZE + (original_hdrs != null? originalHeaders().serializedSize() : 0) + Short.BYTES; // orig-flags
+          Short.BYTES /* num headers */ + Headers.marshalledSize(original_hdrs)
+          + Short.BYTES; // orig-flags
     }
 
     @Override
@@ -148,9 +152,7 @@ public class RelayHeader extends Header {
                 Bits.writeString(s, out);
         }
         assertNonNullSites();
-        out.writeBoolean(original_hdrs != null);
-        if(original_hdrs != null)
-            original_hdrs.writeTo(out);
+        Headers.writeHeaders(original_hdrs, out, (short[])null);
         out.writeShort(original_flags);
     }
 
@@ -173,10 +175,7 @@ public class RelayHeader extends Header {
                 visited_sites.add(Bits.readString(in));
         }
         assertNonNullSites();
-        if(in.readBoolean()) {
-            original_hdrs=new ByteArray(null, 0, 0);
-            original_hdrs.readFrom(in);
-        }
+        original_hdrs=Headers.readHeaders(in);
         original_flags=in.readShort();
     }
 

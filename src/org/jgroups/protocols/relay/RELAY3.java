@@ -285,11 +285,14 @@ public class RELAY3 extends RELAY {
             return;
         }
         try {
+            Header[] original_hdrs=hdr.originalHeaders();
             Message copy=copy(msg).dest(hdr.final_dest).src(hdr.original_sender);
-            copy.clearHeaders(); // remove all headers added by the bridge cluster
+            copy.clearHeaders();
+            if(original_hdrs != null && Headers.size(original_hdrs) > 0)
+                ((BaseMessage)copy).headers(original_hdrs); // removes/overwrites all headers added by the bridge cluster
             copy.putHeader(id, hdr);
-            ((BaseMessage)copy).readHeaders(hdr.originalHeaders());
-            copy.setFlag(hdr.originalFlags(), false);
+            if(msg.dest() != null)
+                copy.setFlag(hdr.originalFlags(), false);
             // todo: check if copy is needed!
             process(true, copy);
         }
@@ -379,7 +382,7 @@ public class RELAY3 extends RELAY {
         return action != null? action.get() : null;
     }
 
-    /** This method has all of the routing logic, for both site masters and regular members */
+    /** This method has all the routing logic, for both site masters and regular members */
     protected Object process(boolean down, Message msg) {
         Address dest=msg.dest();
         SiteAddress dst=null;
@@ -389,7 +392,7 @@ public class RELAY3 extends RELAY {
                 case ALL:
                     if(down)
                         return routeThen(msg, null,() -> deliver(null, msg, true));
-                    return dontRoute(msg)? passUp(msg) : routeThen(msg, null, () -> passUp(msg));
+                    return mustBeRouted(msg)? routeThen(msg, null, () -> passUp(msg)) : passUp(msg);
                 case SM_ALL:
                     return routeThen(msg, null, () -> passUp(msg));
                 case SM:
@@ -437,12 +440,12 @@ public class RELAY3 extends RELAY {
      * multiple site masters, and this site master is picked to route the message, then return true, else return false.
      * JIRA: https://issues.redhat.com/browse/JGRP-2696
      */
-    protected boolean dontRoute(Message msg) {
+    protected boolean mustBeRouted(Message msg) {
         if(msg.isFlagSet(Flag.NO_RELAY))
-            return true; // don't route
+            return false; // don't route
         final List<Address> sms=site_masters;
         if(sms == null || sms.size() < 2)
-            return false; // do route
+            return true; // do route
         Address first_sm=sms.get(0);
         return local_addr.equals(first_sm);
     }

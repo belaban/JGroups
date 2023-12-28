@@ -4,10 +4,10 @@ import org.jgroups.Global;
 import org.jgroups.Header;
 import org.jgroups.conf.ClassConfigurator;
 
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -111,7 +111,7 @@ public final class Headers {
      * @param headers The headers array
      * @param id The protocol ID of the header
      * @param hdr The header
-     * @param replace_if_present Whether or not to overwrite an existing header
+     * @param replace_if_present Whether to overwrite an existing header
      * @return A new copy of headers if the array needed to be expanded, or null otherwise
      */
     public static Header[] putHeader(final Header[] headers, short id, Header hdr, boolean replace_if_present) {
@@ -138,37 +138,36 @@ public final class Headers {
         throw new IllegalStateException("unable to add element " + id + ", index=" + i); // we should never come here
     }
 
-    public static ByteArray writeHeaders(Header[] hdrs) throws IOException {
-        int size=Headers.size(hdrs);
-        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(marshalledSize(hdrs) + Global.SHORT_SIZE);
+    public static void writeHeaders(Header[] hdrs, DataOutput out, short... excluded_headers) throws IOException {
+        int size=Headers.size(hdrs, excluded_headers);
         out.writeShort(size);
         if(size > 0) {
-            for(Header hdr : hdrs) {
+            for(Header hdr: hdrs) {
                 if(hdr == null)
                     break;
                 short id=hdr.getProtId();
+                if(Util.containsId(id, excluded_headers))
+                    continue;
                 out.writeShort(id);
-                short magic_number=hdr.getMagicId();
-                out.writeShort(magic_number);
-                hdr.writeTo(out);
+                writeHeader(hdr, out);
             }
         }
-        return out.getBuffer();
     }
 
-    public static List<Header> readHeaders(ByteArray buf) throws IOException, ClassNotFoundException {
-        ByteArrayDataInputStream in=new ByteArrayDataInputStream(buf);
+
+    public static Header[] readHeaders(DataInput in) throws IOException, ClassNotFoundException {
         int len=in.readShort();
-        List<Header> list=new ArrayList<>(len);
+        if(len == 0)
+            return new Header[Util.DEFAULT_HEADERS];
+        Header[] headers=new Header[len];
         for(int i=0; i < len; i++) {
             short id=in.readShort();
-            short magic_number=in.readShort();
-            Header hdr=ClassConfigurator.create(magic_number);
-            hdr.readFrom(in);
-            list.add(hdr.setProtId(id));
+            Header hdr=readHeader(in).setProtId(id);
+            headers[i]=hdr;
         }
-        return list;
+        return headers;
     }
+
 
     /**
      * Increases the capacity of the array and copies the contents of the old into the new array
@@ -226,5 +225,17 @@ public final class Headers {
         return retval;
     }
 
+    private static void writeHeader(Header hdr, DataOutput out) throws IOException {
+        short magic_number=hdr.getMagicId();
+        out.writeShort(magic_number);
+        hdr.writeTo(out);
+    }
+
+    private static Header readHeader(DataInput in) throws IOException, ClassNotFoundException {
+        short magic_number=in.readShort();
+        Header hdr=ClassConfigurator.create(magic_number);
+        hdr.readFrom(in);
+        return hdr;
+    }
 
 }

@@ -323,7 +323,7 @@ public abstract class Protocol implements Lifecycle {
      * An event was received from the protocol below. Usually the current protocol will want to examine the event type
      * and - depending on its type - perform some computation (e.g. removing headers from a MSG event type, or updating
      * the internal membership list when receiving a VIEW_CHANGE event).
-     * Finally the event is either a) discarded, or b) an event is sent down the stack using {@code down_prot.down()}
+     * Finally, the event is either a) discarded, or b) an event is sent down the stack using {@code down_prot.down()}
      * or c) the event (or another event) is sent up the stack using {@code up_prot.up()}.
      */
     public Object up(Event evt) {

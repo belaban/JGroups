@@ -194,21 +194,6 @@ public class SizeTest {
         _testSize(hdr) ;
     }
 
-    public void testHeaderMarshalling() throws IOException, ClassNotFoundException {
-        Header[] headers={
-          NakAckHeader2.createMessageHeader(322649),
-          UnicastHeader3.createDataHeader(1024, (short)22, true),
-          new Frag3Header(22, 2, 3),
-          null, null
-        };
-        ByteArray buf=Headers.writeHeaders(headers);
-        List<Header> hdrs=Headers.readHeaders(buf);
-        assert hdrs.size() == 3;
-        assert hdrs.get(0).getClass().equals(NakAckHeader2.class);
-        assert ((UnicastHeader3)hdrs.get(1)).first();
-        assert ((Frag3Header)hdrs.get(2)).getFragId() == 2;
-    }
-
     public void testUnicast3Header() throws Exception {
         UnicastHeader3 hdr=UnicastHeader3.createDataHeader(322649, (short)127, false);
         _testSize(hdr);
@@ -619,7 +604,8 @@ public class SizeTest {
           .addToVisitedSites(List.of("nyc", "sfc", "lon"));
         _testSize(hdr);
 
-        hdr.originalHeaders(new ByteArray(new byte[]{'1','2', '3', '4'}, 0, 4));
+        Header[] hdrs=headers();
+        hdr.originalHeaders(hdrs);
         _testSize(hdr);
 
         RelayHeader hdr2=hdr.copy();
@@ -674,9 +660,6 @@ public class SizeTest {
     }
 
 
-
-
-
     public static void testWriteAddress() throws Exception {
         Address uuid=UUID.randomUUID();
         _testWriteAddress(uuid);
@@ -691,24 +674,6 @@ public class SizeTest {
         _testWriteAddress(addr);
     }
 
-    private static void _testWriteAddress(Address addr) throws Exception {
-        int len=Util.size(addr);
-        ByteArrayOutputStream output=new ByteArrayOutputStream();
-        DataOutputStream out=new DataOutputStream(output);
-        Util.writeAddress(addr, out);
-        out.flush();
-        byte[] buf=output.toByteArray();
-        out.close();
-
-        System.out.println("\nlen=" + len + ", serialized length=" + buf.length);
-        assert len == buf.length;
-        DataInputStream in=new DataInputStream(new ByteArrayInputStream(buf));
-        Address new_addr=Util.readAddress(in);
-        System.out.println("old addr=" + addr + "\nnew addr=" + new_addr);
-        assert addr.equals(new_addr);
-    }
-
-
 
     public static void testWriteAddresses() throws Exception {
         List<Address> list=new ArrayList<>();
@@ -722,24 +687,6 @@ public class SizeTest {
         list.add(new IpAddress("127.0.0.1", 5674));
         _testWriteAddresses(list);
     }
-
-    private static void _testWriteAddresses(List<Address> list) throws Exception {
-        long len=Util.size(list);
-        ByteArrayOutputStream output=new ByteArrayOutputStream();
-        DataOutputStream out=new DataOutputStream(output);
-        Util.writeAddresses(list, out);
-        out.flush();
-        byte[] buf=output.toByteArray();
-        out.close();
-
-        System.out.println("\nlen=" + len + ", serialized length=" + buf.length);
-        assert len == buf.length;
-        DataInputStream in=new DataInputStream(new ByteArrayInputStream(buf));
-        Collection<Address> new_list=Util.readAddresses(in, ArrayList::new);
-        System.out.println("old list=" + list + "\nnew list=" + new_list);
-        assert list.equals(new_list);
-    }
-
 
 
     public void testUUID() throws Exception {
@@ -836,6 +783,39 @@ public class SizeTest {
         assert Arrays.equals(hdr.dhKey(), hdr2.dhKey());
     }
 
+    private static void _testWriteAddresses(List<Address> list) throws Exception {
+        long len=Util.size(list);
+        ByteArrayOutputStream output=new ByteArrayOutputStream();
+        DataOutputStream out=new DataOutputStream(output);
+        Util.writeAddresses(list, out);
+        out.flush();
+        byte[] buf=output.toByteArray();
+        out.close();
+
+        System.out.println("\nlen=" + len + ", serialized length=" + buf.length);
+        assert len == buf.length;
+        DataInputStream in=new DataInputStream(new ByteArrayInputStream(buf));
+        Collection<Address> new_list=Util.readAddresses(in, ArrayList::new);
+        System.out.println("old list=" + list + "\nnew list=" + new_list);
+        assert list.equals(new_list);
+    }
+
+    private static void _testWriteAddress(Address addr) throws Exception {
+        int len=Util.size(addr);
+        ByteArrayOutputStream output=new ByteArrayOutputStream();
+        DataOutputStream out=new DataOutputStream(output);
+        Util.writeAddress(addr, out);
+        out.flush();
+        byte[] buf=output.toByteArray();
+        out.close();
+
+        System.out.println("\nlen=" + len + ", serialized length=" + buf.length);
+        assert len == buf.length;
+        DataInputStream in=new DataInputStream(new ByteArrayInputStream(buf));
+        Address new_addr=Util.readAddress(in);
+        System.out.println("old addr=" + addr + "\nnew addr=" + new_addr);
+        assert addr.equals(new_addr);
+    }
 
     private static void _testMarshalling(UnicastHeader3 hdr) throws Exception {
         byte[] buf=Util.streamableToByteBuffer(hdr);
@@ -930,7 +910,6 @@ public class SizeTest {
         assert Util.match(rsp.getFailReason(), rsp2.getFailReason());
     }
 
-
     private static void _testSize(SizeStreamable data) throws Exception {
         System.out.println("\ndata: " + data);
         long size=data.serializedSize();
@@ -939,5 +918,12 @@ public class SizeTest {
         assert serialized_form.length == size : "serialized length=" + serialized_form.length + ", size=" + size;
     }
 
+    private static Header[] headers() {
+        return new Header[] {
+          UnicastHeader3.createDataHeader(322649L, (short)1, false),
+          new RequestCorrelator.Header((byte)1, 33L, (short)2),
+          new FORK.ForkHeader("foo", "bar")
+        };
+    }
 
 }

@@ -2,15 +2,12 @@
 package org.jgroups;
 
 
-import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.util.ByteArray;
 import org.jgroups.util.Headers;
 import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -51,15 +48,9 @@ public abstract class BaseMessage implements Message {
     public Message           setSrc(Address new_src)           {sender=new_src; return this;}
     public int               getNumHeaders()                   {return Headers.size(this.headers);}
     public Map<Short,Header> getHeaders()                      {return Headers.getHeaders(this.headers);}
+    public Header[]          headers()                         {return headers;} // don't modify!
+    public Message           headers(Header[] hdrs)            {this.headers=hdrs; return this;}  // use with caution!
     public String            printHeaders()                    {return Headers.printHeaders(this.headers);}
-    public ByteArray         writeHeaders() throws IOException {return Headers.writeHeaders(this.headers);}
-    public Message           readHeaders(ByteArray ba) throws IOException, ClassNotFoundException {
-        List<Header> hdrs=Headers.readHeaders(ba);
-        for(Header h: hdrs)
-            putHeader(h.getProtId(), h);
-        return this;
-    }
-
 
     /**
      * Sets a number of flags in a message
@@ -268,7 +259,7 @@ public abstract class BaseMessage implements Message {
             Util.writeAddress(sender, out);
 
         // write the headers
-        writeHeaders(this.headers, out, (short[])null);
+        Headers.writeHeaders(this.headers, out, (short[])null);
 
         // finally write the payload
         writePayload(out);
@@ -293,7 +284,7 @@ public abstract class BaseMessage implements Message {
             Util.writeAddress(sender, out);
 
         // write the headers
-        writeHeaders(this.headers, out, excluded_headers);
+        Headers.writeHeaders(this.headers, out, excluded_headers);
 
         // finally write the payload
         writePayload(out);
@@ -316,14 +307,7 @@ public abstract class BaseMessage implements Message {
             sender=Util.readAddress(in);
 
         // 5. headers
-        int len=in.readShort();
-        if(this.headers == null || len > this.headers.length)
-            this.headers=createHeaders(len);
-        for(int i=0; i < len; i++) {
-            short id=in.readShort();
-            Header hdr=readHeader(in).setProtId(id);
-            this.headers[i]=hdr;
-        }
+        this.headers=Headers.readHeaders(in);
         readPayload(in);
     }
 
@@ -331,35 +315,6 @@ public abstract class BaseMessage implements Message {
     /** Copies the payload */
     protected Message copyPayload(Message copy) {
         return copy;
-    }
-
-    protected static void writeHeaders(Header[] hdrs, DataOutput out, short ... excluded_headers) throws IOException {
-        int size=Headers.size(hdrs, excluded_headers);
-        out.writeShort(size);
-        if(size > 0) {
-            for(Header hdr : hdrs) {
-                if(hdr == null)
-                    break;
-                short id=hdr.getProtId();
-                if(Util.containsId(id, excluded_headers))
-                    continue;
-                out.writeShort(id);
-                writeHeader(hdr, out);
-            }
-        }
-    }
-
-    protected static void writeHeader(Header hdr, DataOutput out) throws IOException {
-        short magic_number=hdr.getMagicId();
-        out.writeShort(magic_number);
-        hdr.writeTo(out);
-    }
-
-    protected static Header readHeader(DataInput in) throws IOException, ClassNotFoundException {
-        short magic_number=in.readShort();
-        Header hdr=ClassConfigurator.create(magic_number);
-        hdr.readFrom(in);
-        return hdr;
     }
 
     protected static Header[] createHeaders(int size) {
