@@ -554,7 +554,7 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
         protected PingDest  clientState(State s)        {client_state=s; return this;}
         protected boolean   connected()                 {return client_state == State.CONNECTED;}
         protected boolean   destChanged(Address a)      {return a != null && !Objects.equals(a, dest);}
-        protected boolean   waitForConnect(long time)   {return connect_promise.getResult(time);}
+        protected void      waitForConnect(long time)   {connect_promise.getResult(time);}
         protected PingDest  setConnectResult(boolean b) {connect_promise.setResult(b); return this;}
         protected PingDest  resetConnectResult()        {connect_promise.reset(true); return this;}
 
