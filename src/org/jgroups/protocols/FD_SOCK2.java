@@ -342,7 +342,7 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
         }
     }
 
-    public void handle(Request req) throws Exception {
+    public void handle(@SuppressWarnings("ClassEscapesDefinedScope") Request req) throws Exception {
         switch(req.type) {
             case ConnectToNextPingDest:
                 connectToNextPingDest(req.suspect);
@@ -440,7 +440,7 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
         }
     }
 
-    /** Returns the physical addresses for a in range [a+offset..a+offset+port_range */
+    /** Returns the physical addresses for in range [a+offset..a+offset+port_range */
     protected List<IpAddress> getPhysicalAddresses(Address a) {
         IpAddress pa=(IpAddress)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, a));
         if(pa == null)
@@ -649,7 +649,7 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
 
 
     protected static class Request {
-        enum Type {ConnectToNextPingDest, CloseConnectionToPingDest};
+        protected enum Type {ConnectToNextPingDest, CloseConnectionToPingDest};
         protected final Type    type;
         protected final Address suspect;
 
