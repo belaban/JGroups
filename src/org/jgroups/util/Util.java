@@ -110,13 +110,26 @@ public class Util {
 
     public enum AddressScope {GLOBAL,SITE_LOCAL,LINK_LOCAL,LOOPBACK,NON_LOOPBACK}
 
-    private static boolean          ipv4_stack_available=false, ipv6_stack_available=false;
-    private static final StackType  ip_stack_type=_getIpStackType();
-    public static final boolean     can_bind_to_mcast_addr;
-    protected static ResourceBundle resource_bundle;
-    static DateTimeFormatter UTF_FORMAT = DateTimeFormatter.ofPattern("E MMM d H:m:s 'UTC' y");
+    private static boolean                          ipv4_stack_available=false, ipv6_stack_available=false;
+    private static final StackType                  ip_stack_type;
+    private static volatile List<NetworkInterface>  CACHED_INTERFACES=null;
+    private static volatile Collection<InetAddress> CACHED_ADDRESSES=null;
+
+    public static final boolean                     can_bind_to_mcast_addr;
+    protected static ResourceBundle                 resource_bundle;
+    static DateTimeFormatter                        UTF_FORMAT=DateTimeFormatter.ofPattern("E MMM d H:m:s 'UTC' y");
 
     static {
+
+        try {
+            CACHED_INTERFACES=getAllAvailableInterfaces();
+            CACHED_ADDRESSES=getAllAvailableAddresses(null);
+        }
+        catch(SocketException e) {
+            throw new RuntimeException(e);
+        }
+        ip_stack_type=_getIpStackType();
+
         String tmp;
         resource_bundle=ResourceBundle.getBundle("jg-messages",Locale.getDefault(),Util.class.getClassLoader());
 
@@ -516,7 +529,7 @@ public class Util {
             ViewId new_vid=new ViewId(ch.getAddress(),vid.getId() + 1);
             View new_view=new View(new_vid,members);
 
-            // inject view in which the shut down member is the only element
+            // inject view in which the shut-down member is the only element
             GMS gms=stack.findProtocol(GMS.class);
             gms.installView(new_view);
         }
@@ -3473,7 +3486,7 @@ public class Util {
         if(target == null)
             return;
         Field[] fields=Util.getAllDeclaredFieldsWithAnnotations(target.getClass(), Component.class);
-        if(fields == null || fields.length == 0)
+        if(fields == null)
             return;
         for(Field f: fields) {
             Object comp=Util.getField(f, target);
@@ -3491,7 +3504,7 @@ public class Util {
         if(cl == null)
             return;
         Field[] fields=Util.getAllDeclaredFieldsWithAnnotations(cl, Component.class);
-        if(fields == null || fields.length == 0)
+        if(fields == null)
             return;
         for(Field f: fields) {
             Class<?> type=f.getType();
@@ -4320,7 +4333,7 @@ public class Util {
     public static boolean checkForMac() {return checkForPresence("os.name", "mac", "macosx", "osx", "darwin");}
 
     private static boolean checkForPresence(String key, String ...values) {
-        if(values == null || values.length == 0)
+        if(values == null)
             return false;
         for(String val: values)
             if(checkForPresence(key, val))
@@ -4640,6 +4653,10 @@ public class Util {
 
 
     public static List<NetworkInterface> getAllAvailableInterfaces() throws SocketException {
+        List<NetworkInterface> cached_interfaces=CACHED_INTERFACES;
+        if(cached_interfaces != null)
+            return cached_interfaces;
+
         List<NetworkInterface> retval=new ArrayList<>(10);
         for(Enumeration<NetworkInterface> en=NetworkInterface.getNetworkInterfaces(); en.hasMoreElements(); ) {
             NetworkInterface intf=en.nextElement();
@@ -4650,11 +4667,21 @@ public class Util {
                     retval.add(sub);
             }
         }
-        return retval;
+        return CACHED_INTERFACES=retval;
+    }
+
+    public static void resetCacheAddresses(boolean reset_interfaces, boolean reset_addresses) {
+        if(reset_interfaces)
+            CACHED_INTERFACES=null;
+        if(reset_addresses)
+            CACHED_ADDRESSES=null;
     }
 
     /** Returns all addresses of all interfaces (that are up) that satisfy a given filter (ignored if null) */
     public static Collection<InetAddress> getAllAvailableAddresses(Predicate<InetAddress> filter) {
+        Collection<InetAddress> cached_addresses=CACHED_ADDRESSES;
+        if(cached_addresses != null)
+            return cached_addresses;
         Set<InetAddress> retval=new HashSet<>();
         try {
             List<NetworkInterface> interfaces=getAllAvailableInterfaces();
@@ -4671,7 +4698,7 @@ public class Util {
         }
         catch(SocketException e) {
         }
-        return retval;
+        return CACHED_ADDRESSES=retval;
     }
 
     public static void checkIfValidAddress(InetAddress bind_addr,String prot_name) throws Exception {
