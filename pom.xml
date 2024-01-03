@@ -66,10 +66,6 @@
         </snapshotRepository>
     </distributionManagement>
 
-    <prerequisites>
-        <maven>3.0.4</maven>
-    </prerequisites>
-
     <repositories>
         <repository>
             <id>jboss-public-repository-group</id>
@@ -99,8 +95,6 @@
                 <updatePolicy>always</updatePolicy>
             </snapshots>
         </repository>
-
-
     </repositories>
 
     <dependencies>
