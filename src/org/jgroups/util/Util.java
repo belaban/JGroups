@@ -4704,7 +4704,7 @@ public class Util {
     /** Returns all addresses of all interfaces (that are up) that satisfy a given filter (ignored if null) */
     public static Collection<InetAddress> getAllAvailableAddresses(Predicate<InetAddress> filter) {
         Collection<InetAddress> cached_addresses=CACHED_ADDRESSES;
-        if(cached_addresses != null)
+        if(cached_addresses != null && filter == null)
             return cached_addresses;
         Set<InetAddress> retval=new HashSet<>();
         try {
