@@ -408,7 +408,7 @@ public class RelayTest extends RelayTests {
               .map(ch -> (RELAY)ch.getProtocolStack().findProtocol(RELAY.class))
               .forEach(r -> r.setRouteStatusListener(new DefaultRouteStatusListener(r::getAddress).verbose(false)));
 
-            // now stop A; B will become new site master and we should get a site-down(NYC), then site-up(NYC)
+            // now stop A; B will become new site master, and we should get a site-down(NYC), then site-up(NYC)
             Util.close(a);
             Util.waitUntil(5000, 500, () -> Stream.of(d,e,f,_g,_h,_i)
               .map(ch -> (RELAY)ch.getProtocolStack().findProtocol(RELAY.class))
@@ -840,7 +840,7 @@ public class RelayTest extends RelayTests {
         Util.waitUntil(3000, 100,
                        () -> ((RELAY)d.getProtocolStack().findProtocol(RELAY.class)).isSiteMaster());
         MyReceiver<Message> r=getReceiver(d);
-        Util.waitUntil(200000, 200, () -> r.size() == 5);
+        Util.waitUntil(2000, 200, () -> r.size() == 5);
 
         Table<Message> send_win=unicast.getSendWindow(target);
         // wait until the ack from D has been received
