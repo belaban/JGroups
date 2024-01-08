@@ -147,7 +147,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected long time_service_interval=500;
 
 
-    /** Whether or not warnings about messages from different groups are logged - private flag, not for common use */
+    /** Whether warnings about messages from different groups are logged - private flag, not for common use */
     @Property(description="whether or not warnings about messages from different groups are logged")
     protected boolean log_discard_msgs=true;
 
