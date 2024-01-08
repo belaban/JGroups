@@ -18,10 +18,7 @@ import org.jgroups.util.*;
 
 import javax.net.ssl.*;
 import java.io.DataInput;
-import java.net.Inet6Address;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -422,13 +419,27 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
                     }
                 }
                 map.put(key, sb.toString());
+                continue;
+            }
+            if(key.startsWith("member-addrs")) {
+                InetSocketAddress sa=(InetSocketAddress)diag.getLocalAddress();
+                if(sa != null) {
+                    Set<PhysicalAddress> physical_addrs=Set.of(new IpAddress(sa.getAddress(), sa.getPort()));
+                    // Set<PhysicalAddress> physical_addrs=diag.getLocalAddress();
+                    String list=Util.print(physical_addrs);
+                    map.put(key, list);
+                }
+                continue;
+            }
+            if(key.startsWith("dump")) {
+                map.put(key, Util.dumpThreads());
             }
         }
         return map;
     }
 
     public String[] supportedKeys() {
-        return new String[]{"ops", "op", "invoke", "keys"};
+        return new String[]{"ops", "op", "invoke", "keys", "member-addrs", "dump"};
     }
 
     protected ByteArrayDataOutputStream getOutputStream(Address mbr, int size) {
