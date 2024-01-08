@@ -878,7 +878,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                     StringBuilder sb=new StringBuilder();
                     for(DiagnosticsHandler.ProbeHandler handler : diag_handler.getProbeHandlers()) {
                         String[] tmp=handler.supportedKeys();
-                        if(tmp != null && tmp.length > 0) {
+                        if(tmp != null) {
                             for(String s : tmp)
                                 sb.append(s).append(" ");
                         }
