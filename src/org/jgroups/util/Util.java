@@ -267,7 +267,7 @@ public class Util {
         while(System.currentTimeMillis() <= target_time) {
             boolean all_channels_have_correct_view=true;
             View first=channels[0].getView();
-            for(JChannel ch : channels) {
+            for(JChannel ch: channels) {
                 View view=ch.getView();
                 if(first == null || !Objects.equals(view, first) || view.size() != channels.length) {
                     all_channels_have_correct_view=false;
@@ -2853,7 +2853,7 @@ public class Util {
 
     public static <T> boolean contains(T key,T[] list) {
         if(list == null) return false;
-        for(T tmp : list)
+        for(T tmp: list)
             if(tmp == key || tmp.equals(key))
                 return true;
         return false;
@@ -4680,7 +4680,7 @@ public class Util {
     /** Returns all addresses of all interfaces (that are up) that satisfy a given filter (ignored if null) */
     public static Collection<InetAddress> getAllAvailableAddresses(Predicate<InetAddress> filter) {
         Collection<InetAddress> cached_addresses=CACHED_ADDRESSES;
-        if(cached_addresses != null)
+        if(cached_addresses != null && filter == null)
             return cached_addresses;
         Set<InetAddress> retval=new HashSet<>();
         try {
