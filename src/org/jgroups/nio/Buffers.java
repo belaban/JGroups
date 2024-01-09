@@ -156,8 +156,10 @@ public class Buffers implements Iterable<ByteBuffer> {
             return (ByteBuffer) ((java.nio.Buffer) bufs[1].duplicate()).flip();
         }
         finally {
-            bufs[0].clear();
-            bufs[1].clear();
+            ((java.nio.Buffer)bufs[0]).clear(); // same as above
+            ((java.nio.Buffer)bufs[1]).clear();
+            //bufs[0].clear();
+            //bufs[1].clear();
         }
     }
 
