@@ -93,7 +93,7 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
     /**
      * Registers mbr with the GossipRouter under the given group, with the given logical name and physical address.
      * Establishes a connection to the GossipRouter and sends a CONNECT message.
-     * @param group The group cluster) name under which to register the member
+     * @param group The group cluster name under which to register the member
      * @param addr The address of the member
      * @param logical_name The logical name of the member
      * @param phys_addr The physical address of the member
@@ -259,7 +259,7 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
         return cl;
     }
 
-    public synchronized void writeRequest(GossipData req) throws Exception {
+    public void writeRequest(GossipData req) throws Exception {
         int size=req.serializedSize();
         ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(size+5);
         req.writeTo(out);

@@ -5,14 +5,21 @@ import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.util.*;
 
 import java.net.InetAddress;
-import java.nio.channels.*;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
+
+import static java.nio.channels.SelectionKey.OP_READ;
 
 /**
  * Server for sending and receiving messages via NIO channels. Uses only a single thread to accept, connect, write and
- * read connections. Read messages are passed to a receiver, which typically uses a thread pool to process messages.<p/>
- * Note that writes can get dropped, e.g. in the case where we have a previous write pending and a new write is received.
+ * read to/from connections.
+ * <br/>
+ * <em>Note that writes can get dropped</em>, e.g. in the case where we have a previous write pending and a new write is
+ * invoked.
  * This is typically not an issue as JGroups retransmits messages, but might become one when using NioServer standalone,
- * ie. outside of JGroups.
+ * i.e. outside JGroups.
  * @author Bela Ban
  * @since  3.6.5
  */
@@ -75,11 +82,11 @@ public class NioServer extends NioBaseServer {
     @Override
     protected void handleAccept(SelectionKey key) throws Exception {
         SocketChannel client_channel=channel.accept();
-        NioConnection conn=null;
         if(client_channel == null) return; // can happen if no connection is available to accept
+        NioConnection conn=null;
         try {
             conn=new NioConnection(client_channel, NioServer.this);
-            SelectionKey client_key=client_channel.register(selector, SelectionKey.OP_READ, conn);
+            SelectionKey client_key=client_channel.register(selector, OP_READ, conn);
             conn.key(client_key); // we need to set the selection key of the client channel *not* the server channel
             Address peer_addr=conn.peerAddress();
             if(use_peer_connections)
@@ -113,8 +120,6 @@ public class NioServer extends NioBaseServer {
     public synchronized void stop() {
         super.stop();
         if(running.compareAndSet(true, false)) {
-            // Util.close(selector); // closing the selector also stops the acceptor thread
-            // socket_factory.close(channel);
             selector.wakeup();
             // Wait for server channel to close (via acceptorDone())
             Util.interruptAndWaitToDie(acceptor);
