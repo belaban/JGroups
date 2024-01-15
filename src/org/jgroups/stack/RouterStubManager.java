@@ -283,7 +283,7 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
             if(timeout > heartbeat_timeout) {
                 log.debug("%s: closed connection to GossipRouter %s as no heartbeat has been received for %s",
                           local_addr, st.remote(),
-                          Util.printTime(timeout, TimeUnit.MILLISECONDS), st);
+                          Util.printTime(timeout, TimeUnit.MILLISECONDS));
                 st.destroy();
             }
         });
