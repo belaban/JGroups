@@ -114,18 +114,13 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
       -> System.out.printf("dst=%s src=%s (%d bytes): hdrs= %s\n", msg.dest(), msg.src(), msg.getLength(), msg.printHeaders());
 
 
-    public GossipRouter(String bind_addr, int local_port) {
+    public GossipRouter(String bind_addr, int local_port) throws Exception {
         this.port=local_port;
-        try {
-            this.bind_addr=bind_addr != null? InetAddress.getByName(bind_addr) : null;
-            init();
-        }
-        catch(UnknownHostException e) {
-            log.error("failed setting bind address %s: %s", bind_addr, e);
-        }
+        this.bind_addr=bind_addr != null? InetAddress.getByName(bind_addr) : null;
+        init();
     }
 
-    public GossipRouter(InetAddress bind_addr, int local_port) {
+    public GossipRouter(InetAddress bind_addr, int local_port) throws Exception {
         this.port=local_port;
         this.bind_addr=bind_addr;
         init();
@@ -181,11 +176,12 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
     }
 
 
-    public GossipRouter init() {
+    public GossipRouter init() throws Exception {
         diag=new DiagnosticsHandler(log, socket_factory, thread_factory)
           .registerProbeHandler(this)
           .printHeaders(b -> String.format("GossipRouter [addr=%s, cluster=GossipRouter, version=%s]\n",
                                            localAddress(), Version.description));
+        tls.init();
         return this;
     }
 
