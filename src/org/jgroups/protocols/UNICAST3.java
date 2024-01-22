@@ -155,6 +155,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     protected final LongAdder              loopbed_back_msgs=new LongAdder();
 
+    // Queues messages until a {@link ReceiverEntry} has been created. Queued messages are then removed from
+    // the cache and added to the ReceiverEntry
     protected final MessageCache           msg_cache=new MessageCache();
 
     protected static final Message         DUMMY_OOB_MSG=new EmptyMessage().setFlag(Message.Flag.OOB);
@@ -528,7 +530,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             if(hdr.first)
                 entry=getReceiverEntry(sender, hdr.seqno(), hdr.first, hdr.connId());
             else if(entry == null) {
-                msg_cache.cache(sender, msg);
+                msg_cache.add(sender, msg);
                 log.trace("%s: cached %s#%d", local_addr, sender, hdr.seqno());
             }
         }
@@ -538,7 +540,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 sendRequestForFirstSeqno(sender);
             else {
                 if(!msg_cache.isEmpty()) { // quick and dirty check
-                    List<Message> queued_msgs=msg_cache.drain(sender);
+                    Collection<Message> queued_msgs=msg_cache.drain(sender);
                     if(queued_msgs != null)
                         addQueuedMessages(sender, entry, queued_msgs);
                 }
@@ -652,7 +654,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         }
 
         if(msg.getSrc() == null)
-            msg.setSrc(local_addr); // this needs to be done so we can check whether the message sender is the local_addr
+            msg.setSrc(local_addr); // this needs to be done, so we can check whether the message sender is the local_addr
 
         if(loopback && Objects.equals(local_addr, dst)) {// https://issues.redhat.com/browse/JGRP-2547
             if(msg.isFlagSet(DONT_LOOPBACK))
@@ -792,12 +794,12 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     protected void handleDataReceived(final Address sender, long seqno, short conn_id,  boolean first, final Message msg) {
         ReceiverEntry entry=getReceiverEntry(sender, seqno, first, conn_id);
         if(entry == null) {
-            msg_cache.cache(sender, msg);
+            msg_cache.add(sender, msg);
             log.trace("%s: cached %s#%d", local_addr, sender, seqno);
             return;
         }
         if(!msg_cache.isEmpty()) { // quick and dirty check
-            List<Message> queued_msgs=msg_cache.drain(sender);
+            Collection<Message> queued_msgs=msg_cache.drain(sender);
             if(queued_msgs != null)
                 addQueuedMessages(sender, entry, queued_msgs);
         }
@@ -822,7 +824,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             deliverMessage(msg, sender, seqno);
     }
 
-    protected void addQueuedMessages(final Address sender, final ReceiverEntry entry, List<Message> queued_msgs) {
+    protected void addQueuedMessages(final Address sender, final ReceiverEntry entry, Collection<Message> queued_msgs) {
         for(Message msg: queued_msgs) {
             UnicastHeader3 hdr=msg.getHeader(this.id);
             if(hdr.conn_id != entry.conn_id) {
@@ -1039,7 +1041,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         Message rsp=win.get(win.getLow() +1);
         if(rsp != null) {
             // We need to copy the UnicastHeader and put it back into the message because Message.copy() doesn't copy
-            // the headers and therefore we'd modify the original message in the sender retransmission window
+            // the headers, and therefore we'd modify the original message in the sender retransmission window
             // (https://issues.redhat.com/browse/JGRP-965)
             Message copy=rsp.copy(true, true);
             UnicastHeader3 hdr=copy.getHeader(this.id);
@@ -1481,48 +1483,5 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             return UNICAST3.class.getSimpleName() + ": RetransmitTask (interval=" + xmit_interval + " ms)";
         }
     }
-
-    /**
-     * Used to queue messages until a {@link ReceiverEntry} has been created. Queued messages are then removed from
-     * the cache and added to the ReceiverEntry
-     */
-    protected class MessageCache {
-        private final Map<Address,List<Message>> map=new ConcurrentHashMap<>();
-        private volatile boolean                 is_empty=true;
-
-        protected MessageCache cache(Address sender, Message msg) {
-            List<Message> list=map.computeIfAbsent(sender, addr -> new ArrayList<>());
-            list.add(msg);
-            is_empty=false;
-            return this;
-        }
-
-        protected List<Message> drain(Address sender) {
-            List<Message> list=map.remove(sender);
-            if(map.isEmpty())
-                is_empty=true;
-            return list;
-        }
-
-        protected MessageCache clear() {
-            map.clear();
-            is_empty=true;
-            return this;
-        }
-
-        /** Returns a count of all messages */
-        protected int size() {
-            return map.values().stream().mapToInt(Collection::size).sum();
-        }
-
-        protected boolean isEmpty() {
-            return is_empty;
-        }
-
-        public String toString() {
-            return String.format("%d message(s)", size());
-        }
-    }
-
 
 }
