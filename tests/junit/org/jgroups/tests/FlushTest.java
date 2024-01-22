@@ -141,7 +141,7 @@ public class FlushTest {
             Util.shutdown(b);
             Stream.of(a,c).forEach(ch -> ch.getProtocolStack().findProtocol(FLUSH.class).setLevel("debug"));
 
-            Util.waitUntilAllChannelsHaveSameView(100000, 500, a,c);
+            Util.waitUntilAllChannelsHaveSameView(10000, 500, a,c);
 
             // cluster should not hang and two remaining members should have a correct view
             assert a.getView().size() == 2 : String.format("A's view: %s", a.getView());

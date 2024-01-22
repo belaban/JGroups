@@ -41,7 +41,7 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
     // max number of ms to wait for socket establishment to GossipRouter
     protected int                                         sock_conn_timeout=3000;
     protected boolean                                     tcp_nodelay=true;
-
+    protected int                                         linger=-1; // SO_LINGER (number of seconds, -1 disables it)
     protected boolean                                     handle_heartbeats;
     // timestamp of last heartbeat (or message from GossipRouter)
     protected volatile long                               last_heartbeat;
@@ -50,6 +50,10 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
     protected final Map<String,List<MembersNotification>> get_members_map=new HashMap<>();
 
 
+    public RouterStub(InetSocketAddress local_sa, InetSocketAddress remote_sa, boolean use_nio, CloseListener l, SocketFactory sf) {
+       this(local_sa, remote_sa, use_nio, l, sf, -1);
+    }
+
     /**
      * Creates a stub to a remote_sa {@link GossipRouter}.
      * @param local_sa The local_sa bind address and port
@@ -57,14 +61,16 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
      * @param use_nio Whether to use ({@link org.jgroups.protocols.TCP_NIO2}) or {@link org.jgroups.protocols.TCP}
      * @param l The {@link CloseListener}
      * @param sf The {@link SocketFactory} to use to create the client socket
+     * @param linger SO_LINGER timeout
      */
-    public RouterStub(InetSocketAddress local_sa, InetSocketAddress remote_sa, boolean use_nio, CloseListener l, SocketFactory sf) {
+    public RouterStub(InetSocketAddress local_sa, InetSocketAddress remote_sa, boolean use_nio, CloseListener l, SocketFactory sf, int linger) {
         this.local=local_sa != null? new IpAddress(local_sa.getAddress(), local_sa.getPort())
           : new IpAddress((InetAddress)null,0);
         this.remote_sa=Objects.requireNonNull(remote_sa);
         this.use_nio=use_nio;
         this.close_listener=l;
         this.socket_factory=sf;
+        this.linger=linger;
         if(resolveRemoteAddress()) // sets remote
             client=createClient(sf);
     }
@@ -86,6 +92,8 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
     public RouterStub    handleHeartbeats(boolean f)          {handle_heartbeats=f; return this;}
     public boolean       handleHeartbeats()                   {return handle_heartbeats;}
     public long          lastHeartbeat()                      {return last_heartbeat;}
+    public int           getLinger()                          {return linger;}
+    public RouterStub    setLinger(int l)                     {this.linger=l; return this;}
 
 
 
@@ -255,7 +263,7 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
         if(sf != null) cl.socketFactory(sf);
         cl.receiver(this);
         cl.addConnectionListener(this);
-        cl.socketConnectionTimeout(sock_conn_timeout).tcpNodelay(tcp_nodelay);
+        cl.socketConnectionTimeout(sock_conn_timeout).tcpNodelay(tcp_nodelay).linger(linger);
         return cl;
     }
 
