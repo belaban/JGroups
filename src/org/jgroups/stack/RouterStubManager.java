@@ -112,7 +112,11 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
 
 
     public RouterStub createAndRegisterStub(InetSocketAddress local, InetSocketAddress router_addr) {
-        RouterStub stub=new RouterStub(local, router_addr, use_nio, this, socket_factory)
+        return createAndRegisterStub(local, router_addr, -1);
+    }
+
+    public RouterStub createAndRegisterStub(InetSocketAddress local, InetSocketAddress router_addr, int linger) {
+        RouterStub stub=new RouterStub(local, router_addr, use_nio, this, socket_factory, linger)
           .handleHeartbeats(heartbeat_interval > 0);
         this.stubs.add(stub);
         return stub;

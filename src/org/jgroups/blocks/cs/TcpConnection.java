@@ -48,6 +48,8 @@ public class TcpConnection extends Connection {
         this.sock=server.socketFactory().createSocket("jgroups.tcp.sock");
         setSocketParameters(sock);
         last_access=getTimestamp(); // last time a message was sent or received (ns)
+        if(sock instanceof SSLSocket) // https://issues.redhat.com/browse/JGRP-2748
+            sock.setSoLinger(true, 0);
     }
 
     /** Called by {@link TcpServer.Acceptor#handleAccept(Socket)} */
@@ -63,6 +65,8 @@ public class TcpConnection extends Connection {
         this.peer_addr=server.usePeerConnections()? readPeerAddress(s)
           : new IpAddress((InetSocketAddress)s.getRemoteSocketAddress());
         last_access=getTimestamp(); // last time a message was sent or received (ns)
+        if(sock instanceof SSLSocket) // https://issues.redhat.com/browse/JGRP-2748
+            sock.setSoLinger(true, 0);
     }
 
     public Address localAddress() {
@@ -225,15 +229,8 @@ public class TcpConnection extends Connection {
 
         client_sock.setKeepAlive(true);
         client_sock.setTcpNoDelay(server.tcp_nodelay);
-        try { // todo: remove try-catch clause once https://github.com/oracle/graal/issues/1087 has been fixed
-            if(server.linger > 0)
-                client_sock.setSoLinger(true, server.linger);
-            else
-                client_sock.setSoLinger(false, -1);
-        }
-        catch(Throwable t) {
-            server.log().warn("%s: failed setting SO_LINGER option: %s", server.localAddress(), t);
-        }
+        if(server.linger > 0)
+            client_sock.setSoLinger(true, server.linger);
     }
 
 

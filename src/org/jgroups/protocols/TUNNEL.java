@@ -72,6 +72,9 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
       "GossipRouter is closed. Ignored when heartbeat_interval is 0.", type=AttributeType.TIME)
     protected long    heartbeat_timeout;
 
+    @Property(description="SO_LINGER in seconds. Default of -1 disables it")
+    protected int     linger=-1; // SO_LINGER (number of seconds, -1 disables it)
+
     /* ------------------------------------------ Fields ----------------------------------------------------- */
 
     protected final List<InetSocketAddress> gossip_routers=new ArrayList<>();
@@ -95,6 +98,8 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
     public TUNNEL  useNio(boolean use_nio)      {this.use_nio=use_nio; return this;}
     public TLS     tls()                        {return tls;}
     public TUNNEL  tls(TLS t)                   {this.tls=t; return this;}
+    public int     getLinger()                  {return linger;}
+    public TUNNEL  setLinger(int l)             {this.linger=l; return this;}
 
     /** We can simply send a message with dest == null and the GossipRouter will take care of routing it to all
      * members in the cluster */
@@ -215,7 +220,7 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
                     try {
                         InetSocketAddress target=gr.isUnresolved()? new InetSocketAddress(gr.getHostString(), gr.getPort())
                           : new InetSocketAddress(gr.getAddress(), gr.getPort());
-                        stubManager.createAndRegisterStub(new InetSocketAddress(bind_addr, bind_port), target)
+                        stubManager.createAndRegisterStub(new InetSocketAddress(bind_addr, bind_port), target, linger)
                           .receiver(this).tcpNoDelay(tcp_nodelay);
                     }
                     catch(Throwable t) {
