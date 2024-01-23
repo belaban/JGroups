@@ -320,6 +320,31 @@ public class BuffersTest {
         check(buf, 0, 2, 2, remaining(buf2,buf3));
     }
 
+    /**
+     * post=limit=capacity=0: add an element that greater than capacity
+     */
+    public void testAddAtEnd() throws Exception {
+        MockSocketChannel ch=new MockSocketChannel().bytesToWrite(1000);
+        Buffers buf=new Buffers(4);
+        for(int i=0; i < 4; i++)
+            buf.add(buf1);
+        check(buf, 0, 4, 4, remaining(buf1)*4);
+        boolean rc=buf.write(ch);
+        assert rc;
+        check(buf, 0, 0, 0, 0);
+        buf.add(buf1, buf1, buf1);
+        check(buf, 0, 3, 3, remaining(buf1)*3);
+        buf.add(buf1, buf1, buf1); // not added as capacity has been exceeded!
+        check(buf, 0, 3, 3, remaining(buf1)*3);
+
+        rc=buf.write(ch);
+        assert rc;
+        check(buf, 3, 3, 0, 0);
+        buf1.flip();
+        buf.add(buf1, buf1, buf1); // will be added; space was made for this
+        check(buf, 0, 3, 3, remaining(buf1)*3);
+    }
+
     public void testNullData() throws Exception {
         MockSocketChannel ch=new MockSocketChannel().bytesToWrite(1000);
         Buffers buf=new Buffers(3);
@@ -489,7 +514,7 @@ public class BuffersTest {
         Buffers bufs=new Buffers(a,b,c,d);
         ByteBuffer recorder=ByteBuffer.allocate(100);
         MockSocketChannel ch=new MockSocketChannel().bytesToWrite(13) // a, b: OK, c: partial, d: fail
-          .recorder(recorder); // we're recording the writes so we can compare expected bytes to actually written bytes
+          .recorder(recorder); // we're recording the writes, so we can compare expected bytes to actually written bytes
         boolean success=bufs.write(ch);
         System.out.println("bufs = " + bufs);
         assert !success;

@@ -15,14 +15,20 @@ import java.util.NoSuchElementException;
 /**
  * Class to do scattering reads or gathering writes on a sequence of {@link ByteBuffer} instances. The buffers are
  * kept in an array with fixed capacity (max Short.MAX_VALUE).
- * Buffers can be added and removed dynamically (they're dropped when the capacity is exceeded).<p/>
- * A read is successful when all non-null buffers from left to right are filled, ie. all {@link ByteBuffer#remaining()}
- * methods return 0.<p/>
+ * Buffers can be added and removed dynamically, but they're <em>dropped when the capacity is exceeded</em>. This
+ * means that, if a we have configured a capacity of 5 buffers, and want to add 6, <em>none of the 6 buffers will
+ * be added!</em>
+ * <br/>
+ * A read is successful when all non-null buffers from left to right are filled, i.e. all {@link ByteBuffer#remaining()}
+ * methods return 0.
+ * <br/>
  * Same for writes: when all non-null buffers (from left to right) have been written ({@link ByteBuffer#remaining()} == 0),
- * a write is considered successful; otherwise it is partial.<p/>
+ * a write is considered successful; otherwise it is partial.
+ * <br/>
  * Individual buffers can be accessed; e.g. for reading its value after a read. It is also possible to add buffers
  * dynamically, e.g. after reading a 'length' buffer, a user may want to add a new buffer allocated for reading
- * 'length' bytes.<p/>
+ * 'length' bytes.
+ * <br/>
  * This class is not synchronized.
  * @author Bela Ban
  * @since  3.6.5
@@ -82,7 +88,10 @@ public class Buffers implements Iterable<ByteBuffer> {
         return false;
     }
 
-
+    /**
+     * Adds a number of buffers. Note that if the buffers cannot be added <em>as a whole,
+     * e.g. because of exceeding the capacity, none of them will be added!</em>
+     */
     public Buffers add(ByteBuffer ... buffers) {
         if(buffers == null)
             return this;
@@ -95,6 +104,7 @@ public class Buffers implements Iterable<ByteBuffer> {
         return this;
     }
 
+    /** Adds a buffer. If there's no capacity, the buffer will not be added and will be silently dropped */
     public Buffers add(ByteBuffer buf) {
         if(buf == null)
             return this;
@@ -116,7 +126,6 @@ public class Buffers implements Iterable<ByteBuffer> {
     public Buffers remove(int index) {
         return set(index, null);
     }
-
 
 
     /**
@@ -198,10 +207,9 @@ public class Buffers implements Iterable<ByteBuffer> {
                 throw closed_ex;
             }
             catch(NotYetConnectedException | IOException others) {
-                ; // ignore, we'll queue 1 write
+                ; // ignore, we'll queue writes up to Buffers.capacity
             }
         }
-
         return nullData();
     }
 
@@ -289,12 +297,6 @@ public class Buffers implements Iterable<ByteBuffer> {
         return num;
     }
 
-    /*protected void assertNextToCopy() {
-        boolean condition=position <= next_to_copy && next_to_copy <= limit;
-        assert condition
-          : String.format("position=%d next_to_copy=%d limit=%d\n", position, next_to_copy, limit);
-    }*/
-
     /** Copies a ByteBuffer by copying and wrapping the underlying array of a heap-based buffer. Direct buffers
         are converted to heap-based buffers */
     public static ByteBuffer copyBuffer(final ByteBuffer buf) {
@@ -305,7 +307,6 @@ public class Buffers implements Iterable<ByteBuffer> {
         if(!buf.isDirect())
             System.arraycopy(buf.array(), offset, tmp, 0, len);
         else {
-         //   buf.get(tmp, 0, len);
             for(int i=0; i < len; i++)
                 tmp[i]=buf.get(i+offset);
         }

@@ -23,7 +23,7 @@ public abstract class NioBaseServer extends BaseServer {
     protected volatile boolean  registration; // set to true after a registration; the acceptor sets it back to false
 
     @ManagedAttribute(description="Max number of send buffers. Changing this value affects new buffers only",writable=true)
-    protected int               max_send_buffers=5; // size of WriteBuffers send buffer array
+    protected int               max_send_buffers=12; // size of send buffer array, will be doubled
 
     @ManagedAttribute(description="Number of times select() was called")
     protected int               num_selects;
@@ -129,7 +129,6 @@ public abstract class NioBaseServer extends BaseServer {
                 while(it.hasNext()) {
                     SelectionKey key=it.next();
                     NioConnection conn=(NioConnection)key.attachment();
-                    it.remove();
                     try {
                         if(!key.isValid())
                             continue;
@@ -139,20 +138,22 @@ public abstract class NioBaseServer extends BaseServer {
                             // https://issues.redhat.com/browse/JGRP-2727
                             if((ch.isConnectionPending() && ch.finishConnect()) || ch.isConnected()) {
                                 conn.clearSelectionKey(SelectionKey.OP_CONNECT);
-                                conn.connected(true);
                             }
                         }
                         else if(key.isAcceptable())
                             handleAccept(key);
                         else {
-                            if (key.isReadable())
-                                conn.receive();
-                            if (key.isWritable())
+                            if(key.isReadable())
+                                conn.read();
+                            if(key.isWritable())
                                 conn.send();
                         }
                     }
                     catch(Throwable ex) {
                         closeConnection(conn);
+                    }
+                    finally {
+                        it.remove();
                     }
                 }
             }
@@ -165,7 +166,7 @@ public abstract class NioBaseServer extends BaseServer {
                 int num=selector.select();
                 num_selects++;
                 checkforPendingRegistrations();
-                if(num == 0) return true;
+                return num >= 0;
             }
             catch(ClosedSelectorException closed_ex) {
                 log.trace("selector was closed; acceptor terminating");

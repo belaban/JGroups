@@ -476,7 +476,7 @@ public class Util {
 
     public static void close(Closeable... closeables) {
         if(closeables != null) {
-            for(Closeable closeable : closeables)
+            for(Closeable closeable: closeables)
                 Util.close(closeable);
         }
     }
@@ -2990,7 +2990,7 @@ public class Util {
         return list.get(index);
     }
 
-    public static <T> T pickRandomElement(Set<T> set) {
+    public static <T> T pickRandomElement(Collection<T> set) {
         if(set == null || set.isEmpty()) return null;
         int size=set.size();
         int random=(int)Util.random(size)-1;

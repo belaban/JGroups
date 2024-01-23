@@ -147,7 +147,7 @@ public class TcpConnection extends Connection {
 
     /**
      *
-     * @param data Guaranteed to be non null
+     * @param data Guaranteed to be non-null
      * @param offset
      * @param length
      */
@@ -235,9 +235,8 @@ public class TcpConnection extends Connection {
 
 
     /**
-     * Send the cookie first, then the our port number. If the cookie
-     * doesn't match the receiver's cookie, the receiver will reject the
-     * connection and close it.
+     * Send the cookie first, then our port number. If the cookie doesn't match the receiver's cookie,
+     * the receiver will reject the connection and close it.
      */
     protected void sendLocalAddress(Address local_addr) throws Exception {
         try {
