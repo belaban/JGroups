@@ -130,8 +130,9 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     protected final ReentrantLock          recv_table_lock=new ReentrantLock();
 
-    /** Used by the retransmit task to keep the last retransmitted seqno per sender (https://issues.redhat.com/browse/JGRP-1539) */
-    protected final Map<Address,Long>      xmit_task_map=new HashMap<>();
+    /** Used by the retransmit task to keep the last retransmitted seqno per member (applicable only
+     * for received messages (ReceiverEntry)): https://issues.redhat.com/browse/JGRP-1539 */
+    protected final Map<Address,Long>      xmit_task_map=new ConcurrentHashMap<>();
 
     /** RetransmitTask running every xmit_interval ms */
     protected Future<?>                    xmit_task;
