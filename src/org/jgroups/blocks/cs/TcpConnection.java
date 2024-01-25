@@ -34,7 +34,6 @@ public class TcpConnection extends Connection {
     protected OutputStream        out;
     protected DataInputStream     in;
     protected volatile Receiver   receiver;
-    protected final TcpBaseServer server;
     protected final AtomicInteger writers=new AtomicInteger(0); // to determine the last writer to flush
     protected volatile boolean    connected;
     protected final byte[]        length_buf=new byte[Integer.BYTES]; // used to write the length of the data
@@ -74,14 +73,6 @@ public class TcpConnection extends Connection {
         return local_addr != null? new IpAddress(local_addr) : null;
     }
 
-    public Address peerAddress() {
-        return peer_addr;
-    }
-
-    protected long getTimestamp() {
-        return server.timeService() != null? server.timeService().timestamp() : System.nanoTime();
-    }
-
     protected String getSockAddress() {
         StringBuilder sb=new StringBuilder();
         if(sock != null) {
@@ -89,11 +80,6 @@ public class TcpConnection extends Connection {
             sb.append(" - ").append(sock.getInetAddress().getHostAddress()).append(':').append(sock.getPort());
         }
         return sb.toString();
-    }
-
-    protected void updateLastAccessed() {
-        if(server.connExpireTime() > 0)
-            last_access=getTimestamp();
     }
 
     public void connect(Address dest) throws Exception {
@@ -136,21 +122,12 @@ public class TcpConnection extends Connection {
         }
     }
 
-
     public void start() {
         if(receiver != null)
             receiver.stop();
         receiver=new Receiver(server.factory).start();
     }
 
-
-
-    /**
-     *
-     * @param data Guaranteed to be non-null
-     * @param offset
-     * @param length
-     */
     public void send(byte[] data, int offset, int length) throws Exception {
         if(out == null)
             return;
@@ -158,7 +135,6 @@ public class TcpConnection extends Connection {
         send_lock.lock();
         try {
             doSend(data, offset, length);
-            updateLastAccessed();
         }
         catch(InterruptedException iex) {
             Thread.currentThread().interrupt(); // set interrupt flag again
@@ -202,12 +178,12 @@ public class TcpConnection extends Connection {
     }
 
     protected OutputStream createDataOutputStream(OutputStream out) {
-        int size=server.getBufferedOutputStreamSize();
+        int size=((TcpBaseServer)server).getBufferedOutputStreamSize();
         return size == 0? out : new BufferedOutputStream(out, size);
     }
 
     protected DataInputStream createDataInputStream(InputStream in) {
-        int size=server.getBufferedInputStreamSize();
+        int size=((TcpBaseServer)server).getBufferedInputStreamSize();
         return size == 0? new DataInputStream(in) : new DataInputStream(new BufferedInputStream(in, size));
     }
 
@@ -248,7 +224,6 @@ public class TcpConnection extends Connection {
             local_addr.writeTo(os);
             out.write(os.buffer(), 0, os.position());
             out.flush(); // needed ?
-            updateLastAccessed();
         }
         catch(Exception ex) {
             server.socket_factory.close(this.sock);
@@ -263,7 +238,7 @@ public class TcpConnection extends Connection {
      */
     protected Address readPeerAddress(Socket client_sock) throws Exception {
         int timeout=client_sock.getSoTimeout();
-        client_sock.setSoTimeout(server.peerAddressReadTimeout());
+        client_sock.setSoTimeout(((TcpBaseServer)server).peerAddressReadTimeout());
 
         try {
             // read the cookie first
@@ -369,24 +344,19 @@ public class TcpConnection extends Connection {
         return                   "open";
     }
 
-    public boolean isExpired(long now) {
-        return server.conn_expire_time > 0 && now - last_access >= server.conn_expire_time;
-    }
-
-    public boolean isConnected() {
+    @Override public boolean isConnected() {
         return connected;
     }
 
-    public boolean isConnectionPending() {
+    @Override public boolean isConnectionPending() {
         return false;
     }
 
-    @Override
-    public boolean isClosed() {
+    @Override public boolean isClosed() {
         return sock == null || sock.isClosed();
     }
 
-    public void close() throws IOException {
+    @Override public void close() throws IOException {
         Util.close(sock); // fix for https://issues.redhat.com/browse/JGRP-2350
         send_lock.lock();
         try {

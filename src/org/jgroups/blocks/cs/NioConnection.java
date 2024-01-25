@@ -34,7 +34,6 @@ import static java.nio.channels.SelectionKey.*;
 public class NioConnection extends Connection {
     protected SocketChannel       channel;      // the channel to the peer
     protected SelectionKey        key;
-    protected final NioBaseServer server;
     protected final Buffers       send_buf;     // send messages via gathering writes
     protected final ByteBuffer    length_buf=ByteBuffer.allocate(Integer.BYTES); // reused: send the length of the next buf
     protected boolean             copy_on_partial_write=true;
@@ -80,11 +79,6 @@ public class NioConnection extends Connection {
     public boolean isClosed() {return channel == null || !channel.isOpen();}
 
     @Override
-    public boolean isExpired(long now) {return server.connExpireTime() > 0 && now - last_access >= server.connExpireTime();}
-
-    protected void updateLastAccessed() {if(server.connExpireTime() > 0) last_access=getTimestamp();}
-
-    @Override
     public Address localAddress() {
         InetSocketAddress local_addr=null;
         if(channel != null) {
@@ -93,7 +87,6 @@ public class NioConnection extends Connection {
         return local_addr != null? new IpAddress(local_addr) : null;
     }
 
-    public Address       peerAddress()                 {return peer_addr;}
     public SelectionKey  key()                         {return key;}
     public NioConnection key(SelectionKey k)           {this.key=k; return this;}
     public NioConnection copyOnPartialWrite(boolean b) {this.copy_on_partial_write=b; return this;}
@@ -120,7 +113,7 @@ public class NioConnection extends Connection {
         try {
             if(!server.deferClientBinding())
                 this.channel.bind(new InetSocketAddress(server.clientBindAddress(), server.clientBindPort()));
-            this.key=server.register(channel, OP_CONNECT | OP_READ, this);
+            this.key=((NioBaseServer)server).register(channel, OP_CONNECT | OP_READ, this);
             boolean success=Util.connect(channel, destAddr);
             if(success || channel.finishConnect())
                 clearSelectionKey(OP_CONNECT);
@@ -171,7 +164,6 @@ public class NioConnection extends Connection {
                     send_buf.copy(); // copy data on partial write as further writes might corrupt data (https://issues.redhat.com/browse/JGRP-1991)
                 partial_writes++;
             }
-            updateLastAccessed();
         }
         catch(Exception ex) {
             if(!(ex instanceof SocketException || ex instanceof EOFException || ex instanceof ClosedChannelException))
@@ -187,16 +179,12 @@ public class NioConnection extends Connection {
         send_lock.lock();
         try {
             boolean success=send_buf.write(channel);
-            if(success) {
+            if(success)
                 clearSelectionKey(OP_WRITE);
-                updateLastAccessed();
-            }
             else {
-                // registerSelectionKey(OP_WRITE);
-                if(copy_on_partial_write) {
-                    // copy data on partial write as further writes might corrupt data (https://issues.redhat.com/browse/JGRP-1991)
+                // copy data on partial write as further writes might corrupt data (https://issues.redhat.com/browse/JGRP-1991)
+                if(copy_on_partial_write)
                     send_buf.copy();
-                }
                 partial_writes++;
             }
         }
@@ -285,10 +273,6 @@ public class NioConnection extends Connection {
         return                           "open";
     }
 
-    protected long getTimestamp() {
-        return server.timeService() != null? server.timeService().timestamp() : System.nanoTime();
-    }
-
     protected void setSocketParameters(Socket client_sock) throws SocketException {
         try {
             if(server.sendBufferSize() > 0)
@@ -324,7 +308,6 @@ public class NioConnection extends Connection {
             local_addr.writeTo(out);
             ByteBuffer buf=ByteBuffer.wrap(out.buffer(), 0, out.position());
             send(buf, false);
-            updateLastAccessed();
         }
         catch(Exception ex) {
             close();
