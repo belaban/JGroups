@@ -170,7 +170,6 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
           .registerProbeHandler(this)
           .printHeaders(b -> String.format("GossipRouter [addr=%s, cluster=GossipRouter, version=%s]\n",
                                            localAddress(), Version.description));
-        tls.init();
         return this;
     }
 
@@ -919,6 +918,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
           .setPasscode(diag_passcode);
         String type="";
         if(tls.enabled()) {
+            tls.init();
             SSLContext context=tls.createContext();
             SocketFactory socket_factory=tls.createSocketFactory(context);
             router.socketFactory(socket_factory);
