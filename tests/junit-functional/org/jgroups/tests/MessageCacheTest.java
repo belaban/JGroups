@@ -3,7 +3,6 @@ package org.jgroups.tests;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.Message;
-import org.jgroups.ObjectMessage;
 import org.jgroups.util.MessageCache;
 import org.jgroups.util.Util;
 import org.testng.annotations.BeforeMethod;
@@ -32,8 +31,8 @@ public class MessageCacheTest {
 
     public void testAdd() {
         for(int i=1; i <= 5; i++) {
-            cache.add(A, new ObjectMessage(A, i));
-            cache.add(B, new ObjectMessage(B, i+10));
+            cache.add(A, new Message(A, i));
+            cache.add(B, new Message(B, i+10));
         }
         assert !cache.isEmpty();
         assert cache.size() == 10;
