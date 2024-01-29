@@ -920,10 +920,7 @@ public class JChannel implements Closeable {
         return this;
     }
 
-    /**
-     * Generates and sets local_addr. Sends down a REMOVE_ADDRESS (if existing address was present) and
-     * a SET_LOCAL_ADDRESS
-     */
+    /** Generates local_addr. Sends down a REMOVE_ADDRESS (if existing address was present) and a SET_LOCAL_ADDRESS */
     protected JChannel setAddress() {
         if(name == null || name.isEmpty()) // generate a logical name if not set
             name=Util.generateLocalName();

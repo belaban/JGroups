@@ -177,7 +177,7 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
             throw new IllegalStateException("gossip_router_hosts needs to contain at least one address of a GossipRouter");
         log.debug("gossip routers are %s", gossip_routers);
         stubManager=RouterStubManager.emptyGossipClientStubManager(log, timer).useNio(this.use_nio);
-        sock=getSocketFactory().createDatagramSocket("jgroups.tunnel.ucast_sock", bind_port, bind_addr);
+        sock=getSocketFactory().createDatagramSocket("jgroups.tunnel.ucast_sock", 0, bind_addr);
     }
 
     @Override
