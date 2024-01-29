@@ -3471,7 +3471,7 @@ public class Util {
             }
             catch(SecurityException e) {
                 // if it runs in an applet context, it won't be able to retrieve methods from superclasses that belong
-                // to the java VM and it will raise a security exception, so we catch it here.
+                // to the java VM, and it will raise a security exception, so we catch it here.
                 superclass=null;
             }
         }
@@ -3787,7 +3787,7 @@ public class Util {
     }
 
     /**
-     * Input is "daddy[8880],sindhu[8880],camille[5555]. Returns a list of IpAddresses
+     * Input is "daddy[8880],sindhu[8880],camille[5555]". Returns a list of IpAddresses
      */
     public static List<PhysicalAddress> parseCommaDelimitedHosts(String hosts,int port_range) throws UnknownHostException {
         StringTokenizer tok=hosts != null? new StringTokenizer(hosts,",") : null;
@@ -3853,7 +3853,7 @@ public class Util {
     }
 
     /**
-     * Input is "daddy[8880],sindhu[8880],camille[5555]. Returns a list of InetSocketAddress. If a hostname doesn't
+     * Input is "daddy[8880],sindhu[8880],camille[5555]". Returns a list of InetSocketAddress. If a hostname doesn't
      * resolve, then we'll use the hostname to create an address: new InetSocketAddress(host, port)
      */
     public static List<InetSocketAddress> parseCommaDelimitedHosts2(String hosts,int port_range) throws UnknownHostException {
@@ -4604,12 +4604,7 @@ public class Util {
 
 
 
-    /**
-     * A function to check if an interface supports an IP version (i.e has addresses
-     * defined for that IP version).
-     * @param intf
-     * @return
-     */
+    /** A function to check if an interface supports an IP version (i.e. has addresses defined for that IP version) */
     public static boolean interfaceHasIPAddresses(NetworkInterface intf,StackType ip_version) throws UnknownHostException {
         boolean supportsVersion=false;
         if(intf != null) {
