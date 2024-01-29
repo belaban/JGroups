@@ -25,6 +25,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 /**
  * Abstract class for a server handling sending, receiving and connection management.
@@ -38,7 +40,7 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     protected final ThreadFactory             factory;
     protected SocketFactory                   socket_factory=new DefaultSocketFactory();
     protected long                            reaperInterval;
-    protected Reaper reaper;
+    protected Reaper                          reaper;
     protected Receiver                        receiver;
     protected final AtomicBoolean             running=new AtomicBoolean(false);
     protected Log                             log=LogFactory.getLog(getClass());
@@ -81,7 +83,6 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         if(sf != null)
             this.socket_factory=sf;
     }
-
 
 
     public Receiver         receiver()                              {return receiver;}
@@ -443,6 +444,10 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         conns.clear();
     }
 
+    public void forAllConnections(BiConsumer<Address,Connection> c) {
+        conns.forEach(c);
+    }
+
     /** Removes all connections which are not in current_mbrs */
     public void retainAll(Collection<Address> current_mbrs) {
         if(current_mbrs == null)
@@ -483,8 +488,16 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
 
 
     public String toString() {
-        return new StringBuilder(getClass().getSimpleName()).append(": local_addr=").append(local_addr).append("\n")
-          .append("connections (" + conns.size() + "):\n").append(super.toString()).append('\n').toString();
+        return toString(false);
+    }
+
+    public String toString(boolean details) {
+        String s=String.format("%s (%s, %d conns)", getClass().getSimpleName(), local_addr, conns.size());
+        if(details && !conns.isEmpty()) {
+            String tmp=conns.entrySet().stream().map(e -> String.format("%s: %s", e.getKey(), e.getValue())).collect(Collectors.joining("\n"));
+            return String.format("%s:\n%s", s, tmp);
+        }
+        return s;
     }
 
 

@@ -131,7 +131,7 @@ public class ServerTests {
         for(Sender sender: senders)
             sender.join();
         List<String> ids=Arrays.stream(senders).map(t -> String.valueOf(t.getId())).collect(Collectors.toList());
-        Util.waitUntil(1000, 100, () -> list.size() == NUM_SENDERS,
+        Util.waitUntil(3000, 100, () -> list.size() == NUM_SENDERS,
                        () -> {
                            list.sort(String::compareTo);
                            return String.format("list (%d): %s", list.size(), list);

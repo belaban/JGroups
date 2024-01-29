@@ -19,6 +19,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
@@ -42,7 +43,7 @@ public class ServerUnitTest {
     }
 
     public void testSetup() throws Exception {
-        for(boolean nio : new boolean[]{false, true}) {
+        for(boolean nio: new boolean[]{false, true}) {
             try(BaseServer a=create(nio, 0);
                 BaseServer b=create(nio, 0)) {
                 Assert.assertNotSame(a.localAddress(), b.localAddress());
@@ -52,7 +53,7 @@ public class ServerUnitTest {
 
 
     public void testSendEmptyData() throws Exception {
-        for(boolean nio : new boolean[]{false, true}) {
+        for(boolean nio: new boolean[]{false, true}) {
             try(BaseServer a=create(nio, 0)) {
                 byte[] data=new byte[0];
                 Address myself=a.localAddress();
@@ -63,7 +64,7 @@ public class ServerUnitTest {
     }
 
     public void testSendNullData() throws Exception {
-        for(boolean nio : new boolean[]{false, true}) {
+        for(boolean nio: new boolean[]{false, true}) {
             try(BaseServer a=create(nio, 0)) {
                 Address myself=a.localAddress();
                 a.send(myself, null, 0, 0); // the test passes if send() doesn't throw an exception
@@ -73,7 +74,7 @@ public class ServerUnitTest {
 
 
     public void testSendToSelf() throws Exception {
-        for(boolean nio : new boolean[]{false, true}) {
+        for(boolean nio: new boolean[]{false, true}) {
             try(BaseServer a=create(nio, 0)) {
                 long NUM=1000, total_time;
                 Address myself=a.localAddress();
@@ -125,7 +126,7 @@ public class ServerUnitTest {
     }
 
     public void testSendToOther() throws Exception {
-        for(boolean nio : new boolean[]{false, true}) {
+        for(boolean nio: new boolean[]{false, true}) {
             try(BaseServer a=create(nio, 0);
                 BaseServer b=create(nio, 0)) {
                 long NUM=1000, total_time;
@@ -221,20 +222,28 @@ public class ServerUnitTest {
 
 
     public void testConnectionCountOnStop() throws Exception {
-        for(boolean nio : new boolean[]{false, true}) {
+        for(boolean nio: new boolean[]{false, true}) {
+       //  for(boolean nio: new boolean[]{true}) {
             try(BaseServer a=create(nio, 0);
                 BaseServer b=create(nio, 0)) {
-                Address addr1=a.localAddress(), addr2=b.localAddress();
+                Address addr_a=a.localAddress(), addr_b=b.localAddress();
                 byte[] data="hello world".getBytes();
-                send(data, a, addr1); // send to self
+                send(data, a, addr_a); // send to self
                 assert a.getNumConnections() == 0;
-                send(data, a, addr2);  // send to other
+                send(data, a, addr_b);  // send to other
 
-                send(data, b, addr2); // send to self
-                send(data, b, addr1); // send to other
+                send(data, b, addr_b); // send to self
+                send(data, b, addr_a); // send to other
 
-
-                System.out.println("A:\n" + a + "\nB:\n" + b);
+                Util.waitUntil(3000, 100, () -> {
+                    AtomicInteger connected=new AtomicInteger();
+                    Stream.of(a,b).forEach(s -> s.forAllConnections((__,c) -> {
+                        if(c.isConnected())
+                            connected.incrementAndGet();
+                    }));
+                    return connected.get() == 2;
+                });
+                System.out.println("A: " + a.toString(true) + "\nB: " + b.toString(true));
 
                 int num_conns_table1=a.getNumConnections(), num_conns_table2=b.getNumConnections();
                 assert num_conns_table1 == 1 : "A should have 1 connection, but has " + num_conns_table1 + ": " + a;
@@ -295,14 +304,12 @@ public class ServerUnitTest {
     }
 
     protected static void waitForOpenConns(int expected, BaseServer... servers) throws Exception {
-        Util.waitUntilTrue(20000, 1000,
-                           () -> Arrays.stream(servers).allMatch(srv -> srv.getNumOpenConnections() == expected));
-        if(!Arrays.stream(servers).allMatch(srv -> srv.getNumOpenConnections() == expected)) {
-            String msg=String.format("expected connections: %d, actual:\n%s\n", expected,
-                                     Stream.of(servers).map(s -> String.format("%s: %s", s.getNumOpenConnections(), s.printConnections()))
-                                       .collect(Collectors.joining("\n")));
-            throw new Exception(msg);
-        }
+        Util.waitUntil(3000, 500,
+                       () -> Arrays.stream(servers).allMatch(srv -> srv.getNumOpenConnections() == expected),
+                       () -> String.format("%s: expected connections: %d, actual:\n%s\n", servers[0].getClass().getSimpleName(), expected,
+                                           Stream.of(servers).map(s -> String.format("%s: %s: %s", s.localAddress(),
+                                                                                     s.getNumOpenConnections(), s.printConnections()))
+                                             .collect(Collectors.joining("\n"))));
     }
 
 

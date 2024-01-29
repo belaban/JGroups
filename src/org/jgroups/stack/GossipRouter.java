@@ -57,9 +57,13 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
     @ManagedAttribute(description="server port on which the GossipRouter accepts client connections", writable=true)
     protected int                  port=12001;
     
-    @ManagedAttribute(description="time (in msecs) until gossip entry expires. 0 disables expiration.",
+    @ManagedAttribute(description="Time (in msecs) until idle client connections are closed. 0 disables expiration.",
       writable=true,type=AttributeType.TIME)
     protected long                 expiry_time;
+
+    @ManagedAttribute(description="Interval (in msecs) to check for expired connections and close them. 0 disables reaping.",
+      writable=true,type=AttributeType.TIME)
+    protected long                 reaper_interval;
 
     @ManagedAttribute(description="Time (in ms) for setting SO_LINGER on sockets returned from accept(). 0 means do not set SO_LINGER"
       ,type=AttributeType.TIME)
@@ -89,7 +93,6 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
     protected int                  max_length;
     protected BaseServer           server;
     protected final AtomicBoolean  running=new AtomicBoolean(false);
-    protected Timer                timer;
     protected final Log            log=LogFactory.getLog(this.getClass());
 
     @Component(name="diag",description="DiagnosticsHandler listening for probe requests")
@@ -126,6 +129,8 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
     public GossipRouter  port(int port)                     {this.port=port; return this;}
     public long          expiryTime()                       {return expiry_time;}
     public GossipRouter  expiryTime(long t)                 {this.expiry_time=t; return this;}
+    public long          reaperInterval()                   {return reaper_interval;}
+    public GossipRouter  reaperInterval(long t)             {this.reaper_interval=t; return this;}
     public int           lingerTimeout()                    {return linger_timeout;}
     public GossipRouter  lingerTimeout(int t)               {this.linger_timeout=t; return this;}
     public int           recvBufferSize()                   {return recv_buf_size;}
@@ -205,7 +210,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
                           recv_buf_size, "jgroups.tcp.gossiprouter");
         server.receiver(this).setMaxLength(max_length)
           .addConnectionListener(this)
-          .connExpireTimeout(expiry_time).linger(linger_timeout);
+          .connExpireTimeout(expiry_time).reaperInterval(reaper_interval).linger(linger_timeout);
         server.start();
         Runtime.getRuntime().addShutdownHook(new Thread(GossipRouter.this::stop));
         return this;
@@ -748,7 +753,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
     public static void main(String[] args) throws Exception {
         int                    port=12001;
         int                    recv_buf_size=0, max_length=0;
-        long                   expiry_time=0;
+        long                   expiry_time=0, reaper_interval=0;
         boolean                diag_enabled=true, diag_enable_udp=true, diag_enable_tcp=false;
         InetAddress            diag_mcast_addr=null, diag_bind_addr=null;
         int                    diag_port=7500, diag_port_range=50, diag_ttl=8, soLinger=-1;
@@ -777,6 +782,10 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
             }
             if("-expiry".equals(arg)) {
                 expiry_time=Long.parseLong(args[++i]);
+                continue;
+            }
+            if("-reaper_interval".equals(arg)) {
+                reaper_interval=Long.parseLong(args[++i]);
                 continue;
             }
             if("-jmx".equals(arg)) {
@@ -898,7 +907,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
             throw new IllegalArgumentException("Cannot use NIO with TLS");
 
         GossipRouter router=new GossipRouter(bind_addr, port)
-          .jmx(jmx).expiryTime(expiry_time)
+          .jmx(jmx).expiryTime(expiry_time).reaperInterval(reaper_interval)
           .useNio(nio)
           .recvBufferSize(recv_buf_size)
           .lingerTimeout(soLinger)
@@ -962,6 +971,8 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
         System.out.println("    -solinger <msecs>       - Time for setting SO_LINGER on connections");
         System.out.println();
         System.out.println("    -expiry <msecs>         - Time for closing idle connections. 0 means don't expire.");
+        System.out.println();
+        System.out.println("    -reaper_interval <ms>   - Time for check for expired connections. 0 means don't check.");
         System.out.println();
         System.out.println("    -nio <true|false>       - Whether or not to use non-blocking connections (NIO)");
         System.out.println();

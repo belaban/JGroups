@@ -70,8 +70,6 @@ public abstract class NioBaseServer extends BaseServer {
     }
 
 
-
-
     /** Prints send and receive buffers for all connections */
     @ManagedOperation(description="Prints the send and receive buffers")
     public String printBuffers() {
