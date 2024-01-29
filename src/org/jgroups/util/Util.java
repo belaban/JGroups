@@ -123,7 +123,7 @@ public class Util {
 
         try {
             CACHED_INTERFACES=getAllAvailableInterfaces();
-            CACHED_ADDRESSES=getAllAvailableAddresses(null);
+            CACHED_ADDRESSES=getAllAvailableAddresses();
         }
         catch(SocketException e) {
             throw new RuntimeException(e);
@@ -4644,7 +4644,7 @@ public class Util {
      * if the type cannot be detected
      */
     private static StackType _getIpStackType() {
-        Collection<InetAddress> all_addresses=getAllAvailableAddresses(null);
+        Collection<InetAddress> all_addresses=getAllAvailableAddresses();
         for(InetAddress addr: all_addresses) {
             if(addr instanceof Inet4Address)
                 ipv4_stack_available=true;
@@ -4668,7 +4668,7 @@ public class Util {
 
 
     public static boolean isStackAvailable(boolean ipv4) {
-        Collection<InetAddress> all_addrs=getAllAvailableAddresses(null);
+        Collection<InetAddress> all_addrs=getAllAvailableAddresses();
         for(InetAddress addr : all_addrs)
             if(ipv4 && addr instanceof Inet4Address || (!ipv4 && addr instanceof Inet6Address))
                 return true;
@@ -4711,10 +4711,9 @@ public class Util {
     }
 
     private static synchronized Collection<InetAddress> getAllAvailableAddresses() {
-        if (CACHED_ADDRESSES != null) {
+        if(CACHED_ADDRESSES != null)
             return CACHED_ADDRESSES;
-        }
-        Set<InetAddress> addresses = new HashSet<>();
+        Set<InetAddress> addresses=new HashSet<>();
         try {
             List<NetworkInterface> interfaces=getAllAvailableInterfaces();
             for(NetworkInterface intf: interfaces) {
@@ -4726,15 +4725,14 @@ public class Util {
         catch(SocketException e) {
         }
         // immutable list
-        CACHED_ADDRESSES = List.copyOf(addresses);
-        return CACHED_ADDRESSES;
+        return CACHED_ADDRESSES=List.copyOf(addresses);
     }
 
     public static void checkIfValidAddress(InetAddress bind_addr,String prot_name) throws Exception {
         // N.B. bind_addr.isAnyLocalAddress() is not OK
         if (bind_addr.isLoopbackAddress())
             return;
-        Collection<InetAddress> addrs=getAllAvailableAddresses(null);
+        Collection<InetAddress> addrs=getAllAvailableAddresses();
         for(InetAddress addr : addrs) {
             if(addr.equals(bind_addr))
                 return;
