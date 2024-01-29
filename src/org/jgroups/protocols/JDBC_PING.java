@@ -276,7 +276,7 @@ public class JDBC_PING extends FILE_PING {
             return;
         log.debug("Registering JDBC Driver named '%s'", connection_driver);
         try {
-            Class.forName(connection_driver);
+            Util.loadClass(connection_driver, this.getClass().getClassLoader());
         } catch (ClassNotFoundException e) {
             throw new IllegalArgumentException("JDBC Driver required for JDBC_PING "
                         + " protocol could not be loaded: '" + connection_driver + "'");
