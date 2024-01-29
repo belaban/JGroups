@@ -123,7 +123,7 @@ public class Util {
 
         try {
             CACHED_INTERFACES=getAllAvailableInterfaces();
-            CACHED_ADDRESSES=getAllAvailableAddresses(null);
+            CACHED_ADDRESSES=getAllAvailableAddresses();
         }
         catch(SocketException e) {
             throw new RuntimeException(e);
@@ -4644,7 +4644,7 @@ public class Util {
      * if the type cannot be detected
      */
     private static StackType _getIpStackType() {
-        Collection<InetAddress> all_addresses=getAllAvailableAddresses(null);
+        Collection<InetAddress> all_addresses=getAllAvailableAddresses();
         for(InetAddress addr: all_addresses) {
             if(addr instanceof Inet4Address)
                 ipv4_stack_available=true;
@@ -4668,7 +4668,7 @@ public class Util {
 
 
     public static boolean isStackAvailable(boolean ipv4) {
-        Collection<InetAddress> all_addrs=getAllAvailableAddresses(null);
+        Collection<InetAddress> all_addrs=getAllAvailableAddresses();
         for(InetAddress addr : all_addrs)
             if(ipv4 && addr instanceof Inet4Address || (!ipv4 && addr instanceof Inet6Address))
                 return true;
@@ -4703,33 +4703,36 @@ public class Util {
 
     /** Returns all addresses of all interfaces (that are up) that satisfy a given filter (ignored if null) */
     public static Collection<InetAddress> getAllAvailableAddresses(Predicate<InetAddress> filter) {
-        Collection<InetAddress> cached_addresses=CACHED_ADDRESSES;
-        if(cached_addresses != null && filter == null)
-            return cached_addresses;
-        Set<InetAddress> retval=new HashSet<>();
+        Collection<InetAddress> cached_addresses=getAllAvailableAddresses();
+        assert cached_addresses != null;
+        return filter == null ?
+                cached_addresses :
+                cached_addresses.stream().filter(filter).collect(Collectors.toList());
+    }
+
+    private static synchronized Collection<InetAddress> getAllAvailableAddresses() {
+        if(CACHED_ADDRESSES != null)
+            return CACHED_ADDRESSES;
+        Set<InetAddress> addresses=new HashSet<>();
         try {
             List<NetworkInterface> interfaces=getAllAvailableInterfaces();
             for(NetworkInterface intf: interfaces) {
                 if(!isUp(intf)  /*!intf.isUp()*/)
                     continue;
-                Enumeration<InetAddress> addrs=intf.getInetAddresses();
-                while(addrs.hasMoreElements()) {
-                    InetAddress addr=addrs.nextElement();
-                    if(filter == null || filter.test(addr))
-                        retval.add(addr);
-                }
+                intf.getInetAddresses().asIterator().forEachRemaining(addresses::add);
             }
         }
         catch(SocketException e) {
         }
-        return CACHED_ADDRESSES=retval;
+        // immutable list
+        return CACHED_ADDRESSES=List.copyOf(addresses);
     }
 
     public static void checkIfValidAddress(InetAddress bind_addr,String prot_name) throws Exception {
         // N.B. bind_addr.isAnyLocalAddress() is not OK
         if (bind_addr.isLoopbackAddress())
             return;
-        Collection<InetAddress> addrs=getAllAvailableAddresses(null);
+        Collection<InetAddress> addrs=getAllAvailableAddresses();
         for(InetAddress addr : addrs) {
             if(addr.equals(bind_addr))
                 return;
