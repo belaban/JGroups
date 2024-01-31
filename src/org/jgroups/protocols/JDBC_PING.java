@@ -2,6 +2,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.Address;
 import org.jgroups.annotations.Property;
+import org.jgroups.util.ByteArray;
 import org.jgroups.util.Responses;
 import org.jgroups.util.Util;
 
@@ -218,13 +219,17 @@ public class JDBC_PING extends FILE_PING {
 	            while(resultSet.next()) {
 	                byte[] bytes=resultSet.getBytes(1);
 	                try {
-	                    PingData data=deserialize(bytes);
-                        reads++;
-	                    if(data == null || (members != null && !members.contains(data.getAddress())))
-	                        continue;
-	                    rsps.addResponse(data, false);
-	                    if(local_addr != null && !local_addr.equals(data.getAddress()))
-	                        addDiscoveryResponseToCaches(data.getAddress(), data.getLogicalName(), data.getPhysicalAddr());
+	                    List<PingData> list=readPingData(bytes, 0, bytes.length);
+                        if(list != null) {
+                            for(PingData data: list) {
+                                reads++;
+                                if(data == null || (members != null && !members.contains(data.getAddress())))
+                                    continue;
+                                rsps.addResponse(data, false);
+                                if(local_addr != null && !local_addr.equals(data.getAddress()))
+                                    addDiscoveryResponseToCaches(data.getAddress(), data.getLogicalName(), data.getPhysicalAddr());
+                            }
+                        }
 	                }
 	                catch(Exception e) {
 	                    int row=resultSet.getRow();
@@ -305,11 +310,11 @@ public class JDBC_PING extends FILE_PING {
 
 
     protected synchronized void insert(Connection connection, PingData data, String clustername, String address) throws SQLException {
-        final byte[] serializedPingData = serializeWithoutView(data);
+        final ByteArray serializedPingData = serializeWithoutView(data);
         try (PreparedStatement ps=connection.prepareStatement(insert_single_sql)) {
             ps.setString(1, address);
             ps.setString(2, clustername);
-            ps.setBytes(3, serializedPingData);
+            ps.setBytes(3, serializedPingData.getBytes());
             if(log.isTraceEnabled())
                 log.trace("%s: SQL for insertion: %s", local_addr, ps);
             ps.executeUpdate();
@@ -492,8 +497,12 @@ public class JDBC_PING extends FILE_PING {
                 while(resultSet.next()) {
                     byte[] bytes=resultSet.getBytes(1);
                     try {
-                        PingData data=deserialize(bytes);
-                        System.out.printf("%d %s\n", index++, data);
+                        List<PingData> list=deserialize(bytes, 0, bytes.length);
+                        if(list != null) {
+                            for(PingData data: list) {
+                                System.out.printf("%d %s\n", index++, data);
+                            }
+                        }
                     }
                     catch(Exception e) {
                     }

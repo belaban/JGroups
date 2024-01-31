@@ -78,13 +78,9 @@ public class PingData implements SizeStreamable, Constructable<PingData> {
         return Util.isFlagSet(flags, is_server) || Util.isFlagSet(flags, is_coord); // a coord is always a server
     }
 
-    public Address getAddress() {
-        return sender;
-    }
-
-    public String getLogicalName() {
-        return logical_name;
-    }
+    public Address getSender()      {return sender;}
+    public Address getAddress()     {return sender;}
+    public String  getLogicalName() {return logical_name;}
 
     public PhysicalAddress               getPhysicalAddr()                        {return physical_addr;}
     public PingData                      mbrs(Collection<? extends Address> mbrs) {this.mbrs=mbrs; return this;}

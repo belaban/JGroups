@@ -94,7 +94,7 @@ public class RED extends Protocol {
     }
 
     public Object down(Message msg) {
-        if(enabled) {
+        if(enabled && bundler != null) {
             int current_queue_size=bundler.getQueueSize();
             double avg;
             lock.lock();
