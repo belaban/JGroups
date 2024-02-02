@@ -636,6 +636,10 @@ public abstract class Discovery extends Protocol {
         return list;
     }
 
+    public static ByteArray marshal(PingData data) {
+       return marshal(new PingData[] {data});
+    }
+
     public static ByteArray marshal(PingData ... list) {
         return marshal(List.of(list));
     }
