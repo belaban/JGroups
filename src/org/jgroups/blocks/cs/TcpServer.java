@@ -115,7 +115,9 @@ public class TcpServer extends TcpBaseServer {
         protected void handleAccept(final Socket client_sock) throws Exception {
             TcpConnection conn=null;
             try {
-                conn=new TcpConnection(client_sock, TcpServer.this);
+                conn=non_blocking_sends? new TcpConnectionNonBlocking(client_sock, TcpServer.this).maxSize(max_send_queue)
+                  : new TcpConnection(client_sock, TcpServer.this);
+
                 Address peer_addr=conn.peerAddress();
                 synchronized(this) {
                     boolean conn_exists=hasConnection(peer_addr),

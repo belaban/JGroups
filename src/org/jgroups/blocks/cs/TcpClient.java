@@ -107,11 +107,6 @@ public class TcpClient extends TcpBaseServer implements Client, ConnectionListen
         stop();
     }
 
-    @Override
-    public void connectionEstablished(Connection conn) {
-
-    }
-
     public String toString() {
         if(conn == null || !conn.isConnected())
             return String.format("%s -> %s [not connected]", localAddress(), remoteAddress());

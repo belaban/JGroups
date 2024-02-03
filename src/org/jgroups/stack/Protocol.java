@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 
@@ -350,7 +351,7 @@ public abstract class Protocol implements Lifecycle {
      * (calling {@link #accept(Message)}), and - if true - calls {@link #up(org.jgroups.Event)}
      * for that message and removes the message. If the batch is not empty, it is passed up, or else it is dropped.<p/>
      * Subclasses should check if there are any messages destined for them (e.g. using
-     * {@link MessageBatch#getMatchingMessages(short,boolean)}), then possibly remove and process them and finally pass
+     * {@link MessageBatch#iterator(Predicate)}), then possibly remove and process them and finally pass
      * the batch up to the next protocol. Protocols can also modify messages in place, e.g. ENCRYPT could decrypt all
      * encrypted messages in the batch, not remove them, and pass the batch up when done.
      * @param batch The message batch

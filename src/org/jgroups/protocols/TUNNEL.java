@@ -75,6 +75,12 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
     @Property(description="SO_LINGER in seconds. Default of -1 disables it")
     protected int     linger=-1; // SO_LINGER (number of seconds, -1 disables it)
 
+    @Property(description="use bounded queues for sending (https://issues.redhat.com/browse/JGRP-2759)")
+    protected boolean non_blocking_sends;
+
+    @Property(description="when sending and non_blocking, how many messages to queue max")
+    protected int     max_send_queue=128;
+
     /* ------------------------------------------ Fields ----------------------------------------------------- */
 
     protected final List<InetSocketAddress> gossip_routers=new ArrayList<>();
@@ -89,7 +95,6 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
     public TUNNEL() {
     }
 
-
     public long    getReconnectInterval()       {return reconnect_interval;}
     public TUNNEL  setReconnectInterval(long r) {this.reconnect_interval=r; return this;}
     public boolean isTcpNodelay()               {return tcp_nodelay;}
@@ -100,6 +105,10 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
     public TUNNEL  tls(TLS t)                   {this.tls=t; return this;}
     public int     getLinger()                  {return linger;}
     public TUNNEL  setLinger(int l)             {this.linger=l; return this;}
+    public boolean nonBlockingSends()           {return non_blocking_sends;}
+    public TUNNEL  nonBlockingSends(boolean b)  {this.non_blocking_sends=b; return this;}
+    public int     maxSendQueue()               {return max_send_queue;}
+    public TUNNEL  maxSendQueue(int s)          {this.max_send_queue=s; return this;}
 
     /** We can simply send a message with dest == null and the GossipRouter will take care of routing it to all
      * members in the cluster */
@@ -176,7 +185,8 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
         if(gossip_routers.isEmpty())
             throw new IllegalStateException("gossip_router_hosts needs to contain at least one address of a GossipRouter");
         log.debug("gossip routers are %s", gossip_routers);
-        stubManager=RouterStubManager.emptyGossipClientStubManager(log, timer).useNio(this.use_nio);
+        stubManager=RouterStubManager.emptyGossipClientStubManager(log, timer).useNio(this.use_nio)
+          .nonBlockingSends(non_blocking_sends).maxSendQueue(max_send_queue);
         sock=getSocketFactory().createDatagramSocket("jgroups.tunnel.ucast_sock", 0, bind_addr);
     }
 
@@ -215,7 +225,8 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
                 PhysicalAddress physical_addr=getPhysicalAddressFromCache(local);
                 String logical_name=org.jgroups.util.NameCache.get(local);
                 stubManager=new RouterStubManager(log,timer,group,local, logical_name, physical_addr, reconnect_interval)
-                  .useNio(this.use_nio).socketFactory(getSocketFactory()).heartbeat(heartbeat_interval, heartbeat_timeout);
+                  .useNio(this.use_nio).socketFactory(getSocketFactory()).heartbeat(heartbeat_interval, heartbeat_timeout)
+                  .nonBlockingSends(non_blocking_sends).maxSendQueue(max_send_queue);
                 for(InetSocketAddress gr: gossip_routers) {
                     try {
                         InetSocketAddress target=gr.isUnresolved()? new InetSocketAddress(gr.getHostString(), gr.getPort())

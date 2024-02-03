@@ -43,6 +43,12 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
     protected final Runnable         send_heartbeat=this::sendHeartbeat;
     protected final Runnable         check_timeouts=this::checkTimeouts;
 
+    // Use bounded queues for sending (https://issues.redhat.com/browse/JGRP-2759)") in TCP
+    protected boolean                non_blocking_sends;
+
+    // When sending and non_blocking, how many messages to queue max
+    protected int                    max_send_queue=128;
+
 
     public RouterStubManager(Log log, TimeScheduler timer, String cluster_name, Address local_addr,
                              String logical_name, PhysicalAddress phys_addr, long reconnect_interval) {
@@ -64,6 +70,10 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
     public boolean           reconnectorRunning() {return reconnector_task != null && !reconnector_task.isDone();}
     public boolean           heartbeaterRunning() {return heartbeat_task != null && !heartbeat_task.isDone();}
     public boolean           timeouterRunning()   {return timeout_checker_task != null && !timeout_checker_task.isDone();}
+    public boolean           nonBlockingSends()          {return non_blocking_sends;}
+    public RouterStubManager nonBlockingSends(boolean b) {this.non_blocking_sends=b; return this;}
+    public int               maxSendQueue()              {return max_send_queue;}
+    public RouterStubManager maxSendQueue(int s)         {this.max_send_queue=s; return this;}
 
 
     public RouterStubManager socketFactory(SocketFactory socket_factory) {
@@ -116,7 +126,7 @@ public class RouterStubManager implements Runnable, RouterStub.CloseListener {
     }
 
     public RouterStub createAndRegisterStub(InetSocketAddress local, InetSocketAddress router_addr, int linger) {
-        RouterStub stub=new RouterStub(local, router_addr, use_nio, this, socket_factory, linger)
+        RouterStub stub=new RouterStub(local, router_addr, use_nio, this, socket_factory, linger, non_blocking_sends, max_send_queue)
           .handleHeartbeats(heartbeat_interval > 0);
         this.stubs.add(stub);
         return stub;

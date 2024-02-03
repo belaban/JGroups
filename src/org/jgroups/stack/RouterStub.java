@@ -28,23 +28,29 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
     public interface MembersNotification {void members(List<PingData> mbrs);}
     public interface CloseListener       {void closed(RouterStub stub);}
 
-    protected BaseServer                                  client;
-    protected IpAddress                                   local;     // bind address
-    protected IpAddress                                   remote;    // address of remote GossipRouter
-    protected InetSocketAddress                           remote_sa; // address of remote GossipRouter, not resolved yet
-    protected final boolean                               use_nio;
-    protected StubReceiver                                receiver;  // external consumer of data, e.g. TUNNEL
-    protected CloseListener                               close_listener;
-    protected SocketFactory                               socket_factory;
-    protected static final Log                            log=LogFactory.getLog(RouterStub.class);
+    protected BaseServer        client;
+    protected IpAddress         local;     // bind address
+    protected IpAddress         remote;    // address of remote GossipRouter
+    protected InetSocketAddress remote_sa; // address of remote GossipRouter, not resolved yet
+    protected final boolean     use_nio;
+    protected StubReceiver      receiver;  // external consumer of data, e.g. TUNNEL
+    protected CloseListener     close_listener;
+    protected SocketFactory     socket_factory;
+    protected static final Log  log=LogFactory.getLog(RouterStub.class);
 
     // max number of ms to wait for socket establishment to GossipRouter
-    protected int                                         sock_conn_timeout=3000;
-    protected boolean                                     tcp_nodelay=true;
-    protected int                                         linger=-1; // SO_LINGER (number of seconds, -1 disables it)
-    protected boolean                                     handle_heartbeats;
+    protected int               sock_conn_timeout=3000;
+    protected boolean           tcp_nodelay=true;
+    protected int               linger=-1; // SO_LINGER (number of seconds, -1 disables it)
+    protected boolean           handle_heartbeats;
     // timestamp of last heartbeat (or message from GossipRouter)
-    protected volatile long                               last_heartbeat;
+    protected volatile long     last_heartbeat;
+
+    // Use bounded queues for sending (https://issues.redhat.com/browse/JGRP-2759)") in TCP
+    protected boolean           non_blocking_sends;
+
+    // When sending and non_blocking, how many messages to queue max
+    protected int               max_send_queue=128;
 
     // map to correlate GET_MBRS requests and responses
     protected final Map<String,List<MembersNotification>> get_members_map=new HashMap<>();
@@ -52,6 +58,11 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
 
     public RouterStub(InetSocketAddress local_sa, InetSocketAddress remote_sa, boolean use_nio, CloseListener l, SocketFactory sf) {
        this(local_sa, remote_sa, use_nio, l, sf, -1);
+    }
+
+    public RouterStub(InetSocketAddress local_sa, InetSocketAddress remote_sa, boolean use_nio, CloseListener l,
+                         SocketFactory sf, int linger) {
+        this(local_sa, remote_sa, use_nio, l, sf, linger, false, 0);
     }
 
     /**
@@ -62,8 +73,12 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
      * @param l The {@link CloseListener}
      * @param sf The {@link SocketFactory} to use to create the client socket
      * @param linger SO_LINGER timeout
+     * @param non_blocking_sends When true and a TcpClient is used, non-blocking sends are enabled
+     *                           (https://issues.redhat.com/browse/JGRP-2759)
+     * @param max_send_queue The max size of the send queue for non-blocking sends
      */
-    public RouterStub(InetSocketAddress local_sa, InetSocketAddress remote_sa, boolean use_nio, CloseListener l, SocketFactory sf, int linger) {
+    public RouterStub(InetSocketAddress local_sa, InetSocketAddress remote_sa, boolean use_nio, CloseListener l,
+                      SocketFactory sf, int linger, boolean non_blocking_sends, int max_send_queue) {
         this.local=local_sa != null? new IpAddress(local_sa.getAddress(), local_sa.getPort())
           : new IpAddress((InetAddress)null,0);
         this.remote_sa=Objects.requireNonNull(remote_sa);
@@ -71,6 +86,8 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
         this.close_listener=l;
         this.socket_factory=sf;
         this.linger=linger;
+        this.non_blocking_sends=non_blocking_sends;
+        this.max_send_queue=max_send_queue;
         if(resolveRemoteAddress()) // sets remote
             client=createClient(sf);
     }
@@ -94,7 +111,10 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
     public long          lastHeartbeat()                      {return last_heartbeat;}
     public int           getLinger()                          {return linger;}
     public RouterStub    setLinger(int l)                     {this.linger=l; return this;}
-
+    public boolean       nonBlockingSends()                   {return non_blocking_sends;}
+    public RouterStub    nonBlockingSends(boolean b)          {this.non_blocking_sends=b; return this;}
+    public int           maxSendQueue()                       {return max_send_queue;}
+    public RouterStub    maxSendQueue(int s)                  {this.max_send_queue=s; return this;}
 
 
 
@@ -259,7 +279,8 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
     }
 
     protected BaseServer createClient(SocketFactory sf) {
-        BaseServer cl=use_nio? new NioClient(local, remote) : new TcpClient(local, remote);
+        BaseServer cl=use_nio? new NioClient(local, remote)
+          : new TcpClient(local, remote).nonBlockingSends(non_blocking_sends).maxSendQueue(max_send_queue);
         if(sf != null) cl.socketFactory(sf);
         cl.receiver(this);
         cl.addConnectionListener(this);
