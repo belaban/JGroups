@@ -120,7 +120,8 @@ public class RequestCorrelator {
           : new Header(Header.REQ, 0, this.corr_id);
 
         msg.putHeader(this.corr_id, hdr)
-          .setFlag(opts.flags(), false).setFlag(opts.transientFlags(), true);
+          .setFlag(opts.flags(), false, true)
+          .setFlag(opts.transientFlags(), true, true);
 
         if(req != null) // sync
             addEntry(req, hdr, false);
@@ -141,8 +142,8 @@ public class RequestCorrelator {
     public <T> void sendUnicastRequest(Message msg, Request<T> req, RequestOptions opts) throws Exception {
         Address dest=msg.getDest();
         Header hdr=new Header(Header.REQ, 0, this.corr_id);
-        msg.putHeader(this.corr_id, hdr).setFlag(opts.flags(), false)
-          .setFlag(opts.transientFlags(), true);
+        msg.putHeader(this.corr_id, hdr).setFlag(opts.flags(), false, true)
+          .setFlag(opts.transientFlags(), true, true);
 
         if(req != null) // sync RPC
             addEntry(req, hdr, true);
@@ -419,7 +420,7 @@ public class RequestCorrelator {
 
 
     protected void sendReply(final Message req, final long req_id, Object reply, boolean is_exception) {
-        Message rsp=makeReply(req).setFlag(req.getFlags(false), false)
+        Message rsp=makeReply(req).setFlag(req.getFlags(false), false, true)
           .setPayload(reply)
           .clearFlag(Message.Flag.RSVP); // JGRP-1940
         sendResponse(rsp, req_id, is_exception);

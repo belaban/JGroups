@@ -64,7 +64,7 @@ public interface Message extends SizeStreamable, Constructable<Message> {
     /** Returns a pretty-printed string of the headers */
     String               printHeaders();
 
-    /** Sets one or more flags */
+    /** Sets one or more flags (xor-ing existing flags) */
     Message              setFlag(Flag... flags);
 
 
@@ -72,9 +72,18 @@ public interface Message extends SizeStreamable, Constructable<Message> {
      * @param flag The flag to be set (as a short). Overrides existing flags (no xor-ing)
      * @param transient_flags True if the flag is transient, false otherwise
      */
-    Message              setFlag(short flag, boolean transient_flags);
+    default Message      setFlag(short flag, boolean transient_flags) {
+        return setFlag(flag, transient_flags, false);
+    }
 
-    /** Sets one or more transient flags. Transient flags are not marshalled */
+    /** Sets the flags as a short; this way, multiple flags can be set in one operation
+     * @param flag The flag to be set (as a short). Overrides existing flags (no xor-ing)
+     * @param transient_flags True if the flag is transient, false otherwise
+     * @param xor When true, existing flags will be xor-ed with flag, otherwise not
+     */
+    Message              setFlag(short flag, boolean transient_flags, boolean xor);
+
+    /** Sets one or more transient flags (xor-ing). Transient flags are not marshalled */
     Message              setFlag(TransientFlag... flags);
 
     /** Atomically sets a transient flag if not set. Returns true if the flags was set, else false (already set) */

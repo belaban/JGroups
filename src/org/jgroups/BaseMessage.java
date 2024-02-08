@@ -60,7 +60,7 @@ public abstract class BaseMessage implements Message {
     public Message setFlag(Flag... flags) {
         if(flags != null) {
             short tmp=this.flags;
-            for(Flag flag : flags) {
+            for(Flag flag: flags) {
                 if(flag != null)
                     tmp|=flag.value();
             }
@@ -84,14 +84,24 @@ public abstract class BaseMessage implements Message {
         return this;
     }
 
-
-    public Message setFlag(short flag, boolean transient_flags) {
-        short tmp=transient_flags? this.transient_flags : this.flags;
-        tmp|=flag;
-        if(transient_flags)
-            this.transient_flags=(byte)tmp;
-        else
-            this.flags=tmp;
+    @Override
+    public Message setFlag(short flag, boolean transient_flags, boolean xor) {
+        if(transient_flags) {
+            if(xor) {
+                byte tmp=this.transient_flags;
+                this.transient_flags=(byte)(tmp | (byte)flag);
+            }
+            else
+                this.transient_flags=(byte)flag;
+        }
+        else {
+            if(xor) {
+                short tmp=this.flags;
+                this.flags=(short)(tmp | flag);
+            }
+            else
+                this.flags=flag;
+        }
         return this;
     }
 
@@ -133,7 +143,7 @@ public abstract class BaseMessage implements Message {
     /**
      * Checks if a given flag is set
      * @param flag The flag
-     * @return Whether or not the flag is currently set
+     * @return Whether the flag is currently set
      */
     public boolean isFlagSet(Flag flag) {
         return Util.isFlagSet(flags, flag);
