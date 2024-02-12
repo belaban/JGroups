@@ -241,7 +241,7 @@ For example, while UDP sends 1 IP multicast packet when sending a message to a c
 TCP needs to send the message 9 times. It sends the same message to the first member, to the second
 member, and so on (excluding itself as the message is looped back internally).
 
-This is slow, as the cost of sending a group message is O(n) with TCP, where it is O(1) with UDP. As the
+This is slow, as the cost of sending a group message is O(N-1) with TCP, where it is O(1) with UDP. As the
 cost of sending a group message with TCP is a function of the cluster size, it becomes higher with
 larger clusters.
             
