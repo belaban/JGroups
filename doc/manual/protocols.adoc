@@ -640,11 +640,11 @@ sleep time (in ms) between re-insertions.
 The value of this is that dead members are removed from the DB (because they cannot do re-insertion), but network splits
 are handled, too.
 
-Another attribute `clear_table_on_view_change` governs how zombies are handled. Zombies are table entries for members
+Another attribute `remove_all_data_on_view_change` governs how zombies are handled. Zombies are table entries for members
 which crashed, but weren't removed for some reason. E.g. if we have a single member `A` and kill it (via kill -9), then
 it won't get removed from the table.
 
-If `clear_table_on_view_change` is set to true, then the coordinator _clears_ the table after a view change (instead of
+If `remove_all_data_on_view_change` is set to true, then the coordinator _clears_ the table after a view change (instead of
 only removing the crashed members), and everybody re-inserts its own information. This attribute can be set to true if
 automatic removal of zombies is desired. However, it is costly, therefore if no zombies ever occur (e.g. because processes
 are never killed with kill -9), or zombies are removed by a system admin, then it should be set to false.
