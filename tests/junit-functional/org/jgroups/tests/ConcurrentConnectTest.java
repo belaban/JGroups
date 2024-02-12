@@ -51,7 +51,7 @@ public class ConcurrentConnectTest {
     /**
      * Creates {A,B}, then injects view {A} into A and {B} into B, this removes all TCP connections between A and B.
      * Then make A send 5 messages to B and vice versa. This causes concurrent connection establishment. Even with
-     * UNICAST3 being absent, both A and B should receive all of the other's messages.
+     * UNICAST3 being absent, both A and B should receive all the other's messages.
      */
     // @Test(invocationCount=10)
     public void testConcurrentConnect() throws Exception {
