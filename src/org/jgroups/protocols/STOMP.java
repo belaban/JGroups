@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
 
 /**
- * Protocol which provides STOMP (http://stomp.codehaus.org/) support. Very simple implementation, with a
+ * Protocol which provides STOMP (https://stomp.github.io/) support. Very simple implementation, with a
  * one-thread-per-connection model. Use for a few hundred clients max.<p/>
  * The intended use for this protocol is pub-sub with clients which handle text messages, e.g. stock updates,
  * SMS messages to mobile clients, SNMP traps etc.<p/>
@@ -524,7 +524,7 @@ public class STOMP extends Protocol implements Runnable {
          * @param response
          * @param keys_and_values
          */
-        private void writeResponse(ServerVerb response, String ... keys_and_values) {
+        private synchronized void writeResponse(ServerVerb response, String ... keys_and_values) {
             String tmp=response.name();
             try {
                 out.write(tmp.getBytes());
@@ -544,7 +544,7 @@ public class STOMP extends Protocol implements Runnable {
             }
         }
 
-        private void writeResponse(byte[] response, int offset, int length) {
+        private synchronized void writeResponse(byte[] response, int offset, int length) {
             try {
                 out.write(response, offset, length);
                 out.flush();
