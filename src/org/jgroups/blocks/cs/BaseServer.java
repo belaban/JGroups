@@ -40,7 +40,7 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     protected final ThreadFactory             factory;
     protected SocketFactory                   socket_factory=new DefaultSocketFactory();
     protected long                            reaperInterval;
-    protected Reaper                          reaper;
+    protected Reaper reaper;
     protected Receiver                        receiver;
     protected final AtomicBoolean             running=new AtomicBoolean(false);
     protected Log                             log=LogFactory.getLog(getClass());

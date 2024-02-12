@@ -117,24 +117,22 @@ public class TcpServer extends TcpBaseServer {
             try {
                 conn=new TcpConnection(client_sock, TcpServer.this);
                 Address peer_addr=conn.peerAddress();
-                synchronized(this) {
-                    boolean conn_exists=hasConnection(peer_addr),
-                      replace=conn_exists && use_peer_connections && local_addr.compareTo(peer_addr) < 0; // bigger conn wins
+                boolean conn_exists=hasConnection(peer_addr),
+                  replace=conn_exists && use_peer_connections && local_addr.compareTo(peer_addr) < 0; // bigger conn wins
 
-                    if(!conn_exists || replace) {
-                        if(use_acks)
-                            conn.send(OK, 0, OK.length); // do this *before* other threads can send messages!!
-                        replaceConnection(peer_addr, conn); // closes old conn
-                        conn.start();
-                        log.trace("%s: accepted connection from %s", local_addr, peer_addr);
-                    }
-                    else {
-                        log.trace("%s: rejected connection from %s %s", local_addr, peer_addr, explanation(conn_exists, replace));
-                        if(use_acks)
-                            conn.send(FAIL, 0, FAIL.length);
-                        conn.flush();
-                        Util.close(conn); // keep our existing conn, reject accept() and close client_sock
-                    }
+                if(!conn_exists || replace) {
+                    if(use_acks)
+                        conn.send(OK, 0, OK.length); // do this *before* other threads can send messages!!
+                    replaceConnection(peer_addr, conn); // closes old conn
+                    conn.start();
+                    log.trace("%s: accepted connection from %s", local_addr, peer_addr);
+                }
+                else {
+                    log.trace("%s: rejected connection from %s %s", local_addr, peer_addr, explanation(conn_exists, replace));
+                    if(use_acks)
+                        conn.send(FAIL, 0, FAIL.length);
+                    conn.flush();
+                    Util.close(conn); // keep our existing conn, reject accept() and close client_sock
                 }
             }
             catch(Exception ex) {
@@ -143,7 +141,6 @@ public class TcpServer extends TcpBaseServer {
             }
         }
     }
-
 
 
 }
