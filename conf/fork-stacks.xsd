@@ -6,7 +6,7 @@
            xmlns:tns="fork"
            xmlns:jgroups="urn:org:jgroups">
 
-   <xs:import namespace="urn:org:jgroups" schemaLocation="http://www.jgroups.org/schema/jgroups-4.0.xsd"/>
+   <xs:import namespace="urn:org:jgroups" schemaLocation="http://www.jgroups.org/schema/jgroups.xsd"/>
 
    <xs:complexType name="ForkStack">
       <xs:sequence>
