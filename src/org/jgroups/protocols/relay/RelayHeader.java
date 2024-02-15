@@ -53,9 +53,9 @@ public class RelayHeader extends Header {
     public Supplier<? extends Header> create()         {return RelayHeader::new;}
     public byte         getType()                      {return type;}
     public Address      getFinalDest()                 {return final_dest;}
-    public RelayHeader setFinalDestination(Address d) {final_dest=d; return this;}
+    public RelayHeader  setFinalDestination(Address d) {final_dest=d; return this;}
     public Address      getOriginalSender()            {return original_sender;}
-    public RelayHeader setOriginalSender(Address s)   {original_sender=s; return this;}
+    public RelayHeader  setOriginalSender(Address s)   {original_sender=s; return this;}
     public Set<String>  getSites()                     {return sites != null? new HashSet<>(sites) : null;}
     public boolean      hasSites()                     {return sites != null && !sites.isEmpty();}
 

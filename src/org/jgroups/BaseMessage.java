@@ -43,13 +43,15 @@ public abstract class BaseMessage implements Message {
     }
 
 
-    public Address               getDest()                 {return dest;}
-    public Message               setDest(Address new_dest) {dest=new_dest; return this;}
-    public Address               getSrc()                  {return sender;}
-    public Message               setSrc(Address new_src)   {sender=new_src; return this;}
-    public int                   getNumHeaders()           {return Headers.size(this.headers);}
-    public Map<Short,Header>     getHeaders()              {return Headers.getHeaders(this.headers);}
-    public String                printHeaders()            {return Headers.printHeaders(this.headers);}
+    public Address           getDest()                         {return dest;}
+    public Message           setDest(Address new_dest)         {dest=new_dest; return this;}
+    public Address           getSrc()                          {return sender;}
+    public Message           setSrc(Address new_src)           {sender=new_src; return this;}
+    public int               getNumHeaders()                   {return Headers.size(this.headers);}
+    public Map<Short,Header> getHeaders()                      {return Headers.getHeaders(this.headers);}
+    public Header[]          headers()                         {return headers;} // don't modify!
+    public Message           headers(Header[] hdrs)            {this.headers=hdrs; return this;}  // use with caution!
+    public String            printHeaders()                    {return Headers.printHeaders(this.headers);}
 
 
     /**
