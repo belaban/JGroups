@@ -16,6 +16,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -290,7 +291,9 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
             if(dest != null) {
                 log.debug("%s: connection to %s closed", local_addr, dest);
                 pingable_mbrs.remove(dest);
-                req_handler.add(new Request(Request.Type.ConnectToNextPingDest, dest));
+                // The reconnect might run on the NioConnection::acceptor's read() and thus block the CONNECT-RSP, and
+                // therefore has to be run in a separate thread: https://issues.redhat.com/browse/JGRP-2766
+                CompletableFuture.runAsync(() -> req_handler.add(new Request(Request.Type.ConnectToNextPingDest, dest)));
             }
         }
     }
