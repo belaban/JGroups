@@ -32,5 +32,5 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
       - name: Build with Maven
-        # In order to support Windows PowerShell, a space between -D property=true is required.
-        run: mvn -B verify -D maven.test.skip.exec=true
+        # In order to support Windows PowerShell, a space between --define property=true is required.
+        run: mvn --batch-mode --no-transfer-progress verify --define skipTests=true
