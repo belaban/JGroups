@@ -1,7 +1,6 @@
 package org.jgroups.tests.rt.transports;
 
 import org.jgroups.Address;
-import org.jgroups.Global;
 import org.jgroups.blocks.cs.*;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
@@ -121,7 +120,7 @@ public class ServerTransport extends ReceiverAdapter implements RtTransport {
         }
     }
 
-    public void receive(Address sender, DataInput in) throws Exception {
+    public void receive(Address sender, DataInput in, int length) throws Exception {
         if(receiver == null)
             return;
         byte[] buf=new byte[RoundTrip.PAYLOAD];

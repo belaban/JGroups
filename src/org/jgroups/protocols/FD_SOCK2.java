@@ -234,14 +234,14 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
 
     public void receive(Address sender, byte[] buf, int offset, int length) {
         try {
-            receive(sender, new ByteArrayDataInputStream(buf, offset, length));
+            receive(sender, new ByteArrayDataInputStream(buf, offset, length), length);
         }
         catch(Exception e) {
             log.error("failed handling message received from " + sender, e);
         }
     }
 
-    public void receive(Address sender, DataInput in) throws Exception {
+    public void receive(Address sender, DataInput in, int length) throws Exception {
         Message msg=new EmptyMessage();
         msg.readFrom(in);
         FdHeader hdr=msg.getHeader(id);

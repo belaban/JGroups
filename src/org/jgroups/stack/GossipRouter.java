@@ -329,7 +329,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
         }
     }
 
-    public void receive(Address sender, DataInput in) throws Exception {
+    public void receive(Address sender, DataInput in, int length) throws Exception {
         GossipType type=GossipType.values()[in.readByte()];
 
         GossipData request=null;

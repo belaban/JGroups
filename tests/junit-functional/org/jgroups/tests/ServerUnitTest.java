@@ -8,7 +8,6 @@ import org.jgroups.blocks.cs.BaseServer;
 import org.jgroups.blocks.cs.NioServer;
 import org.jgroups.blocks.cs.ReceiverAdapter;
 import org.jgroups.blocks.cs.TcpServer;
-import org.jgroups.util.Bits;
 import org.jgroups.util.CondVar;
 import org.jgroups.util.Util;
 import org.testng.Assert;
@@ -274,11 +273,8 @@ public class ServerUnitTest {
     }
 
     protected static void send(byte[] request, BaseServer server, Address dest) {
-        byte[] data=new byte[request.length + Global.INT_SIZE];
-        Bits.writeInt(request.length, data, 0);
-        System.arraycopy(request, 0, data, Global.INT_SIZE, request.length);
         try {
-            server.send(dest, data, 0, data.length);
+            server.send(dest, request, 0, request.length);
         }
         catch(Exception e) {
             System.err.println("Failed sending a request to " + dest + ": " + e);
@@ -369,9 +365,8 @@ public class ServerUnitTest {
             }
         }
 
-        public synchronized void receive(Address sender, DataInput in) throws Exception {
-            int len=in.readInt();
-            byte[] buf=new byte[len];
+        public synchronized void receive(Address sender, DataInput in, int length) throws Exception {
+            byte[] buf=new byte[length];
             in.readFully(buf);
             // System.out.printf("[tcp] from %s: %d bytes\n", sender, len);
             long tmp=num_received.incrementAndGet();
