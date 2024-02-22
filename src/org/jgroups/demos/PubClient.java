@@ -1,9 +1,7 @@
 package org.jgroups.demos;
 
 import org.jgroups.Address;
-import org.jgroups.Global;
 import org.jgroups.blocks.cs.*;
-import org.jgroups.util.Bits;
 import org.jgroups.util.Util;
 
 import java.io.BufferedInputStream;
@@ -32,23 +30,20 @@ public class PubClient implements Receiver, ConnectionListener {
     @Override
     public void receive(Address sender, ByteBuffer buf) {
         byte[] buffer=buf.array();
-        int len=Bits.readInt(buffer, buf.arrayOffset());
-        String msg=new String(buffer, buf.arrayOffset()+Global.INT_SIZE, len);
+        String msg=new String(buffer, buf.arrayOffset(), buf.remaining());
         System.out.printf("-- %s\n", msg);
     }
 
     @Override
     public void receive(Address sender, byte[] buf, int offset, int length) {
-        int len=Bits.readInt(buf, offset);
-        String msg=new String(buf, offset+Global.INT_SIZE, len);
+        String msg=new String(buf, offset, length);
         System.out.printf("-- %s\n", msg);
     }
 
-    @Override public void receive(Address sender, DataInput in) throws Exception {
-        int len=in.readInt();
-        byte[] buf=new byte[len];
+    @Override public void receive(Address sender, DataInput in, int length) throws Exception {
+        byte[] buf=new byte[length];
         in.readFully(buf);
-        String msg=new String(buf, 0, buf.length);
+        String msg=new String(buf);
         System.out.printf("-- %s\n", msg);
     }
 
@@ -98,10 +93,7 @@ public class PubClient implements Receiver, ConnectionListener {
 
     protected void send(String str) throws Exception {
         byte[] buf=str.getBytes();
-        byte[] data=new byte[Global.INT_SIZE + buf.length];
-        Bits.writeInt(buf.length, data, 0);
-        System.arraycopy(buf, 0, data, Global.INT_SIZE, buf.length);
-        ((Client)client).send(data, 0, data.length);
+        ((Client)client).send(buf, 0, buf.length);
     }
 
     public static void main(String[] args) throws Exception {

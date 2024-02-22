@@ -4,8 +4,10 @@ import org.jboss.byteman.contrib.bmunit.BMNGRunner;
 import org.jboss.byteman.contrib.bmunit.BMScript;
 import org.jgroups.Address;
 import org.jgroups.Global;
-import org.jgroups.blocks.cs.*;
-import org.jgroups.util.Bits;
+import org.jgroups.blocks.cs.BaseServer;
+import org.jgroups.blocks.cs.NioServer;
+import org.jgroups.blocks.cs.ReceiverAdapter;
+import org.jgroups.blocks.cs.TcpServer;
 import org.jgroups.util.ResourceManager;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -137,11 +139,8 @@ public class ServerTest extends BMNGRunner {
 
     protected static void send(String str, BaseServer server, Address dest) {
         byte[] request=str.getBytes();
-        byte[] data=new byte[request.length + Global.INT_SIZE];
-        Bits.writeInt(request.length, data, 0);
-        System.arraycopy(request, 0, data, Global.INT_SIZE, request.length);
         try {
-            server.send(dest, data, 0, data.length);
+            server.send(dest, request, 0, request.length);
         }
         catch(Exception e) {
             System.err.println("Failed sending a request to " + dest + ": " + e);
@@ -179,17 +178,15 @@ public class ServerTest extends BMNGRunner {
         public void         clear()   {reqs.clear();}
 
         public void receive(Address sender, byte[] data, int offset, int length) {
-            int len=Bits.readInt(data, offset);
-            String str=new String(data, offset+Global.INT_SIZE, len);
+            String str=new String(data, offset, length);
             System.out.println("[" + name + "] received request \"" + str + "\" from " + sender);
             synchronized(reqs) {
                 reqs.add(str);
             }
         }
 
-        public void receive(Address sender, DataInput in) throws Exception {
-            int len=in.readInt();
-            byte[] data=new byte[len];
+        public void receive(Address sender, DataInput in, int length) throws Exception {
+            byte[] data=new byte[length];
             in.readFully(data, 0, data.length);
             String str=new String(data);
             System.out.println("[" + name + "] received request \"" + str + "\" from " + sender);

@@ -210,7 +210,7 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
                                                             "max accepted length (%s): discarding the message",
                                                           Util.printBytes(len), sender, Util.printBytes(max_length)));
         if(this.receiver != null)
-            this.receiver.receive(sender, in);
+            this.receiver.receive(sender, in, len);
         else {
             // discard len bytes (in.skip() is not guaranteed to discard *all* len bytes)
             byte[] buf=new byte[len];

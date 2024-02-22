@@ -180,12 +180,17 @@ public class ServerTests {
         }
     }
 
-    protected static void send(String str, BaseServer server, Address dest) throws Exception {
+    protected static void sendOld(String str, BaseServer server, Address dest) throws Exception {
         byte[] request=str.getBytes();
         byte[] data=new byte[request.length + Global.INT_SIZE];
         Bits.writeInt(request.length, data, 0);
         System.arraycopy(request, 0, data, Global.INT_SIZE, request.length);
         server.send(dest, data, 0, data.length);
+    }
+
+    protected static void send(String str, BaseServer server, Address dest) throws Exception {
+        byte[] request=str.getBytes();
+        server.send(dest, request, 0, request.length);
     }
 
 
@@ -230,8 +235,7 @@ public class ServerTests {
 
 
         public void receive(Address sender, byte[] data, int offset, int length) {
-            int len=Bits.readInt(data, offset);
-            String str=new String(data, offset+Global.INT_SIZE, len);
+            String str=new String(data, offset, length);
             if(verbose)
                 System.out.println("[" + name + "] received request \"" + str + "\" from " + sender);
             synchronized(reqs) {
@@ -239,9 +243,8 @@ public class ServerTests {
             }
         }
 
-        public void receive(Address sender, DataInput in) throws Exception {
-            int len=in.readInt();
-            byte[] data=new byte[len];
+        public void receive(Address sender, DataInput in, int length) throws Exception {
+            byte[] data=new byte[length];
             in.readFully(data, 0, data.length);
             String str=new String(data);
             if(verbose)

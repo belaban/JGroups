@@ -1248,7 +1248,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             handleSingleMessage(in, multicast);
     }
 
-    public void receive(Address sender, DataInput in) throws Exception {
+    public void receive(Address sender, DataInput in, int ignoredLength) throws Exception {
         if(in == null) return;
 
         // drop message from self; it has already been looped back up (https://issues.redhat.com/browse/JGRP-1765)

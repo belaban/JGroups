@@ -36,5 +36,19 @@ public interface Receiver {
         Util.bufferToArray(sender, buf, this);
     }
 
-    void receive(Address sender, DataInput in) throws Exception;
+    @Deprecated(since="5.3.3",forRemoval=true)
+    default void receive(Address sender, DataInput in) throws Exception {
+        receive(sender, in, -1);
+    }
+
+    /**
+     * Receive data from the given sender
+     * @param sender The sender
+     * @param in The data input from which to read
+     * @param length The number of bytes to read
+     * @throws Exception
+     */
+    default void receive(Address sender, DataInput in, int length) throws Exception {
+
+    }
 }
