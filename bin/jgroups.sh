@@ -2,7 +2,7 @@
 
 #!/bin/bash
 
-JG=${JG-$HOME/JGroups-3.6-branch}
+JG=${JG-$HOME/JGroups-3.6}
 
 LIB=$JG/lib
 

@@ -19,6 +19,7 @@ import org.testng.annotations.Test;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import java.security.MessageDigest;
+import java.security.Provider;
 import java.security.Security;
 import java.util.TreeMap;
 
@@ -34,11 +35,15 @@ public class ENCRYPTAsymmetricTest {
     protected static final Address server_addr=Util.createRandomAddress("server");
     protected static final Address peer_addr=Util.createRandomAddress("peer");
     protected static final Address peer2_addr=Util.createRandomAddress("peer2");
+    protected static final String BC="org.bouncycastle.jce.provider.BouncyCastleProvider";
 
 
     @BeforeClass
-    static void initProvider() {
-        Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
+    static void initProvider() throws Exception {
+        Class<?> cl=Util.loadClass(BC, Thread.currentThread().getContextClassLoader());
+        Provider p=(Provider)cl.getConstructor().newInstance();
+        if(p != null)
+            Security.addProvider(p);
     }
 
     public static void testInitNoProperties() throws Exception {
