@@ -28,7 +28,7 @@ import static org.jgroups.protocols.relay.RelayHeader.SITES_UP;
  * @author Bela Ban
  * @since  5.2.17
  */
-@XmlInclude(schema="relay.xsd",type=XmlInclude.Type.IMPORT,namespace="urn:jgroups:relay:1.0",alias="relay")
+@XmlInclude(schema="relay.xsd",type=XmlInclude.Type.EMBED,namespace="urn:jgroups:relay:1.0",alias="relay")
 @XmlElement(name="RelayConfiguration",type="relay:RelayConfigurationType")
 public abstract class RELAY extends Protocol {
     // reserved flags
