@@ -209,9 +209,11 @@ public class JChannel implements Closeable {
         if(name != null) {
             if(isConnected())
                 log.error("name (%s) cannot be set if channel is connected (should be done before)", name);
-            this.name=name;
-            if(local_addr != null)
-                NameCache.add(local_addr, this.name);
+            else {
+                this.name=name;
+                if(local_addr != null)
+                    NameCache.add(local_addr, this.name);
+            }
         }
         return this;
     }
