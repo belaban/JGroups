@@ -27,5 +27,5 @@ public @interface XmlInclude {
     String namespace() default ""; // only used if type == IMPORT
     String alias() default "";     // only used if type == IMPORT
 
-    enum Type {INCLUDE, IMPORT};
+    enum Type {INCLUDE, IMPORT, EMBED};
 }

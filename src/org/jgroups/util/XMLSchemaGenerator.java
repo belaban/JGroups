@@ -10,9 +10,12 @@ import org.w3c.dom.DOMImplementation;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
@@ -20,6 +23,8 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -28,18 +33,20 @@ import java.util.*;
 
 /**
  * Iterates over all concrete Protocol classes and creates XML schema used for validation of configuration files.
- * 
- * https://issues.redhat.com/browse/JGRP-448
- * 
+ *
+ * <a href="https://issues.redhat.com/browse/JGRP-448">https://issues.redhat.com/browse/JGRP-448</a>
+ *
  * @author Vladimir Blagojevic
  * @author Bela Ban
- * 
+ *
  */
 public class XMLSchemaGenerator {
 
     protected static final String PROT_PACKAGE="org.jgroups.protocols";
 
     protected static final String[] PACKAGES={"", "pbcast", "relay", "rules", "dns", "kubernetes"};
+
+    protected static final Set<String> embeddedSchemas = new HashSet<>();
 
     static {
         System.setProperty("java.awt.headless", "true");
@@ -69,6 +76,7 @@ public class XMLSchemaGenerator {
             Element doc_el=xmldoc.getDocumentElement();
             doc_el.setAttribute("targetNamespace", "urn:org:jgroups");
             doc_el.setAttribute("xmlns:tns", "urn:org:jgroups");
+            doc_el.setAttribute("xmlns:jgroups", "urn:org:jgroups");
             doc_el.setAttribute("elementFormDefault", "qualified");
             doc_el.setAttribute("attributeFormDefault", "unqualified");
 
@@ -165,21 +173,42 @@ public class XMLSchemaGenerator {
     }
 
     private static void classToXML(Document xmldoc, Element parent, Class<?> clazz,
-                                   String preAppendToSimpleClassName) throws Exception {
+                                   String preAppendToSimpleClassName) {
         XmlInclude incl=Util.getAnnotation(clazz, XmlInclude.class);
         if(incl != null) {
             String[] schemas=incl.schema();
             for (String schema : schemas) {
-                Element incl_el = xmldoc.createElement(incl.type() == XmlInclude.Type.IMPORT ? "xs:import" : "xs:include");
-                if (!incl.namespace().isEmpty())
-                    incl_el.setAttribute("namespace", incl.namespace());
-                incl_el.setAttribute("schemaLocation", schema);
+                if (incl.type() == XmlInclude.Type.EMBED) {
+                    if (embeddedSchemas.add(schema)) {
+                        try {
+                            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+                            DocumentBuilder db = dbf.newDocumentBuilder();
+                            Document doc = db.parse(new File("conf", schema));
+                            Element root = doc.getDocumentElement();
+                            NodeList childNodes = root.getChildNodes();
+                            for (int i = 0; i < childNodes.getLength(); i++) {
+                                Node item = childNodes.item(i);
+                                if (item.getNodeType() == Node.TEXT_NODE) continue;
+                                if ("xs:import".equals(item.getNodeName())) continue;
+                                Node importedNode = xmldoc.importNode(item, true);
+                                xmldoc.getDocumentElement().appendChild(importedNode);
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                } else {
+                    Element incl_el = xmldoc.createElement(incl.type() == XmlInclude.Type.IMPORT ? "xs:import" : "xs:include");
+                    if (!incl.namespace().isEmpty())
+                        incl_el.setAttribute("namespace", incl.namespace());
+                    incl_el.setAttribute("schemaLocation", schema);
 
-                Node first_child = xmldoc.getDocumentElement().getFirstChild();
-                if (first_child == null)
-                    xmldoc.getDocumentElement().appendChild(incl_el);
-                else
-                    xmldoc.getDocumentElement().insertBefore(incl_el, first_child);
+                    Node first_child = xmldoc.getDocumentElement().getFirstChild();
+                    if (first_child == null)
+                        xmldoc.getDocumentElement().appendChild(incl_el);
+                    else
+                        xmldoc.getDocumentElement().insertBefore(incl_el, first_child);
+                }
             }
             if(!incl.alias().isEmpty())
                 xmldoc.getDocumentElement().setAttribute("xmlns:" + incl.alias(), incl.namespace());
@@ -188,11 +217,9 @@ public class XMLSchemaGenerator {
         parent.appendChild(createXMLTree(xmldoc, clazz, preAppendToSimpleClassName));
     }
 
-    private static Element createXMLTree(final Document xmldoc, Class<?> clazz, String pkgname) throws Exception {
+    private static Element createXMLTree(final Document xmldoc, Class<?> clazz, String pkgname) {
         Element classElement = xmldoc.createElement("xs:element");
         String elementName = pkgname + "." + clazz.getSimpleName();
-        if(elementName.isEmpty())
-            throw new IllegalArgumentException("Cannot create empty attribute name for element xs:element, class is " + clazz);
 
         elementName=elementName.replace(PROT_PACKAGE + ".", "");
 

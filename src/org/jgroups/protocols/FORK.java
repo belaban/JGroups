@@ -30,7 +30,7 @@ import java.util.function.Supplier;
  * @author Bela Ban
  * @since  3.4
  */
-@XmlInclude(schema="fork-stacks.xsd",type=XmlInclude.Type.IMPORT,namespace="fork",alias="fork")
+@XmlInclude(schema="fork-stacks.xsd",type=XmlInclude.Type.EMBED,namespace="fork",alias="fork")
 @XmlElement(name="fork-stacks",type="fork:ForkStacksType")
 @MBean(description="Implementation of FORK protocol")
 public class FORK extends Protocol {

@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xs:schema elementFormDefault="qualified" targetNamespace="urn:jgroups:relay:1.0"
-           xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:tns="urn:jgroups:relay:1.0"
-           xmlns:cs="http://www.w3.org/2001/XMLSchema">
+           xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:tns="urn:jgroups:relay:1.0">
 
     <xs:complexType name="RelayConfigurationType">
         <xs:sequence>
@@ -98,7 +97,7 @@
                 </xs:attribute>
                 <xs:attribute name="gateway" type="xs:string" use="required">
                     <xs:annotation>
-                        <cs:documentation>The gateway site to which to forwards messages with a target site of 'to'</cs:documentation>
+                        <xs:documentation>The gateway site to which to forwards messages with a target site of 'to'</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
 			</xs:extension>
