@@ -55,9 +55,6 @@ public abstract class BasicTCP extends TP implements Receiver {
       "(https://issues.redhat.com/browse/JGRP-2684)")
     protected boolean     use_acks;
 
-    // @Property(description="Sets socket option SO_REUSEADDR (https://issues.redhat.com/browse/JGRP-2009)")
-    // protected boolean     reuse_addr;
-
     @LocalAddress
     @Property(name="client_bind_addr",
               description="The address of a local network interface which should be used by client sockets to bind to. " +

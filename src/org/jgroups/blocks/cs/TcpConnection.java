@@ -160,14 +160,19 @@ public class TcpConnection extends Connection {
         }
     }
 
-
     @GuardedBy("send_lock")
     protected void doSend(byte[] data, int offset, int length) throws Exception {
+        doSend(data, offset, length, false);
+    }
+
+    @GuardedBy("send_lock")
+    protected void doSend(byte[] data, int offset, int length, boolean flush) throws Exception {
         Bits.writeInt(length, length_buf, 0); // write the length of the data buffer first
         out.write(length_buf, 0, length_buf.length);
         out.write(data, offset, length);
+        if(flush)
+            out.flush();
     }
-
 
     public void flush() {
         try {

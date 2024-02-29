@@ -52,6 +52,12 @@ public class TCP extends BasicTCP {
     @Component(name="tls",description="Contains the attributes for TLS (SSL sockets) when enabled=true")
     protected TLS       tls=new TLS();
 
+    @Property(description="use bounded queues for sending (https://issues.redhat.com/browse/JGRP-2759)")
+    protected boolean   non_blocking_sends;
+
+    @Property(description="when sending and non_blocking, how many messages to queue max")
+    protected int       max_send_queue=128;
+
     public int getBufferedInputStreamSize() {
         return buffered_input_stream_size;
     }
@@ -69,10 +75,14 @@ public class TCP extends BasicTCP {
         this.buffered_output_stream_size=buffered_output_stream_size;
         return this;
     }
-    public TLS     tls()                     {return tls;}
-    public TCP     tls(TLS t)                {this.tls=t; return this;}
-    public boolean logAcceptError()          {return log_accept_error;}
-    public TCP     logAcceptError(boolean l) {this.log_accept_error=l; if(srv != null) srv.setLogAcceptError(l); return this;}
+    public TLS     tls()                       {return tls;}
+    public TCP     tls(TLS t)                  {this.tls=t; return this;}
+    public boolean logAcceptError()            {return log_accept_error;}
+    public TCP     logAcceptError(boolean l)   {this.log_accept_error=l; if(srv != null) srv.setLogAcceptError(l); return this;}
+    public boolean nonBlockingSends()          {return non_blocking_sends;}
+    public TCP     nonBlockingSends(boolean b) {this.non_blocking_sends=b; return this;}
+    public int     maxSendQueue()              {return max_send_queue;}
+    public TCP     maxSendQueue(int s)         {this.max_send_queue=s; return this;}
 
     @ManagedAttribute
     public int getOpenConnections() {
@@ -110,17 +120,19 @@ public class TCP extends BasicTCP {
         }
         srv=new TcpServer(getThreadFactory(), getSocketFactory(), bind_addr, bind_port, bind_port+port_range,
                           external_addr, external_port, recv_buf_size).setLogAcceptError(log_accept_error);
-        srv.receiver(this)
+
+        srv.setBufferedInputStreamSize(buffered_input_stream_size).setBufferedOutputStreamSize(buffered_output_stream_size)
+          .peerAddressReadTimeout(peer_addr_read_timeout)
+          .nonBlockingSends(non_blocking_sends).maxSendQueue(max_send_queue)
+          .usePeerConnections(true)
+          .useAcks(this.use_acks)
+          .socketFactory(getSocketFactory())
+          .receiver(this)
           .timeService(time_service)
           .socketConnectionTimeout(sock_conn_timeout)
           .tcpNodelay(tcp_nodelay).linger(linger)
           .clientBindAddress(client_bind_addr).clientBindPort(client_bind_port).deferClientBinding(defer_client_bind_addr)
           .log(this.log).logDetails(this.log_details);
-        srv.setBufferedInputStreamSize(buffered_input_stream_size).setBufferedOutputStreamSize(buffered_output_stream_size)
-          .peerAddressReadTimeout(peer_addr_read_timeout)
-          .usePeerConnections(true)
-          .useAcks(this.use_acks)
-          .socketFactory(getSocketFactory());
 
         if(send_buf_size > 0)
             srv.sendBufferSize(send_buf_size);

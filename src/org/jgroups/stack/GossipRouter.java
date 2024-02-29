@@ -100,6 +100,12 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
     @Component(name="tls",description="Contains the attributes for TLS (SSL sockets) when enabled=true")
     protected TLS                  tls=new TLS();
 
+    @ManagedAttribute(description="Use bounded queues for sending (https://issues.redhat.com/browse/JGRP-2759)) in TCP (use_nio=false)")
+    protected boolean              non_blocking_sends;
+
+    @ManagedAttribute(description="When sending and non_blocking, how many messages to queue max")
+    protected int                  max_send_queue=128;
+
     // mapping between groups and <member address> - <physical addr / logical name> pairs
     protected final Map<String,ConcurrentMap<Address,Entry>> address_mappings=new ConcurrentHashMap<>();
 
@@ -154,6 +160,10 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
     public DiagnosticsHandler diagHandler()                 {return diag;}
     public TLS           tls()                              {return tls;}
     public GossipRouter  tls(TLS t)                         {this.tls=t; return this;}
+    public boolean       nonBlockingSends()                 {return non_blocking_sends;}
+    public GossipRouter  nonBlockingSends(boolean b)        {this.non_blocking_sends=b; return this;}
+    public int           maxSendQueue()                     {return max_send_queue;}
+    public GossipRouter  maxSendQueue(int s)                {this.max_send_queue=s; return this;}
 
 
     @ManagedAttribute(description="operational status", name="running")
@@ -206,8 +216,8 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
 
         server=use_nio? new NioServer(thread_factory, socket_factory, bind_addr, port, port, null, 0,
                                       recv_buf_size, "jgroups.nio.gossiprouter")
-          : new TcpServer(thread_factory, socket_factory, bind_addr, port, port, null, 0,
-                          recv_buf_size, "jgroups.tcp.gossiprouter");
+          : new TcpServer(thread_factory, socket_factory, bind_addr, port, port, null, 0, recv_buf_size,
+                          "jgroups.tcp.gossiprouter").nonBlockingSends(non_blocking_sends).maxSendQueue(max_send_queue);
         server.receiver(this).setMaxLength(max_length)
           .addConnectionListener(this)
           .connExpireTimeout(expiry_time).reaperInterval(reaper_interval).linger(linger_timeout);
@@ -760,6 +770,12 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
         List<NetworkInterface> diag_bind_interfaces=null;
         String                 diag_passcode=null;
 
+        // Use bounded queues for sending (https://issues.redhat.com/browse/JGRP-2759)") in TCP (use_nio=false)
+        boolean                non_blocking_sends=false;
+
+        // When sending and non_blocking, how many messages to queue max
+        int                    max_send_queue=128;
+
         TLS tls=new TLS();
         long start=System.currentTimeMillis();
         String bind_addr=null;
@@ -798,6 +814,14 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
             }
             if("-nio".equals(arg)) {
                 nio=Boolean.parseBoolean(args[++i]);
+                continue;
+            }
+            if("-non_blocking_sends".equals(arg)) {
+                non_blocking_sends=Boolean.parseBoolean(args[++i]);
+                continue;
+            }
+            if("max_send_queue".equals(arg)) {
+                max_send_queue=Integer.parseInt(args[++i]);
                 continue;
             }
             if("-suspect".equals(arg)) {
@@ -914,7 +938,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
           .emitSuspectEvents(suspects)
           .dumpMessages(dump_msgs)
           .maxLength(max_length)
-          .tls(tls);
+          .tls(tls).nonBlockingSends(non_blocking_sends).maxSendQueue(max_send_queue);
         router.diagHandler().setEnabled(diag_enabled)
           .enableUdp(diag_enable_udp)
           .enableTcp(diag_enable_tcp)
@@ -975,6 +999,10 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
         System.out.println("    -reaper_interval <ms>   - Time for check for expired connections. 0 means don't check.");
         System.out.println();
         System.out.println("    -nio <true|false>       - Whether or not to use non-blocking connections (NIO)");
+        System.out.println();
+        System.out.println("    -non_blocking_sends <true|false> - Use bounded queues for sending (https://issues.redhat.com/browse/JGRP-2759))");
+        System.out.println();
+        System.out.println("    -max_send_queue <size>  - When sending and non_blocking, how many messages to queue max");
         System.out.println();
         System.out.println("    -max_length <bytes>     - The max size (in bytes) of a message");
         System.out.println();

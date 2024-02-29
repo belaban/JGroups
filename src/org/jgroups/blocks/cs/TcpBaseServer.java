@@ -10,9 +10,11 @@ import org.jgroups.util.ThreadFactory;
  * @since  3.6.5
  */
 public abstract class TcpBaseServer extends BaseServer {
-    protected int peer_addr_read_timeout=2000; // max time in milliseconds to block on reading peer address
-    protected int buffered_inputstream_size=8192;
-    protected int buffered_outputstream_size=8192;
+    protected int     peer_addr_read_timeout=2000; // max time in milliseconds to block on reading peer address
+    protected int     buffered_inputstream_size=8192;
+    protected int     buffered_outputstream_size=8192;
+    protected boolean non_blocking_sends;       // https://issues.redhat.com/browse/JGRP-2759
+    protected int     max_send_queue=128; // when non_blocking, how many messages to queue max?
 
     protected TcpBaseServer(ThreadFactory f, SocketFactory sf, int recv_buf_size) {
         super(f, sf, recv_buf_size);
@@ -20,7 +22,8 @@ public abstract class TcpBaseServer extends BaseServer {
 
     @Override
     protected TcpConnection createConnection(Address dest) throws Exception {
-        return new TcpConnection(dest, this);
+        return non_blocking_sends? new TcpConnectionNonBlocking(dest, this).maxSize(max_send_queue)
+          : new TcpConnection(dest, this);
     }
 
 
@@ -30,5 +33,9 @@ public abstract class TcpBaseServer extends BaseServer {
     public TcpBaseServer setBufferedInputStreamSize(int s)  {this.buffered_inputstream_size=s; return this;}
     public int           getBufferedOutputStreamSize()      {return buffered_outputstream_size;}
     public TcpBaseServer setBufferedOutputStreamSize(int s) {this.buffered_outputstream_size=s; return this;}
+    public boolean       nonBlockingSends()                 {return non_blocking_sends;}
+    public TcpBaseServer nonBlockingSends(boolean b)        {this.non_blocking_sends=b; return this;}
+    public int           maxSendQueue()                     {return max_send_queue;}
+    public TcpBaseServer maxSendQueue(int s)                {this.max_send_queue=s; return this;}
 
 }
