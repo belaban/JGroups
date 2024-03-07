@@ -30,7 +30,8 @@ public class DNS_PING extends Discovery {
     @Property(description = "DNS Address. This property will be assembled with the 'dns://' prefix.  If this is specified, A records will be resolved through DnsContext.")
     protected String  dns_address = "";
 
-    @Property(description = "DNS Record type")
+    @Property(description = "DNS Record type",
+            systemProperty="jgroups.dns.dns_record_type")
     protected String  dns_record_type = DEFAULT_DNS_RECORD_TYPE;
 
     @Property(description = "A comma-separated list of DNS queries for fetching members",
