@@ -1191,6 +1191,26 @@ public class UtilTest {
         Assert.assertEquals("myID4::blaSubID4", arr[arr.length - 1]);
     }
 
+    public void testParseHost() throws UnknownHostException {
+        InetSocketAddress h=Util.parseHost("127.0.0.1");
+        assertHostAndPort(h, "127.0.0.1", 0);
+
+        h=Util.parseHost("127.0.0.1:5555");
+        assertHostAndPort(h, "127.0.0.1", 5555);
+
+        h=Util.parseHost("::1:7000");
+        assertHostAndPort(h, "::1", 7000);
+
+        h=Util.parseHost("google.com:9000");
+        assertHostAndPort(h, "google.com", 9000);
+
+    }
+
+    protected static void assertHostAndPort(InetSocketAddress h, String host, int port) throws UnknownHostException {
+        assert InetAddress.getByName(host).equals(h.getAddress());
+        assert h.getPort() == port;
+    }
+
     public void testReadStringArray() {
         String s="  A   ,B,  C";
         String[] arr=Util.parseStringArray(s, ",");

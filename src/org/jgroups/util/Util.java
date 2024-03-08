@@ -3781,7 +3781,7 @@ public class Util {
     }
 
 
-    /** e.g. "bela,jeannette,michelle" --> List{"bela", "jeannette", "michelle"} */
+    /** e.g. "A,B,C" --> List{"A", "B", "C"} */
     public static List<String> parseCommaDelimitedStrings(String l) {
         return parseStringList(l,",");
     }
@@ -3891,6 +3891,15 @@ public class Util {
             }
         }
         return new LinkedList<>(retval);
+    }
+
+    /** Parses a host:IP string into an InetSocketAddress */
+    public static InetSocketAddress parseHost(String s) {
+        s=s.trim();
+        int index=s.lastIndexOf(":");
+        String host=index > -1? s.substring(0, index) : s;
+        String port_str=index > -1? s.substring(index+1) : "0";
+        return new InetSocketAddress(host, Integer.parseInt(port_str));
     }
 
     public static List<String> parseStringList(String l,String separator) {
