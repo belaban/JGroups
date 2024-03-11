@@ -206,15 +206,11 @@ public class JChannel implements Closeable {
     @ManagedAttribute(writable=true, description="The logical name of this channel. Stays with the channel until " +
       "the channel is closed")
     public JChannel setName(String name) {
-        if(name != null) {
-            if(isConnected())
-                log.error("name (%s) cannot be set if channel is connected (should be done before)", name);
-            else {
-                this.name=name;
-                if(local_addr != null)
-                    NameCache.add(local_addr, this.name);
-            }
-        }
+        if(name == null || isConnected())
+            return this;
+        this.name=name;
+        if(local_addr != null)
+            NameCache.add(local_addr, this.name);
         return this;
     }
 
