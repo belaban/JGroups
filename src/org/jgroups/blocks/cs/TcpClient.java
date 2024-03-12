@@ -121,6 +121,7 @@ public class TcpClient extends TcpBaseServer implements Client, ConnectionListen
         local_addr=conn.localAddress();
         if(use_peer_connections)
             conn.sendLocalAddress(local_addr);
+        notifyConnectionEstablished(conn);
         conn.start(); // starts the receiver thread
     }
 }
