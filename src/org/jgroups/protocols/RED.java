@@ -39,7 +39,7 @@ public class RED extends Protocol {
     protected long            max;
 
     @ManagedAttribute(description="The average number of elements in the bundler's queue. Computed as " +
-      "o * (1 - 2^-wf) + c * (2^-wf) where o is the old average, c the current queue size amd wf the weight_factor")
+      "o * (1 - 2^-wf) + c * (2^-wf) where o is the old average, c the current queue size and wf the weight_factor")
     protected double          avg_queue_size;
 
     @Property(description="The weight used to compute the average queue size. The higher the value is, the less the " +
