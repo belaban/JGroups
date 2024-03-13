@@ -2,6 +2,8 @@ package org.jgroups.protocols;
 
 
 import org.jgroups.Message;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.Property;
 import org.jgroups.util.AverageMinMax;
 
 import java.util.ArrayList;
@@ -11,6 +13,7 @@ import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
+
 /**
  * This bundler adds all (unicast or multicast) messages to a queue until max size has been exceeded, but does send
  * messages immediately when no other messages are available. https://issues.jboss.org/browse/JGRP-1540
@@ -19,10 +22,22 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
     protected BlockingQueue<Message> queue;
     protected List<Message>          remove_queue;
     protected volatile     Thread    bundler_thread;
+
+    @Property(description="When the queue is full, senders will drop a message rather than wait until space " +
+      "is available (https://issues.redhat.com/browse/JGRP-2765)")
+    protected boolean                drop_when_full;
+
     protected volatile boolean       running=true;
-    protected int                    num_sends_because_full_queue;
-    protected int                    num_sends_because_no_msgs;
-    protected final AverageMinMax    fill_count=new AverageMinMax(); // avg number of bytes when a batch is sent
+    @ManagedAttribute(description="Number of times a message was sent because the queue was full")
+    protected long                   num_sends_because_full_queue;
+    @ManagedAttribute(description="Number of times a message was sent because there was no message available in the queue")
+    protected long                   num_sends_because_no_msgs;
+
+    @ManagedAttribute(description="Number of dropped messages (when drop_when_full is true)")
+    protected long                   num_drops_on_full_queue;
+
+    @ManagedAttribute(description="Average fill size of the queue (in bytes)")
+    protected final AverageMinMax    avg_fill_count=new AverageMinMax(); // avg number of bytes when a batch is sent
     protected static final String    THREAD_NAME="TQ-Bundler";
 
     public TransferQueueBundler() {
@@ -38,26 +53,30 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
         this(new ArrayBlockingQueue<>(assertPositive(capacity, "bundler capacity cannot be " + capacity)));
     }
 
-    public Thread               getThread()               {return bundler_thread;}
-    public int                  getBufferSize()           {return queue.size();}
-    public int                  removeQueueSize()         {return remove_queue.size();}
-    public TransferQueueBundler removeQueueSize(int size) {this.remove_queue=new ArrayList<>(size); return this;}
+    public Thread               getThread()                {return bundler_thread;}
+    public int                  getBufferSize()            {return queue.size();}
+    public int                  removeQueueSize()          {return remove_queue.size();}
+    public TransferQueueBundler removeQueueSize(int size)  {this.remove_queue=new ArrayList<>(size); return this;}
+    public boolean              getDropWhenFull()          {return drop_when_full;}
+    public TransferQueueBundler setDropWhenFull(boolean b) {drop_when_full=b; return this;}
+
 
     @Override
     public Map<String,Object> getStats() {
         Map<String,Object> retval=super.getStats();
         if(retval == null)
             retval=new HashMap<>(3);
-        retval.put("sends_because_full", num_sends_because_full_queue);
+        retval.put("sends_because_full",    num_sends_because_full_queue);
         retval.put("sends_because_no_msgs", num_sends_because_no_msgs);
-        retval.put("avg_fill_count", fill_count);
+        retval.put("avg_fill_count",        avg_fill_count);
         return retval;
     }
 
     @Override
     public void resetStats() {
-        num_sends_because_full_queue=num_sends_because_no_msgs=0;
-        fill_count.clear();
+        super.resetStats();
+        num_sends_because_full_queue=num_sends_because_no_msgs=num_drops_on_full_queue=0;
+        avg_fill_count.clear();
     }
 
     public void init(TP tp) {
@@ -97,7 +116,13 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
     }
 
     public void send(Message msg) throws Exception {
-        if(running)
+        if(!running)
+            return;
+        if(drop_when_full) {
+            if(!queue.offer(msg))
+                num_drops_on_full_queue++;
+        }
+        else
             queue.put(msg);
     }
 
@@ -120,7 +145,7 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
                 }
                 if(count > 0) {
                     num_sends_because_no_msgs++;
-                    fill_count.add(count);
+                    avg_fill_count.add(count);
                     _sendBundledMessages();
                 }
             }
@@ -134,7 +159,7 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
         long size=msg.size();
         if(count + size >= transport.getMaxBundleSize()) {
             num_sends_because_full_queue++;
-            fill_count.add(count);
+            avg_fill_count.add(count);
             _sendBundledMessages();
         }
         _addMessage(msg, size);

@@ -255,6 +255,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
       "\"no-bundler\") or the fully qualified classname of a Bundler implementation")
     protected String bundler_type="transfer-queue";
 
+    @Property(description="When the queue is full, senders will drop a message rather than wait until space " +
+      "is available (https://issues.redhat.com/browse/JGRP-2765). Currently only applicable to TransferQueueBundler")
+    protected boolean drop_when_full;
+
     @Property(description="The max number of elements in a bundler if the bundler supports size limitations")
     protected int bundler_capacity=16384;
 
@@ -282,6 +286,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public boolean          useFibers()                         {return use_fibers;}
     public int              getThreadDumpsThreshold()           {return thread_dumps_threshold;}
     public <T extends TP> T setThreadDumpsThreshold(int t)      {this.thread_dumps_threshold=t; return (T)this;}
+    public boolean          getDropWhenFull()                   {return drop_when_full;}
+    public <T extends TP> T setDropWhenFull(boolean b)          {drop_when_full=b; return (T)this;}
 
 
     @ManagedAttribute public int getBundlerBufferSize() {
@@ -1292,7 +1298,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         switch(type) {
             case "transfer-queue":
             case "tq":
-                return new TransferQueueBundler(bundler_capacity);
+                return new TransferQueueBundler(bundler_capacity).setDropWhenFull(drop_when_full);
             case "simplified-transfer-queue":
             case "stq":
                 return new SimplifiedTransferQueueBundler(bundler_capacity);
