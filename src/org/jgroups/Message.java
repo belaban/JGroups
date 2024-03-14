@@ -232,7 +232,8 @@ public interface Message extends SizeStreamable, Constructable<Message> {
     // =========================== Transient flags ==============================
     enum TransientFlag {
         OOB_DELIVERED( (short)(1)),
-        DONT_LOOPBACK( (short)(1 << 1));   // don't loop back up if this flag is set and it is a multicast message
+        DONT_LOOPBACK( (short)(1 << 1)),   // don't loop back up if this flag is set, and it is a multicast message
+        DONT_BLOCK(    (short)(1 << 2));   // to prevent blocking on a full queue in TransferQueueBundler
 
         final short value;
         TransientFlag(short flag) {value=flag;}

@@ -101,7 +101,7 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
     public void send(Message msg) throws Exception {
         if(!running)
             return;
-        if(drop_when_full) {
+        if(drop_when_full || msg.isFlagSet(Message.TransientFlag.DONT_BLOCK)) {
             if(!queue.offer(msg))
                 num_drops_on_full_queue++;
         }
