@@ -46,7 +46,7 @@ public class RED extends Protocol {
       "current queue size is taken into account. E.g. with 2, 25% of the current queue size and 75% of the old " +
       "average is taken to compute the new average. In other words: with a high value, the average will take " +
       "longer to reflect the current queue size.")
-    protected double          weight_factor=2;
+    protected double          weight_factor=1;
 
     protected final LongAdder dropped_msgs=new LongAdder(); // dropped messages
     protected final LongAdder total_msgs=new LongAdder();   // total messages looked at
