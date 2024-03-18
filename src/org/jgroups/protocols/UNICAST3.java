@@ -1218,7 +1218,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     protected void sendRequestForFirstSeqno(Address dest, Address original_dest) {
         if(last_sync_sent.addIfAbsentOrExpired(dest)) {
-            Message msg=new EmptyMessage(dest).setFlag(Message.Flag.OOB)
+            Message msg=new EmptyMessage(dest).setFlag(Message.Flag.OOB).setFlag(DONT_BLOCK)
               .putHeader(this.id, UnicastHeader3.createSendFirstSeqnoHeader(timestamper.incrementAndGet()));
             if(!Objects.equals(local_addr, original_dest))
                 msg.setSrc(original_dest);
