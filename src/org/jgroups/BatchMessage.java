@@ -15,13 +15,13 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 /**
- * A message that contains a batch of messages for use with BATCH protocol.  This message will wrap several
- * sequential messages so lower protocol layers only have to process them once.  This increases throughput for cases
- * such as when average message size is small, or there is a heavy processing cost (e.g. SEQUENCER).
+ * A message that contains a batch of messages. This message will wrap several messages, so lower protocol layers only
+ * have to process them once.  This increases throughput for cases such as when average message size is small,
+ * or there is a heavy processing cost (e.g. {@link org.jgroups.protocols.SEQUENCER}).
  * <br/>
- * Similar to CompositeMessage but with some optimisations made for the specific use case.
+ * Similar to {@link CompositeMessage} but with some optimizations made for the specific use case.
  * <br/>
- * This class is unsynchronized; the envisaged use case is that an BatchMessage is created with a number of messages,
+ * This class is unsynchronized; the envisaged use case is that a BatchMessage is created with a number of messages,
  * or messages are added, but then the instance is not modified anymore and sent.
  * @author Bela Ban, Chris Johnson
  * @since  5.x
