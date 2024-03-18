@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static org.jgroups.Message.TransientFlag.DONT_BLOCK;
 import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
 
 
@@ -382,7 +383,7 @@ public abstract class FlowControl extends Protocol {
         if(log.isTraceEnabled())
             log.trace("sending %d credits to %s", credits, dest);
         Message msg=new LongMessage(dest, credits).putHeader(this.id,getReplenishHeader())
-          .setFlag(Message.Flag.OOB, Message.Flag.DONT_BUNDLE);
+          .setFlag(Message.Flag.OOB, Message.Flag.DONT_BUNDLE).setFlag(DONT_BLOCK);
         down_prot.down(msg);
         num_credit_responses_sent++;
     }
@@ -397,7 +398,7 @@ public abstract class FlowControl extends Protocol {
         if(log.isTraceEnabled())
             log.trace("sending request for %d credits to %s", credits_needed, dest);
         Message msg=new LongMessage(dest, credits_needed).putHeader(this.id, getCreditRequestHeader())
-          .setFlag(Message.Flag.OOB, Message.Flag.DONT_BUNDLE);
+          .setFlag(Message.Flag.OOB, Message.Flag.DONT_BUNDLE).setFlag(DONT_BLOCK);
         down_prot.down(msg);
         num_credit_requests_sent++;
     }

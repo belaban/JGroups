@@ -625,8 +625,7 @@ public class STABLE extends Protocol {
         // but clear votes *before* sending it
         try {
             Message msg=new ObjectMessage(null, d)
-              .setFlag(OOB, NO_RELIABILITY, NO_RELAY)
-              .setFlag(DONT_LOOPBACK,DONT_BLOCK)
+              .setFlag(OOB, NO_RELIABILITY, NO_RELAY).setFlag(DONT_LOOPBACK,DONT_BLOCK)
               .putHeader(id, new StableHeader(StableHeader.STABILITY, view_id));
             log.trace("%s: sending stability msg %s", local_addr, printDigest(d));
             num_stability_msgs_sent++;

@@ -25,8 +25,7 @@ import java.util.function.ToIntFunction;
 import java.util.stream.Stream;
 
 import static org.jgroups.Message.Flag.NO_RELIABILITY;
-import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
-import static org.jgroups.Message.TransientFlag.OOB_DELIVERED;
+import static org.jgroups.Message.TransientFlag.*;
 import static org.jgroups.protocols.UnicastHeader3.DATA;
 
 
@@ -1096,7 +1095,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             UnicastHeader3 hdr=copy.getHeader(this.id);
             UnicastHeader3 newhdr=hdr.copy();
             newhdr.first=true;
-            copy.putHeader(this.id, newhdr);
+            copy.putHeader(this.id, newhdr).setFlag(DONT_BLOCK);
             resend(copy);
         }
     }
@@ -1118,6 +1117,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                     log.warn(Util.getMessage("MessageNotFound"), local_addr, sender, seqno);
                 continue;
             }
+            // This will change the original message, but that's fine as retransmissions will have DONT_BLOCK anyway
+            msg.setFlag(DONT_BLOCK);
             resend(msg);
             xmit_rsps_sent.increment();
         }
@@ -1189,8 +1190,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     protected void sendAck(Address dst, long seqno, short conn_id, Address real_dest) {
         if(!running) // if we are disconnected, then don't send any acks which throw exceptions on shutdown
             return;
-        Message ack=new EmptyMessage(dst).
-          putHeader(this.id, UnicastHeader3.createAckHeader(seqno, conn_id, timestamper.incrementAndGet()));
+        Message ack=new EmptyMessage(dst).setFlag(DONT_BLOCK)
+          .putHeader(this.id, UnicastHeader3.createAckHeader(seqno, conn_id, timestamper.incrementAndGet()));
         if(!Objects.equals(local_addr, real_dest))
             ack.setSrc(real_dest);
         if(is_trace)

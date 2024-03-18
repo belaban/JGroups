@@ -327,7 +327,7 @@ public class MERGE3 extends Protocol {
                 break;
             case VIEW_REQ:
                 View viewToSend=view;
-                Message view_rsp=new BytesMessage(sender)
+                Message view_rsp=new BytesMessage(sender).setFlag(Message.TransientFlag.DONT_BLOCK)
                   .putHeader(getId(), MergeHeader.createViewResponse()).setArray(marshal(viewToSend));
                 log.trace("%s: sending view rsp: %s", local_addr, viewToSend);
                 down_prot.down(view_rsp);
@@ -404,7 +404,7 @@ public class MERGE3 extends Protocol {
             return;
         }
         MergeHeader hdr=createInfo();
-        Message info=new EmptyMessage(dest).putHeader(getId(), hdr);
+        Message info=new EmptyMessage(dest).putHeader(getId(), hdr).setFlag(Message.TransientFlag.DONT_BLOCK);
         down_prot.down(info);
     }
 

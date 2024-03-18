@@ -693,7 +693,8 @@ public abstract class Discovery extends Protocol {
     }
 
     protected void sendDiscoveryResponse(List<PingData> list, final Address sender) {
-        Message rsp_msg=new BytesMessage(sender).setFlag(Message.Flag.OOB, Message.Flag.DONT_BUNDLE)
+        Message rsp_msg=new BytesMessage(sender)
+          .setFlag(Message.Flag.OOB, Message.Flag.DONT_BUNDLE).setFlag(Message.TransientFlag.DONT_BLOCK)
           .putHeader(this.id, new PingHeader(PingHeader.GET_MBRS_RSP)).setArray(marshal(list));
 
         if(stagger_timeout > 0) {

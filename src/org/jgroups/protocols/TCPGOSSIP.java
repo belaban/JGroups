@@ -76,6 +76,11 @@ public class TCPGOSSIP extends Discovery implements RouterStub.MembersNotificati
         return initial_hosts.toString();
     }
 
+    public long      sockConnTimeout()         {return sock_conn_timeout;}
+    public TCPGOSSIP sockConnTimeout(int t)    {sock_conn_timeout=t; return this;}
+    public long      reconnectInterval()       {return reconnect_interval;}
+    public TCPGOSSIP reconnectInterval(long r) {reconnect_interval=r; return this;}
+
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
     

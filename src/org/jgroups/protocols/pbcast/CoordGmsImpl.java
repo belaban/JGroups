@@ -7,6 +7,9 @@ import org.jgroups.util.*;
 
 import java.util.*;
 
+import static org.jgroups.Message.Flag.NO_RELIABILITY;
+import static org.jgroups.Message.Flag.OOB;
+
 
 /**
  * Coordinator role of the Group MemberShip (GMS) protocol. Accepts JOIN and LEAVE requests and emits view changes
@@ -213,7 +216,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
     
     private void sendLeaveResponses(Collection<Address> leaving_members) {
         for(Address address: leaving_members){
-            Message msg=new EmptyMessage(address).setFlag(Message.Flag.OOB, Message.Flag.NO_RELIABILITY)
+            Message msg=new EmptyMessage(address).setFlag(OOB, NO_RELIABILITY).setFlag(Message.TransientFlag.DONT_BLOCK)
               .putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.LEAVE_RSP));
             log.trace("%s: sending LEAVE response to %s", gms.getAddress(), address);
             gms.getDownProtocol().down(msg);

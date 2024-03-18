@@ -535,7 +535,7 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
 
         // 1. Send a SUSPECT message right away; the broadcast task will take some time to send it (sleeps first)
         FdHeader hdr=new FdHeader(FdHeader.UNSUSPECT).mbrs(Collections.singleton(mbr));
-        Message suspect_msg=new EmptyMessage().putHeader(this.id, hdr);
+        Message suspect_msg=new EmptyMessage().putHeader(this.id, hdr).setFlag(Message.TransientFlag.DONT_BLOCK);
         down_prot.down(suspect_msg);
     }
 

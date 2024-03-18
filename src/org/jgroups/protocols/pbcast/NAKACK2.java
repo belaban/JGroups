@@ -24,8 +24,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
-import static org.jgroups.Message.TransientFlag.OOB_DELIVERED;
+import static org.jgroups.Message.TransientFlag.*;
 import static org.jgroups.util.MessageBatch.Mode.OOB;
 
 
@@ -1082,7 +1081,8 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             return;
         }
 
-        Message xmit_msg=msg.copy(true, true).setDest(dest); // copy payload and headers
+        Message xmit_msg=msg.copy(true, true).setDest(dest) // copy payload and headers
+          .setFlag(DONT_BLOCK);
         NakAckHeader2 hdr=xmit_msg.getHeader(id);
         NakAckHeader2 newhdr=hdr.copy();
         newhdr.type=NakAckHeader2.XMIT_RSP; // change the type in the copy from MSG --> XMIT_RSP
@@ -1481,7 +1481,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 dest=random_member;
         }
 
-        Message retransmit_msg=new ObjectMessage(dest, missing_msgs).setFlag(Message.Flag.OOB)
+        Message retransmit_msg=new ObjectMessage(dest, missing_msgs).setFlag(Message.Flag.OOB).setFlag(DONT_BLOCK)
           .putHeader(this.id, NakAckHeader2.createXmitRequestHeader(sender));
 
         log.trace("%s --> %s: XMIT_REQ(%s)", local_addr, dest, missing_msgs);

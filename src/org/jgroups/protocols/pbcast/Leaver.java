@@ -114,7 +114,7 @@ public class Leaver {
 
 
     protected void sendLeaveRequest(Address coord, Address leaving_mbr) {
-        Message msg=new EmptyMessage(coord).setFlag(Message.Flag.OOB)
+        Message msg=new EmptyMessage(coord).setFlag(Message.Flag.OOB).setFlag(Message.TransientFlag.DONT_BLOCK)
           .putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.LEAVE_REQ, leaving_mbr));
         gms.getDownProtocol().down(msg);
     }

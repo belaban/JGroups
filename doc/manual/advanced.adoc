@@ -1725,14 +1725,11 @@ Message msg=new BytesMessage().setFlag(Message.Flag.OOB, Message.Flag.NO_FC);
 ----
 
 Here we tag the message to be OOB (out of band) and to bypass flow control.
-        
 
-The advantage of tagging messages is that we don't need to change the configuration, but instead
-            can override it on a per-message basis.
-        
+The advantage of tagging messages is that we don't need to change the configuration, but instead can override it
+on a per-message basis.
 
 The available flags are:
-        
 
 Message.OOB:: This tags a message as out-of-band, which will get it processed by the out-of-band thread
               pool at the receiver's side. Note that an OOB message does not provide any ordering guarantees,
@@ -1788,6 +1785,10 @@ Message.DONT_LOOPBACK:: If this flag is set and the message is a multicast messa
                     
 NOTE: Note that `DONT_LOOPBACK` does not make any sense for _unicast_ messages,
       as the sender of a message sent to itself will never receive it.
+
+Message.DONT_BLOCK::
+If set, the message will be dropped if the TransferQueueBundler's queue is full, rather than the sender thread
+blocking. This means, the message will not block on the send in the transport.
 
 
 [[PerformanceTests]]

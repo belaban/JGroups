@@ -171,7 +171,7 @@ public class TCPGOSSIP_Test {
 
 
     protected JChannel createTcpgossipChannel(String name) throws Exception {
-        TCPGOSSIP gossip=new TCPGOSSIP();
+        TCPGOSSIP gossip=new TCPGOSSIP().reconnectInterval(2000);
         List<InetSocketAddress> initial_hosts=new ArrayList<>();
         initial_hosts.add(new InetSocketAddress(bind_addr, gossip_router_port));
         gossip.setInitialHosts(initial_hosts);

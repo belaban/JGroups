@@ -26,6 +26,8 @@ import java.util.stream.Collectors;
 
 import static org.jgroups.Message.Flag.NO_RELAY;
 import static org.jgroups.Message.Flag.OOB;
+import static org.jgroups.Message.TransientFlag.DONT_BLOCK;
+import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
 
 
 /**
@@ -546,7 +548,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         }
 
         Message view_change_msg=new BytesMessage().putHeader(this.id, new GmsHeader(GmsHeader.VIEW))
-          .setArray(marshal(new_view, digest)).setFlag(Message.TransientFlag.DONT_LOOPBACK)
+          .setArray(marshal(new_view, digest)).setFlag(DONT_LOOPBACK, DONT_BLOCK)
           .setFlag(NO_RELAY); // a view should only be sent to the local cluster members
         if(new_view instanceof MergeView) // https://issues.redhat.com/browse/JGRP-1484
             view_change_msg.setFlag(Message.Flag.NO_TOTAL_ORDER);
@@ -588,12 +590,14 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     public void sendJoinResponse(JoinRsp rsp, Address dest) {
         Message m=new BytesMessage(dest).putHeader(this.id, new GmsHeader(GmsHeader.JOIN_RSP))
+          .setFlag(DONT_BLOCK)
           .setArray(marshal(rsp)).setFlag(OOB);
         getDownProtocol().down(m);
     }
 
     protected void sendJoinResponse(ByteArray marshalled_rsp, Address dest) {
-        Message m=new BytesMessage(dest, marshalled_rsp).putHeader(this.id, new GmsHeader(GmsHeader.JOIN_RSP));
+        Message m=new BytesMessage(dest, marshalled_rsp).setFlag(DONT_BLOCK)
+          .putHeader(this.id, new GmsHeader(GmsHeader.JOIN_RSP));
         getDownProtocol().down(m);
     }
 
@@ -1094,7 +1098,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
 
     protected void sendViewAck(Address dest) {
-        Message view_ack=new EmptyMessage(dest).setFlag(OOB).putHeader(this.id, new GmsHeader(GmsHeader.VIEW_ACK));
+        Message view_ack=new EmptyMessage(dest).setFlag(OOB).setFlag(DONT_BLOCK)
+          .putHeader(this.id, new GmsHeader(GmsHeader.VIEW_ACK));
         down_prot.down(view_ack);
     }
 
