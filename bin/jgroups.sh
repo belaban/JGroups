@@ -34,7 +34,6 @@ fi;
 
 #JG_FLAGS="-Djgroups.bind_addr=match-address:192.168.1.*"
 FLAGS="-server -Xmx1G -Xms500M"
-GC="-XX:+UseG1GC"
 
 #FLAGS="$FLAGS -Duser.language=de"
 
@@ -42,14 +41,13 @@ GC="-XX:+UseG1GC"
 
 #FLAGS="$FLAGS -Djava.util.concurrent.ForkJoinPool.common.parallelism=1"
 
-JMX="-Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost"
+#JMX="-Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost"
 
 #java -Xrunhprof:cpu=samples,monitor=y,interval=5,lineno=y,thread=y -classpath $CP $LOG $JG_FLAGS $FLAGS $JMX  $*
 
 #DEBUG="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5000"
-PREVIEW=--enable-preview
 
 # SSL_FLAGS="-Djavax.net.debug=ssl:handshake"
 
-java -cp $CP $SSL_FLAGS $PREVIEW $DEBUG $LOG $GC $JG_FLAGS $FLAGS $JMX $JMC  $*
+java -cp $CP $SSL_FLAGS $DEBUG $LOG $JG_FLAGS $FLAGS $JMX $JMC  $*
 
