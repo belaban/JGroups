@@ -220,7 +220,9 @@ public class Membership {
      * @return an exact copy of this membership
      */
     public Membership copy() {
-        return new Membership(this.members);
+        synchronized(this.members) {
+            return new Membership(this.members);
+        }
     }
 
 
