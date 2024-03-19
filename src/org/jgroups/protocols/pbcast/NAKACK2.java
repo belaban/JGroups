@@ -29,13 +29,11 @@ import static org.jgroups.util.MessageBatch.Mode.OOB;
 
 
 /**
- * Negative AcKnowledgement layer (NAKs). Messages are assigned a monotonically
- * increasing sequence number (seqno). Receivers deliver messages ordered
- * according to seqno and request retransmission of missing messages.<br/>
- * Retransmit requests are usually sent to the original sender of a message, but
- * this can be changed by xmit_from_random_member (send to random member) or
- * use_mcast_xmit_req (send to everyone). Responses can also be sent to everyone
- * instead of the requester by setting use_mcast_xmit to true.
+ * Negative AcKnowledgement layer (NAKs). Messages are assigned a monotonically increasing sequence number (seqno).
+ * Receivers deliver messages ordered according to seqno and request retransmission of missing messages.<br/>
+ * Retransmit requests are usually sent to the original sender of a message, but this can be changed by
+ * xmit_from_random_member (send to random member) or use_mcast_xmit_req (send to everyone). Responses can also be sent
+ * to everyone instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
  */
@@ -61,7 +59,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
      * Ask a random member for retransmission of a missing message. If set to
      * true, discard_delivered_msgs will be set to false
      */
-    @Property(description="Ask a random member for retransmission of a missing message. Default is false")
+    @Property(description="Ask a random member for retransmission of a missing message")
     protected boolean xmit_from_random_member;
 
     /**
@@ -73,7 +71,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     @Property(description="Should messages delivered to application be discarded")
     protected boolean discard_delivered_msgs=true;
 
-    @Property(description="Timeout to rebroadcast messages. Default is 2000 msec",type=AttributeType.TIME)
+    @Property(description="Timeout to rebroadcast messages",type=AttributeType.TIME)
     protected long    max_rebroadcast_timeout=2000;
 
     /** If true, logs messages discarded because received from other members */
@@ -115,7 +113,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
     @Property(description="Max number of messages to ask for in a retransmit request. 0 disables this and uses " +
       "the max bundle size in the transport",type=AttributeType.SCALAR)
-    protected int     max_xmit_req_size;
+    protected int     max_xmit_req_size=512;
 
     @Property(description="The max size of a message batch when delivering messages. 0 is unbounded")
     protected int     max_batch_size;
