@@ -38,10 +38,10 @@
     <pbcast.STABLE desired_avg_gossip="50000"
                    max_bytes="4M"/>
     <pbcast.GMS print_local_addr="true" join_timeout="500"/>
-    <UFC max_credits="2M"
-         min_threshold="0.4"/>
     <MFC max_credits="2M"
          min_threshold="0.4"/>
+    <UFC max_credits="2M"
+          min_threshold="0.4"/>
     <FRAG4 frag_size="60K"  />
     <TIME down_msgs="true" up_batches="true" up_msgs="false"/>
 
