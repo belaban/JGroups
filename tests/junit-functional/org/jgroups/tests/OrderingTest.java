@@ -23,7 +23,7 @@ import java.util.stream.Stream;
  * delivered in parallel as well.
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
+@Test(groups=Global.TIME_SENSITIVE,singleThreaded=true)
 public class OrderingTest {
     protected static final int NUM_MSGS=100000;
     protected static final int PRINT=NUM_MSGS / 5;
@@ -58,7 +58,7 @@ public class OrderingTest {
         return new JChannel(new SHARED_LOOPBACK(),
                             new SHARED_LOOPBACK_PING(),
                             new SHUFFLE().setUp(false).setDown(false).setMaxSize(200), // reorders messages
-                            new NAKACK2().useMcastXmit(false).setDiscardDeliveredMsgs(true),
+                            new NAKACK2().useMcastXmit(false).setDiscardDeliveredMsgs(true).setXmitInterval(200),
                             new UNICAST3(),
                             new STABLE().setMaxBytes(50000).setDesiredAverageGossip(1000),
                             new GMS().setJoinTimeout(500).printLocalAddress(false),
