@@ -84,7 +84,7 @@ public class UDP extends TP {
     protected int ip_ttl=8;
 
     @Property(description="Send buffer size of the multicast datagram socket",type=AttributeType.BYTES)
-    protected int mcast_send_buf_size=Global.MAX_DATAGRAM_PACKET_SIZE + MSG_OVERHEAD;
+    protected int mcast_send_buf_size=(Global.MAX_DATAGRAM_PACKET_SIZE + MSG_OVERHEAD) * 100;
 
     @Property(description="Receive buffer size of the multicast datagram socket",type=AttributeType.BYTES)
     protected int mcast_recv_buf_size=5_000_000;

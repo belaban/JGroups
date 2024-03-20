@@ -165,7 +165,8 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     @ManagedAttribute(description="Number of retransmit requests sent",type=AttributeType.SCALAR)
     protected final LongAdder xmit_reqs_sent=new LongAdder();
 
-    @ManagedAttribute(description="Number of retransmit responses received",type=AttributeType.SCALAR)
+    @ManagedAttribute(description="Number of retransmit responses received (only when use_macst_xmit=false)",
+      type=AttributeType.SCALAR)
     protected final LongAdder xmit_rsps_received=new LongAdder();
 
     @ManagedAttribute(description="Number of retransmit responses sent",type=AttributeType.SCALAR)
