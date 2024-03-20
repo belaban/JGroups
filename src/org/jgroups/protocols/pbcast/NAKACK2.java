@@ -24,8 +24,9 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import static org.jgroups.Message.Flag.NO_FC;
+import static org.jgroups.Message.Flag.OOB;
 import static org.jgroups.Message.TransientFlag.*;
-import static org.jgroups.util.MessageBatch.Mode.OOB;
 
 
 /**
@@ -138,12 +139,12 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     @ManagedAttribute(description="Number of messages received",type=AttributeType.SCALAR)
     protected int     num_messages_received;
 
-    protected static final Message DUMMY_OOB_MSG=new EmptyMessage().setFlag(Message.Flag.OOB);
+    protected static final Message DUMMY_OOB_MSG=new EmptyMessage().setFlag(OOB);
 
     // Accepts messages which are (1) non-null, (2) no DUMMY_OOB_MSGs and (3) not OOB_DELIVERED
     protected final Predicate<Message> no_dummy_and_no_oob_delivered_msgs_and_no_dont_loopback_msgs=msg ->
       msg != null && msg != DUMMY_OOB_MSG
-        && (!msg.isFlagSet(Message.Flag.OOB) || msg.setFlagIfAbsent(OOB_DELIVERED))
+        && (!msg.isFlagSet(OOB) || msg.setFlagIfAbsent(OOB_DELIVERED))
         && !(msg.isFlagSet(DONT_LOOPBACK) && Objects.equals(local_addr, msg.getSrc()));
 
     protected static final Predicate<Message> dont_loopback_filter=m -> m != null
@@ -881,13 +882,13 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         // If the message was sent by myself, then it is already in the table and we don't need to add it. If not,
         // and the message is OOB, insert a dummy message (same msg, saving space), deliver it and drop it later on
         // removal. Else insert the real message
-        boolean added=loopback || buf.add(hdr.seqno, msg.isFlagSet(Message.Flag.OOB)? DUMMY_OOB_MSG : msg);
+        boolean added=loopback || buf.add(hdr.seqno, msg.isFlagSet(OOB)? DUMMY_OOB_MSG : msg);
 
         // OOB msg is passed up. When removed, we discard it. Affects ordering: https://issues.redhat.com/browse/JGRP-379
-        if(added && msg.isFlagSet(Message.Flag.OOB)) {
+        if(added && msg.isFlagSet(OOB)) {
             if(loopback) { // sent by self
                 msg=buf.get(hdr.seqno); // we *have* to get a message, because loopback means we didn't add it to win !
-                if(msg != null && msg.isFlagSet(Message.Flag.OOB) && msg.setFlagIfAbsent(OOB_DELIVERED))
+                if(msg != null && msg.isFlagSet(OOB) && msg.setFlagIfAbsent(OOB_DELIVERED))
                     deliver(msg, sender, hdr.seqno, "OOB message");
             }
             else // sent by someone else
@@ -907,18 +908,18 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         }
         int size=mb.size();
         num_messages_received+=size;
-        boolean loopback=local_addr.equals(sender), oob=mb.mode() == OOB;
+        boolean loopback=local_addr.equals(sender), oob=mb.mode() == MessageBatch.Mode.OOB;
         boolean added=loopback || buf.add(mb, SEQNO_GETTER, !oob, oob? DUMMY_OOB_MSG : null);
 
         // OOB msg is passed up. When removed, we discard it. Affects ordering: https://issues.redhat.com/browse/JGRP-379
         if(added && oob) {
             Address dest=mb.dest();
-            MessageBatch oob_batch=loopback? new MessageBatch(dest, sender, null, dest == null, OOB, size) : mb;
+            MessageBatch oob_batch=loopback? new MessageBatch(dest, sender, null, dest == null, MessageBatch.Mode.OOB, size) : mb;
             if(loopback) {
                 for(Message m: mb) {
                     long seq=SEQNO_GETTER.apply(m);
                     Message msg=buf.get(seq); // we *have* to get the message, because loopback means we didn't add it to win !
-                    if(msg != null && msg.isFlagSet(Message.Flag.OOB) && msg.setFlagIfAbsent(OOB_DELIVERED))
+                    if(msg != null && msg.isFlagSet(OOB) && msg.setFlagIfAbsent(OOB_DELIVERED))
                         oob_batch.add(msg);
                 }
             }
@@ -1479,7 +1480,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 dest=random_member;
         }
 
-        Message retransmit_msg=new ObjectMessage(dest, missing_msgs).setFlag(Message.Flag.OOB).setFlag(DONT_BLOCK)
+        Message retransmit_msg=new ObjectMessage(dest, missing_msgs).setFlag(OOB, NO_FC).setFlag(DONT_BLOCK)
           .putHeader(this.id, NakAckHeader2.createXmitRequestHeader(sender));
 
         log.trace("%s --> %s: XMIT_REQ(%s)", local_addr, dest, missing_msgs);
@@ -1590,8 +1591,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             else
                 num_resends++;
             Message msg=new EmptyMessage(null).putHeader(id, NakAckHeader2.createHighestSeqnoHeader(seqno))
-              .setFlag(Message.Flag.OOB)
-              .setFlag(DONT_LOOPBACK); // we don't need to receive our own broadcast
+              .setFlag(OOB, NO_FC).setFlag(DONT_LOOPBACK,DONT_BLOCK); // we don't need to receive our own broadcast
             down_prot.down(msg);
         }
     }

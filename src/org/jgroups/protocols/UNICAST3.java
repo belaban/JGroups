@@ -24,7 +24,7 @@ import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
 import java.util.stream.Stream;
 
-import static org.jgroups.Message.Flag.NO_RELIABILITY;
+import static org.jgroups.Message.Flag.*;
 import static org.jgroups.Message.TransientFlag.*;
 import static org.jgroups.protocols.UnicastHeader3.DATA;
 
@@ -166,11 +166,11 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     // the cache and added to the ReceiverEntry
     protected final MessageCache           msg_cache=new MessageCache();
 
-    protected static final Message         DUMMY_OOB_MSG=new EmptyMessage().setFlag(Message.Flag.OOB);
+    protected static final Message         DUMMY_OOB_MSG=new EmptyMessage().setFlag(OOB);
 
     protected final Predicate<Message>     drop_oob_and_dont_loopback_msgs_filter=msg ->
       msg != null && msg != DUMMY_OOB_MSG
-        && (!msg.isFlagSet(Message.Flag.OOB) || msg.setFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED))
+        && (!msg.isFlagSet(OOB) || msg.setFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED))
         && !(msg.isFlagSet(DONT_LOOPBACK) && Objects.equals(local_addr, msg.getSrc()));
 
     protected static final Predicate<Message> dont_loopback_filter=m -> m != null
@@ -603,7 +603,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 for(LongTuple<Message> tuple: list) {
                     long    seq=tuple.getVal1();
                     Message msg=win.get(seq); // we *have* to get the message, because loopback means we didn't add it to win !
-                    if(msg != null && msg.isFlagSet(Message.Flag.OOB) && msg.setFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED))
+                    if(msg != null && msg.isFlagSet(OOB) && msg.setFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED))
                         oob_batch.add(msg);
                 }
                 deliverBatch(oob_batch);
@@ -799,7 +799,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     /** Sends a retransmit request to the given sender */
     protected void retransmit(SeqnoList missing, Address sender, Address real_dest) {
-        Message xmit_msg=new ObjectMessage(sender, missing).setFlag(Message.Flag.OOB)
+        Message xmit_msg=new ObjectMessage(sender, missing).setFlag(OOB, NO_FC)
           .putHeader(id, UnicastHeader3.createXmitReqHeader());
         if(!Objects.equals(local_addr, real_dest))
             xmit_msg.setSrc(real_dest);
@@ -857,7 +857,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     protected void addMessage(ReceiverEntry entry, Address sender, long seqno, Message msg) {
         final Table<Message> win=entry.msgs;
         update(entry, 1);
-        boolean oob=msg.isFlagSet(Message.Flag.OOB),
+        boolean oob=msg.isFlagSet(OOB),
           added=win.add(seqno, oob? DUMMY_OOB_MSG : msg); // adding the same dummy OOB msg saves space (we won't remove it)
 
         if(ack_threshold <= 1)
@@ -897,9 +897,9 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
         // An OOB message is passed up immediately. Later, when remove() is called, we discard it.
         // This affects ordering ! JIRA: https://issues.redhat.com/browse/JGRP-377
-        if(msg.isFlagSet(Message.Flag.OOB)) {
+        if(msg.isFlagSet(OOB)) {
             msg=win.get(seqno); // we *have* to get a message, because loopback means we didn't add it to win !
-            if(msg != null && msg.isFlagSet(Message.Flag.OOB) && msg.setFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED))
+            if(msg != null && msg.isFlagSet(OOB) && msg.setFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED))
                 deliverMessage(msg, sender, seqno);
         }
         removeAndDeliver(win, sender); // there might be more messages to deliver
@@ -1135,7 +1135,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             up_prot.up(msg);
         }
         catch(Throwable t) {
-            log.warn(Util.getMessage("FailedToDeliverMsg"), local_addr, msg.isFlagSet(Message.Flag.OOB) ?
+            log.warn(Util.getMessage("FailedToDeliverMsg"), local_addr, msg.isFlagSet(OOB) ?
               "OOB message" : "message", msg, t);
         }
     }
@@ -1190,7 +1190,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     protected void sendAck(Address dst, long seqno, short conn_id, Address real_dest) {
         if(!running) // if we are disconnected, then don't send any acks which throw exceptions on shutdown
             return;
-        Message ack=new EmptyMessage(dst).setFlag(DONT_BLOCK)
+        Message ack=new EmptyMessage(dst).setFlag(DONT_BLOCK).setFlag(NO_FC)
           .putHeader(this.id, UnicastHeader3.createAckHeader(seqno, conn_id, timestamper.incrementAndGet()));
         if(!Objects.equals(local_addr, real_dest))
             ack.setSrc(real_dest);
@@ -1218,7 +1218,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     protected void sendRequestForFirstSeqno(Address dest, Address original_dest) {
         if(last_sync_sent.addIfAbsentOrExpired(dest)) {
-            Message msg=new EmptyMessage(dest).setFlag(Message.Flag.OOB).setFlag(DONT_BLOCK)
+            Message msg=new EmptyMessage(dest).setFlag(OOB, NO_FC).setFlag(DONT_BLOCK)
               .putHeader(this.id, UnicastHeader3.createSendFirstSeqnoHeader(timestamper.incrementAndGet()));
             if(!Objects.equals(local_addr, original_dest))
                 msg.setSrc(original_dest);
@@ -1228,7 +1228,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     }
 
     public void sendClose(Address dest, short conn_id) {
-        Message msg=new EmptyMessage(dest).putHeader(id, UnicastHeader3.createCloseHeader(conn_id));
+        Message msg=new EmptyMessage(dest).putHeader(id, UnicastHeader3.createCloseHeader(conn_id)).setFlag(NO_FC);
         log.trace("%s --> %s: CLOSE(conn-id=%d)", local_addr, dest, conn_id);
         down_prot.down(msg);
     }

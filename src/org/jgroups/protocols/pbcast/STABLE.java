@@ -582,7 +582,7 @@ public class STABLE extends Protocol {
         }
         log.trace("%s: sending stable msg to %s: %s", local_addr, dest, printDigest(d));
         final ObjectMessage msg=new ObjectMessage(dest, d);
-        msg.setFlag(OOB, NO_RELIABILITY)
+        msg.setFlag(OOB, NO_RELIABILITY, NO_FC)
           .putHeader(this.id, new StableHeader(StableHeader.STABLE_GOSSIP, current_view.getViewId()));
         try {
             if(!send_in_background) {
@@ -625,7 +625,7 @@ public class STABLE extends Protocol {
         // but clear votes *before* sending it
         try {
             Message msg=new ObjectMessage(null, d)
-              .setFlag(OOB, NO_RELIABILITY, NO_RELAY).setFlag(DONT_LOOPBACK,DONT_BLOCK)
+              .setFlag(OOB, NO_RELIABILITY, NO_RELAY, NO_FC).setFlag(DONT_LOOPBACK,DONT_BLOCK)
               .putHeader(id, new StableHeader(StableHeader.STABILITY, view_id));
             log.trace("%s: sending stability msg %s", local_addr, printDigest(d));
             num_stability_msgs_sent++;
