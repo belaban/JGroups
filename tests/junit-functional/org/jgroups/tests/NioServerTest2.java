@@ -22,7 +22,7 @@ import java.util.List;
  * @author Bela Ban
  * @since  3.6.7
  */
-@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
+@Test(groups=Global.TIME_SENSITIVE,singleThreaded=true)
 public class NioServerTest2 {
     protected static final int     NUM_MSGS=10000;
     protected static final int     MSG_SIZE=1000;
