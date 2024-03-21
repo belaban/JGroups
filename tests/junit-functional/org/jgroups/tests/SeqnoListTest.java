@@ -42,6 +42,15 @@ public class SeqnoListTest {
         assert list.size() == 1;
     }
 
+    public void testAddLast() {
+        SeqnoList list=new SeqnoList(16);
+        list.add(15);
+        System.out.println("list = " + list);
+        assert list.size() == 1;
+        assert list.getFirst() == 15;
+        assert list.getLast() == 15;
+    }
+
     public void testGetLast() {
         SeqnoList list=new SeqnoList(20);
         assert list.getLast() == -1;

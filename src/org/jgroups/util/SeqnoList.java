@@ -126,32 +126,45 @@ public class SeqnoList extends FixedSizeBitSet implements SizeStreamable, Iterab
     public String toString() {
         if(isEmpty())
             return "{}";
-        StringBuilder sb=new StringBuilder("(").append(cardinality()).append("): {");
+        StringBuilder sb=new StringBuilder("(").append(size()).append("): {");
 
         boolean first=true;
         int num=Util.MAX_LIST_PRINT_SIZE;
-        for(int i=nextSetBit(0); i >= 0; i=nextSetBit(i + 1)) {
-            int endOfRun=nextClearBit(i);
+        int next_set_bit=0;
+        for(;;) {
+            next_set_bit=nextSetBit(next_set_bit);
+            if(next_set_bit == -1)
+                break;
+            int endOfRun=nextClearBit(next_set_bit);
             if(first)
                 first=false;
             else
                 sb.append(", ");
 
-            if(endOfRun != -1 && endOfRun-1 != i) {
-                sb.append(seqno(i)).append('-').append(seqno(endOfRun-1));
-                i=endOfRun;
+            if(endOfRun == -1) {
+                long last=getLast(), current=seqno(next_set_bit);
+                if(last == current)
+                    sb.append(last);
+                else
+                    sb.append(current).append('-').append(last);
+                break;
             }
-            else
-                sb.append(seqno(i));
+            else {
+                if(endOfRun-1 == next_set_bit)
+                    sb.append(seqno(next_set_bit));
+                else
+                    sb.append(seqno(next_set_bit)).append('-').append(seqno(endOfRun - 1));
+            }
+            next_set_bit=endOfRun;
             if(--num <= 0) {
                 sb.append(", ... ");
                 break;
             }
         }
-
         sb.append('}');
         return sb.toString();
     }
+
 
     public Iterator<Long> iterator() {
         return new SeqnoListIterator();
