@@ -6,6 +6,7 @@ import org.jgroups.Global;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.function.Supplier;
@@ -47,6 +48,13 @@ public class SeqnoList extends FixedSizeBitSet implements SizeStreamable, Iterab
     }
 
     public SeqnoList add(long ... seqnos) {
+        if(seqnos != null)
+            for(long seqno: seqnos)
+                add(seqno);
+        return this;
+    }
+
+    public SeqnoList add(Collection<Long> seqnos) {
         if(seqnos != null)
             for(long seqno: seqnos)
                 add(seqno);
