@@ -37,7 +37,7 @@ public class DNS_PING extends Discovery {
       systemProperty="jgroups.dns.dns_query")
     protected String  dns_query;
 
-    @Property(description="For SRV records returned by the DNS query, the non-0 ports returned by DNS are" +
+    @Property(description="For SRV records returned by the DNS query, the non-0 ports returned by DNS are " +
       "used. If this attribute is true, then the transport ports will also be used. Ignored for A records.")
     protected boolean probe_transport_ports;
 
