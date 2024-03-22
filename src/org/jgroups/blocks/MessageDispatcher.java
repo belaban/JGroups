@@ -71,6 +71,9 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
             channel.addChannelListener(this);
             local_addr=channel.getAddress();
             installUpHandler(prot_adapter, true);
+            Protocol top_prot=channel.stack() != null? channel.stack().getTopProtocol() : null;
+            if(top_prot != null)
+                prot_adapter.setDownProt(top_prot);
         }
         start();
     }
@@ -453,7 +456,7 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
     }
 
 
-    class ProtocolAdapter extends Protocol implements UpHandler {
+    protected class ProtocolAdapter extends Protocol implements UpHandler {
 
 
         /* ------------------------- Protocol Interface --------------------------- */
@@ -463,6 +466,10 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
             return "MessageDispatcher";
         }
 
+        public <T extends Protocol> T setDownProt(Protocol d) {
+            down_prot=d;
+            return (T)this;
+        }
 
         public <T extends Protocol> T setAddress(Address addr) {
             local_addr=addr;

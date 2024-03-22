@@ -94,6 +94,8 @@ public class RED extends Protocol {
     }
 
     public Object down(Message msg) {
+        if(msg.isFlagSet(Message.TransientFlag.DONT_BLOCK))
+            return down_prot.down(msg);
         if(enabled && bundler != null) {
             int current_queue_size=bundler.getQueueSize();
             double avg;

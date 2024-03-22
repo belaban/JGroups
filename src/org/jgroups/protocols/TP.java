@@ -371,7 +371,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     /** The thread pool which handles unmarshalling, version checks and dispatching of messages */
     @Component(name="thread_pool")
-    protected ThreadPool              thread_pool=new ThreadPool(this);
+    protected ThreadPool              thread_pool=new ThreadPool().log(this.log);
+
+    @Component(name="async_executor")
+    protected AsyncExecutor<Object>   async_executor=new AsyncExecutor<>(thread_pool);
 
     /** Factory which is used by the thread pool */
     protected ThreadFactory           thread_factory;
@@ -479,6 +482,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         msg_processing_policy.reset();
         if(local_transport != null)
             local_transport.resetStats();
+        if(thread_pool != null)
+            thread_pool.resetStats();
+        async_executor.resetStats();
     }
 
     public <T extends TP> T registerProbeHandler(DiagnosticsHandler.ProbeHandler handler) {
@@ -556,16 +562,19 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         return (T)this;
     }
 
-    public ThreadFactory getThreadPoolThreadFactory() {
+    public ThreadFactory getThreadFactory() {
         return thread_factory;
     }
 
-    public <T extends TP> T setThreadPoolThreadFactory(ThreadFactory factory) {
+    public <T extends TP> T setThreadFactory(ThreadFactory factory) {
         thread_factory=factory;
         if(thread_pool != null)
             thread_pool.setThreadFactory(factory);
         return (T)this;
     }
+
+    public AsyncExecutor<Object> getAsyncExecutor()                        {return async_executor;}
+    public <T extends TP> T      setAsyncExecutor(AsyncExecutor<Object> e) {async_executor=e; return (T)this;}
 
     public TimeScheduler getTimer() {return timer;}
 
@@ -588,11 +597,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         return (T)this;
     }
 
-    public ThreadFactory getThreadFactory() {
-        return thread_factory;
-    }
-
-    public <T extends TP> T setThreadFactory(ThreadFactory factory) {thread_factory=factory; return (T)this;}
 
     public SocketFactory getSocketFactory() {
         return socket_factory;
@@ -694,6 +698,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             log.debug("use_virtual_threads was set to false, as virtual threads are not available in this Java version");
             use_virtual_threads=false;
         }
+        thread_pool.useVirtualThreads(this.use_virtual_threads);
 
         if(local_transport_class != null) {
             Class<?> cl=Util.loadClass(local_transport_class, getClass());
@@ -702,8 +707,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         }
 
         if(thread_factory == null)
-            thread_factory=new LazyThreadFactory("jgroups", false, true)
-              .useVirtualThreads(use_virtual_threads).log(this.log);
+            setThreadFactory(new LazyThreadFactory("jgroups", false, true)
+                               .useVirtualThreads(use_virtual_threads).log(this.log));
 
         // local_addr is null when shared transport, channel_name is not used
         setInAllThreadFactories(cluster_name != null? cluster_name.toString() : null, local_addr, thread_naming_pattern);
@@ -767,6 +772,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     /** Creates the unicast and multicast sockets and starts the unicast and multicast receiver threads */
     public void start() throws Exception {
         timer.start();
+        thread_pool.setAddress(local_addr);
+        async_executor.start();
         if(time_service != null)
             time_service.start();
         fetchLocalAddresses();
@@ -785,6 +792,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(time_service != null)
             time_service.stop();
         timer.stop();
+        async_executor.stop();
     }
 
     public void destroy() {

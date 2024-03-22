@@ -350,6 +350,11 @@ public class Util {
           });
     }
 
+    public static int assertPositive(int value, String message) {
+        if(value <= 0) throw new IllegalArgumentException(message);
+        return value;
+    }
+
     public static boolean allChannelsHaveSameView(JChannel... channels) {
         View first=channels[0].getView();
         for(JChannel ch : channels) {

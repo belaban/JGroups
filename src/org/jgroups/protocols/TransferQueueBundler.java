@@ -5,6 +5,7 @@ import org.jgroups.Message;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.util.AverageMinMax;
+import org.jgroups.util.Util;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -48,16 +49,19 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
     }
 
     public TransferQueueBundler(int capacity) {
-        this(new ArrayBlockingQueue<>(assertPositive(capacity, "bundler capacity cannot be " + capacity)));
+        this(new ArrayBlockingQueue<>(Util.assertPositive(capacity, "bundler capacity cannot be " + capacity)));
     }
 
-    public Thread               getThread()               {return bundler_thread;}
+    public Thread                getThread()             {return bundler_thread;}
 
     @ManagedAttribute(description="Size of the queue")
-    public int                  getQueueSize()            {return queue.size();}
+    public int                   getQueueSize()          {return queue.size();}
 
     @ManagedAttribute(description="Size of the remove-queue")
-    public int                  removeQueueSize()         {return remove_queue.size();}
+    public int                   removeQueueSize()       {return remove_queue.size();}
+
+    public boolean               dropWhenFull()          {return drop_when_full;}
+    public <T extends Bundler> T dropWhenFull(boolean d) {this.drop_when_full=d; return (T)this;}
 
 
     @Override
@@ -75,7 +79,7 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
         if(running)
             stop();
         // todo: replace with LinkedBlockingQueue and measure impact (if any) on perf
-        queue=new ArrayBlockingQueue<>(assertPositive(capacity, "bundler capacity cannot be " + capacity));
+        queue=new ArrayBlockingQueue<>(Util.assertPositive(capacity, "bundler capacity cannot be " + capacity));
         bundler_thread=transport.getThreadFactory().newThread(this, THREAD_NAME);
         running=true;
         bundler_thread.start();
@@ -161,8 +165,4 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
     }
 
 
-    protected static int assertPositive(int value, String message) {
-        if(value <= 0) throw new IllegalArgumentException(message);
-        return value;
-    }
 }

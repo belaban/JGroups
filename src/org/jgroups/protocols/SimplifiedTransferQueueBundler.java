@@ -21,7 +21,7 @@ public class SimplifiedTransferQueueBundler extends TransferQueueBundler {
     }
 
     public SimplifiedTransferQueueBundler(int capacity) {
-        super(new ArrayBlockingQueue<>(assertPositive(capacity, "bundler capacity cannot be " + capacity)));
+        super(new ArrayBlockingQueue<>(Util.assertPositive(capacity, "bundler capacity cannot be " + capacity)));
     }
 
     public int size() {

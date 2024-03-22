@@ -13,11 +13,15 @@ import org.jgroups.stack.*;
 import org.jgroups.util.UUID;
 import org.jgroups.util.*;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
+import java.io.InputStream;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.util.*;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Consumer;
 
@@ -612,6 +616,17 @@ public class JChannel implements Closeable {
         return msg != null? prot_stack.down(msg) : null;
     }
 
+    /**
+     * Sends a message down asynchronously. The sending is executed in the transport's thread pool. If the pool is full
+     * and the message is marked as {@link org.jgroups.Message.TransientFlag#DONT_BLOCK}, then it will be dropped,
+     * otherwise it will be sent on the caller's thread.
+     * @param msg The message to be sent
+     * @param async Whether to send the message asynchronously
+     * @return A CompletableFuture of the result (or exception)
+     */
+    public CompletableFuture<Object> down(Message msg, boolean async) {
+        return msg != null? prot_stack.down(msg, async) : null;
+    }
 
     /**
      * Callback method <BR>

@@ -33,7 +33,7 @@ if [ -f $HOME/logging.properties ]; then
 fi;
 
 #JG_FLAGS="-Djgroups.bind_addr=match-address:192.168.1.*"
-FLAGS="-server -Xmx1G -Xms500M"
+FLAGS="-server -Xmx1G -Xms500M -XX:+HeapDumpOnOutOfMemoryError"
 
 #FLAGS="$FLAGS -Duser.language=de"
 
@@ -49,5 +49,5 @@ FLAGS="-server -Xmx1G -Xms500M"
 
 # SSL_FLAGS="-Djavax.net.debug=ssl:handshake"
 
-java -cp $CP $SSL_FLAGS $DEBUG $LOG $JG_FLAGS $FLAGS $JMX $JMC  $*
+java -cp $CP $SSL_FLAGS $DEBUG $LOG $JG_FLAGS $FLAGS $JMX $JMC $*
 

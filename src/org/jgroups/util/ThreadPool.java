@@ -1,5 +1,6 @@
 package org.jgroups.util;
 
+import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.Lifecycle;
 import org.jgroups.annotations.ManagedAttribute;
@@ -7,15 +8,17 @@ import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.logging.Log;
-import org.jgroups.protocols.TP;
+import org.jgroups.logging.LogFactory;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Objects;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
+
+import static org.jgroups.conf.AttributeType.SCALAR;
 
 /**
  * Thread pool based on {@link java.util.concurrent.ThreadPoolExecutor}
@@ -24,7 +27,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class ThreadPool implements Lifecycle {
     protected Executor            thread_pool;
-    protected final TP            tp;
+    protected Log                 log;
+    protected ThreadFactory       thread_factory;
+    protected Address             address;
 
     // Incremented when a message is rejected due to a full thread pool. When this value exceeds thread_dumps_threshold,
     // the threads will be dumped at FATAL level, and thread_dumps will be reset to 0
@@ -32,6 +37,9 @@ public class ThreadPool implements Lifecycle {
 
     @Property(description="Whether or not the thread pool is enabled. If false, tasks will be run on the caller's thread")
     protected boolean             enabled=true;
+
+    @Property(description="If true, create virtual threads, otherwise create native threads")
+    protected boolean             use_virtual_threads;
 
     @Property(description="Minimum thread pool size for the thread pool")
     protected int                 min_threads;
@@ -60,12 +68,13 @@ public class ThreadPool implements Lifecycle {
     @Property(description="Added to the view size when the pool is increased dynamically")
     protected int                 delta=10;
 
+    @ManagedAttribute(description="The number of messages dropped because the thread pool was full",type= SCALAR)
+    protected final LongAdder     num_rejected_msgs=new LongAdder();
 
-
-
-    public ThreadPool(TP tp) {
-        this.tp=Objects.requireNonNull(tp);
+    public ThreadPool() {
     }
+
+    public boolean isEnabled() {return enabled;}
 
     public Executor getThreadPool() {
         return thread_pool;
@@ -79,16 +88,17 @@ public class ThreadPool implements Lifecycle {
     }
 
     public ThreadPool setThreadFactory(ThreadFactory factory) {
+        this.thread_factory=factory;
         if(thread_pool instanceof ThreadPoolExecutor)
             ((ThreadPoolExecutor)thread_pool).setThreadFactory(factory);
         return this;
     }
 
+    public ThreadFactory getThreadFactory() {return thread_factory;}
+
     public boolean isShutdown() {
         return thread_pool instanceof ExecutorService && ((ExecutorService)thread_pool).isShutdown();
     }
-
-    public boolean isEnabled() {return enabled;}
 
     public int getMinThreads() {return min_threads;}
 
@@ -144,11 +154,16 @@ public class ThreadPool implements Lifecycle {
         return this;
     }
 
+    public Address    getAddress()                             {return address;}
+    public ThreadPool setAddress(Address a)                    {this.address=a; return this;}
     public boolean    getIncreaseMaxSizeDynamically()          {return increase_max_size_dynamically;}
     public ThreadPool setIncreaseMaxSizeDynamically(boolean b) {increase_max_size_dynamically=b; return this;}
-
-    public int        getDelta() {return delta;}
-    public ThreadPool setDelta(int d) {delta=d; return this;}
+    public int        getDelta()                               {return delta;}
+    public ThreadPool setDelta(int d)                          {delta=d; return this;}
+    public long       numberOfRejectedMessages()               {return num_rejected_msgs.sum();}
+    public ThreadPool log(Log l)                               {log=l; return this;}
+    public boolean    useVirtualThreads()                      {return use_virtual_threads;}
+    public ThreadPool useVirtualThreads(boolean b)             {use_virtual_threads=b; return this;}
 
     @ManagedAttribute(description="Number of thread dumps")
     public int getNumberOfThreadDumps() {return thread_dumps.get();}
@@ -178,12 +193,20 @@ public class ThreadPool implements Lifecycle {
         return 0;
     }
 
+    public void resetStats() {
+        num_rejected_msgs.reset();
+    }
+
 
     @Override
     public void init() throws Exception {
+        if(log == null)
+            log=LogFactory.getLog(getClass());
         if(enabled) {
+            if(thread_factory == null)
+                thread_factory=new DefaultThreadFactory("thread-pool", true, true);
             thread_pool=ThreadCreator.createThreadPool(min_threads, max_threads, keep_alive_time,
-                  rejection_policy, new SynchronousQueue<>(), tp.getThreadFactory(), tp.useVirtualThreads(), tp.getLog());
+                                  rejection_policy, new SynchronousQueue<>(), thread_factory, use_virtual_threads, log);
         }
         else // otherwise use the caller's thread to unmarshal the byte buffer into a message
             thread_pool=new DirectExecutor();
@@ -202,6 +225,11 @@ public class ThreadPool implements Lifecycle {
         }
     }
 
+    public void doExecute(Runnable task) {
+        thread_pool.execute(task);
+    }
+
+    public Executor pool() {return thread_pool;}
 
     public boolean execute(Runnable task) {
         try {
@@ -209,34 +237,33 @@ public class ThreadPool implements Lifecycle {
             return true;
         }
         catch(RejectedExecutionException ex) {
-            tp.getMessageStats().incrNumRejectedMsgs();
+            num_rejected_msgs.increment();
             // https://issues.redhat.com/browse/JGRP-2403
             if(thread_dumps.incrementAndGet() == thread_dumps_threshold) {
                 String thread_dump=Util.dumpThreads();
-                Log l=tp.getLog();
                 if(thread_dump_path != null) {
                     File file=new File(thread_dump_path, "jgroups_threaddump_" + System.currentTimeMillis() + ".txt");
                     try(BufferedWriter writer=new BufferedWriter(new FileWriter(file))) {
                         writer.write(thread_dump);
-                        l.fatal("%s: thread pool is full (max=%d, active=%d); thread dump (dumped once, until thread_dump is reset): %s",
-                                tp.getAddress(), max_threads, getThreadPoolSize(), file.getAbsolutePath());
+                        log.fatal("%s: thread pool is full (max=%d, active=%d); thread dump (dumped once, until thread_dump is reset): %s",
+                                  address, max_threads, getThreadPoolSize(), file.getAbsolutePath());
                     }
                     catch(IOException e) {
-                        l.warn("%s: cannot generate the thread dump to %s: %s", tp.getAddress(), file.getAbsolutePath(), e);
-                        l.fatal("%s: thread pool is full (max=%d, active=%d); " +
-                                  "thread dump (dumped once, until thread_dump is reset):\n%s",
-                                tp.getAddress(), max_threads, getThreadPoolSize(), thread_dump);
+                        log.warn("%s: cannot generate the thread dump to %s: %s", address, file.getAbsolutePath(), e);
+                        log.fatal("%s: thread pool is full (max=%d, active=%d); " +
+                                    "thread dump (dumped once, until thread_dump is reset):\n%s",
+                                  address, max_threads, getThreadPoolSize(), thread_dump);
                     }
                 }
                 else
-                    l.fatal("%s: thread pool is full (max=%d, active=%d); thread dump (dumped once, until thread_dump is reset):\n%s",
-                            tp.getAddress(), max_threads, getThreadPoolSize(), thread_dump);
+                    log.fatal("%s: thread pool is full (max=%d, active=%d); thread dump (dumped once, until thread_dump is reset):\n%s",
+                              address, max_threads, getThreadPoolSize(), thread_dump);
             }
             return false;
         }
         catch(Throwable t) {
-            tp.getLog().error("failure submitting task to thread pool", t);
-            tp.getMessageStats().incrNumRejectedMsgs();
+            log.error("failure submitting task to thread pool", t);
+            num_rejected_msgs.increment();
             return false;
         }
     }
@@ -254,6 +281,5 @@ public class ThreadPool implements Lifecycle {
         pool.setRejectedExecutionHandler(new ShutdownRejectedExecutionHandler(handler));
         return pool;
     }
-
 
 }

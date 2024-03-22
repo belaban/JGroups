@@ -47,9 +47,6 @@ public class MsgStats {
     /** The average number of messages in a received {@link MessageBatch} */
     protected final AverageMinMax avg_batch_size=new AverageMinMax();
 
-    @ManagedAttribute(description="Number of messages rejected by the thread pool (because it was full)",type=SCALAR)
-    protected final LongAdder     num_rejected_msgs=new LongAdder();
-
     @ManagedAttribute(description="Number of multicast bytes sent",type=BYTES)
     protected final LongAdder     num_mcast_bytes_sent=new LongAdder();
     @ManagedAttribute(description="Number of multicast bytes received",type=BYTES)
@@ -105,9 +102,6 @@ public class MsgStats {
 
     public long     getNumMcastBytesReceived()  {return num_mcast_bytes_received.sum();}
 
-    public long     getNumRejectedMsgs()        {return num_rejected_msgs.sum();}
-    public MsgStats incrNumRejectedMsgs()       {num_rejected_msgs.increment(); return this;}
-
 
     public MsgStats sent(Address dest, int length) {
         if(!enabled)
@@ -154,7 +148,6 @@ public class MsgStats {
                   num_mcasts_sent, num_mcasts_received,
                   num_single_msgs_sent, num_single_msgs_received,
                   num_batches_sent, num_batches_received,
-                  num_rejected_msgs,
                   num_mcast_bytes_sent, num_mcast_bytes_received,
                   num_ucast_bytes_sent, num_ucast_bytes_received)
           .forEach(LongAdder::reset);

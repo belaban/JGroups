@@ -13,17 +13,16 @@ import org.jgroups.conf.XmlNode;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.TP;
-import org.jgroups.util.MessageBatch;
-import org.jgroups.util.SocketFactory;
-import org.jgroups.util.ThreadFactory;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 
@@ -67,7 +66,6 @@ public abstract class Protocol implements Lifecycle {
     protected Address              local_addr;
 
     protected final Log            log=LogFactory.getLog(this.getClass());
-
 
     protected List<Policy>         policies;
 
@@ -311,12 +309,33 @@ public abstract class Protocol implements Lifecycle {
     }
 
     /**
-     * A message is sent down the stack. Protocols may examine the message and do something (e.g. add a header) with it
-     * before passing it down.
+     * A message is sent down the stack. Protocols may examine the message and do something (e.g. add a header)
+     * with it, before passing it down.
      * @since 4.0
      */
     public Object down(Message msg) {
         return down_prot.down(msg);
+    }
+
+
+    /**
+     * Passes a message down asynchronously. The sending is executed in the transport's thread pool. If the pool is full
+     * and the message is marked as {@link org.jgroups.Message.TransientFlag#DONT_BLOCK}, then it will be dropped,
+     * otherwise it will be sent on the caller's thread.
+     * @param msg The message to be sent
+     * @param async Whether to send the message asynchronously
+     * @return A CompletableFuture of the result (or exception)
+     */
+    public CompletableFuture<Object> down(Message msg, boolean async) {
+        AsyncExecutor<Object> executor=getTransport().getAsyncExecutor();
+        Supplier<Object> s=() -> down(msg);
+        try {
+            return !async? CompletableFuture.completedFuture(down_prot.down(msg)):
+              executor.execute(s, msg.isFlagSet(Message.TransientFlag.DONT_BLOCK));
+        }
+        catch(Throwable t) {
+            return CompletableFuture.failedFuture(t);
+        }
     }
 
 

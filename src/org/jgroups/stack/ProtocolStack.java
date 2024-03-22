@@ -18,6 +18,7 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 
 
@@ -950,6 +951,10 @@ public class ProtocolStack extends Protocol {
 
     public Object down(Message msg) {
         return top_prot != null? top_prot.down(msg) : null;
+    }
+
+    public CompletableFuture<Object> down(Message msg, boolean async) {
+        return top_prot != null? top_prot.down(msg, async) : null;
     }
 
 
