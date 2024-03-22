@@ -269,16 +269,9 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     public boolean logNotFoundMessages()                   {return log_not_found_msgs;}
     public NAKACK2 logNotFoundMessages(boolean flag)       {log_not_found_msgs=flag; return this;}
     public NAKACK2 setResendLastSeqnoMaxTimes(int n)       {this.resend_last_seqno_max_times=n; return this;}
-    public int getResendLastSeqnoMaxTimes()                {return resend_last_seqno_max_times;}
-
-    public NAKACK2 setXmitFromRandomMember(boolean xmit_from_random_member) {
-        this.xmit_from_random_member=xmit_from_random_member; return this;
-    }
-
-    public NAKACK2 setDiscardDeliveredMsgs(boolean discard_delivered_msgs) {
-        this.discard_delivered_msgs=discard_delivered_msgs;
-        return this;
-    }
+    public int     getResendLastSeqnoMaxTimes()            {return resend_last_seqno_max_times;}
+    public NAKACK2 setXmitFromRandomMember(boolean r)      {this.xmit_from_random_member=r; return this;}
+    public NAKACK2 setDiscardDeliveredMsgs(boolean d)      {this.discard_delivered_msgs=d;return this;}
 
     public long getMaxRebroadcastTimeout() {return max_rebroadcast_timeout;}
     public NAKACK2 setMaxRebroadcastTimeout(long m) {this.max_rebroadcast_timeout=m; return this;}
