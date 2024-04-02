@@ -5,6 +5,7 @@ import org.jgroups.Message;
 import org.jgroups.Version;
 import org.jgroups.View;
 import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.protocols.Discovery;
 import org.jgroups.protocols.PingData;
 import org.jgroups.protocols.PingHeader;
 import org.jgroups.protocols.pbcast.GMS;
@@ -17,6 +18,7 @@ import org.jgroups.util.Util;
 
 import java.io.*;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -170,14 +172,17 @@ public class ParseMessages {
         return new BinaryToAsciiInputStream(in);
     }
 
-    protected static void parseDiscoveryResponse(Message msg) throws IOException, ClassNotFoundException {
+    protected static void parseDiscoveryResponse(Message msg) throws Exception {
         Collection<Header> hdrs=msg.getHeaders().values();
         for(Header hdr: hdrs) {
             if(hdr instanceof PingHeader) {
                 byte[] payload=msg.getArray();
                 if(payload != null) {
-                    PingData data=Util.streamableFromBuffer(PingData::new, payload, msg.getOffset(), msg.getLength());
-                    NameCache.add(data.getAddress(), data.getLogicalName());
+                    List<PingData> list=Discovery.deserialize(payload, msg.getOffset(), msg.getLength()); // Util.streamableFromBuffer(PingData::new, payload, msg.getOffset(), msg.getLength());
+                    if(list != null) {
+                        for(PingData data: list)
+                            NameCache.add(data.getAddress(), data.getLogicalName());
+                    }
                 }
                 break;
             }

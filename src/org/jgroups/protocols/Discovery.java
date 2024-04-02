@@ -622,7 +622,7 @@ public abstract class Discovery extends Protocol {
         }
     }
 
-    protected static List<PingData> deserialize(final byte[] data, int offset, int length) throws Exception {
+    public static List<PingData> deserialize(final byte[] data, int offset, int length) throws Exception {
         ByteArrayDataInputStream in=new ByteArrayDataInputStream(data, offset, length);
         int num=in.readInt();
         if(num == 0)
