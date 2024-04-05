@@ -5,6 +5,8 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+import static org.jgroups.util.Util.printTime;
+
 /**
  * Maintains an approximation of an average of values. Done by keeping track of the number of samples, and computing
  * the new average as (count*avg + new-sample) / ++count. We reset the count if count*avg would lead to an overflow.<p/>
@@ -65,7 +67,13 @@ public class Average implements Streamable {
     }
 
     public String toString() {
-        return String.format("%,.2f %s", avg, unit == null? "" : Util.suffix(unit));
+        return unit != null? toString(unit) : String.format("%,.2f %s", avg, unit == null? "" : Util.suffix(unit));
+    }
+
+    public String toString(TimeUnit u) {
+        if(count == 0)
+            return "n/a";
+        return String.format("%s", printTime(getAverage(), u));
     }
 
     @Override
