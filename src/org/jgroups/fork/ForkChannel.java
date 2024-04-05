@@ -168,10 +168,20 @@ public class ForkChannel extends JChannel implements ChannelListener {
     }
 
     @Override
+    public ForkChannel connect(String cluster_name, boolean useFlushIfPresent) throws Exception {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public ForkChannel connect(String cluster_name, Address target, long timeout) throws Exception {
         connect(cluster_name);
         main_channel.getState(target, timeout);
         return this;
+    }
+
+    @Override
+    public ForkChannel connect(String cluster_name, Address target, long timeout, boolean useFlushIfPresent) throws Exception {
+        throw new UnsupportedOperationException();
     }
 
     /** Removes the fork-channel from the fork-stack's hashmap and resets its state. Does <em>not</em> affect the
@@ -189,8 +199,7 @@ public class ForkChannel extends JChannel implements ChannelListener {
         return this;
     }
 
-    /** Closes the fork-channel, essentially setting its state to CLOSED. Note that - contrary to a regular channel -
-     * a closed fork-channel can be connected again: this means re-attaching the fork-channel to the main-channel*/
+    /** Closes the fork-channel, essentially setting its state to CLOSED */
     @Override
     public void close() {
         ((ForkProtocolStack)prot_stack).remove(fork_channel_id);
@@ -263,7 +272,6 @@ public class ForkChannel extends JChannel implements ChannelListener {
         return this;
     }
 
-
     /**
      * Creates a new FORK protocol, or returns the existing one, or throws an exception. Never returns null.
      */
@@ -281,8 +289,6 @@ public class ForkChannel extends JChannel implements ChannelListener {
         return fork;
     }
 
-
-
     protected void setHeader(Message msg) {
         FORK.ForkHeader hdr=msg.getHeader(FORK.ID);
         if(hdr != null)
@@ -290,7 +296,6 @@ public class ForkChannel extends JChannel implements ChannelListener {
         else
             msg.putHeader(FORK.ID, new FORK.ForkHeader(null, fork_channel_id));
     }
-
 
     /** Copies state from main-channel to this fork-channel */
     protected void copyFields() {
