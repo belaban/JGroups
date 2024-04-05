@@ -88,7 +88,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     @Property(description="Max number of messages to ask for in a retransmit request. 0 disables this and uses " +
       "the max bundle size in the transport")
-    protected int     max_xmit_req_size;
+    protected int     max_xmit_req_size=1024;
 
     @Property(description="The max size of a message batch when delivering messages. 0 is unbounded")
     protected int     max_batch_size;
