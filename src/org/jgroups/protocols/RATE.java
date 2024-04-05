@@ -90,7 +90,7 @@ public class RATE extends Protocol {
     @Override
     public void start() throws Exception {
         super.start();
-        f=timer.scheduleWithFixedDelay(task, 1000, interval, TimeUnit.MILLISECONDS, false);
+        f=timer.scheduleWithFixedDelay(task, interval, interval, TimeUnit.MILLISECONDS, false);
     }
 
     @Override
