@@ -199,7 +199,7 @@ public class NioMessage extends BaseMessage {
         out.writeBoolean(use_direct_memory_for_allocations);
         out.writeInt(buf != null? getLength() : -1);
         if(buf != null) {
-            if(!isDirect()) {
+            if(buf.hasArray()) {
                 byte[] buffer=buf.array();
                 int offset=buf.arrayOffset() + buf.position(), length=buf.remaining();
                 out.write(buffer, offset, length);
