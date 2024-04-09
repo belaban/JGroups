@@ -1,8 +1,11 @@
 package org.jgroups.tests;
 
+import org.jgroups.DefaultMessageFactory;
 import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.NioMessage;
+import org.jgroups.util.ByteArray;
+import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -227,6 +230,16 @@ public class NioMessageTest extends MessageTestBase {
         msg.setObject(null);
         obj=msg.getObject();
         assert obj == null;
+    }
+
+    public void testReadonly() throws Exception {
+        ByteBuffer payload=ByteBuffer.allocate(4).putInt(322649).flip().asReadOnlyBuffer();
+        Message msg=new NioMessage(null, payload);
+        ByteArray buf=Util.messageToBuffer(msg);
+        NioMessage msg2=(NioMessage)Util.messageFromBuffer(buf.getArray(), buf.getOffset(), buf.getLength(), new DefaultMessageFactory());
+        ByteBuffer buf2=msg2.getBuf();
+        assert payload.equals(buf2);
+
     }
 
 }
