@@ -707,7 +707,9 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     }
 
     protected Address determineCoordinator() {
-        return members.getFirst();
+        synchronized(members) {
+            return members.getFirst();
+        }
     }
 
     /** Returns the second-in-line */

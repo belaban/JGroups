@@ -91,11 +91,9 @@ public class Membership {
 
 
    /**
-    * Removes an member from the membership. If this member doesn't exist, no action will be
+    * Removes a member from the membership. If this member doesn't exist, no action will be
     * performed on the existing membership
-    * 
-    * @param old_member
-    *           - the member to be removed
+    * @param old_member The member to be removed
     */
     public Membership remove(Address old_member) {
         if(old_member != null) {
@@ -109,7 +107,6 @@ public class Membership {
 
    /**
     * Removes all the members contained in v from this membership
-    * 
     * @param v a list of all the members to be removed
     */
     public Membership remove(Collection<Address> v) {
@@ -120,13 +117,6 @@ public class Membership {
         }
         return this;
     }
-
-    public Membership removeAll(Membership m) {
-        // throw new UnsupportedOperationException("implement!");
-        // todo: implement and provide unit test
-        return this;
-    }
-
 
     public Membership retainAll(Collection<Address> v) {
         if(v != null) {
@@ -153,12 +143,13 @@ public class Membership {
     * of this membership by invoking the {@code Clear} method. Then it will add all the all
     * members provided in the vector v
     * 
-    * @param v
-    *           - a vector containing all the members this membership will contain
+    * @param v List containing all the members this membership will contain
     */
     public Membership set(Collection<Address> v) {
-        clear();
-        return add(v);
+        synchronized(members) {
+            clear();
+            return add(v);
+        }
     }
 
 
@@ -169,9 +160,11 @@ public class Membership {
     * @param m a membership containing all the members this membership will contain
     */
     public Membership set(Membership m) {
-        clear();
-        if(m != null)
-            add(m.getMembers());
+        synchronized(members) {
+            clear();
+            if(m != null)
+                add(m.getMembers());
+        }
         return this;
     }
 
@@ -188,8 +181,10 @@ public class Membership {
      * @param suspects - a vector containing a list of members (Address) to be removed from this membership
      */
     public Membership merge(Collection<Address> new_mems, Collection<Address> suspects) {
-        remove(suspects);
-        return add(new_mems);
+        synchronized(members) {
+            remove(suspects);
+            return add(new_mems);
+        }
     }
 
 
