@@ -46,7 +46,7 @@ public class Version {
     public static final String   CODENAME         = "jgroups.codename";
     private static final Pattern VERSION_REGEXP   = Pattern.compile("((\\d+)\\.(\\d+)\\.(\\d+).*)");
     private static boolean       VERSION_CHECK    = true; // version checking is enabled by default
-    
+    private static boolean       VERSION_CHECK_MICRO = false; // micro version checking is disabled by default
 
     static {
         String ver=null, codename="n/a";
@@ -82,9 +82,17 @@ public class Version {
         catch(Exception e) {
             throw new IllegalStateException(String.format("failed parsing %s (%s correct?)", ver, VERSION_FILE), e);
         }
+        initConfig();
+    }
+
+    // must be a public method as it is called from VersionTest to configure properties
+    public static void initConfig() {
         String s=Util.getProperty(Global.VERSION_CHECK);
         if(s != null)
             VERSION_CHECK=Boolean.parseBoolean(s);
+        String versionCheckMicro = Util.getProperty(Global.VERSION_CHECK_MICRO);
+        if(versionCheckMicro != null)
+            VERSION_CHECK_MICRO=Boolean.parseBoolean(versionCheckMicro);
     }
 
     public static short getMajor() {return major;}
@@ -167,12 +175,16 @@ public class Version {
     /**
      * Checks whether ver is binary compatible with the current version. The rule for binary compatibility is that
      * the major and minor versions have to match, whereas micro versions can differ.
+     * If VERSION_CHECK_MICRO is set to true (default: false) only exact same version is considered compatible.
      * @param ver
      * @return
      */
     public static boolean isBinaryCompatible(short ver) {
         if(!VERSION_CHECK || version == ver)
             return true;
+        if (VERSION_CHECK_MICRO) {
+            return false;
+        }
         short tmp_major=(short)((ver & MAJOR_MASK) >> MAJOR_SHIFT);
         short tmp_minor=(short)((ver & MINOR_MASK) >> MINOR_SHIFT);
         return major == tmp_major && minor == tmp_minor;
@@ -182,6 +194,9 @@ public class Version {
     public static boolean isBinaryCompatible(short ver1, short ver2) {
         if(!VERSION_CHECK || ver1 == ver2)
             return true;
+        if (VERSION_CHECK_MICRO) {
+            return false;
+        }
         short[] tmp=decode(ver1);
         short tmp_major=tmp[0], tmp_minor=tmp[1];
         tmp=decode(ver2);
