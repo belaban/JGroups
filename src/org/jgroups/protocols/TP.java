@@ -254,14 +254,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         return logical_addr_cache_reaper != null && !logical_addr_cache_reaper.isDone();
     }
 
-    @ManagedAttribute(description="Returns the average batch size of received batches")
-    public String getAvgBatchSize() {
-        return avg_batch_size.toString();
-    }
-
-    public AverageMinMax avgBatchSize() {return avg_batch_size;}
-
-
     @Property(name="level", description="Sets the level")
     public <T extends Protocol> T setLevel(String level) {
         T retval=super.setLevel(level);
@@ -296,7 +288,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     /* --------------------------------------------- JMX  ---------------------------------------------- */
     @Component(name="msg_stats")
-    protected final MsgStats msg_stats=new MsgStats();
+    protected final MsgStats msg_stats=new MsgStats().enable(stats);
 
 
     /** The name of the group to which this member is connected. With a shared transport, the channel name is
@@ -421,9 +413,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     protected Future<?> logical_addr_cache_reaper;
 
-    /** The average number of messages in a received {@link MessageBatch} */
-    protected final AverageMinMax avg_batch_size=new AverageMinMax();
-
     protected static final LazyRemovalCache.Printable<Address,LazyRemovalCache.Entry<PhysicalAddress>> print_function=
       (logical_addr, entry) -> {
           StringBuilder sb=new StringBuilder();
@@ -454,7 +443,13 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     public MsgStats getMessageStats() {return msg_stats;}
 
-    /** Whether or not hardware multicasting is supported */
+    @Override
+    public void enableStats(boolean flag) {
+        super.enableStats(flag);
+        msg_stats.enable(flag);
+    }
+
+    /** Whether hardware multicasting is supported */
     public abstract boolean supportsMulticasting();
 
     public boolean isMulticastCapable() {return supportsMulticasting();}
@@ -481,7 +476,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     public void resetStats() {
         msg_stats.reset();
-        avg_batch_size.clear();
         msg_processing_policy.reset();
         if(local_transport != null)
             local_transport.resetStats();
@@ -1024,7 +1018,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     /** A message needs to be sent to a single member or all members */
     public Object down(Message msg) {
         if(header != null)
-            msg.putHeader(this.id, header); // added patch by Roland Kurmann (March 20 2003)
+            msg.putHeader(this.id, header); // added patch by Roland Kurmann (March 20, 2003)
 
         setSourceAddress(msg); // very important !! listToBuffer() will fail with a null src address !!
 
@@ -1117,7 +1111,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         final Message copy=loopback_copy? msg.copy(true, true) : msg;
         if(is_trace)
             log.trace("%s: looping back message %s, headers are %s", local_addr, copy, copy.printHeaders());
-
+        msg_stats.received(msg);
         if(!loopback_separate_thread) {
             passMessageUp(copy, null, false, multicast, false);
             return;
@@ -1129,8 +1123,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected void _send(Message msg, Address dest) {
         try {
             Bundler tmp_bundler=bundler;
-            if(tmp_bundler != null)
+            if(tmp_bundler != null) {
                 tmp_bundler.send(msg);
+                msg_stats.sent(msg);
+            }
         }
         catch(InterruptedIOException ignored) {
         }
@@ -1273,6 +1269,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             final MessageBatch[] batches=Util.readMessageBatch(in, multicast, factory);
             final MessageBatch regular=batches[0], oob=batches[1];
 
+            // we need to update the stats *before* processing the batches: protocols can remove msgs from the batch
+            if(oob != null) msg_stats.received(oob);
+            if(regular != null) msg_stats.received(regular);
             processBatch(oob,    true);
             processBatch(regular,false);
         }
@@ -1293,6 +1292,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
             boolean oob=msg.isFlagSet(Message.Flag.OOB);
             msg_processing_policy.process(msg, oob);
+            msg_stats.received(msg);
         }
         catch(Throwable t) {
             log.error(String.format(Util.getMessage("IncomingMsgFailure"), local_addr), t);
@@ -1331,10 +1331,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
     public void doSend(byte[] buf, int offset, int length, Address dest) throws Exception {
-        if(stats) {
-            msg_stats.incrNumMsgsSent(1);
-            msg_stats.incrNumBytesSent(length);
-        }
         if(dest != null)
             sendTo(dest, buf, offset, length);
         else

@@ -232,8 +232,7 @@ public class PerDestinationBundler implements Bundler {
                 output.position(0);
                 Util.writeMessage(msg, output, dest == null);
                 transport.doSend(output.buffer(), 0, output.position(), dest);
-                if(transport.statsEnabled())
-                    transport.getMessageStats().incrNumSingleMsgsSent(1);
+                transport.getMessageStats().incrNumSingleMsgsSent();
                 num_single_msgs_sent.increment();
             }
             catch(Throwable e) {
@@ -252,8 +251,7 @@ public class PerDestinationBundler implements Bundler {
                 Util.writeMessageList(dest, src, transport.cluster_name.chars(), list,
                                       output, dest == null, transport.getId());
                 transport.doSend(output.buffer(), 0, output.position(), dest);
-                if(transport.statsEnabled())
-                    transport.getMessageStats().incrNumBatchesSent(1);
+                transport.getMessageStats().incrNumBatchesSent();
                 num_batches_sent.increment();
             }
             catch(Throwable e) {

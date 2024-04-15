@@ -44,8 +44,7 @@ public class NoBundler implements Bundler {
         output.position(0);
         Util.writeMessage(msg, output, dest == null);
         transport.doSend(output.buffer(), 0, output.position(), dest);
-        if(transport.statsEnabled())
-            transport.getMessageStats().incrNumSingleMsgsSent(1);
+        transport.getMessageStats().incrNumSingleMsgsSent();
     }
 
 }

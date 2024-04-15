@@ -209,7 +209,7 @@ public class ThreadPool implements Lifecycle {
             return true;
         }
         catch(RejectedExecutionException ex) {
-            tp.getMessageStats().incrNumRejectedMsgs(1);
+            tp.getMessageStats().incrNumRejectedMsgs();
             // https://issues.redhat.com/browse/JGRP-2403
             if(thread_dumps.incrementAndGet() == thread_dumps_threshold) {
                 String thread_dump=Util.dumpThreads();
@@ -236,7 +236,7 @@ public class ThreadPool implements Lifecycle {
         }
         catch(Throwable t) {
             tp.getLog().error("failure submitting task to thread pool", t);
-            tp.getMessageStats().incrNumRejectedMsgs(1);
+            tp.getMessageStats().incrNumRejectedMsgs();
             return false;
         }
     }

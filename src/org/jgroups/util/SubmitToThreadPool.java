@@ -3,7 +3,6 @@ package org.jgroups.util;
 import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.logging.Log;
-import org.jgroups.protocols.MsgStats;
 import org.jgroups.protocols.TP;
 import org.jgroups.protocols.TpHeader;
 import org.jgroups.stack.MessageProcessingPolicy;
@@ -60,8 +59,6 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
             Message msg=it.next();
             if(msg.isFlagSet(Message.Flag.DONT_BUNDLE) && msg.isFlagSet(Message.Flag.OOB)) {
                 it.remove();
-                if(tp.statsEnabled())
-                    tp.getMessageStats().incrNumOOBMsgsReceived(1);
                 tp.getThreadPool().execute(new SingleMessageHandlerWithClusterName(msg, cname));
                 removed=true;
             }
@@ -94,15 +91,6 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
             Address dest=msg.getDest();
             boolean multicast=dest == null;
             try {
-                if(tp.statsEnabled()) {
-                    MsgStats msg_stats=tp.getMessageStats();
-                    boolean oob=msg.isFlagSet(Message.Flag.OOB);
-                    if(oob)
-                        msg_stats.incrNumOOBMsgsReceived(1);
-                    else
-                        msg_stats.incrNumMsgsReceived(1);
-                    msg_stats.incrNumBytesReceived(msg.getLength());
-                }
                 byte[] cname=getClusterName();
                 tp.passMessageUp(msg, cname, true, multicast, true);
             }
@@ -142,18 +130,6 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
         public void run() {
             if(batch == null || (!batch.multicast() && tp.unicastDestMismatch(batch.dest())))
                 return;
-            if(tp.statsEnabled()) {
-                int batch_size=batch.size();
-                MsgStats msg_stats=tp.getMessageStats();
-                boolean oob=batch.getMode() == MessageBatch.Mode.OOB;
-                if(oob)
-                    msg_stats.incrNumOOBMsgsReceived(batch_size);
-                else
-                    msg_stats.incrNumMsgsReceived(batch_size);
-                msg_stats.incrNumBatchesReceived(1);
-                msg_stats.incrNumBytesReceived(batch.length());
-                tp.avgBatchSize().add(batch_size);
-            }
             passBatchUp();
         }
 
