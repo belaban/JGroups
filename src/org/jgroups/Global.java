@@ -4,9 +4,9 @@ import org.jgroups.util.UUID;
 
 /**
  * Global is a JGroups internal class defining global variables.
- * 
+ *
  * @since 2.0
- * @author Bela Ban 
+ * @author Bela Ban
  */
 public final class Global {
     public static final int BYTE_SIZE   = Byte.SIZE    / 8; // 1
@@ -54,6 +54,7 @@ public final class Global {
     public static final String LOG_CLASS="jgroups.log_class"; // class of preferred logger
 
     public static final String VERSION_CHECK="jgroups.version.check"; // used to disable/enable version checking
+    public static final String VERSION_CHECK_MICRO="jgroups.version.check.micro"; // used to disable/enable version micro checking
 
     /** System prop for defining the default number of headers in a Message */
     public static final String DEFAULT_HEADERS="jgroups.msg.default_headers";
@@ -62,7 +63,7 @@ public final class Global {
 
     /** First ID assigned for building blocks (defined in jg-protocols.xml) */
     public static final short  BLOCKS_START_ID=200;
-    
+
     public static final long   THREADPOOL_SHUTDOWN_WAIT_TIME=3000;
     public static final long   THREAD_SHUTDOWN_WAIT_TIME=300;
 
@@ -72,7 +73,7 @@ public final class Global {
 
     public static final String PREFIX="org.jgroups.protocols.";
     public static final String DEFAULT_PROTOCOL_STACK="udp.xml";
-    
+
     // for TestNG
     public static final String FUNCTIONAL="functional";
     public static final String TIME_SENSITIVE="time-sensitive";

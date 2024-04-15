@@ -3,6 +3,7 @@ package org.jgroups.tests;
 import org.jgroups.Global;
 import org.jgroups.Version;
 import org.jgroups.util.Util;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import java.util.Properties;
@@ -17,6 +18,50 @@ import static org.testng.Assert.assertTrue;
 @Test(groups=Global.FUNCTIONAL)
 public class VersionTest {
 
+    @AfterMethod
+    public void cleanupProperties() {
+        System.clearProperty(Global.VERSION_CHECK);
+        System.clearProperty(Global.VERSION_CHECK_MICRO);
+        Version.initConfig();
+    }
+
+    public void testBinaryCompatibilityWithoutVersionCheck() {
+        System.setProperty(Global.VERSION_CHECK, "false");
+        Version.initConfig();
+        // Everything should be binary compatible now as VERSION_CHECK is disabled
+        assert isBinaryCompatible(0, 0, 0, 0, 0, 0);
+        assert isBinaryCompatible(1, 2, 0, 1, 2, 1);
+        assert isBinaryCompatible(1, 2, 0, 1, 2, 60);
+        assert isBinaryCompatible(2, 5, 0, 2, 4, 1);
+        assert isBinaryCompatible(2, 5, 0, 2, 6, 0);
+    }
+
+    public void testBinaryCompatibilityWithVersionCheckMicro() {
+        System.setProperty(Global.VERSION_CHECK, "true");
+        System.setProperty(Global.VERSION_CHECK_MICRO, "true");
+        Version.initConfig();
+        // Only exact same version should be considered compatible as VERSION_CHECK_MICRO is enabled
+        assert isBinaryCompatible(0, 0, 0, 0, 0, 0);
+        assert isBinaryCompatible(5, 3, 1, 5, 3, 1);
+        // Everything that differs is considered incompatible as VERSION_CHECK_MICRO is enabled
+        assert !isBinaryCompatible(1, 2, 0, 1, 2, 1);
+        assert !isBinaryCompatible(1, 2, 0, 1, 2, 60);
+        assert !isBinaryCompatible(2, 5, 0, 2, 4, 1);
+        assert !isBinaryCompatible(2, 5, 0, 2, 6, 0);
+    }
+
+    public void testBinaryCompatibilityWithVersionCheckMicroButVersionCheckFalse() {
+        System.setProperty(Global.VERSION_CHECK, "false");
+        System.setProperty(Global.VERSION_CHECK_MICRO, "true");
+        Version.initConfig();
+        // Everything should be binary compatible now as VERSION_CHECK is disabled, regardless of VERSION_CHECK_MICRO
+        assert isBinaryCompatible(0, 0, 0, 0, 0, 0);
+        assert isBinaryCompatible(5, 3, 1, 5, 3, 1);
+        assert isBinaryCompatible(1, 2, 0, 1, 2, 1);
+        assert isBinaryCompatible(1, 2, 0, 1, 2, 60);
+        assert isBinaryCompatible(2, 5, 0, 2, 4, 1);
+        assert isBinaryCompatible(2, 5, 0, 2, 6, 0);
+    }
 
     public void testIfManifestContainsImplementationVersion() throws Exception {
         Properties properties=new Properties();
@@ -61,7 +106,7 @@ public class VersionTest {
     }
 
 
-    
+
     public static void testBinaryCompatibility() {
         assert isBinaryCompatible(0,0,0, 0,0,0);
         assert isBinaryCompatible(1,2,0, 1,2,1);
@@ -86,5 +131,5 @@ public class VersionTest {
     }
 
 
-   
+
 }
