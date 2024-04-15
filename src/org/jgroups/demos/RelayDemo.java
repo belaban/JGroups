@@ -213,7 +213,7 @@ public class RelayDemo implements Receiver {
                              "\ntopo: prints the topology (site masters and local members of all sites)" +
                              "\npt: prints the cache (no refresh)" +
                              "\nroutes: prints all routes (if site master)" +
-                             "\nsendto <dest> msg <number of times> <sleep (ms)>\n");
+                             "\nsendto <dest> msg <number of times> <sleep (ms)> (dest example: \"N:net1\")\n");
     }
 
 
