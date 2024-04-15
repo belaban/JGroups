@@ -40,7 +40,9 @@ import java.util.function.Supplier;
  * 
  * @author Vladimir Blagojevic
  * @since 2.4
+ * @deprecated Over 20 years old and nodoby uses it. Will be removed in 5.4
  */
+@Deprecated(since="5.3.5",forRemoval=true)
 @MBean(description = "Flushes the cluster")
 public class FLUSH extends Protocol {
 
