@@ -192,6 +192,8 @@ public class JChannel implements Closeable {
     public JChannel      stats(boolean stats)                {this.stats=stats; return this;}
     public boolean       getDiscardOwnMessages()             {return discard_own_messages;}
     public JChannel      setDiscardOwnMessages(boolean flag) {discard_own_messages=flag; return this;}
+
+    @Deprecated(since="5.3.5",forRemoval=true)
     public boolean       flushSupported()                    {return flush_supported;}
 
 
@@ -316,6 +318,7 @@ public class JChannel implements Closeable {
     }
 
     /** Connects the channel to a cluster. */
+    @Deprecated(since="5.3.5",forRemoval=true)
     @ManagedOperation(description="Connects the channel to a group")
     protected synchronized JChannel connect(String cluster_name, boolean useFlushIfPresent) throws Exception {
         if(!_preConnect(cluster_name))
@@ -360,6 +363,7 @@ public class JChannel implements Closeable {
      * @exception StateTransferException State transfer was not successful
      *
      */
+    @Deprecated(since="5.3.5",forRemoval=true)
     public synchronized JChannel connect(String cluster_name, Address target, long timeout,
                                      boolean useFlushIfPresent) throws Exception {
         if(!_preConnect(cluster_name))
@@ -506,6 +510,7 @@ public class JChannel implements Closeable {
 
 
     /** Retrieves state from the target member. See {@link #getState(Address,long)} for details */
+    @Deprecated(since="5.3.5",forRemoval=true)
     public JChannel getState(Address target, long timeout, boolean useFlushIfPresent) throws Exception {
     	Callable<Boolean> flusher =() -> Util.startFlush(JChannel.this);
 		return getState(target, timeout, useFlushIfPresent?flusher:null);
@@ -521,6 +526,7 @@ public class JChannel implements Closeable {
      * JGroups provides a helper random sleep time backoff algorithm for flush using Util class.
      * @param automatic_resume if true call {@link #stopFlush()} after the flush
      */
+    @Deprecated(since="5.3.5",forRemoval=true)
     public JChannel startFlush(boolean automatic_resume) throws Exception {
         if(!flushSupported())
             throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
@@ -545,6 +551,7 @@ public class JChannel implements Closeable {
      * {@link #stopFlush(List)} method with the same list of members used in {@link #startFlush(List, boolean)}.
      * @param automatic_resume if true call {@link #stopFlush()} after the flush
      */
+    @Deprecated(since="5.3.5",forRemoval=true)
     public JChannel startFlush(List<Address> flushParticipants, boolean automatic_resume) throws Exception {
         if (!flushSupported())
             throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
@@ -567,6 +574,7 @@ public class JChannel implements Closeable {
     }
 
     /** Stops the current flush round. Cluster members are unblocked and allowed to send new and pending messages */
+    @Deprecated(since="5.3.5",forRemoval=true)
     public JChannel stopFlush() {
         if(!flushSupported())
             throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
@@ -581,6 +589,7 @@ public class JChannel implements Closeable {
      * same list of members prior to invocation of this method.
      * @param flushParticipants the flush participants
      */
+    @Deprecated(since="5.3.5",forRemoval=true)
     public JChannel stopFlush(List<Address> flushParticipants) {
         if(!flushSupported())
             throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");

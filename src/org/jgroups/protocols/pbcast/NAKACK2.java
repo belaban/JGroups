@@ -172,6 +172,10 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     @ManagedAttribute(description="Number of retransmit responses sent",type=AttributeType.SCALAR)
     protected final LongAdder xmit_rsps_sent=new LongAdder();
 
+    /** The average number of messages in a received {@link MessageBatch} */
+    @ManagedAttribute(description="The average number of messages in a batch removed from the table and delivered to the application")
+    protected final AverageMinMax avg_batch_size=new AverageMinMax();
+
     @ManagedAttribute(description="Is the retransmit task running")
     public boolean isXmitTaskRunning() {return xmit_task != null && !xmit_task.isDone();}
 
@@ -456,6 +460,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         xmit_rsps_sent.reset();
         stability_msgs.clear();
         digest_history.clear();
+        avg_batch_size.clear();
         Table<Message> table=local_addr != null? xmit_table.get(local_addr) : null;
         if(table != null)
             table.resetStats();
@@ -936,20 +941,25 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         boolean remove_msgs=discard_delivered_msgs && !loopback;
         MessageBatch batch=new MessageBatch(buf.size()).dest(null).sender(sender).clusterName(cluster_name).multicast(true);
         Supplier<MessageBatch> batch_creator=() -> batch;
+        MessageBatch mb=null;
         do {
             try {
                 batch.reset();
                 // Don't include DUMMY and OOB_DELIVERED messages in the removed set
-                buf.removeMany(remove_msgs, max_batch_size, no_dummy_and_no_oob_delivered_msgs_and_no_dont_loopback_msgs,
-                               batch_creator, BATCH_ACCUMULATOR);
+                mb=buf.removeMany(remove_msgs, max_batch_size, no_dummy_and_no_oob_delivered_msgs_and_no_dont_loopback_msgs,
+                                  batch_creator, BATCH_ACCUMULATOR);
             }
             catch(Throwable t) {
                 log.error("failed removing messages from table for " + sender, t);
             }
-            if(!batch.isEmpty())
+            int size=batch.size();
+            if(size > 0) {
+                if(stats)
+                    avg_batch_size.add(size);
                 deliverBatch(batch);
+            }
         }
-        while(adders.decrementAndGet() != 0);
+        while(mb != null || adders.decrementAndGet() != 0);
         if(rebroadcasting)
             checkForRebroadcasts();
     }
@@ -964,7 +974,8 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
      * @param original_sender The member who originally sent the messsage. Guaranteed to be non-null
      */
     protected void handleXmitReq(Address xmit_requester, SeqnoList missing_msgs, Address original_sender) {
-        log.trace("%s <-- %s: XMIT(%s%s)", local_addr, xmit_requester, original_sender, missing_msgs);
+        if(is_trace)
+            log.trace("%s <-- %s: XMIT(%s%s)", local_addr, xmit_requester, original_sender, missing_msgs);
 
         if(stats)
             xmit_reqs_received.add(missing_msgs.size());
@@ -975,6 +986,8 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             return;
         }
 
+        if(is_trace)
+            log.trace("%s --> [all]: resending to %s %s", local_addr, original_sender, missing_msgs);
         for(long i: missing_msgs) {
             Message msg=buf.get(i);
             if(msg == null) {
@@ -982,8 +995,6 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                     log.warn(Util.getMessage("MessageNotFound"), local_addr, original_sender, i);
                 continue;
             }
-            if(is_trace)
-                log.trace("%s --> [all]: resending %s#%d", local_addr, original_sender, i);
             sendXmitRsp(xmit_requester, msg);
         }
     }
@@ -1070,6 +1081,9 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             msg.setSrc(local_addr);
 
         if(use_mcast_xmit) { // we simply send the original multicast message
+            // we modify the original message (instead of copying it) by setting flag DONT_BLOCK: this is fine because
+            // the original sender will send the message without this flag; only retransmissions will carry the flag
+            msg.setFlag(DONT_BLOCK);
             resend(msg);
             return;
         }
@@ -1477,7 +1491,8 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         Message retransmit_msg=new ObjectMessage(dest, missing_msgs).setFlag(OOB, NO_FC).setFlag(DONT_BLOCK)
           .putHeader(this.id, NakAckHeader2.createXmitRequestHeader(sender));
 
-        log.trace("%s --> %s: XMIT_REQ(%s)", local_addr, dest, missing_msgs);
+        if(is_trace)
+            log.trace("%s --> %s: XMIT_REQ(%s)", local_addr, dest, missing_msgs);
         down_prot.down(retransmit_msg);
         if(stats)
             xmit_reqs_sent.add(missing_msgs.size());
@@ -1511,7 +1526,6 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             xmit_task=null;
         }
     }
-
 
 
     /**

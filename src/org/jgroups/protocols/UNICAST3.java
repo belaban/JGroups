@@ -88,7 +88,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     @Property(description="Max number of messages to ask for in a retransmit request. 0 disables this and uses " +
       "the max bundle size in the transport")
-    protected int     max_xmit_req_size=1024;
+    protected int     max_xmit_req_size;
 
     @Property(description="The max size of a message batch when delivering messages. 0 is unbounded")
     protected int     max_batch_size;
@@ -949,14 +949,14 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         if(adders.getAndIncrement() != 0)
             return;
 
-        final MessageBatch batch=new MessageBatch(win.getNumDeliverable())
-          .dest(local_addr).sender(sender).multicast(false);
+        MessageBatch batch=new MessageBatch(win.getNumDeliverable()).dest(local_addr).sender(sender).multicast(false);
         Supplier<MessageBatch> batch_creator=() -> batch;
+        MessageBatch mb=null;
         do {
             try {
                 batch.reset(); // sets index to 0: important as batch delivery may not remove messages from batch!
-                win.removeMany(true, max_batch_size, drop_oob_and_dont_loopback_msgs_filter,
-                               batch_creator, BATCH_ACCUMULATOR);
+                mb=win.removeMany(true, max_batch_size, drop_oob_and_dont_loopback_msgs_filter,
+                                  batch_creator, BATCH_ACCUMULATOR);
             }
             catch(Throwable t) {
                 log.error("%s: failed removing messages from table for %s: %s", local_addr, sender, t);
@@ -966,7 +966,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 deliverBatch(batch); // catches Throwable
             }
         }
-        while(adders.decrementAndGet() != 0);
+        while(mb != null || adders.decrementAndGet() != 0);
     }
 
 
