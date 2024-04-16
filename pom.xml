@@ -4,12 +4,12 @@
     <artifactId>jgroups</artifactId>
     <packaging>jar</packaging>
     <name>JGroups</name>
-    <version>5.3.6.Final-SNAPSHOT</version>
+    <version>5.4.0.Final-SNAPSHOT</version>
     <description>Reliable cluster communication toolkit</description>
     <url>http://www.jgroups.org</url>
 
     <properties>
-        <codename>Zoncolan</codename>
+        <codename>Alpe d'Huez</codename>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
