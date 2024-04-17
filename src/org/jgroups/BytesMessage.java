@@ -185,10 +185,10 @@ public class BytesMessage extends BaseMessage {
             return setArray((ByteArray)obj);
         if(obj instanceof ByteBuffer) {
             ByteBuffer bb=(ByteBuffer)obj;
-            if(bb.isDirect())
-                return (BytesMessage)setArray(Util.bufferToArray(bb));
-            else
+            if(bb.hasArray())
                 return setArray(bb.array(), bb.arrayOffset()+bb.position(), bb.remaining());
+            else
+                return (BytesMessage)setArray(Util.bufferToArray(bb));
         }
         try {
             ByteArray tmp=Util.objectToBuffer(obj);
