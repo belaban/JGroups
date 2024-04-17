@@ -23,7 +23,7 @@
                      xsi:schemaLocation="fork fork-stacks-4.2.xsd">
             <fork-stack id="lock">
                 <config>
-                    <CENTRAL_LOCK2/>
+                    <STATS/>
                 </config>
             </fork-stack>
         </fork-stacks>

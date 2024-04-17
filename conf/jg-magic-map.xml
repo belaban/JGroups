@@ -42,7 +42,6 @@
     <class id="68"  name="org.jgroups.blocks.RequestCorrelator$MultiDestinationHeader"/>
     <class id="69"  name="org.jgroups.protocols.DAISYCHAIN$DaisyHeader"/>
     <class id="71"  name="org.jgroups.protocols.STOMP$StompHeader"/>
-    <class id="72"  name="org.jgroups.protocols.Locking$LockingHeader"/>
     <class id="74"  name="org.jgroups.protocols.COUNTER$CounterHeader"/>
     <class id="75"  name="org.jgroups.protocols.MERGE3$MergeHeader"/>
     <class id="76"  name="org.jgroups.protocols.RSVP$RsvpHeader"/>
