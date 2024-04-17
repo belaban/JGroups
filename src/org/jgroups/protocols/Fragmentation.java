@@ -18,8 +18,7 @@ public class Fragmentation extends Protocol {
 
     @Property(description="The max number of bytes in a message. Larger messages will be fragmented",
       type=AttributeType.BYTES)
-    protected int                 frag_size=60000;
-
+    protected int       frag_size=60000;
     protected LongAdder num_frags_sent=new LongAdder();
     protected LongAdder num_frags_received=new LongAdder();
 
