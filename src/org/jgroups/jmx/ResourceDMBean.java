@@ -10,6 +10,8 @@ import org.jgroups.logging.LogFactory;
 import org.jgroups.util.Util;
 
 import javax.management.*;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -91,9 +93,16 @@ public class ResourceDMBean implements DynamicMBean {
     }
 
 
-
     public MBeanInfo getMBeanInfo() {
         return new MBeanInfo(obj.getClass().getCanonicalName(), "DynamicMBean", attrInfo, null, opInfo, null);
+    }
+
+    public void forAllAttributes(BiConsumer<String,AttributeEntry> c) {
+        if(c == null)
+            return;
+        for(Map.Entry<String,AttributeEntry> e: atts.entrySet()) {
+            c.accept(e.getKey(), e.getValue());
+        }
     }
 
     public Object getAttribute(String name) {
@@ -521,10 +530,7 @@ public class ResourceDMBean implements DynamicMBean {
     
     
 
-
-
-
-    protected static class AttributeEntry {
+    public static class AttributeEntry {
 
         /** The name of the field or method. Can be different from the key in atts when name in @Property or
          * @ManagedAttribute  was used */
@@ -533,21 +539,23 @@ public class ResourceDMBean implements DynamicMBean {
         protected Accessor                 getter;
         protected Accessor                 setter;
 
-        protected AttributeEntry(String name, MBeanAttributeInfo info) {
+        public AttributeEntry(String name, MBeanAttributeInfo info) {
             this(name, info, null, null);
         }
 
-        protected AttributeEntry(String name, MBeanAttributeInfo info, Accessor getter, Accessor setter) {
+        public AttributeEntry(String name, MBeanAttributeInfo info, Accessor getter, Accessor setter) {
             this.name=name;
             this.info=info;
             this.getter=getter;
             this.setter=setter;
         }
 
-        protected Accessor       getter()                    {return getter;}
-        protected AttributeEntry getter(Accessor new_getter) {this.getter=new_getter; return this;}
-        protected Accessor       setter()                    {return setter;}
-        protected AttributeEntry setter(Accessor new_setter) {this.setter=new_setter; return this;}
+        public String             name()                      {return name;}
+        public MBeanAttributeInfo info()                      {return info;}
+        public Accessor           getter()                    {return getter;}
+        public AttributeEntry     getter(Accessor new_getter) {this.getter=new_getter; return this;}
+        public Accessor           setter()                    {return setter;}
+        public AttributeEntry     setter(Accessor new_setter) {this.setter=new_setter; return this;}
 
 
         public String toString() {
@@ -588,21 +596,39 @@ public class ResourceDMBean implements DynamicMBean {
     }
 
     public static class FieldAccessor implements Accessor {
-        protected final Field  field;
-        protected final Object target;
+        protected final Field                       field;
+        protected final Object                      target;
+        protected static final MethodHandles.Lookup LOOKUP=MethodHandles.lookup();
+        protected       MethodHandle                mh;
 
         public FieldAccessor(Field field, Object target) {
             this.field=field;
             this.target=target;
             if(!field.isAccessible())
                 field.setAccessible(true);
+            try {
+                mh=LOOKUP.unreflectGetter(field);
+            }
+            catch(IllegalAccessException e) {
+                // todo: log warning?
+                // throw new RuntimeException(e);
+            }
         }
 
         public Field getField() {return field;}
 
         public Object invoke(Object new_val) throws Exception {
-            if(new_val == null)
+            if(new_val == null) {
+                if(mh != null) {
+                    try {
+                        return mh.invoke(target);
+                    }
+                    catch(Throwable e) {
+                        ;
+                    }
+                }
                 return field.get(target);
+            }
             else {
                 field.set(target, new_val);
                 return null;
