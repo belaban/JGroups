@@ -453,6 +453,19 @@
                     <artifactId>build-helper-maven-plugin</artifactId>
                     <version>3.5.0</version>
                 </plugin>
+
+                <plugin>
+                    <groupId>org.asciidoctor</groupId>
+                    <artifactId>asciidoctor-maven-plugin</artifactId>
+                    <version>2.2.5</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.asciidoctor</groupId>
+                            <artifactId>asciidoctorj-diagram</artifactId>
+                            <version>2.2.14</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>
                 <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
                 <plugin>
                     <groupId>org.eclipse.m2e</groupId>
@@ -481,4 +494,83 @@
             </plugins>
         </pluginManagement>
     </build>
+
+    <profiles>
+        <profile>
+            <!-- Profile to generate the manual. -->
+            <id>manual</id>
+            <properties>
+                <skipTests>true</skipTests>
+            </properties>
+            <build>
+                <plugins>
+                    <!-- Generate the tables with the protocol properties. -->
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>generate-protocol-properties</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-classpath</argument>
+                                <classpath/>
+                                <argument>org.jgroups.util.PropertiesToAsciidoc</argument>
+                                <argument>${basedir}/doc/manual/protocols-template.adoc</argument>
+                                <argument>${basedir}/doc/manual/installation-template.adoc</argument>
+                            </arguments>
+                        </configuration>
+                    </plugin>
+
+                    <!-- Generates the manual files. -->
+                    <!-- The generated output is in target/doc/manual/manual.html -->
+                    <plugin>
+                        <groupId>org.asciidoctor</groupId>
+                        <artifactId>asciidoctor-maven-plugin</artifactId>
+
+                        <configuration>
+                            <sourceDirectory>${basedir}/doc/manual</sourceDirectory>
+                            <requires>
+                                <require>asciidoctor-diagram</require>
+                            </requires>
+                        </configuration>
+
+                        <executions>
+                            <execution>
+                                <id>generate-manual</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>process-asciidoc</goal>
+                                </goals>
+
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/doc/manual</outputDirectory>
+                                    <attributes>
+                                        <revdate>${maven.build.timestamp}</revdate>
+                                        <organization>${project.organization.name}</organization>
+                                        <source-highlighter>rouge</source-highlighter>
+                                        <rouge-style>github</rouge-style>
+                                        <icons>font</icons>
+                                        <toclevels>3</toclevels>
+                                        <sectnums>true</sectnums>
+                                        <sectnumlevels>3</sectnumlevels>
+                                        <sectanchors>true</sectanchors>
+                                    </attributes>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+
 </project>

@@ -84,7 +84,7 @@ Bela Ban, San Jose, Aug 2002, Kreuzlingen Switzerland 2019
 
 include::./overview.adoc[Overview]
 
-include::./installation.adoc.tmp[Installation]
+include::./installation-generated.adoc[Installation]
 
 include::./api.adoc[API]
 
@@ -92,5 +92,5 @@ include::./blocks.adoc[Building blocks]
 
 include::./advanced.adoc[Advanced topics]
 
-include::./protocols.adoc.tmp[Protocol list]
+include::./protocols-generated.adoc[Protocol list]
 
