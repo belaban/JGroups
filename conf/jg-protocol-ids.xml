@@ -20,7 +20,6 @@
     <class id="19" name="org.jgroups.protocols.SEQUENCER"/>
     <class id="20" name="org.jgroups.protocols.FD_ALL"/>
     <class id="21" name="org.jgroups.protocols.FD_ALL2"/>
-    <class id="22" name="org.jgroups.protocols.pbcast.FLUSH"/>
     <class id="23" name="org.jgroups.protocols.AUTH"/>
     <class id="24" name="org.jgroups.protocols.pbcast.STATE"/>
     <class id="25" name="org.jgroups.protocols.pbcast.STATE_SOCK"/>

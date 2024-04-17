@@ -94,9 +94,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
       type=AttributeType.TIME)
     protected long                      view_ack_collection_timeout=2000;
 
-    @Property(description="Use flush for view changes. Default is true")
-    protected boolean                   use_flush_if_present=true;
-
     @Property(description="Logs failures for collecting all view acks if true")
     protected boolean                   log_collect_msgs;
 
@@ -149,11 +146,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     /** To collect VIEW_ACKs from all members */
     protected final AckCollector        ack_collector=new AckCollector();
-
-    //[JGRP-700] - FLUSH: flushing should span merge
-    protected final AckCollector        merge_ack_collector=new AckCollector();
-
-    protected boolean                   flushProtocolInStack;
 
     // Has this coord sent its first view since becoming coord ? Used to send a full- or delta- view */
     protected boolean                   first_view_sent;
@@ -669,10 +661,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                     becomeCoordinator();
             }
             else {
-                if(was_coord || impl instanceof ClientGmsImpl) {
+                if(was_coord || impl instanceof ClientGmsImpl)
                     becomeParticipant();
-                    merge_ack_collector.reset(null); // we don't need this one anymore
-                }
             }
         }
 
@@ -684,7 +674,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
         List<Address> tmp_mbrs=new_view.getMembers();
         ack_collector.retainAll(tmp_mbrs);
-        merge_ack_collector.retainAll(tmp_mbrs);
 
         if(new_view instanceof MergeView) {
             // Everybody except the merge leader cancels the merge, otherwise - if UNICAST3.loopback is true - we'd
@@ -760,59 +749,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         return (Digest)down_prot.down(Event.GET_DIGEST_EVT);
     }
 
-    boolean startFlush(View view) {
-       return _startFlush(view, 4, true, 1000L, 5000L);
-   }
-
-   boolean startFlush(View view, int maxAttempts, long floor, long ceiling) {
-       return _startFlush(view, maxAttempts, true, floor, ceiling);
-   }
-
-   protected boolean _startFlush(final View new_view, int maxAttempts, boolean resumeIfFailed, long randomFloor, long randomCeiling) {
-       if(!flushProtocolInStack)
-           return true;
-       try {
-           boolean successfulFlush=false;
-           boolean validView=new_view != null && new_view.size() > 0;
-           if(validView && flushProtocolInStack) {
-               int attemptCount = 0;
-               while (attemptCount < maxAttempts) {
-                   if (attemptCount > 0)
-                       Util.sleepRandom(randomFloor, randomCeiling);
-                   try {
-                       up_prot.up(new Event(Event.SUSPEND, new ArrayList<>(new_view.getMembers())));
-                       successfulFlush = true;
-                       break;
-                   } catch (Exception e) {
-                       attemptCount++;
-                   }
-               }
-
-               if(successfulFlush)
-                   log.trace("%s: successful GMS flush by coordinator", local_addr);
-               else {
-                   if(resumeIfFailed)
-                       up(new Event(Event.RESUME, new ArrayList<>(new_view.getMembers())));
-                   log.warn("%s: GMS flush by coordinator failed", local_addr);
-               }
-           }
-           return successfulFlush;
-       } catch (Exception e) {
-           return false;
-       }
-   }
-
-    void stopFlush() {
-        if(flushProtocolInStack) {
-            log.trace("%s: sending RESUME event", local_addr);
-            up_prot.up(new Event(Event.RESUME));
-        }
-    }
-
-    void stopFlush(List<Address> members) {
-        log.trace("%s: sending RESUME event", local_addr);
-        up_prot.up(new Event(Event.RESUME,members));
-    }
 
     public Object up(Event evt) {
         switch(evt.getType()) {
@@ -826,7 +762,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                     suspect_reqs[index++]=new Request(Request.SUSPECT, mbr);
                 suspected_mbrs.add(suspects);
                 ack_collector.suspect(suspected_mbrs.getMembers());
-                merge_ack_collector.suspect(suspects);
                 view_handler.add(suspect_reqs);
                 return retval;
 
@@ -872,12 +807,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
         switch(type) {
             case Event.CONNECT:
-            case Event.CONNECT_USE_FLUSH:
             case Event.CONNECT_WITH_STATE_TRANSFER:
-            case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
-                boolean use_flush=type == Event.CONNECT_USE_FLUSH || type == Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH;
-                boolean state_transfer=type == Event.CONNECT_WITH_STATE_TRANSFER
-                        || type == Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH;
+                boolean state_transfer=type == Event.CONNECT_WITH_STATE_TRANSFER;
 
                 if(print_local_addr) {
                     PhysicalAddress physical_addr=print_physical_addrs?
@@ -900,21 +831,14 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                     throw new IllegalStateException("local_addr is null");
 
                 if(state_transfer)
-                    impl.joinWithStateTransfer(local_addr, use_flush);
+                    impl.joinWithStateTransfer(local_addr);
                 else
-                    impl.join(local_addr, use_flush);
+                    impl.join(local_addr);
                 return null;  // don't pass down: event has already been passed down
 
             case Event.DISCONNECT:
                 impl.leave();
                 return down_prot.down(evt); // notify the other protocols, but ignore the result
-
-            case Event.CONFIG :
-               Map<String,Object> config=evt.getArg();
-               if((config != null && config.containsKey("flush_supported"))){
-                 flushProtocolInStack=true;
-               }
-               break;
 
             case Event.GET_VIEW_FROM_COORD:
                 Address coord=view != null? view.getCreator() : null;
@@ -949,10 +873,10 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     protected Object handle(GmsHeader hdr, Message msg) {
         switch(hdr.type) {
             case GmsHeader.JOIN_REQ:
-                view_handler.add(new Request(Request.JOIN, hdr.mbr, null, hdr.useFlushIfPresent));
+                view_handler.add(new Request(Request.JOIN, hdr.mbr, null));
                 break;
             case GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER:
-                view_handler.add(new Request(Request.JOIN_WITH_STATE_TRANSFER, hdr.mbr, null, hdr.useFlushIfPresent));
+                view_handler.add(new Request(Request.JOIN_WITH_STATE_TRANSFER, hdr.mbr, null));
                 break;
             case GmsHeader.JOIN_RSP:
                 JoinRsp join_rsp=readJoinRsp(msg.getArray(), msg.getOffset(), msg.getLength());
@@ -1036,11 +960,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 down_prot.down(new Event(Event.MERGE_DIGEST, tmp));
                 break;
 
-            case GmsHeader.INSTALL_MERGE_VIEW_OK: //[JGRP-700] - FLUSH: flushing should span merge
-                merge_ack_collector.ack(msg.getSrc());
-                break;
-
-            case GmsHeader.CANCEL_MERGE: //[JGRP-524] - FLUSH and merge: flush doesn't wrap entire merge process
+            case GmsHeader.CANCEL_MERGE:
                 impl.handleMergeCancelled(hdr.merge_id);
                 break;
 
@@ -1361,21 +1281,18 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         public static final byte CANCEL_MERGE                 =  9;
         public static final byte VIEW_ACK                     = 10;
         public static final byte JOIN_REQ_WITH_STATE_TRANSFER = 11;
-        public static final byte INSTALL_MERGE_VIEW_OK        = 12;
         public static final byte GET_DIGEST_REQ               = 13;
         public static final byte GET_DIGEST_RSP               = 14;
         public static final byte INSTALL_DIGEST               = 15;
         public static final byte GET_CURRENT_VIEW             = 16;
 
         public static final short MERGE_ID_PRESENT = 1 << 2;
-        public static final short USE_FLUSH        = 1 << 3;
         public static final short MERGE_REJECTED   = 1 << 4;
 
 
         protected byte    type;
         protected Address mbr;                  // used when type=JOIN_REQ or LEAVE_REQ
         protected MergeId merge_id;             // used when type=MERGE_REQ or MERGE_RSP or INSTALL_MERGE_VIEW or CANCEL_MERGE
-        protected boolean useFlushIfPresent;    // used when type=JOIN_REQ
         protected boolean merge_rejected=false; // used when type=MERGE_RSP
 
 
@@ -1387,15 +1304,11 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         }
 
         /** Used for JOIN_REQ or LEAVE_REQ header */
-        public GmsHeader(byte type, Address mbr, boolean useFlushIfPresent) {
+        public GmsHeader(byte type, Address mbr) {
             this.type=type;
             this.mbr=mbr;
-            this.useFlushIfPresent = useFlushIfPresent;
         }
 
-        public GmsHeader(byte type, Address mbr) {
-            this(type,mbr,true);
-        }
 
         public short getMagicId() {return 55;}
 
@@ -1431,7 +1344,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 merge_id.readFrom(in);
             }
             merge_rejected=(flags & MERGE_REJECTED) == MERGE_REJECTED;
-            useFlushIfPresent=(flags & USE_FLUSH) == USE_FLUSH;
         }
 
         @Override
@@ -1447,7 +1359,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         protected short determineFlags() {
             short retval=0;
             if(merge_id != null)  retval|=MERGE_ID_PRESENT;
-            if(useFlushIfPresent) retval|=USE_FLUSH;
             if(merge_rejected)    retval|=MERGE_REJECTED;
             return retval;
         }
@@ -1489,7 +1400,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 case CANCEL_MERGE:                 return "CANCEL_MERGE";
                 case VIEW_ACK:                     return "VIEW_ACK";
                 case JOIN_REQ_WITH_STATE_TRANSFER: return "JOIN_REQ_WITH_STATE_TRANSFER";
-                case INSTALL_MERGE_VIEW_OK:        return "INSTALL_MERGE_VIEW_OK";
                 case GET_DIGEST_REQ:               return "GET_DIGEST_REQ";
                 case GET_DIGEST_RSP:               return "GET_DIGEST_RSP";
                 case INSTALL_DIGEST:               return "INSTALL_DIGEST";

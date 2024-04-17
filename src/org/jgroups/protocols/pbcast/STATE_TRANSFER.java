@@ -45,8 +45,6 @@ public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<
     /** set to true while waiting for a STATE_RSP */
     protected volatile boolean               waiting_for_state_response=false;
 
-    protected boolean                        flushProtocolInStack=false;
-
     @ManagedAttribute public long   getNumberOfStateRequests()  {return num_state_reqs.sum();}
     @ManagedAttribute(type=AttributeType.BYTES)
                       public long   getNumberOfStateBytesSent() {return num_bytes_sent.sum();}
@@ -80,8 +78,6 @@ public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<
 
     @ManagedOperation(description="Closes BARRIER and suspends STABLE")
     public void closeBarrierAndSuspendStable() {
-        if(!isDigestNeeded())
-            return;
         log.trace("%s: sending down CLOSE_BARRIER and SUSPEND_STABLE", local_addr);
         down_prot.down(new Event(Event.CLOSE_BARRIER));
         down_prot.down(new Event(Event.SUSPEND_STABLE));
@@ -89,16 +85,12 @@ public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<
 
     @ManagedOperation(description="Opens BARRIER and resumes STABLE")
     public void openBarrierAndResumeStable() {
-        if(!isDigestNeeded())
-            return;
         log.trace("%s: sending down OPEN_BARRIER and RESUME_STABLE", local_addr);
         down_prot.down(new Event(Event.OPEN_BARRIER));
         down_prot.down(new Event(Event.RESUME_STABLE));
     }
 
     public void openBarrier() {
-        if(!isDigestNeeded())
-            return;
         log.trace("%s: sending down OPEN_BARRIER", local_addr);
         down_prot.down(new Event(Event.OPEN_BARRIER));
     }
@@ -193,32 +185,12 @@ public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<
                     down_prot.down(state_req);
                 }
                 return null; // don't pass down any further !         
-
-            case Event.CONFIG:
-                Map<String,Object> config=evt.getArg();
-                if(config != null && config.containsKey("flush_supported")) {
-                    flushProtocolInStack=true;
-                }
-                break;
         }
 
         return down_prot.down(evt); // pass on to the layer below us
     }
 
     /* --------------------------- Private Methods -------------------------------- */
-
-    /**
-     * When FLUSH is used we do not need to pass digests between members
-     * 
-     * see JGroups/doc/design/PartialStateTransfer.txt see
-     * JGroups/doc/design/FLUSH.txt
-     * 
-     * @return true if use of digests is required, false otherwise
-     */
-    protected boolean isDigestNeeded() {
-        return !flushProtocolInStack;
-    }
-
 
     protected void punchHoleFor(Address member) {
         down_prot.down(new Event(Event.PUNCH_HOLE, member));
@@ -273,8 +245,7 @@ public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<
     }
 
     protected void handleException(Throwable exception) {
-        if(isDigestNeeded())
-            openBarrierAndResumeStable();
+        openBarrierAndResumeStable();
         up_prot.up(new Event(Event.GET_STATE_OK, new StateTransferResult(exception)));
     }
 
@@ -290,21 +261,19 @@ public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<
         log.debug("%s: received state request from %s", local_addr, requester);
 
         Digest digest=null;
-        if(isDigestNeeded()) {
-            try {
-                punchHoleFor(requester);
-                closeBarrierAndSuspendStable();
-                digest=(Digest)down_prot.down(Event.GET_DIGEST_EVT);
-            }
-            catch(Throwable t) {
-                sendException(requester, t);
-                resumeStable();
-                closeHoleFor(requester);
-                return;
-            }
-            finally {
-                openBarrier();
-            }
+        try {
+            punchHoleFor(requester);
+            closeBarrierAndSuspendStable();
+            digest=(Digest)down_prot.down(Event.GET_DIGEST_EVT);
+        }
+        catch(Throwable t) {
+            sendException(requester, t);
+            resumeStable();
+            closeHoleFor(requester);
+            return;
+        }
+        finally {
+            openBarrier();
         }
 
         // moved after reopening BARRIER (JGRP-1742)
@@ -315,10 +284,8 @@ public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<
             sendException(requester, t);
         }
         finally {
-            if(isDigestNeeded()) {
-                closeHoleFor(requester);
-                resumeStable();
-            }
+            closeHoleFor(requester);
+            resumeStable();
         }
     }
 
@@ -355,12 +322,10 @@ public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<
     /** Set the digest and the send the state up to the application */
     protected void handleStateRsp(final Digest digest, Address sender, byte[] state) {
         try {
-            if(isDigestNeeded()) {
-                punchHoleFor(sender);
-                closeBarrierAndSuspendStable(); // fix for https://issues.redhat.com/browse/JGRP-1013
-                if(digest != null)
-                    down_prot.down(new Event(Event.OVERWRITE_DIGEST, digest)); // set the digest (e.g. in NAKACK)
-            }
+            punchHoleFor(sender);
+            closeBarrierAndSuspendStable(); // fix for https://issues.redhat.com/browse/JGRP-1013
+            if(digest != null)
+                down_prot.down(new Event(Event.OVERWRITE_DIGEST, digest)); // set the digest (e.g. in NAKACK)
             waiting_for_state_response=false;
             stop=System.currentTimeMillis();
             log.debug("%s: received state, size=%s, time=%d milliseconds", local_addr,
@@ -373,10 +338,8 @@ public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<
             handleException(t);
         }
         finally {
-            if(isDigestNeeded()) {
-                closeHoleFor(sender);
-                openBarrierAndResumeStable();
-            }
+            closeHoleFor(sender);
+            openBarrierAndResumeStable();
         }
     }
 

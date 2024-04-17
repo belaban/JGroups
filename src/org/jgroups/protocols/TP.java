@@ -958,8 +958,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
             case Event.CONNECT:
             case Event.CONNECT_WITH_STATE_TRANSFER:
-            case Event.CONNECT_USE_FLUSH:
-            case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
                 cluster_name=new AsciiString((String)evt.getArg());
                 header=new TpHeader(cluster_name);
                 setInAllThreadFactories(cluster_name != null? cluster_name.toString() : null, local_addr, thread_naming_pattern);
@@ -1150,10 +1148,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
     /**
-     * If the sender is null, set our own address. We cannot just go ahead and set the address
-     * anyway, as we might be sending a message on behalf of someone else ! E.g. in case of
-     * retransmission, when the original sender has crashed, or in a FLUSH protocol when we
-     * have to return all unstable messages with the FLUSH_OK response.
+     * If the sender is null, set our own address. We cannot just go ahead and set the address anyway, as we might send
+     * a message on behalf of someone else, e.g. in case of retransmission, when the original sender has crashed.
      */
     protected void setSourceAddress(Message msg) {
         if(msg.getSrc() == null && local_addr != null)

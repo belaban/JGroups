@@ -1737,50 +1737,6 @@ ${BARRIER}
 
 
 
-=== pbcast.FLUSH
-
-Flushing forces group members to send all their pending messages
-            prior to a certain event. The process of flushing acquiesces the
-            cluster so that state transfer or a join can be done. It is also
-            called the stop-the-world model as nobody will be able to send
-            messages while a flush is in process. Flush is used in:
-        
-
-
-State transfer:: When a member requests state transfer, it tells everyone to
-                   stop sending messages and waits for everyone's ack. Then it have received everyone's asks,
-                   the application asks the coordinator for its state and ships it back to the
-                   requester. After the requester has received and set the state
-                   successfully, the requester tells everyone to resume sending messages.
-View changes (e.g.a join):: Before installing a new view
-                        V2, flushing ensures that all messages _sent_ in the
-                        current view V1 are indeed _delivered_ in V1, rather than in V2
-                        (in all non-faulty members). This is essentially Virtual Synchrony.
-                    
-
-
-                
-        
-
-FLUSH is designed as another protocol positioned just below the
-            channel, on top of the stack (e.g. above STATE_TRANSFER). The STATE_TRANSFER and GMS
-            protocols request a flush by sending an event up the stack, where
-            it is handled by the FLUSH protcol. Another event is sent back by
-            the FLUSH protocol to let the caller know that the flush has completed.
-            When done (e.g. view was installed or state transferred), the protocol
-            sends a message, which will allow everyone in the cluster to resume sending.
-        
-
-A channel is notified that the FLUSH phase has been started by
-            the Receiver.block() callback. 
-        
-
-Read more about flushing in <<Flushing>>.
-        
-
-${FLUSH}
-
-
 [[Security]]
 === Security
 

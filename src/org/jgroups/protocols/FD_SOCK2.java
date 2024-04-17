@@ -213,8 +213,6 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
 
             case Event.CONNECT:
             case Event.CONNECT_WITH_STATE_TRANSFER:
-            case Event.CONNECT_USE_FLUSH:
-            case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
                 shutting_down=false;
                 cluster=evt.getArg();
                 break;

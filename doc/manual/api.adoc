@@ -657,11 +657,6 @@ public interface Receiver {
 |viewAccepted|Called when a change in membership has occurred. No long running actions, sending of messages
               or anything that could block should be done in this callback. If some long running action
                needs to be performed, it should be done in a separate thread.
-|block|Called (usually by the <<FLUSH,FLUSH>> protocol), as an indication that the member should stop sending
-       messages. Any messages sent after returning from this callback might get blocked by the FLUSH protocol.
-       When the FLUSH protocol is done, and messages can be sent again, the FLUSH protocol will simply unblock
-       all pending messages. If a callback for unblocking is desired, implement `unblock()`.
-|unblock|Called _after_ the FLUSH protocol has unblocked previously blocked senders, and messages can be sent again.
 |getState|Allows an application to write the state to an OutputStream. After the state has been written, the
           OutputStream doesn't need to be closed as stream closing is automatically done when a calling thread
           returns from this callback.
@@ -672,12 +667,7 @@ public interface Receiver {
 |==========================
 
 
-CAUTION: Note that anything that could block should _not_ be done in a callback. This includes sending of messages:
-if we have FLUSH on the stack, and send a message in a viewAccepted() callback, then the following happens:
-the FLUSH protocol blocks all
-(multicast) messages before installing a view, then installs the view, then unblocks. However,
-because installation of the view triggers the viewAccepted() callback, sending of messages inside of
-viewAccepted() will block. This in turn blocks the viewAccepted() thread, so the flush will never return! +
+CAUTION: Note that anything that could block should _not_ be done in a callback. This includes sending of messages;
 If we need to send a message in a callback, the sending should be done on a separate thread, or a
 task should be submitted to the timer.
 

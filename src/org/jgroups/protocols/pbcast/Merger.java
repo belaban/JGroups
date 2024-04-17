@@ -8,10 +8,10 @@ import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import static org.jgroups.Message.Flag.OOB;
 import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
+import static org.jgroups.protocols.pbcast.GMS.GmsHeader.CANCEL_MERGE;
 
 /**
  * Handles merging. Called by CoordGmsImpl and ParticipantGmsImpl
@@ -148,11 +148,6 @@ public class Merger {
         try {
             gms.castViewChangeAndSendJoinRsps(data.view, data.digest, expected_acks, null, null);
             // if we have flush in stack send ack back to merge coordinator
-            if(gms.flushProtocolInStack) { //[JGRP-700] - FLUSH: flushing should span merge
-                Message ack=new EmptyMessage(data.getSender()).setFlag(OOB)
-                  .putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.INSTALL_MERGE_VIEW_OK));
-                gms.getDownProtocol().down(ack);
-            }
         }
         finally {
             cancelMerge(merge_id);
@@ -160,12 +155,6 @@ public class Merger {
     }
 
     public void handleMergeCancelled(MergeId merge_id) {
-        try {
-            gms.stopFlush();
-        }
-        catch(Throwable t) {
-            log.error(Util.getMessage("StopFlushFailed"), t.getMessage());
-        }
         log.trace("%s: merge %s is cancelled", gms.getAddress(), merge_id);
         cancelMerge(merge_id);
     }
@@ -287,9 +276,6 @@ public class Merger {
             throw new Exception("view ID is null; cannot return merge response");
         View view=new View(tmp_vid, members);
 
-        if(gms.flushProtocolInStack && !gms.startFlush(view)) // if flush is in stack, let this coord flush its subcluster
-            throw new Exception("flush failed");
-
         // we still need to fetch digests from all members, and not just return our own digest (https://issues.redhat.com/browse/JGRP-948)
         Digest digest=fetchDigestsFromAllMembersInSubPartition(view, merge_id);
         if(digest == null || digest.capacity() == 0)
@@ -321,12 +307,6 @@ public class Merger {
             return;
         }
 
-        int size=0;
-        if(gms.flushProtocolInStack) {
-            gms.merge_ack_collector.reset(coords);
-            size=gms.merge_ack_collector.size();
-        }
-
         Event install_merge_view_evt=new Event(Event.INSTALL_MERGE_VIEW, view);
         gms.getUpProtocol().up(install_merge_view_evt);
         gms.getDownProtocol().down(install_merge_view_evt);
@@ -339,24 +319,10 @@ public class Merger {
             coords_copy.add(gms.getAddress());
 
         log.debug("%s: installing merge view %s in %s", gms.getAddress(), combined_merge_data.view.getViewId(), coords_copy);
-        long start=System.currentTimeMillis();
         for(Address coord: coords_copy) {
             Message msg=new BytesMessage(coord).setArray(GMS.marshal(view, digest))
               .putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.INSTALL_MERGE_VIEW).mergeId(merge_id));
             gms.getDownProtocol().down(msg);
-        }
-
-        //[JGRP-700] - FLUSH: flushing should span merge; if flush is in stack, wait for acks from subview coordinators
-        if(gms.flushProtocolInStack) {
-            try {
-                gms.merge_ack_collector.waitForAllAcks(gms.view_ack_collection_timeout);
-                log.trace("%s: received all ACKs (%d) for merge view %s in %d ms",
-                          gms.getAddress(), size, view, (System.currentTimeMillis() - start));
-            }
-            catch(TimeoutException e) {
-                log.warn("%s: failed to collect all ACKs (%d) for merge view %s after %d ms, missing ACKs from %s",
-                         gms.getAddress(), size, view, gms.view_ack_collection_timeout, gms.merge_ack_collector.printMissing());
-            }
         }
     }
 
@@ -370,7 +336,7 @@ public class Merger {
         if(coords == null || merge_id == null)
             return;
         for(Address coord: coords) {
-            Message msg=new EmptyMessage(coord).putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.CANCEL_MERGE).mergeId(merge_id));
+            Message msg=new EmptyMessage(coord).putHeader(gms.getId(), new GMS.GmsHeader(CANCEL_MERGE).mergeId(merge_id));
             gms.getDownProtocol().down(msg);
         }
     }
@@ -500,7 +466,7 @@ public class Merger {
             this.subviews.clear();
             subviews.addAll(views.values());
 
-            // now remove all members which don't have us in their view, so RPCs won't block (e.g. FLUSH)
+            // now remove all members which don't have us in their view, so RPCs won't block
             // https://issues.redhat.com/browse/JGRP-1061
             sanitizeViews(views);
 
@@ -545,9 +511,6 @@ public class Merger {
                 cancelMerge(new_merge_id); // the message above cancels the merge, too, but this is a 2nd line of defense
             }
             finally {
-                /* 5. if flush is in stack stop the flush for entire cluster [JGRP-700] - FLUSH: flushing should span merge */
-                if(gms.flushProtocolInStack)
-                    gms.stopFlush();
                 thread=null;
             }
             long diff=System.currentTimeMillis() - start;
@@ -578,7 +541,7 @@ public class Merger {
             // Remove null or rejected merge responses from merge_rsp and coords (so we'll send the new view
             // only to members who accepted the merge request)
             if(missing != null && !missing.isEmpty()) {
-                coords.keySet().removeAll(missing);
+                missing.forEach(coords.keySet()::remove);
                 coordsCopy.removeAll(missing);
             }
 

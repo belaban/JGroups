@@ -80,7 +80,6 @@ public final class Global {
     public static final String STACK_DEPENDENT="stack-dependent";
     public static final String STACK_INDEPENDENT="stack-independent";
     public static final String GOSSIP_ROUTER="gossip-router";
-    public static final String FLUSH="flush";
     public static final String BYTEMAN="byteman";
     public static final String EAP_EXCLUDED="eap-excluded"; // tests not supported by EAP
     public static final String ENCRYPT="encrypt";

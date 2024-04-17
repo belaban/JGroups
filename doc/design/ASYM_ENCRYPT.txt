@@ -214,7 +214,7 @@ Misc
 - When subgroup coordinators A and D multicast V6 in their respective subgroups, installation of V6 might occur at
   different wall clock times, e.g. V6 might get installed at T5 in {D,E,F}, but at T100 in {A,B,C}.
 - If D multicast GET_SHARED_KEY at T50, then subgroup {A,B,C} would reject the message, because at T50, D was not (yet)
-  a member of that subgroup. Unless FLUSH was configured, MergeViews are installed asynchronously in subgroups.
+  a member of that subgroup. MergeViews are installed asynchronously in subgroups.
 - Therefore *unicast messages* to all members are used to make sure the FETCH-SHARED-KEY messages are received by all
   members of a MergeView: unicast messages can be delivered to members outside the current view.
 

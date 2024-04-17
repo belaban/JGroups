@@ -9,7 +9,6 @@ import org.jgroups.util.Util;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
-import java.util.List;
 
 /**
  * Implementation of a ForkChannel, which is a light-weight channel. Not all methods are supported,
@@ -77,7 +76,6 @@ public class ForkChannel extends JChannel implements ChannelListener {
 
         // Returns the existing fork stack for fork_stack_id, or creates a new one
         prot_stack=fork.createForkStack(fork_stack_id, protocols == null? null : Arrays.asList(protocols), true);
-        flush_supported=main_channel.flushSupported();
         state=State.OPEN;
     }
 
@@ -220,26 +218,6 @@ public class ForkChannel extends JChannel implements ChannelListener {
         }
         prot_stack.down(msg);
         return this;
-    }
-
-    @Override
-    public ForkChannel startFlush(List<Address> flushParticipants, boolean automatic_resume) throws Exception {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public ForkChannel startFlush(boolean automatic_resume) throws Exception {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public ForkChannel stopFlush() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public ForkChannel stopFlush(List<Address> flushParticipants) {
-        throw new UnsupportedOperationException();
     }
 
     @Override

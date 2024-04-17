@@ -26,11 +26,13 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
         suspected_mbrs.clear();
     }
 
-    public void join(Address mbr, boolean useFlushIfPresent) {
+    @Override
+    public void join(Address ignored) {
         wrongMethod("join");
     }
 
-    public void joinWithStateTransfer(Address mbr,boolean useFlushIfPresent) {
+    @Override
+    public void joinWithStateTransfer(Address ignored) {
         wrongMethod("join");
     }
 

@@ -504,7 +504,6 @@
             <antcall target="tcp"/>
             <antcall target="tcp-nio"/>
             <antcall target="stack-independent"/>
-            <antcall target="flush"/>
             <antcall target="time-sensitive"/>
             <antcall target="byteman"/>
         </sequential>
@@ -546,7 +545,7 @@
         <mkdir dir="${tmp.dir}/test-results/xml/udp"/>
         <runtest suitename="udp"
                  groups="base,stack-dependent"
-                 excludedgroups="stack-independent,flush,broken"
+                 excludedgroups="stack-independent,broken"
                  parallel="${parallel.classes}"
                  threadcount="5"
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
@@ -565,7 +564,7 @@
     	<mkdir dir="${tmp.dir}/test-results/xml/tcp"/>
         <runtest suitename="tcp"
                  groups="base,stack-dependent"
-                 excludedgroups="stack-independent,flush,broken"
+                 excludedgroups="stack-independent,broken"
                  parallel="${parallel.classes}"
                  threadcount="5"
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
@@ -584,7 +583,7 @@
         <mkdir dir="${tmp.dir}/test-results/xml/tcp-nio"/>
         <runtest suitename="tcp-nio"
                  groups="base,stack-dependent"
-                 excludedgroups="stack-independent,flush,broken"
+                 excludedgroups="stack-independent,broken"
                  parallel="${parallel.classes}"
                  threadcount="5"
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
@@ -610,16 +609,6 @@
                  groups="encrypt"
                  parallel="${parallel.classes}"
                  threadcount="10" />
-    </target>
-
-
-    <target name="flush" depends="postcompile,define-testng-task" description="Runs FLUSH tests">
-        <mkdir dir="${tmp.dir}/test-results/xml/flush"/>
-        <runtest suitename="flush"
-                 groups="base,flush"
-                 excludedgroups="stack-independent,stack-dependent,broken"
-                 parallel="${parallel.classes}"
-                 threadcount="5"/>
     </target>
 
     <target name="reports" description="Produces the test report">

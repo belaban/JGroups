@@ -410,15 +410,6 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
                 if(receiver != null)
                     receiver.viewAccepted(v);
                 break;
-
-            case Event.BLOCK:
-                if(receiver != null)
-                    receiver.block();
-                break;
-            case Event.UNBLOCK:
-                if(receiver != null)
-                    receiver.unblock();
-                break;
         }
         return null;
     }

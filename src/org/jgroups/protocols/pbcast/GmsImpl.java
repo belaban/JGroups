@@ -28,8 +28,8 @@ public abstract class GmsImpl {
         log=gms.getLog();
     }
 
-    public abstract void   join(Address mbr, boolean useFlushIfPresent);
-    public abstract void   joinWithStateTransfer(Address local_addr,boolean useFlushIfPresent);
+    public abstract void   join(Address mbr);
+    public abstract void   joinWithStateTransfer(Address local_addr);
     
     public abstract void   leave();
     public void            handleCoordLeave()        {wrongMethod("handleCoordLeave");}
@@ -83,12 +83,9 @@ public abstract class GmsImpl {
         public static final int MERGE                    = 5;
         public static final int JOIN_WITH_STATE_TRANSFER = 6;
 
-
-
         protected int               type=-1;
         protected Address           mbr;
         protected Map<Address,View> views; // different view on MERGE
-        protected boolean           useFlushIfPresent;
 
 
         public Request(int type) {
@@ -100,16 +97,11 @@ public abstract class GmsImpl {
             this.mbr=mbr;
         }
 
-        public Request(int type, Address mbr, Map<Address,View> views, boolean useFlushPresent) {
+        public Request(int type, Address mbr, Map<Address,View> views) {
             this(type, mbr);
             this.views=views;
-            this.useFlushIfPresent=useFlushPresent;
         }
         
-        public Request(int type, Address mbr, Map<Address,View> views) {
-        	this(type, mbr, views, true);
-        }
-
         public int getType() {return type;}
 
         public boolean equals(Object obj) {

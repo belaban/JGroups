@@ -12,7 +12,6 @@ public class Event {
     public static final int DISCONNECT                         =  4;  // arg = null (local address)
     public static final int VIEW_CHANGE                        =  6;  // arg = View (or MergeView in case of merge)
     public static final int SUSPECT                            =  9;  // arg = Collection<Address> (suspected members)
-    public static final int BLOCK                              = 10;  // arg = null (used by FLUSH)
     public static final int FIND_MBRS                          = 11;  // arg = List<Address> (can be null) -> Responses
     public static final int FIND_INITIAL_MBRS                  = 12;  // timeout (ms) = null -> Responses
     public static final int FIND_MBRS_ASYNC                    = 13;  // arg = Consumer<PingData>
@@ -31,24 +30,17 @@ public class Event {
     public static final int CONFIG                             = 56;  // arg = Map<String,Object> (config properties)
     public static final int SUSPEND_STABLE                     = 65;  // arg = Long (max_suspend_time)
     public static final int RESUME_STABLE                      = 66;  // arg = null
-    public static final int SUSPEND					           = 68;  // arg = List<Address> (used by FLUSH)
-    public static final int RESUME					           = 70;  // arg = null (used by FLUSH)
     public static final int STATE_TRANSFER_INPUTSTREAM         = 71;  // arg = InputStream
     public static final int STATE_TRANSFER_OUTPUTSTREAM        = 72;  // arg = OutputStream
     public static final int STATE_TRANSFER_INPUTSTREAM_CLOSED  = 73;  // arg = StateTransferResult
-    public static final int UNBLOCK                            = 75;  // arg = null (indicate end of flush round)
     public static final int CLOSE_BARRIER                      = 76;  // arg = null
     public static final int OPEN_BARRIER                       = 77;  // arg = null
-    public static final int REBROADCAST				           = 78;  // arg = Digest
     public static final int CONNECT_WITH_STATE_TRANSFER        = 80;  // arg = cluster name (string)
     public static final int GET_PHYSICAL_ADDRESS               = 87;  // arg = Address --> PhysicalAddress
     public static final int GET_LOGICAL_PHYSICAL_MAPPINGS      = 88;  // arg = boolean --> Map<Address,PhysicalAddress>
     public static final int ADD_PHYSICAL_ADDRESS               = 89;  // arg = Tuple<Address,PhysicalAddress> --> boolean
     public static final int REMOVE_ADDRESS                     = 90;  // arg = Address
     public static final int GET_LOCAL_ADDRESS                  = 91;  // arg = null --> UUID (local_addr)
-    public static final int CONNECT_USE_FLUSH			       = 92;
-    public static final int CONNECT_WITH_STATE_TRANSFER_USE_FLUSH = 93;
-    public static final int SUSPEND_BUT_FAIL                      = 94; // used in FLUSH testing, no args
     public static final int LOCK                               = 95; // arg = LockInfo
     public static final int UNLOCK                             = 96; // arg = LockInfo
     public static final int UNLOCK_ALL                         = 97; // arg = null
@@ -103,7 +95,6 @@ public class Event {
             case DISCONNECT:	         return "DISCONNECT";
             case VIEW_CHANGE:	         return "VIEW_CHANGE";
             case SUSPECT:                return "SUSPECT";
-            case BLOCK:	                 return "BLOCK";
             case FIND_MBRS:              return "FIND_MBRS";
             case FIND_INITIAL_MBRS:	     return "FIND_INITIAL_MBRS";
             case FIND_MBRS_ASYNC:        return "FIND_MBRS_ASYNC";
@@ -122,24 +113,17 @@ public class Event {
             case CONFIG:                 return "CONFIG";
             case SUSPEND_STABLE:         return "SUSPEND_STABLE";
             case RESUME_STABLE:          return "RESUME_STABLE";
-            case SUSPEND:        		 return "SUSPEND";
-            case SUSPEND_BUT_FAIL:       return "SUSPEND_BUT_FAIL";
-            case RESUME:     			 return "RESUME";
             case STATE_TRANSFER_INPUTSTREAM: return "STATE_TRANSFER_INPUTSTREAM";
             case STATE_TRANSFER_OUTPUTSTREAM:return "STATE_TRANSFER_OUTPUTSTREAM";
             case STATE_TRANSFER_INPUTSTREAM_CLOSED: return "STATE_TRANSFER_INPUTSTREAM_CLOSED";
-            case UNBLOCK:                return "UNBLOCK";
             case CLOSE_BARRIER:          return "CLOSE_BARRIER";
             case OPEN_BARRIER:           return "OPEN_BARRIER";
-            case REBROADCAST:            return "REBROADCAST";
             case CONNECT_WITH_STATE_TRANSFER:    return "CONNECT_WITH_STATE_TRANSFER";
             case GET_PHYSICAL_ADDRESS:   return "GET_PHYSICAL_ADDRESS";
             case GET_LOGICAL_PHYSICAL_MAPPINGS: return "GET_LOGICAL_PHYSICAL_MAPPINGS";
             case ADD_PHYSICAL_ADDRESS:   return "ADD_PHYSICAL_ADDRESS";
             case REMOVE_ADDRESS:         return "REMOVE_ADDRESS";
             case GET_LOCAL_ADDRESS:      return "GET_LOCAL_ADDRESS";
-            case CONNECT_USE_FLUSH: return "CONNECT_USE_FLUSH";
-            case CONNECT_WITH_STATE_TRANSFER_USE_FLUSH: return "CONNECT_WITH_STATE_TRANSFER_USE_FLUSH";
             case LOCK:                   return "LOCK";
             case UNLOCK:                 return "UNLOCK";
             case UNLOCK_ALL:             return "UNLOCK_ALL";

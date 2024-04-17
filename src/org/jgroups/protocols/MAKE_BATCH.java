@@ -69,9 +69,7 @@ public class MAKE_BATCH extends Protocol {
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.CONNECT:
-            case Event.CONNECT_USE_FLUSH:
             case Event.CONNECT_WITH_STATE_TRANSFER:
-            case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
                 cluster_name=new AsciiString((String)evt.getArg());
                 break;
         }
