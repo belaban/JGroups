@@ -41,11 +41,6 @@ public class Event {
     public static final int ADD_PHYSICAL_ADDRESS               = 89;  // arg = Tuple<Address,PhysicalAddress> --> boolean
     public static final int REMOVE_ADDRESS                     = 90;  // arg = Address
     public static final int GET_LOCAL_ADDRESS                  = 91;  // arg = null --> UUID (local_addr)
-    public static final int LOCK                               = 95; // arg = LockInfo
-    public static final int UNLOCK                             = 96; // arg = LockInfo
-    public static final int UNLOCK_ALL                         = 97; // arg = null
-    public static final int LOCK_AWAIT                         = 98; // arg = LockInfo
-    public static final int LOCK_SIGNAL                        = 99; // arg = AwaitInfo
     public static final int IS_MERGE_IN_PROGRESS               = 100; // returns true or false
     public static final int GET_PHYSICAL_ADDRESSES             = 102; // arg = null (returns all physical addresses)
     public static final int SITE_UNREACHABLE                   = 104; // arg = SiteMaster (RELAY2/RELAY3)
@@ -56,7 +51,6 @@ public class Event {
     public static final int GET_PING_DATA                      = 109; // arg = cluster_name
     public static final int GET_SECRET_KEY                     = 111; // arg = null -> Tuple<SecretKey,byte[]> // PK+version
     public static final int SET_SECRET_KEY                     = 112; // arg = Tuple<SecretKey,byte[]> // PK+version
-    public static final int UNLOCK_FORCE                       = 113; // arg = lock name
     public static final int INSTALL_MERGE_VIEW                 = 114; // arg = MergeView
     public static final int IS_LOCAL_SITEMASTER                = 115; // arg = SiteMaster(site), returns true / false
     public static final int IS_LOCAL                           = 116; // arg = SiteAddress(site), returns true / false
@@ -124,11 +118,6 @@ public class Event {
             case ADD_PHYSICAL_ADDRESS:   return "ADD_PHYSICAL_ADDRESS";
             case REMOVE_ADDRESS:         return "REMOVE_ADDRESS";
             case GET_LOCAL_ADDRESS:      return "GET_LOCAL_ADDRESS";
-            case LOCK:                   return "LOCK";
-            case UNLOCK:                 return "UNLOCK";
-            case UNLOCK_ALL:             return "UNLOCK_ALL";
-            case LOCK_AWAIT:             return "LOCK_AWAIT";
-            case LOCK_SIGNAL:            return "LOCK_SIGNAL";
             case IS_MERGE_IN_PROGRESS:   return "IS_MERGE_IN_PROGRESS";
             case GET_PHYSICAL_ADDRESSES: return "GET_PHYSICAL_ADDRESSES";
             case SITE_UNREACHABLE:       return "SITE_UNREACHABLE";
@@ -139,7 +128,6 @@ public class Event {
             case GET_PING_DATA:          return "GET_PING_DATA";
             case GET_SECRET_KEY:         return "GET_SECRET_KEY";
             case SET_SECRET_KEY:         return "SET_SECRET_KEY";
-            case UNLOCK_FORCE:           return "UNLOCK_FORCE";
             case INSTALL_MERGE_VIEW:     return "INSTALL_MERGE_VIEW";
             case IS_LOCAL_SITEMASTER:    return "IS_LOCAL_SITEMASTER";
             case IS_LOCAL:               return "IS_LOCAL";

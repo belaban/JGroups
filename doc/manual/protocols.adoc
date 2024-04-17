@@ -2161,41 +2161,6 @@ JIRA: https://issues.redhat.com/browse/JGRP-2402
 ${SOS}
 
 
-[[LockingProtocols]]
-==== Locking protocols
-
-The locking protocol is org.jgroups.protocols.CENTRAL_LOCK:
-
-${Locking}
-
-[[CENTRAL_LOCK]]
-===== CENTRAL_LOCK
-
-CENTRAL_LOCK has the current coordinator of a cluster grants locks, so every node has to communicate with the
-coordinator to acquire or release a lock. Lock requests by different nodes for the same lock are processed
-in the order in which they are received.
-
-A coordinator maintains a lock table. To prevent losing the knowledge of who holds which locks, the coordinator can push
-lock information to a number of backups defined by num_backups. If num_backups is 0, no replication of lock information
-happens. If num_backups is greater than 0, then the coordinator pushes information about acquired and released locks to
-all backup nodes. Topology changes might create new backup nodes, and lock information is pushed to those on
-becoming a new backup node.
-
-The advantage of CENTRAL_LOCK is that all lock requests are granted in the same order across the cluster.
-
-${CENTRAL_LOCK}
-
-
-[[CENTRAL_LOCK2]]
-===== CENTRAL_LOCK2
-
-In CENTRAL_LOCK2, the coordinator (= lock issuer) does not backup its lock table to other member(s), but instead a new
-coordinator fetches information about held locks and pending lock/unlock requests from existing members, before it
-starts processing lock requests. See <<LockService>> for details.
-
-${CENTRAL_LOCK2}
-
-
 
 [[COUNTER]]
 
