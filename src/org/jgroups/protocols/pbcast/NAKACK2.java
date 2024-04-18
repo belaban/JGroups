@@ -1225,12 +1225,12 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 // We only reset the window if its seqno is lower than the seqno shipped with the digest. Also, we
                 // don't reset our own window (https://issues.redhat.com/browse/JGRP-948, comment 20/Apr/09 03:39 AM)
                 if(!merge
-                        || (Objects.equals(local_addr, member))                  // never overwrite our own entry
-                        || buf.getHighestDelivered() >= highest_delivered_seqno) // my seqno is >= digest's seqno for sender
+                  || (Objects.equals(local_addr, member))                  // never overwrite our own entry
+                  || buf.getHighestDelivered() >= highest_delivered_seqno) // my seqno is >= digest's seqno for sender
                     continue;
 
                 xmit_table.remove(member);
-                // to get here, merge must be false !
+                // to get here, merge must be false!
                 if(member.equals(local_addr)) { // Adjust the seqno: https://issues.redhat.com/browse/JGRP-1251
                     seqno.set(highest_delivered_seqno);
                     set_own_seqno=true;
@@ -1251,7 +1251,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
     protected Table<Message> createTable(long initial_seqno) {
         return new Table<>(xmit_table_num_rows, xmit_table_msgs_per_row,
-                                  initial_seqno, xmit_table_resize_factor, xmit_table_max_compaction_time);
+                           initial_seqno, xmit_table_resize_factor, xmit_table_max_compaction_time);
     }
 
 
