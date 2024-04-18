@@ -89,3 +89,43 @@ On reception of digest D:
 -------------------------
 - For all new members P -> create receiver window with offset=D[P]
 
+
+
+Misc
+----
+When sending a message M, incrementing seqno, adding M to the send-window and sending it down the stack,
+concurrent threads might send the messages in non-order, depending on thread scheduling. E.g. we could have
+1 -> 3 -> 4 -> 2 -> 5
+
+If a receiver receives 3, it notices a gap (2 is missing) and - if xmit-interval kicks in before 2 is received - asks
+the sender for (a spurious) retransmission of 2. To prevent this, incrementing seqno and sending message M could be
+done atomically, by using the send-window's lock:
+
+send-window.lock()
+   S=seqno++;
+   send-window.add(M) // could block
+   send M
+send-window.unlock()
+
+The lock would have to be fair (e.g. ReentrantLock(fair=true), so the senders are woken up in the order in which they
+acquired the lock.
+
+Sending M under the acquired lock should not be an issue, as this cannot block (MFC is missing), and
+TransferQueueBundler.drop_when_full could be set to true, so this never blocks. This would lead to the messages
+being added to the TQB's queue as:
+
+1 -> 2 -> 3 -> 4 -> 5.
+
+This means the messages will be sent and received (unless there's packet drops) in that order, causing no spurious
+retransmission.
+
+Hmm... fairness if not 100%, so the ordering could still not be correct!
+
+Alternative:
+The xmit window maintains the seqno and provides a method that (under lock) increments seqno, adds the message and
+sends it, e.g.:
+add(Message m, Runnable action)
+
+This would add msg with ++seqno and execute action (e.g. sending M) under the same lock scope
+
+
