@@ -102,30 +102,18 @@ the sender for (a spurious) retransmission of 2. To prevent this, incrementing s
 done atomically, by using the send-window's lock:
 
 send-window.lock()
-   S=seqno++;
+   S=++seqno;
    send-window.add(M) // could block
    send M
 send-window.unlock()
 
-The lock would have to be fair (e.g. ReentrantLock(fair=true), so the senders are woken up in the order in which they
-acquired the lock.
-
 Sending M under the acquired lock should not be an issue, as this cannot block (MFC is missing), and
-TransferQueueBundler.drop_when_full could be set to true, so this never blocks. This would lead to the messages
-being added to the TQB's queue as:
+TransferQueueBundler.drop_when_full should be set to true, so this never blocks. This would lead to the messages
+being added to the TQB's queue (and therefore sent as) as:
 
 1 -> 2 -> 3 -> 4 -> 5.
 
 This means the messages will be sent and received (unless there's packet drops) in that order, causing no spurious
 retransmission.
-
-Hmm... fairness if not 100%, so the ordering could still not be correct!
-
-Alternative:
-The xmit window maintains the seqno and provides a method that (under lock) increments seqno, adds the message and
-sends it, e.g.:
-add(Message m, Runnable action)
-
-This would add msg with ++seqno and execute action (e.g. sending M) under the same lock scope
 
 
