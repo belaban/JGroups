@@ -30,12 +30,12 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #stable(long)} method is called periodically; it nulls all elements between LOW and HD and advances LOW
  * to HD.
  * <p/>
- * The design of RingBuffer is discussed in doc/design/RingBufferSeqno.txt.
+ * The design of RingBuffer is discussed in doc/design/FixedBuffer.txt.
  * <p/>
  * @author Bela Ban
  * @since 3.1
  */
-public class RingBufferSeqno<T> implements Iterable<T> {
+public class RingBufferSeqnoOld<T> implements Iterable<T> {
     /** Atomic ref array so that elements can be checked for null and set atomically.  Should always be sized to a power of 2. */
     protected final T[]            buf;
 
@@ -65,7 +65,7 @@ public class RingBufferSeqno<T> implements Iterable<T> {
      * @param capacity The number of elements the ring buffer's array should hold.
      * @param offset The offset. The first element to be added has to be offset +1.
      */
-    public RingBufferSeqno(int capacity, long offset) {
+    public RingBufferSeqnoOld(int capacity, long offset) {
         if(capacity < 1)
             throw new IllegalArgumentException("incorrect capacity of " + capacity);
         if(offset < 0)
@@ -344,7 +344,7 @@ public class RingBufferSeqno<T> implements Iterable<T> {
 
     /**
      * Returns an iterator over the elements of the ring buffer in the range [HD+1 .. HR]
-     * @return RingBufferIterator
+     * @return FixedBufferIterator
      * @throws NoSuchElementException is HD is moved forward during the iteration
      */
     public Iterator<T> iterator() {

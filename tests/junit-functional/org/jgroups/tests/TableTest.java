@@ -783,7 +783,7 @@ public class TableTest {
         assert table.isEmpty();
     }
 
-    public static void testRemoveManyWithFilterAcceptNone() {
+    public void testRemoveManyWithFilterAcceptNone() {
         Table<Integer> table=new Table<>(3, 10, 0);
         for(int i=1; i <= 10; i++)
             table.add(i, i);
@@ -794,13 +794,12 @@ public class TableTest {
         assert table.isEmpty();
     }
 
-    public static void testRemoveManyWithFilterAcceptNone2() {
+    public void testRemoveManyWithFilterAcceptNone2() {
         Table<Integer> table=new Table<>(3, 10, 0);
         for(int i=1; i <= 10; i++)
             table.add(i, i);
         List<Integer> list=table.removeMany(true, 3, new Predicate<>() {
             int cnt=0;
-
             public boolean test(Integer element) {
                 return ++cnt <= 2;
             }
