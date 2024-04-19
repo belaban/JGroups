@@ -1,0 +1,56 @@
+
+Design of FixedBuffer
+=====================
+Author: Bela Ban
+Date:   April 2024
+
+
+FixedBuffer is a class used by NAKACK4 [1] to deliver messages in correct order and repair lost messages.
+
+There is one ring buffer per member.
+
+Messages are added to the buffer by a sender, when sending a message, and by receivers when receiving a message.
+The messages are removed as long as there are no gaps (= missing messages), and delivered to the application.
+
+FixedBuffer is implemented as a (fixed capacity) array with wrap-around. Seqnos are mapped to an array index by a
+function similar to 'seqno % capacity'.
+
+FixedBuffer has 3 pointers: LOW, HD and HIGH. They are used as follows:
+
+In a send/receive window (used to send messages to everyone and also receive its own (loopback) messages):
+* LOW: the highest seqno seen by everyone; incremented when we've received ACKs from every receiver (min of all ACKs).
+       This unblocks blocked senders.
+* HD: the highest seqno delivered to the application (incremented on removal of loopback messages)
+* HIGH: the highest seqno sent/received
+
+In a receive window:
+* LOW: - (same as HD)
+* HD: the highest seqno delivered to the application (incremented on removal, together with LOW)
+* HIGH: the highest seqno received
+
+LOW <= HD <= HIGH always holds.
+
+All 3 pointers point to the same seqno on creation of a FixedBuffer, and are modified as follows:
+
+* Add message M (sender):
+  * If M.seqno - LOW > capacity -> drop M or block (depending on parameter)
+  * Else:
+    * Add M at index(M.seqno) if null, else drop
+    * HIGH=max(HIGH,M.seqno)
+
+* Remove a message (receiver):
+  * If LOW <= HIGH and index(LOW) != null:
+    * Return element at index[LOW] and null index[LOW]
+    * LOW=LOW+1
+    * Unblock blocked adders
+  * Else -> return null
+
+* Purge elements (S: seqno)
+  * Null elements in range [index(LOW) .. index(min(S,HIGH)]
+  * LOW=min(S,HIGH)
+  * Unblock blocked adders
+
+
+Refs
+----
+[1] https://issues.redhat.com/browse/JGRP-2780

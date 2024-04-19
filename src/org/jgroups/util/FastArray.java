@@ -269,7 +269,8 @@ public class FastArray<T> implements Iterable<T> {
         boolean first=true;
         StringBuilder sb=new StringBuilder();
         int count=0;
-        for(T el: elements) {
+        for(int i=0; i < index; i++) {
+            T el=elements[i];
             if(first)
                 first=false;
             else

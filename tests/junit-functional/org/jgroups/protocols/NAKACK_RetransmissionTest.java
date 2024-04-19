@@ -6,36 +6,48 @@ import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.NakAckHeader2;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
-import org.jgroups.util.*;
-import org.testng.annotations.BeforeMethod;
+import org.jgroups.util.Digest;
+import org.jgroups.util.MessageBatch;
+import org.jgroups.util.SeqnoList;
+import org.jgroups.util.Util;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
 /**
- * Tests thata there aren't unnecessary retransmissions caused by the retransmit task in NAKACK<p/>
+ * Tests that there aren't unnecessary retransmissions caused by the retransmit task in NAKACK{2,4}<p/>
  * https://issues.redhat.com/browse/JGRP-1539
  * @author Bela Ban
  * @since 3.3
  */
-@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
-public class NAKACK2_RetransmissionTest {
-    protected static final short ID=ClassConfigurator.getProtocolId(NAKACK2.class);
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true,dataProvider="create")
+public class NAKACK_RetransmissionTest {
+    protected static final short   NAK2=ClassConfigurator.getProtocolId(NAKACK2.class),
+      NAK4=ClassConfigurator.getProtocolId(NAKACK4.class);
     protected static final Address A=Util.createRandomAddress("A"), B=Util.createRandomAddress("B");
     protected static final View    view=View.create(A, 1, A, B);
-    protected NAKACK2       nak;
+    protected Protocol      nak;
     protected MockTransport transport;
     protected MockProtocol  receiver;
 
-    @BeforeMethod
-    protected void setup() throws Exception {
+    @DataProvider
+    protected static Object[][] create() {
+        return new Object[][] {
+          {new NAKACK2().useMcastXmit(false)},
+          {new NAKACK4().useMcastXmit(false)}
+        };
+    }
+
+    protected void setup(Protocol prot) throws Exception {
         receiver=new MockProtocol();
-        nak=new NAKACK2().useMcastXmit(false);
         transport=new MockTransport();
+        nak=prot;
         ProtocolStack stack=new ProtocolStack();
-        stack.addProtocols(transport, nak, receiver);
+        stack.addProtocols(transport, prot, receiver);
         stack.init();
 
         nak.down(new Event(Event.BECOME_SERVER));
@@ -59,42 +71,51 @@ public class NAKACK2_RetransmissionTest {
      * - Receive all missing messages
      * - On the last run of the retransmit task, no messages are retransmitted
      */
-    public void testRetransmission() {
-        injectMessages(1,2,3,4,   6,  8,  14,15,16,17,   19);
+    public void testRetransmission(Protocol prot) throws Exception {
+        setup(prot);
+        Method triggerXmit=prot.getClass().getMethod("triggerXmit");
+
+        injectMessages(prot.getClass(), 1,2,3,4,   6,  8,  14,15,16,17,   19);
         assertReceived(1,2,3,4);  // only messages 1-4 are delivered, there's a gap at 5
 
-        nak.triggerXmit();
+        triggerXmit.invoke(nak);
         // assertXmitRequests(5, 7,  9,10,11,12,13,   18);
         assertXmitRequests(); // the first time, there will *not* be any retransmit requests !
 
-        injectMessages(7,  9,  13,  18,  23, 24,  26, 27, 28, 29,   31);
-        nak.triggerXmit();
+        injectMessages(prot.getClass(),7,  9,  13,  18,  23, 24,  26, 27, 28, 29,   31);
+        triggerXmit.invoke(nak);
         assertXmitRequests(5,   10,11,12);
 
-        nak.triggerXmit();
+        triggerXmit.invoke(nak);
         assertXmitRequests(5,   10,11,12,   20,21,22,  25,  30);
 
-        injectMessages(5,  10,11,12);
-        nak.triggerXmit();
+        injectMessages(prot.getClass(),5,  10,11,12);
+        triggerXmit.invoke(nak);
         assertXmitRequests(20,21,22,  25, 30);
 
-        injectMessages(20,21,22,  25,  30);
-        nak.triggerXmit();
+        injectMessages(prot.getClass(),20,21,22,  25,  30);
+        triggerXmit.invoke(nak);
         assertXmitRequests();
     }
 
 
-    protected void injectMessages(long ... seqnos) {
+    protected void injectMessages(Class<? extends Protocol> cl, long ... seqnos) {
         for(long seqno: seqnos)
-            injectMessage(seqno);
+            injectMessage(seqno, cl);
     }
 
 
     /** Makes NAKACK2 receive a message with the given seqno */
-    protected void injectMessage(long seqno) {
-        Message msg=new EmptyMessage(null).setSrc(B);
-        NakAckHeader2 hdr=NakAckHeader2.createMessageHeader(seqno);
-        msg.putHeader(ID, hdr);
+    protected void injectMessage(long seqno, Class<? extends Protocol> cl) {
+        Message msg=new ObjectMessage(null, seqno).setSrc(B);
+        if(cl.equals(NAKACK2.class)) {
+            NakAckHeader2 hdr2=NakAckHeader2.createMessageHeader(seqno);
+            msg.putHeader(NAK2, hdr2);
+        }
+        else if(cl.equals(NAKACK4.class)) {
+            NakAckHeader hdr4=NakAckHeader.createMessageHeader(seqno);
+            msg.putHeader(NAK4, hdr4);
+        }
         nak.up(msg);
     }
 
@@ -138,26 +159,27 @@ public class NAKACK2_RetransmissionTest {
 
 
         public Object down(Message msg) {
-            NakAckHeader2 hdr=msg.getHeader(ID);
-            if(hdr == null)
-                return null;
-            if(hdr.getType() == NakAckHeader2.XMIT_REQ) {
-                SeqnoList seqnos=null;
-                try {
-                    seqnos=msg.getObject();
-                    System.out.println("-- XMIT-REQ: request retransmission for " + seqnos);
-                    for(Long seqno: seqnos)
-                        xmit_requests.add(seqno);
-                }
-                catch(Exception e) {
-                    e.printStackTrace();
-                }
+            SeqnoList seqnos=getMissingSeqnos(msg);
+            if(seqnos != null) {
+                System.out.println("-- XMIT-REQ: request retransmission for " + seqnos);
+                for(Long seqno: seqnos)
+                    xmit_requests.add(seqno);
             }
             return null;
         }
 
         @Override
         public Object up(Event evt) {
+            return null;
+        }
+
+        protected static SeqnoList getMissingSeqnos(Message msg) {
+            NakAckHeader2 hdr2=msg.getHeader(NAK2);
+            if(hdr2 != null && hdr2.getType() == NakAckHeader2.XMIT_REQ)
+                return msg.getObject();
+            NakAckHeader hdr4=msg.getHeader(NAK4);
+            if(hdr4 != null && hdr4.getType() == NakAckHeader.XMIT_REQ)
+                return msg.getObject();
             return null;
         }
     }
@@ -169,9 +191,8 @@ public class NAKACK2_RetransmissionTest {
         public void       clear()   {msgs.clear();}
 
         public Object up(Message msg) {
-            NakAckHeader2 hdr=msg.getHeader(ID);
-            if(hdr != null && hdr.getType() == NakAckHeader2.MSG) {
-                long seqno=hdr.getSeqno();
+            long seqno=getSeqno(msg);
+            if(seqno >= 0) {
                 msgs.add(seqno);
                 System.out.println("-- received message #" + seqno + " from " + msg.getSrc());
             }
@@ -180,14 +201,24 @@ public class NAKACK2_RetransmissionTest {
 
         public void up(MessageBatch batch) {
             for(Message msg: batch) {
-                NakAckHeader2 hdr=msg.getHeader(ID);
-                if(hdr != null && hdr.getType() == NakAckHeader2.MSG) {
-                    long seqno=hdr.getSeqno();
+                long seqno=getSeqno(msg);
+                if(seqno >= 0) {
                     msgs.add(seqno);
                     System.out.println("-- received message #" + seqno + " from " + msg.getSrc());
                 }
             }
         }
+
+        protected static long getSeqno(Message msg) {
+            NakAckHeader2 hdr2=msg.getHeader(NAK2);
+            if(hdr2 != null && hdr2.getType() == NakAckHeader2.MSG)
+                return hdr2.getSeqno();
+            NakAckHeader hdr4=msg.getHeader(NAK4);
+            if(hdr4 != null && hdr4.getType() == NakAckHeader.MSG)
+                return hdr4.getSeqno();
+            return -1;
+        }
+
     }
 
 }

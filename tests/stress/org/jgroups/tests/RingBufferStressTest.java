@@ -2,7 +2,8 @@ package org.jgroups.tests;
 
 import org.jgroups.EmptyMessage;
 import org.jgroups.Message;
-import org.jgroups.util.RingBufferSeqno;
+import org.jgroups.util.Buffer;
+import org.jgroups.util.FixedBuffer;
 import org.jgroups.util.Util;
 
 import java.util.List;
@@ -36,7 +37,7 @@ public class RingBufferStressTest {
             }
         }
 
-        RingBufferSeqno<Message> buf=new RingBufferSeqno<>(NUM_MSGS, 0);
+        FixedBuffer<Message> buf=new FixedBuffer<>(NUM_MSGS, 0);
 
         final CountDownLatch latch=new CountDownLatch(1);
 
@@ -61,16 +62,17 @@ public class RingBufferStressTest {
 
         System.out.println("added messages: " + added + ", removed messages: " + removed);
         System.out.println("took " + diff + " ms to insert and remove " + NUM_MSGS + " messages");
-        buf.destroy();
+        buf.close();
     }
 
 
     protected static class Adder extends Thread {
-        protected final RingBufferSeqno<Message> buf;
+        protected final FixedBuffer<Message> buf;
         protected final AtomicInteger num;
         protected final CountDownLatch latch;
+        protected static final Buffer.Options OPTS=new Buffer.Options().block(true);
 
-        public Adder(RingBufferSeqno<Message> buf, CountDownLatch latch, AtomicInteger num) {
+        public Adder(FixedBuffer<Message> buf, CountDownLatch latch, AtomicInteger num) {
             this.buf=buf;
             this.num=num;
             this.latch=latch;
@@ -91,16 +93,16 @@ public class RingBufferStressTest {
                     num.decrementAndGet();
                     break;
                 }
-                buf.add(seqno, MSG, true);
+                buf.add(seqno, MSG, null, OPTS);
             }
         }
     }
 
     protected static class Remover extends Thread {
-        protected final RingBufferSeqno<Message> buf;
+        protected final FixedBuffer<Message> buf;
         protected final CountDownLatch latch;
 
-        public Remover(RingBufferSeqno<Message> buf, CountDownLatch latch) {
+        public Remover(FixedBuffer<Message> buf, CountDownLatch latch) {
             this.buf=buf;
             this.latch=latch;
             setName("Remover");
@@ -115,9 +117,9 @@ public class RingBufferStressTest {
             }
             int cnt=0;
             for(;;) {
-                List<Message> msgs=buf.removeMany(true, 100);
+                List<Message> msgs=buf.removeMany(true,100);
                 if(msgs != null) {
-                    for(Message msg: msgs) {
+                    for(Message __: msgs) {
                         cnt++;
                         removed.incrementAndGet();
                     }

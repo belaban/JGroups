@@ -392,8 +392,17 @@ public class OverlappingMergeTest extends ChannelTestBase {
         for(JChannel ch: channels) {
             sb.append(ch.getAddress()).append(": ");
             NAKACK2 nakack=ch.getProtocolStack().findProtocol(NAKACK2.class);
-            Digest digest=nakack.getDigest();
-            sb.append(digest).append("\n");
+            if(nakack != null) {
+                Digest digest=nakack.getDigest();
+                sb.append(digest).append("\n");
+                continue;
+            }
+            ReliableMulticast r=ch.getProtocolStack().findProtocol(ReliableMulticast.class);
+            if(r != null) {
+                Digest digest=r.getDigest();
+                sb.append(digest).append("\n");
+            }
+
         }
         return sb.toString();
     }

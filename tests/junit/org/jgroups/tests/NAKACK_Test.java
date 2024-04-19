@@ -4,8 +4,8 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.protocols.DISCARD_PAYLOAD;
 import org.jgroups.protocols.MAKE_BATCH;
+import org.jgroups.protocols.NAKACK4;
 import org.jgroups.protocols.pbcast.NAKACK2;
-import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -16,8 +16,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.jgroups.stack.ProtocolStack.Position.BELOW;
+
 /**
- * Tests the NAKACK protocol for OOB and regular msgs, tests https://issues.redhat.com/browse/JGRP-379
+ * Tests the NAKACK{2,4} protocols for sending/reception of OOB and regular msgs.
+ * Ref: https://issues.redhat.com/browse/JGRP-379
  * @author Bela Ban
  */
 @Test(groups=Global.STACK_DEPENDENT,singleThreaded=true)
@@ -41,7 +44,7 @@ public class NAKACK_Test extends ChannelTestBase {
     /**
      * Tests https://issues.redhat.com/browse/JGRP-379: we send 1, 2, 3, 4(OOB) and 5 to the cluster.
      * Message with seqno 3 is discarded two times, so retransmission will make the receivers receive it *after* 4.
-     * Note that OOB messages *destroys* FIFO ordering (or whatever ordering properties are set) !
+     * Note that OOB messages *destroy* FIFO ordering (or whatever ordering properties are set)!
      */
     public void testOutOfBandMessages() throws Exception {
         NAKACK_Test.MyReceiver receiver1=new NAKACK_Test.MyReceiver("A");
@@ -51,7 +54,7 @@ public class NAKACK_Test extends ChannelTestBase {
         b.setReceiver(receiver2);
         c.setReceiver(receiver3);
 
-        a.getProtocolStack().insertProtocol(new DISCARD_PAYLOAD(), ProtocolStack.Position.BELOW, NAKACK2.class);
+        a.getProtocolStack().insertProtocol(new DISCARD_PAYLOAD(), BELOW, NAKACK2.class, NAKACK4.class);
 
         a.connect("NAKACK_Test");
         b.connect("NAKACK_Test");
@@ -92,7 +95,7 @@ public class NAKACK_Test extends ChannelTestBase {
         b.setReceiver(receiver2);
 
         MAKE_BATCH m=new MAKE_BATCH().multicasts(true).unicasts(false).skipOOB(false);
-        b.getProtocolStack().insertProtocol(m, ProtocolStack.Position.BELOW, NAKACK2.class);
+        b.getProtocolStack().insertProtocol(m, BELOW, NAKACK2.class, NAKACK4.class);
         m.start();
 
         a.connect("NAKACK_Test");

@@ -13,6 +13,7 @@
         >
     <UDP
          mcast_port="${jgroups.udp.mcast_port:45588}"
+         use_virtual_threads="${jgroups.use_virtual_threads:true}"
          thread_pool.min_threads="2"
          thread_pool.max_threads="200"
          thread_pool.keep_alive_time="5s"/>
@@ -27,7 +28,7 @@
     <UNICAST3 xmit_interval="0.5s"/>
     <pbcast.STABLE desired_avg_gossip="50s"
                    max_bytes="8m"/>
-    <pbcast.GMS print_local_addr="true" join_timeout="3s"/>
+    <pbcast.GMS print_local_addr="true" join_timeout="1s"/>
     <UFC max_credits="2M"
          min_threshold="0.4"/>
     <MFC max_credits="2M"

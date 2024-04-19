@@ -80,9 +80,11 @@ public class MessageBatch implements Iterable<Message> {
     public AsciiString  clusterName()                    {return cluster_name;}
     public MessageBatch setClusterName(AsciiString name) {this.cluster_name=name; return this;}
     public MessageBatch clusterName(AsciiString name)    {this.cluster_name=name; return this;}
+    public MessageBatch cluster(AsciiString name)        {this.cluster_name=name; return this;}
     public boolean      isMulticast()                    {return multicast;}
     public boolean      multicast()                      {return multicast;}
     public MessageBatch multicast(boolean flag)          {multicast=flag; return this;}
+    public MessageBatch mcast(boolean flag)              {multicast=flag; return this;}
     public Mode         getMode()                        {return mode;}
     public Mode         mode()                           {return mode;}
     public MessageBatch setMode(Mode mode)               {this.mode=mode; return this;}

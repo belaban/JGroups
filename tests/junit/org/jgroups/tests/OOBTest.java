@@ -2,6 +2,7 @@ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.protocols.DISCARD;
+import org.jgroups.protocols.NAKACK4;
 import org.jgroups.protocols.TP;
 import org.jgroups.protocols.UNICAST3;
 import org.jgroups.protocols.pbcast.NAKACK2;
@@ -133,7 +134,7 @@ public class OOBTest extends ChannelTestBase {
         DISCARD discard=new DISCARD();
         ProtocolStack stack=a.getProtocolStack();
         if(stack.findProtocol(UNICAST3.class) != null)
-            stack.insertProtocol(discard, ProtocolStack.Position.BELOW, NAKACK2.class);
+            stack.insertProtocol(discard, ProtocolStack.Position.BELOW, NAKACK2.class, NAKACK4.class);
         a.setDiscardOwnMessages(true);
 
         Address dest=null; // send to all
@@ -188,7 +189,6 @@ public class OOBTest extends ChannelTestBase {
         System.out.println("A: size=" + one.size() + ", B: size=" + two.size());
 
         stack.removeProtocol(DISCARD.class);
-
         System.out.println("A received " + one.size() + " messages (" + NUM_MSGS + " expected)" +
                              "\nB received " + two.size() + " messages (" + NUM_MSGS + " expected)");
 
@@ -363,7 +363,8 @@ public class OOBTest extends ChannelTestBase {
         for(JChannel channel: channels) {
             ProtocolStack stack=channel.getProtocolStack();
             STABLE stable=stack.findProtocol(STABLE.class);
-            stable.setDesiredAverageGossip(2000);
+            if(stable != null)
+                stable.setDesiredAverageGossip(2000);
         }
     }
 
@@ -409,7 +410,7 @@ public class OOBTest extends ChannelTestBase {
 
         public void receive(Message msg) {
             Integer val=msg.getObject();
-            System.out.println(name + ": <-- " + val);
+            // System.out.println(name + ": <-- " + val);
             msgs.add(val);
         }
     }

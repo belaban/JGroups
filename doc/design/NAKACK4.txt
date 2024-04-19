@@ -1,16 +1,24 @@
-MCAST
-=====
+NAKACK4
+=======
 
 Author: Bela Ban
 Date: April 2024
 JIRA: https://issues.redhat.com/browse/JGRP-2780
 
-Contrary to NAKACK2, MCAST does not dynamically expand or shrink its xmit window, but instead uses a fixed size
-xmit window (RingBufferSeqno). This means that flow control is built in, and MFC is not required anymore.
+Contrary to NAKACK2, NAKACK4 does not dynamically expand or shrink its xmit window, but instead uses a fixed size
+ring buffer (FixedBuffer). This means that flow control is built in, and MFC is not required anymore.
 
-An xmit window has a low and high index, with the following semantics:
-* On the sender: low = highest acked, high = highest sent seqno
-* On the receiver: low = highest delivered, high = highest received seqno
+NAKACK4 is the new class with a fixed xmit window; NAKACK3 is a copy of NAKACK2, but extending ReliableMulticast. This
+was done to leave NAKACK2 completely untouched. This means that one of the following adoption patterns can be used:
+* Continue using NAKACK2 -> absolutely no risk, as there are no code changes
+* Switch to NAKACK3 -> minimal risk, as this is the same code as NAKACK2, but refactored (which can introduce bugs)
+* Switch to NAKACK4 -> no risk no fun :-) But because this class extends ReliableMulticast (which started as a copy of
+NAKACK2) and makes minimal changes, the risks are small. The benefits are that MFC and STABLE protocols are no longer
+needed, and features described in JGRP-2780 are available.
+
+An xmit window has a low, hd (=highest delivered) and high index, with the following semantics:
+* On the sender: low = highest acked (=seen by everyone), hd = highest delivered seqno, high = highest sent seqno
+* On the receiver: low = hd = highest delivered seqno, high = highest received seqno
 
 Seqnos are mapped to an index in the ring buffer.
 
@@ -19,16 +27,16 @@ A sender blocks sending a message when no space is available in the window, whil
 Receivers ack delivered messages, either periodically (xmit_interval), or after delivery of N messages.
 
 When a sender has received acks from all receivers (cluster members), it computes minimum M and purges all messages
-lower than M. This may unblock sender threads waiting for space to add their messages.
+lower than M, setting 'low'. This may unblock sender threads waiting for space to add their messages.
 
-Every member periodically (xmit_interval) checks its receiver tables, and asks senders for missing messages.
+Every receiver periodically (xmit_interval) checks its receiver tables, and asks senders for missing messages.
 
 
 Fields
 ------
 - capacity: number of messages in the xmit window
-- xmit-table: map of member|RingBufferSeqno tuples
-- send-window: xmit-table.get(local-addr)
+- xmit-table: map of member|FixedBuffer tuples // received messages
+- send-window: xmit-table.get(local-addr)          // sent messages
 - seqno
 - ack-map: map of highest ack from each member
 
@@ -55,7 +63,7 @@ On reception of message M
     - If M was already received -> added=false
     - Else added=true, high=max(high,M)
 - If added:
-  - Remove and deliver messages from rwin until a gap is encountered, incr low for every removed message
+  - Remove and deliver messages from rwin until a gap is (= null message) encountered, incr low for every removed message
   - Send an ACK for the highest removed message back to the sender
     (could be scheduled to be sent on xmit-interval, or sent only when N messages have been removed)
 
@@ -64,7 +72,7 @@ On reception of ACK from member P
 ---------------------------------
 - Set ack-map[P]=max(ack-map[P],ACK)
 - If min(ack-map) > prev min:
-  - send-window.purge(min): this advances the low index, possibly unblocking blocked sender threads
+  - send-window.purge(min): this advances the low index, possibly unblocking sender threads
 
 
 Every xmit_interval
@@ -79,20 +87,24 @@ On reception of XMIT-REQ from P
 - Send M to P (as multicast, or wrapped unicast)
 
 
-On reception of view V
-----------------------
-- Remove receiver windows of non-members
-- Create new receiver windows for new members
+On reception of {view V, digest D}
+----------------------------------
+- Remove receiver windows of non-members (flush them?)
+- For each new member P
+  - Create new receiver window for P with offset=D[P]
 
 
-On reception of digest D:
--------------------------
-- For all new members P -> create receiver window with offset=D[P]
+On reception of digest D: (same as above)
+-----------------------------------------
+- For each new member P -> create receiver window with offset=D[P]
 
 
 
 Misc
 ----
+
+Sending in order
+----------------
 When sending a message M, incrementing seqno, adding M to the send-window and sending it down the stack,
 concurrent threads might send the messages in non-order, depending on thread scheduling. E.g. we could have
 1 -> 3 -> 4 -> 2 -> 5
@@ -109,11 +121,14 @@ send-window.unlock()
 
 Sending M under the acquired lock should not be an issue, as this cannot block (MFC is missing), and
 TransferQueueBundler.drop_when_full should be set to true, so this never blocks. This would lead to the messages
-being added to the TQB's queue (and therefore sent as) as:
+being added to the TransferQueueBundler (and therefore sent as) as:
 
 1 -> 2 -> 3 -> 4 -> 5.
 
-This means the messages will be sent and received (unless there's packet drops) in that order, causing no spurious
+This means the messages will be sent and received (unless there's a packet drop) in that order, causing no spurious
 retransmission.
 
-
+Refactoring
+-----------
+A new common superclass ReliableMulticast will be created; NAKACK3 and NAKACK4 extend it. NAKACK2 is left
+completely untouched.

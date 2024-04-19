@@ -2,10 +2,12 @@ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.protocols.NAKACK4;
 import org.jgroups.protocols.pbcast.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.ArrayIterator;
+import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.DataProvider;
@@ -15,7 +17,6 @@ import java.io.*;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,7 +32,7 @@ public class StateTransferTest extends ChannelTestBase {
     static final int                     MSG_SEND_COUNT=1000;
     static final String[]                names= {"A", "B", "C", "D"};
     static final int                     APP_COUNT=names.length;
-    static final Class<?>[]              NAK_PROTS={NAKACK2.class};
+    static final Class<?>[]              NAK_PROTS={NAKACK2.class, NAKACK4.class};
     static final short[]                 ids=new short[NAK_PROTS.length];
     protected StateTransferApplication[] apps=new StateTransferApplication[APP_COUNT];
 
@@ -135,7 +136,7 @@ public class StateTransferTest extends ChannelTestBase {
 
         for(int i=0;i < apps.length;i++) {
             StateTransferApplication w=apps[i];
-            ConcurrentMap<Address,AtomicInteger> map=w.getCount();
+            Map<Address,AtomicInteger> map=w.getCount();
             System.out.println("msgs for " + names[i] + ":");
             for(Map.Entry<Address,AtomicInteger> entry: map.entrySet())
                 System.out.println("from " + entry.getKey() + " --> " + entry.getValue() + " msgs");
@@ -175,8 +176,10 @@ public class StateTransferTest extends ChannelTestBase {
     protected void resumeStableAndGC() {
         for(StateTransferApplication app: apps) {
             STABLE stable=app.getChannel().getProtocolStack().findProtocol(STABLE.class);
-            stable.down(new Event(Event.RESUME_STABLE));
-            stable.gc();
+            if(stable != null) {
+                stable.down(new Event(Event.RESUME_STABLE));
+                stable.gc();
+            }
         }
     }
 
@@ -227,12 +230,12 @@ public class StateTransferTest extends ChannelTestBase {
 
 
     protected class StateTransferApplication implements Receiver, Runnable {
-        protected final Map<String,List<Long>>         map=new HashMap<>(MSG_SEND_COUNT * APP_COUNT);
-        protected final int                            from, to;
-        protected ConcurrentMap<Address,AtomicInteger> count=new ConcurrentHashMap<>();
-        protected final Semaphore                      semaphore;
-        protected final JChannel                       channel;
-        protected long                                 start_time;
+        protected final Map<String,List<Long>> map=new HashMap<>(MSG_SEND_COUNT * APP_COUNT);
+        protected final int                    from, to;
+        protected Map<Address,AtomicInteger>   count=new ConcurrentHashMap<>();
+        protected final Semaphore              semaphore;
+        protected final JChannel               channel;
+        protected long                         start_time;
 
 
         public StateTransferApplication(Semaphore semaphore, String name, int from, int to) throws Exception {
@@ -262,7 +265,7 @@ public class StateTransferTest extends ChannelTestBase {
             }
         }
 
-        public ConcurrentMap<Address,AtomicInteger> getCount() {
+        public Map<Address,AtomicInteger> getCount() {
             return count;
         }
 
@@ -291,6 +294,11 @@ public class StateTransferTest extends ChannelTestBase {
             }
         }
 
+        @Override
+        public void receive(MessageBatch batch) {
+            for(Message msg: batch)
+                receive(msg);
+        }
 
         public void getState(OutputStream ostream) throws Exception {
             OutputStream out=new BufferedOutputStream(ostream);

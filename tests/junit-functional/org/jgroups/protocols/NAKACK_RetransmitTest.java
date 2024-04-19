@@ -4,19 +4,21 @@ import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.Receiver;
+import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Supplier;
 
 /**
  * Tests large retransmissions (https://issues.redhat.com/browse/JGRP-1868). Multicast equivalent to
@@ -24,32 +26,49 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * @author Bela Ban
  * @since  3.6
  */
-@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true,dataProvider="create")
 public class NAKACK_RetransmitTest {
-    protected JChannel a, b, c;
+    protected JChannel         a, b, c;
     protected static final int MAX_BUNDLE_SIZE=10000;
-    protected static final int NUM_MSGS=50000;
+    protected static final int NUM_MSGS=50000, PRINT=NUM_MSGS / 10;
 
-    protected static final Method START_RETRANSMISSION, STOP_RETRANSMISSION;
+    protected static final Method START_RETRANSMISSION2, STOP_RETRANSMISSION2, START_RETRANSMISSION4, STOP_RETRANSMISSION4;
+    protected static final Supplier<Protocol[]> NAK2=Util::getTestStack;
+    protected static final Supplier<Protocol[]> NAK4=() -> new Protocol[] {
+      new SHARED_LOOPBACK(),
+      new SHARED_LOOPBACK_PING(),
+      new NAKACK4().capacity(50000),
+      new UNICAST3(),
+      new GMS().setJoinTimeout(1000),
+      new FRAG2().setFragSize(8000)
+    };
 
     static {
-        try {
-            START_RETRANSMISSION=NAKACK2.class.getDeclaredMethod("startRetransmitTask");
-            START_RETRANSMISSION.setAccessible(true);
-            STOP_RETRANSMISSION=NAKACK2.class.getDeclaredMethod("stopRetransmitTask");
-            STOP_RETRANSMISSION.setAccessible(true);
-        }
-        catch(NoSuchMethodException e) {
-            throw new RuntimeException(e);
-        }
+        START_RETRANSMISSION2=Util.findMethod(NAKACK2.class, "startRetransmitTask");
+        START_RETRANSMISSION2.setAccessible(true);
+        STOP_RETRANSMISSION2=Util.findMethod(NAKACK2.class, "stopRetransmitTask");
+        STOP_RETRANSMISSION2.setAccessible(true);
+
+        START_RETRANSMISSION4=Util.findMethod(NAKACK4.class, "startRetransmitTask");
+        START_RETRANSMISSION4.setAccessible(true);
+        STOP_RETRANSMISSION4=Util.findMethod(NAKACK4.class, "stopRetransmitTask");
+        STOP_RETRANSMISSION4.setAccessible(true);
     }
 
 
-    @BeforeMethod
-    protected void setup() throws Exception {
-        a=new JChannel(Util.getTestStack()).name("A");
-        b=new JChannel(Util.getTestStack()).name("B");
-        c=new JChannel(Util.getTestStack()).name("C");
+
+    @DataProvider
+    protected static Object[][] create() {
+        return new Object[][] {
+          {NAK2},
+          {NAK4}
+        };
+    }
+
+    protected void setup(Supplier<Protocol[]> s) throws Exception {
+        a=new JChannel(s.get()).name("A");
+        b=new JChannel(s.get()).name("B");
+        c=new JChannel(s.get()).name("C");
         change(a, b, c);
         a.connect("NAKACK_RetransmitTest");
         b.connect("NAKACK_RetransmitTest");
@@ -69,7 +88,8 @@ public class NAKACK_RetransmitTest {
      * <p/>
      * https://issues.redhat.com/browse/JGRP-1868
      */
-    public void testLargeRetransmission() throws Exception {
+    public void testLargeRetransmission(Supplier<Protocol[]> s) throws Exception {
+        setup(s);
         a.setReceiver(new MyReceiver());
         b.setReceiver(new MyReceiver());
         c.setReceiver(new MyReceiver());
@@ -78,20 +98,27 @@ public class NAKACK_RetransmitTest {
           lc=((NAKACK_RetransmitTest.MyReceiver)c.getReceiver()).getList();
 
         stopRetransmission(a);
-
         insertDiscardProtocol(a);
 
-        for(int i=1; i <= NUM_MSGS; i++)
+        for(int i=1; i <= NUM_MSGS; i++) {
             a.send(null, i);
+            if(i > 0 && i % PRINT == 0)
+                System.out.printf("-- sent %d msgs\n", i);
+        }
+        System.out.println("-- done sending. Removing DISCARD protocol and starting retransmission");
 
         removeDiscardProtocol(a);
         startRetransmission(a);
 
-        for(int i=0; i < 10; i++) {
-            if(la.size() == NUM_MSGS && lb.size() == NUM_MSGS && lc.size() == NUM_MSGS)
+        for(int i=0; i < 20; i++) {
+            if(la.size() == NUM_MSGS && lb.size() == NUM_MSGS && lc.size() == NUM_MSGS) {
+                System.out.printf("-- A: %d, B: %d, C: %d\n", la.size(), lb.size(), lc.size());
                 break;
+            }
+            System.out.printf("#%d -- A: %d, B: %d, C: %d\n", i+1, la.size(), lb.size(), lc.size());
             STABLE stable=a.getProtocolStack().findProtocol(STABLE.class);
-            stable.gc();
+            if(stable != null)
+                stable.gc();
             Util.sleep(1000);
         }
 
@@ -115,13 +142,27 @@ public class NAKACK_RetransmitTest {
         for(JChannel ch: channels) {
             TP transport=ch.getProtocolStack().getTransport();
             transport.getBundler().setMaxSize(MAX_BUNDLE_SIZE);
-            NAKACK2 nak=ch.getProtocolStack().findProtocol(NAKACK2.class);
-            if(nak == null)
-                throw new IllegalStateException("NAKACK2 not present in the stack");
-            nak.setMaxXmitReqSize(5000);
+            NAKACK2 nak2=ch.getProtocolStack().findProtocol(NAKACK2.class);
+            if(nak2 != null) {
+                setXmitMaxReqSize(nak2, 5000);
+                nak2.setXmitInterval(500);
+                continue;
+            }
+            NAKACK4 nak4=ch.stack().findProtocol(NAKACK4.class);
+            if(nak4 != null) {
+                setXmitMaxReqSize(nak4, 5000);
+                nak4.setXmitInterval(500);
+            }
         }
     }
 
+    protected static final void setXmitMaxReqSize(NAKACK2 nak, int max_size) {
+        nak.setMaxXmitReqSize(max_size);
+    }
+
+    protected static final void setXmitMaxReqSize(NAKACK4 nak, int max_size) {
+        nak.setMaxXmitReqSize(max_size);
+    }
 
     protected static class MyReceiver implements Receiver {
         protected final Queue<Integer> list=new ConcurrentLinkedQueue<>();
@@ -139,15 +180,27 @@ public class NAKACK_RetransmitTest {
 
     protected static void stopRetransmission(JChannel... channels) throws Exception {
         for(JChannel ch: channels) {
-            NAKACK2 nak=ch.getProtocolStack().findProtocol(NAKACK2.class);
-            STOP_RETRANSMISSION.invoke(nak);
+            Protocol nak=ch.getProtocolStack().findProtocol(NAKACK2.class);
+            if(nak != null) {
+                STOP_RETRANSMISSION2.invoke(nak);
+                continue;
+            }
+            nak=ch.getProtocolStack().findProtocol(NAKACK4.class);
+            if(nak != null)
+                STOP_RETRANSMISSION4.invoke(nak);
         }
     }
 
     protected static void startRetransmission(JChannel... channels) throws Exception {
         for(JChannel ch: channels) {
-            NAKACK2 nak=ch.getProtocolStack().findProtocol(NAKACK2.class);
-            START_RETRANSMISSION.invoke(nak);
+            Protocol nak=ch.getProtocolStack().findProtocol(NAKACK2.class);
+            if(nak != null) {
+                START_RETRANSMISSION2.invoke(nak);
+                continue;
+            }
+            nak=ch.getProtocolStack().findProtocol(NAKACK4.class);
+            if(nak != null)
+                START_RETRANSMISSION4.invoke(nak);
         }
     }
 

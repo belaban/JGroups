@@ -5,6 +5,7 @@ import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.NakAckHeader2;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.AsciiString;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.MutableDigest;
 import org.jgroups.util.Util;
@@ -15,140 +16,115 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
  * Tests time for N threads to deliver M messages to NAKACK
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL, singleThreaded=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class NAKACK_StressTest {
-    static final int   NUM_MSGS=1000000;
+    final AtomicInteger               received=new AtomicInteger();
+    final AtomicLong                  seqno=new AtomicLong(1);
+    final ConcurrentLinkedQueue<Long> delivered_msg_list=new ConcurrentLinkedQueue<>();
+    final static Address A=Util.createRandomAddress("A");
+    final static Address B=Util.createRandomAddress("B");
+
+    static final int   NUM_MSGS=1_000_000;
     static final int   NUM_THREADS=50;
-    static final short NAKACK_ID=ClassConfigurator.getProtocolId(NAKACK2.class);
+    static final short NAK2=ClassConfigurator.getProtocolId(NAKACK2.class),
+                       NAK4=ClassConfigurator.getProtocolId(NAKACK4.class);
 
 
-    public static void testStress() {
-        start(NUM_THREADS, NUM_MSGS, false);
+    public void testStressNak2() {
+        start(new NAKACK2(), false);
     }
 
-    public static void testStressOOB() {
-        start(NUM_THREADS, NUM_MSGS, true);
+    public void testStressOOBNak2() {
+        start(new NAKACK2(), true);
     }
 
-    private static void start(final int num_threads, final int num_msgs, boolean oob) {
-        final NAKACK2 nak=new NAKACK2();
-        final AtomicInteger counter=new AtomicInteger(num_msgs);
-        final AtomicLong seqno=new AtomicLong(1);
-        final AtomicInteger delivered_msgs=new AtomicInteger(0);
-        final Lock lock=new ReentrantLock();
-        final Condition all_msgs_delivered=lock.newCondition();
-        final ConcurrentLinkedQueue<Long> delivered_msg_list=new ConcurrentLinkedQueue<>();
-        final Address local_addr=Util.createRandomAddress("A");
-        final Address sender=Util.createRandomAddress("B");
+    public void testStressNak4() {
+        start(new NAKACK4().capacity(100000), false);
+    }
 
+    public void testStressOOBNak4() {
+        start(new NAKACK4().capacity(100000), true);
+    }
 
-        nak.setDownProtocol(new Protocol() {public Object down(Event evt) {return null;}});
+    protected Object handleMessage(Message msg) {
+        long seq=getSeqno(msg);
+        if(seq >= 0) {
+            received.incrementAndGet();
+            delivered_msg_list.add(seq);
+        }
+        return null;
+    }
 
-        nak.setUpProtocol(new Protocol() {
+    protected void start(final Protocol prot, boolean oob) {
+        seqno.set(1);
+        delivered_msg_list.clear();
+        received.set(0);
+
+        prot.setDownProtocol(new MockTransport());
+
+        prot.setUpProtocol(new Protocol() {
             public Object up(Message msg) {
-                delivered_msgs.incrementAndGet();
-                NakAckHeader2 hdr=msg.getHeader(NAKACK_ID);
-                if(hdr != null)
-                    delivered_msg_list.add(hdr.getSeqno());
-
-                if(delivered_msgs.get() >= num_msgs) {
-                    lock.lock();
-                    try {
-                        all_msgs_delivered.signalAll();
-                    }
-                    finally {
-                        lock.unlock();
-                    }
-                }
-                return null;
+                return handleMessage(msg);
             }
 
             public void up(MessageBatch batch) {
                 for(Message msg: batch) {
-                    delivered_msgs.incrementAndGet();
-                    NakAckHeader2 hdr=msg.getHeader(NAKACK_ID);
-                    if(hdr != null)
-                        delivered_msg_list.add(hdr.getSeqno());
-
-                    if(delivered_msgs.get() >= num_msgs) {
-                        lock.lock();
-                        try {
-                            all_msgs_delivered.signalAll();
-                        }
-                        finally {
-                            lock.unlock();
-                        }
-                    }
+                    handleMessage(msg);
                 }
             }
         });
 
-        nak.setDiscardDeliveredMsgs(true);
-        for(Protocol p=nak; p != null; p=p.getDownProtocol())
-            p.setAddress(local_addr);
-        nak.down(new Event(Event.BECOME_SERVER));
-        View view=View.create(local_addr, 1, local_addr, sender);
-        nak.down(new Event(Event.VIEW_CHANGE, view));
+        for(Protocol p=prot; p != null; p=p.getDownProtocol())
+            p.setAddress(A);
+        prot.down(new Event(Event.BECOME_SERVER));
+        View view=View.create(A, 1, A, B);
+        prot.down(new Event(Event.VIEW_CHANGE, view));
 
         MutableDigest digest=new MutableDigest(view.getMembersRaw());
-        digest.set(local_addr,0,0);
-        digest.set(sender,0,0);
-        nak.down(new Event(Event.SET_DIGEST, digest));
+        digest.set(A, 0, 0);
+        digest.set(B, 0, 0);
+        prot.down(new Event(Event.SET_DIGEST, digest));
 
         final CountDownLatch latch=new CountDownLatch(1);
-        Sender[] adders=new Sender[num_threads];
+        Sender[] adders=new Sender[NUM_THREADS];
         for(int i=0; i < adders.length; i++) {
-            adders[i]=new Sender(nak, latch, counter, seqno, oob, sender);
+            adders[i]=new Sender(prot, latch, oob, B);
             adders[i].start();
         }
 
         long start=System.currentTimeMillis();
         latch.countDown(); // starts all adders
 
-        int max_tries=30;
-        lock.lock();
-        try {
-            while(delivered_msgs.get() < num_msgs && max_tries-- > 0) {
-                try {
-                    all_msgs_delivered.await(1000, TimeUnit.MILLISECONDS);
-                    System.out.println("received " + delivered_msgs.get() + " msgs");
-                }
-                catch(InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        finally {
-            lock.unlock();
+        for(int i=0; i < 30; i++) {
+            System.out.printf("-- seqno: %d | received %d\n", seqno.get(), received.get());
+            if(received.get() >= NUM_MSGS)
+                break;
+            Util.sleep(1000);
         }
 
         long time=System.currentTimeMillis() - start;
-        double requests_sec=num_msgs / (time / 1000.0);
+        double requests_sec=NUM_MSGS / (time / 1000.0);
         System.out.printf("\nTime: %d ms, %.2f requests / sec\n", time, requests_sec);
         System.out.println("Delivered messages: " + delivered_msg_list.size());
         if(delivered_msg_list.size() < 100)
             System.out.println("Elements: " + delivered_msg_list);
 
-        nak.stop();
+        prot.stop();
 
         List<Long> results=new ArrayList<>(delivered_msg_list);
 
         if(oob)
             Collections.sort(results);
 
-        assert results.size() == num_msgs : "expected " + num_msgs + ", but got " + results.size();
+        assert results.size() == NUM_MSGS : "expected " + NUM_MSGS + ", but got " + results.size();
 
         System.out.println("Checking results consistency");
         int i=1;
@@ -162,30 +138,52 @@ public class NAKACK_StressTest {
         System.out.println("OK");
     }
 
-    private static Message createMessage(Address dest, Address src, long seqno, boolean oob) {
+    protected static long getSeqno(Message msg) {
+        NakAckHeader2 hdr2=msg.getHeader(NAK2);
+        if(hdr2 != null)
+            return hdr2.getSeqno();
+        NakAckHeader hdr4=msg.getHeader(NAK4);
+        if(hdr4 != null)
+            return hdr4.getSeqno();
+        return -1;
+    }
+
+    private static Message createMessage(Class<? extends Protocol> cl, Address dest, Address src, long seqno, boolean oob) {
         Message msg=new BytesMessage(dest, "hello world").setSrc(src);
-        NakAckHeader2 hdr=NakAckHeader2.createMessageHeader(seqno) ;
-        msg.putHeader(NAKACK_ID, hdr);
+        if(cl.equals(NAKACK2.class)) {
+            NakAckHeader2 hdr=NakAckHeader2.createMessageHeader(seqno);
+            msg.putHeader(NAK2, hdr);
+        }
+        else {
+            NakAckHeader hdr4=NakAckHeader.createMessageHeader(seqno);
+            msg.putHeader(NAK4, hdr4);
+        }
         if(oob)
             msg.setFlag(Message.Flag.OOB);
         return msg;
     }
 
+    protected static class MockTransport extends TP {
+        @Override public Object down(Event evt)   {return null;}
+        @Override public Object down(Message msg) {return null;}
+        @Override public AsciiString getClusterNameAscii() {return new AsciiString("cluster");}
+        @Override public boolean supportsMulticasting() {return false;}
 
-    static class Sender extends Thread {
-        final NAKACK2        nak;
+        @Override
+        public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {}
+        @Override public String getInfo() {return "n/a";}
+        @Override protected PhysicalAddress getPhysicalAddress() {return null;}
+    }
+
+    protected class Sender extends Thread {
+        final Protocol       prot;
         final CountDownLatch latch;
-        final AtomicInteger  num_msgs;
-        final AtomicLong     current_seqno;
         final boolean        oob;
         final Address        sender;
 
-        public Sender(NAKACK2 nak, CountDownLatch latch, AtomicInteger num_msgs, AtomicLong current_seqno,
-                      boolean oob, final Address sender) {
-            this.nak=nak;
+        public Sender(Protocol prot, CountDownLatch latch, boolean oob, final Address sender) {
+            this.prot=prot;
             this.latch=latch;
-            this.num_msgs=num_msgs;
-            this.current_seqno=current_seqno;
             this.oob=oob;
             this.sender=sender;
             setName("Adder");
@@ -200,11 +198,14 @@ public class NAKACK_StressTest {
                 e.printStackTrace();
                 return;
             }
-
-            while(num_msgs.getAndDecrement() > 0) {
-                long seqno=current_seqno.getAndIncrement();
-                Message msg=createMessage(null, sender, seqno, oob);
-                nak.up(msg);
+            while(true) {
+                long seq=seqno.getAndIncrement();
+                if(seq > NUM_MSGS) {
+                    seqno.decrementAndGet();
+                    break;
+                }
+                Message msg=createMessage(prot.getClass(), null, sender, seq, oob);
+                prot.up(msg);
             }
         }
     }

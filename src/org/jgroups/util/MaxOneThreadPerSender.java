@@ -128,8 +128,9 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
             this.mcast=mcast;
             this.sender=sender;
             this.cluster_name=cluster_name;
-            int cap=max_buffer_size > 0? max_buffer_size : 16; // initial capacity
+            int cap=max_buffer_size > 0? max_buffer_size : 512; // initial capacity
             batch=new MessageBatch(cap).dest(tp.getAddress()).sender(sender).clusterName(cluster_name).multicast(mcast);
+            batch.array().increment(512);
         }
 
 
@@ -157,7 +158,7 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
             // running is true, we didn't queue msg and need to submit a task to the thread pool
             try {
                 submitted_msgs++;
-                MessageBatch mb=new MessageBatch(16).sender(sender).dest(mcast? null : tp.getAddress())
+                MessageBatch mb=new MessageBatch(batch.capacity()).sender(sender).dest(mcast? null : tp.getAddress())
                   .clusterName(cluster_name).multicast(mcast).add(msg);
                 BatchHandlerLoop handler=new BatchHandlerLoop(mb, this, loopback);
                 if(!tp.getThreadPool().execute(handler)) {

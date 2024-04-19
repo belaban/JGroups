@@ -79,10 +79,9 @@ public class MPerf implements Receiver {
         thread_factory=new DefaultThreadFactory("invoker", false, true)
           .useVirtualThreads(use_virtual_threads);
         if(use_virtual_threads && Util.virtualThreadsAvailable())
-            System.out.println("-- using fibers instead of threads");
+            System.out.println("-- MPerf: using virtual threads");
 
-        channel=new JChannel(props).setName(name).setReceiver(this)
-          .connect("mperf");
+        channel=new JChannel(props).setName(name).setReceiver(this).connect("mperf");
         local_addr=channel.getAddress();
 
         // send a CONFIG_REQ to the current coordinator, so we can get the current config

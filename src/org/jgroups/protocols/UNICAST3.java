@@ -121,8 +121,6 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     @ManagedAttribute(description="Number of retransmit responses sent",type=SCALAR)
     protected final LongAdder  xmit_rsps_sent=new LongAdder();
 
-    public long getNumLoopbacks() {return num_loopbacks.sum();}
-
     @ManagedAttribute(description="Average batch size of messages delivered to the application")
     protected final AverageMinMax avg_delivery_batch_size=new AverageMinMax();
 
@@ -138,8 +136,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     /* --------------------------------------------- Fields ------------------------------------------------ */
 
 
-    protected final ConcurrentMap<Address,SenderEntry>   send_table=Util.createConcurrentMap();
-    protected final ConcurrentMap<Address,ReceiverEntry> recv_table=Util.createConcurrentMap();
+    protected final Map<Address,SenderEntry>   send_table=Util.createConcurrentMap();
+    protected final Map<Address,ReceiverEntry> recv_table=Util.createConcurrentMap();
 
     protected final ReentrantLock          recv_table_lock=new ReentrantLock();
 
@@ -191,6 +189,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         SenderEntry entry=send_table.get(target);
         return entry != null? entry.msgs : null;
     }
+
+    public long getNumLoopbacks() {return num_loopbacks.sum();}
 
     @ManagedAttribute(description="Returns the number of outgoing (send) connections",type=SCALAR)
     public int getNumSendConnections() {

@@ -11,31 +11,29 @@ import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 /**
- * Tests the reliable FIFO (NAKACK{2}) protocol
+ * Tests the reliable FIFO (NAKACK{2,4}) protocols<br/>
+ * Two senders send 1000 messages to the group, where each message contains a long value, mirroring seqnos used.
+ * A receiver receives the messages from both senders and checks that seqnos are received in the correct order.
  * <p/>
- * Two sender peers send 1000 messages to the group, where each message contains
- * a long value, mirroring seqnos used. A receiver peer receives the messages
- * from each sender and checks that seqnos are received in the correct order.
+ * An object all_msgs_recvd is used to allow the main test thread to discover when all sent messages have been received.
  * <p/>
- * An object all_msgs_recd is used to allow the main test thread to discover when
- * all sent messages have been received.
- * <p/>
- * The test case passes if the expected number of messages is received, and messages
- * are received in order from each sender. This implies that:
+ * The test case passes if the expected number of messages is received, and messages are received in order from
+ * each sender. This implies that:
  * (i) all messages from each peer were received (reliable) and
  * (ii) all messages from each peer are received in order (FIFO)
  * @author Richard Achmatowicz
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL, singleThreaded=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true,dataProvider="creator")
 public class NakackTest {
     final static int NUM_PEERS=3;
     final static int NUM_SENDERS=NUM_PEERS-1;
@@ -47,6 +45,7 @@ public class NakackTest {
     static boolean notFIFO=false;
 
     JChannel[] channels=new JChannel[NUM_PEERS];
+    Receiver[] receivers=new Receiver[NUM_PEERS];
     Thread[]   threads=new Thread[NUM_PEERS];
 
     //define senders and receivers
@@ -55,20 +54,26 @@ public class NakackTest {
     protected final AtomicInteger received_msgs=new AtomicInteger(0);
 
 
+    @DataProvider
+    static Object[][] creator() {
+        return new Object[][]{
+          {createNAKACK2Stack},
+          {createNAKACK4Stack}
+        };
+    }
 
     @BeforeMethod
-    protected void setUp() throws Exception {
-        for(int i=0; i < NUM_PEERS; i++) {
-            channels[i]=createChannel().name(Character.toString((char)(i + 'A')));
-            channels[i].connect("NakackTest");
-        }
+    protected void setup() {
+        received_msgs.set(0);
+    }
 
-        org.jgroups.Receiver[] receivers=new org.jgroups.Receiver[NUM_PEERS];
-
-        // set up the sender and the receiver callbacks, according to whether the peer is a sender or a receiver
+    protected void setUp(Supplier<Protocol[]> stack_creator) throws Exception {
         for(int i=0; i < NUM_PEERS; i++) {
+            Protocol[] stack=stack_creator.get();
+            channels[i]=new JChannel(stack).name(Character.toString((char)(i + 'A')));
             receivers[i]=new MyReceiver(channels[i]);
             channels[i].setReceiver(receivers[i]);
+            channels[i].connect("NakackTest");
         }
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, channels);
     }
@@ -81,8 +86,8 @@ public class NakackTest {
     /**
      * Test to see thyat NAKACK delivery is reliable and FIFO.
      */
-    public void testReceptionOfAllMessages() throws TimeoutException {
-
+    public void testReceptionOfAllMessages(Supplier<Protocol[]> stack_creator) throws Exception {
+        setUp(stack_creator);
 
         // start the NAKACK peers and let them exchange messages
         for(int i=0; i < NUM_PEERS; i++) {
@@ -91,20 +96,11 @@ public class NakackTest {
         }
 
         // wait for the threads to terminate
-        try {
-            for(int i=0; i < NUM_PEERS; i++)
-                threads[i].join();
-        }
-        catch(InterruptedException e) {
-        }
+        for(int i=0; i < NUM_PEERS; i++)
+            threads[i].join();
 
         // wait for the receiver peer to signal that it has received messages, or timeout
-        for(int i=0; i < 20; i++) {
-            if(received_msgs.get() >= TOT_MSGS_FOR_ALL_RECEIVERS)
-                break;
-            Util.sleep(500);
-        }
-
+        Util.waitUntilTrue(10000, 500, () -> received_msgs.get() >= TOT_MSGS_FOR_ALL_RECEIVERS);
 
         // the test fails if:
         // - a seqno is received out of order (not FIFO), or
@@ -113,21 +109,29 @@ public class NakackTest {
         Assert.assertFalse(notFIFO, "Sequenece numbers for a peer not in correct order");
     }
 
-    protected static JChannel createChannel() throws Exception {
-        Protocol[] protocols={
-          new SHARED_LOOPBACK(),
-          new SHARED_LOOPBACK_PING(),
-          new MERGE3().setMinInterval(1000).setMaxInterval(3000),
-          new NAKACK2().useMcastXmit(false),
-          new UNICAST3(),
-          new STABLE().setMaxBytes( 50000),
-          new GMS().printLocalAddress(false),
-          new UFC(),
-          new MFC(),
-          new FRAG2()
-        };
-        return new JChannel(protocols);
-    }
+    protected static Supplier<Protocol[]> createNAKACK2Stack=() -> new Protocol[] {
+      new SHARED_LOOPBACK(),
+      new SHARED_LOOPBACK_PING(),
+      new MERGE3().setMinInterval(1000).setMaxInterval(3000),
+      new NAKACK2().useMcastXmit(false),
+      new UNICAST3(),
+      new STABLE().setMaxBytes( 50000),
+      new GMS().printLocalAddress(false),
+      new UFC(),
+      new MFC(),
+      new FRAG2()
+    };
+
+    protected static Supplier<Protocol[]> createNAKACK4Stack=() -> new Protocol[]{
+      new SHARED_LOOPBACK(),
+      new SHARED_LOOPBACK_PING(),
+      new MERGE3().setMinInterval(1000).setMaxInterval(3000),
+      new NAKACK4().useMcastXmit(false),
+      new UNICAST3(),
+      new GMS().printLocalAddress(false),
+      new UFC(),
+      new FRAG2()
+    };
 
    
 
@@ -180,7 +184,7 @@ public class NakackTest {
                     System.out.println("<" + address + ">:" + "PASS: received msg #" + received_seqno + " from " + sender);
             }
             catch(Exception ex) {
-                System.err.println(ex.toString());
+                System.err.println(ex);
             }
         }
     }

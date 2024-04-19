@@ -27,13 +27,9 @@
     <FD_ALL3 timeout="40s" interval="5s" />
     <VERIFY_SUSPECT2 timeout="1.5s"  />
     <BARRIER />
-    <pbcast.NAKACK2 use_mcast_xmit="false" />
+    <NAKACK4 use_mcast_xmit="false" capacity="8192" />
     <UNICAST3 />
-    <pbcast.STABLE desired_avg_gossip="50s"
-                   max_bytes="4M"/>
-    <pbcast.GMS print_local_addr="true" join_timeout="2s"/>
-    <MFC max_credits="10M"
-         min_threshold="0.4"/>
+    <pbcast.GMS print_local_addr="true" join_timeout="1s"/>
     <UFC max_credits="10M"
              min_threshold="0.4"/>
     <FRAG2 frag_size="60K"  />

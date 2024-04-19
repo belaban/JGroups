@@ -8,6 +8,7 @@ import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -18,7 +19,7 @@ import java.util.List;
  * @author Bela Ban
  * @since  3.5
  */
-@Test(groups=Global.FUNCTIONAL)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true,dataProvider="create")
 public class NakackUnitTest {
     protected JChannel   a, b;
     protected MyReceiver ra, rb;
@@ -26,16 +27,26 @@ public class NakackUnitTest {
 
     @AfterMethod  protected void tearDown() throws Exception {Util.close(b, a);}
 
+    @DataProvider
+    static Object[][] create() {
+        return new Object[][]{
+          {NAKACK2.class},
+          {NAKACK3.class},
+          {NAKACK4.class}
+        };
+    }
+
+
     // @Test(invocationCount=10)
-    public void testMessagesToAllWithDontLoopback() throws Exception {
-        a=create("A", false); b=create("B", false);
+    public void testMessagesToAllWithDontLoopback(Class<Protocol> cl) throws Exception {
+        a=create(cl, "A", false); b=create(cl, "B", false);
         createReceivers();
         _testMessagesToAllWithDontLoopback();
     }
 
     // @Test(invocationCount=10)
-    public void testMessagesToOtherBatching() throws Exception {
-        a=create("A", true); b=create("B", true);
+    public void testMessagesToOtherBatching(Class<Protocol> cl) throws Exception {
+        a=create(cl, "A", true); b=create(cl, "B", true);
         createReceivers();
         _testMessagesToAllWithDontLoopback();
     }
@@ -92,12 +103,12 @@ public class NakackUnitTest {
 
     protected static Message msg() {return new BytesMessage(null);}
 
-    protected static JChannel create(String name, boolean use_batching) throws Exception {
+    protected static JChannel create(Class<Protocol> cl, String name, boolean use_batching) throws Exception {
         Protocol[] protocols={
           new SHARED_LOOPBACK(),
           new SHARED_LOOPBACK_PING(),
           new MAKE_BATCH().sleepTime(100).multicasts(use_batching),
-          new NAKACK2(),
+          cl.getConstructor().newInstance(),
           new UNICAST3(),
           new STABLE(),
           new GMS(),

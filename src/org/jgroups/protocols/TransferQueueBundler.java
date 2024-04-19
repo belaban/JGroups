@@ -118,10 +118,7 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
                     int num_msgs=queue.drainTo(remove_queue);
                     if(num_msgs <= 0)
                         break;
-                    for(int i=0; i < remove_queue.size(); i++) {
-                        msg=remove_queue.get(i);
-                        addAndSendIfSizeExceeded(msg);
-                    }
+                    remove_queue.forEach(this::addAndSendIfSizeExceeded); // ArrayList.forEach() avoids array bounds check
                 }
                 if(count > 0) {
                     num_sends_because_no_msgs++;

@@ -520,8 +520,11 @@
         <sequential>
         	<antcall target="functional"/>
             <antcall target="udp"/>
+            <antcall target="udp-nak"/>
             <antcall target="tcp"/>
+            <antcall target="tcp-nak"/>
             <antcall target="tcp-nio"/>
+            <antcall target="tcp-nio-nak"/>
             <antcall target="stack-independent"/>
             <antcall target="time-sensitive"/>
             <antcall target="byteman"/>
@@ -574,6 +577,20 @@
                 />
     </target>
 
+    <target name="udp-nak" depends="postcompile,define-testng-task" description="Runs UDP tests">
+        <mkdir dir="${tmp.dir}/test-results/xml/udp-nak"/>
+        <runtest suitename="udp-nak"
+                 groups="base,stack-dependent"
+                 excludedgroups="stack-independent,broken"
+                 parallel="${parallel.classes}"
+                 threadcount="5"
+                 initial.mcast.addr="${jgroups.udp.mcast_addr}"
+                 initial.mcast.port="26000"
+                 initial.tcp.port="26000"
+                 jvmarg1="-Dchannel.conf=udp-nak.xml"
+        />
+    </target>
+
 
     <target name="tcp" depends="postcompile,define-testng-task" description="Runs TCP tests">
     	<!-- Needed to force reading of properties. Otherwise tcp tests will fail -->
@@ -593,6 +610,24 @@
                 />
     </target>
 
+    <target name="tcp-nak" depends="postcompile,define-testng-task" description="Runs TCP tests">
+        <!-- Needed to force reading of properties. Otherwise tcp tests will fail -->
+        <property name="build.properties.file" value="build.properties"/>
+        <property file="${build.properties.file}"/>
+
+        <mkdir dir="${tmp.dir}/test-results/xml/tcp-nak"/>
+        <runtest suitename="tcp-nak"
+                 groups="base,stack-dependent"
+                 excludedgroups="stack-independent,broken"
+                 parallel="${parallel.classes}"
+                 threadcount="5"
+                 initial.mcast.addr="${jgroups.udp.mcast_addr}"
+                 initial.mcast.port="28000"
+                 initial.tcp.port="28000"
+                 jvmarg1="-Dchannel.conf=tcp-nak.xml"
+        />
+    </target>
+
 
     <target name="tcp-nio" depends="postcompile,define-testng-task" description="Runs TCP-NIO tests">
         <!-- Needed to force reading of properties. Otherwise tcp-nio tests will fail -->
@@ -606,10 +641,28 @@
                  parallel="${parallel.classes}"
                  threadcount="5"
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
-                 initial.mcast.port="27000"
-                 initial.tcp.port="28000"
+                 initial.mcast.port="29000"
+                 initial.tcp.port="30000"
                  jvmarg1="-Dchannel.conf=tcp-nio.xml"
                 />
+    </target>
+
+    <target name="tcp-nio-nak" depends="postcompile,define-testng-task" description="Runs TCP-NIO tests">
+        <!-- Needed to force reading of properties. Otherwise tcp-nio tests will fail -->
+        <property name="build.properties.file" value="build.properties"/>
+        <property file="${build.properties.file}"/>
+
+        <mkdir dir="${tmp.dir}/test-results/xml/tcp-nio-nak"/>
+        <runtest suitename="tcp-nio-nak"
+                 groups="base,stack-dependent"
+                 excludedgroups="stack-independent,broken"
+                 parallel="${parallel.classes}"
+                 threadcount="5"
+                 initial.mcast.addr="${jgroups.udp.mcast_addr}"
+                 initial.mcast.port="31000"
+                 initial.tcp.port="32000"
+                 jvmarg1="-Dchannel.conf=tcp-nio-nak.xml"
+        />
     </target>
 
 

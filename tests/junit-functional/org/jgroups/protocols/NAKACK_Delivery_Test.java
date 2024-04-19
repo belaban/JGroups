@@ -7,7 +7,7 @@ import org.jgroups.protocols.pbcast.NakAckHeader2;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.*;
@@ -23,20 +23,29 @@ import java.util.concurrent.*;
  * </ul>
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true,dataProvider="create")
 public class NAKACK_Delivery_Test {
-    protected NAKACK2            nak;
+    protected Protocol           nak;
     protected Address            a, b;
     protected MyReceiver         receiver=new MyReceiver();
     protected Executor           pool;
-    protected static final short NAKACK_ID=ClassConfigurator.getProtocolId(NAKACK2.class);
+    protected static final short NAK2=ClassConfigurator.getProtocolId(NAKACK2.class),
+                                 NAK4=ClassConfigurator.getProtocolId(NAKACK4.class);
     protected final static int   NUM_MSGS=50;
 
-    @BeforeMethod
-    protected void setUp() throws Exception {
+    @DataProvider
+    static Object[][] create() {
+        return new Object[][]{
+          {new NAKACK2()},
+          {new NAKACK4()}
+        };
+    }
+
+    protected void setUp(Protocol prot) throws Exception {
         a=Util.createRandomAddress("A");
         b=Util.createRandomAddress("B");
-        nak=new NAKACK2();
+        nak=prot;
+        receiver.clear();
 
         TP transport=new TP() {
             public boolean supportsMulticasting() {return false;}
@@ -95,7 +104,8 @@ public class NAKACK_Delivery_Test {
      * Sends NUM_MSGS (regular or OOB) multicasts on c1 and c2, checks that both c1 and c2 received NUM_MSGS messages.
      * This test doesn't use a transport, but injects messages directly into NAKACK.
      */
-    public void testSendingOfRandomMessages() {
+    public void testSendingOfRandomMessages(Protocol prot) throws Exception {
+        setUp(prot);
         List<Integer> seqnos=generateRandomNumbers(1, NUM_MSGS);
         seqnos.addAll(generateRandomNumbers(1, NUM_MSGS));
         seqnos.addAll(generateRandomNumbers(Math.min(15, NUM_MSGS / 2), NUM_MSGS / 2));
@@ -108,17 +118,24 @@ public class NAKACK_Delivery_Test {
                 no_duplicates.size());
 
         // we need to add our own messages (nak is for A), or else they will get discarded by NAKACK.handleMessage()
-        Table<Message> win=nak.getWindow(a);
-        for(int i=1; i <= NUM_MSGS; i++)
-            win.add(i, msg(a, i, i, true));
+        if(prot instanceof NAKACK2) {
+            Table<Message> win=((NAKACK2)nak).getWindow(a);
+            for(int i=1; i <= NUM_MSGS; i++)
+                win.add(i, msg(prot, a, i, i, true));
+        }
+        else {
+            Buffer<Message> buf=((NAKACK4)nak).getBuf(a);
+            for(int i=1; i <= NUM_MSGS; i++)
+                buf.add(i, msg(prot, a, i, i, true));
+        }
 
         for(int i: seqnos) {
             boolean oob=Util.tossWeightedCoin(0.5);
-            pool.execute(new Sender(b, i, i, oob));
-            pool.execute(new Sender(a, i, i, oob));
+            pool.execute(new Sender(prot, b, i, i, oob));
+            pool.execute(new Sender(prot, a, i, i, oob));
         }
 
-        ConcurrentMap<Address, Collection<Message>> msgs=receiver.getMsgs();
+        ConcurrentMap<Address,Collection<Message>> msgs=receiver.getMsgs();
         Collection<Message> c1_list=msgs.get(a);
         Collection<Message> c2_list=msgs.get(b);
 
@@ -139,20 +156,22 @@ public class NAKACK_Delivery_Test {
         assert c2_list.size() == NUM_MSGS : "[B] expected " + NUM_MSGS + " messages, but got " + c2_list.size();
     }
 
-    public void testBatchDeliveredWithTrace() {
-           doBatchDeliverTest(true);
-       }
+    public void testBatchDeliveredWithTrace(Protocol prot) throws Exception {
+        setUp(prot);
+        doBatchDeliverTest(prot,true);
+    }
 
-       public void testBatchDeliveredWithoutTrace() {
-           doBatchDeliverTest(false);
-       }
+    public void testBatchDeliveredWithoutTrace(Protocol prot) throws Exception {
+        setUp(prot);
+        doBatchDeliverTest(prot,false);
+    }
 
     /**
      * Test for <a href="https://issues.redhat.com/browse/JGRP-2619">JGRP-2619</a>
      */
-    private void doBatchDeliverTest(boolean trace) {
+    private void doBatchDeliverTest(Protocol prot, boolean trace) {
         try {
-            nak.isTrace(trace);
+            nak.setLevel("trace");
 
             // batch: first message without header, last message with header
             receiver.getMsgs().get(b).clear();
@@ -160,7 +179,7 @@ public class NAKACK_Delivery_Test {
 
             MessageBatch batch = new MessageBatch(2).setMode(MessageBatch.Mode.OOB).setSender(b).setDest(null);
             batch.add(new EmptyMessage().setFlag(Message.Flag.NO_RELIABILITY, Message.Flag.OOB).src(b)); // no NAKACK2 header
-            batch.add(msg(b,1, 1, true));
+            batch.add(msg(prot, b,1, 1, true));
             nak.up(batch);
 
             // expect both messages delivered
@@ -172,7 +191,7 @@ public class NAKACK_Delivery_Test {
             assert receiver.getMsgs().get(b).isEmpty();
 
             batch = new MessageBatch(2).setMode(MessageBatch.Mode.OOB).setSender(b).setDest(null);
-            batch.add(msg(b,2, 1, true));
+            batch.add(msg(prot, b,2, 1, true));
             batch.add(new EmptyMessage().setFlag(Message.Flag.NO_RELIABILITY, Message.Flag.OOB).src(b)); // no NAKACK2 header
             nak.up(batch);
 
@@ -180,7 +199,7 @@ public class NAKACK_Delivery_Test {
             System.out.println(receiver.getMsgs().get(b));
             assert receiver.getMsgs().get(b).size() == 2;
         } finally {
-            nak.isTrace(false);
+            nak.setLevel("warn");
         }
     }
 
@@ -193,28 +212,33 @@ public class NAKACK_Delivery_Test {
     }
 
 
-    private void send(Address sender, long seqno, int number, boolean oob) {
+    private void send(Protocol prot, Address sender, long seqno, int number, boolean oob) {
         assert sender != null;
-        nak.up(msg(sender,seqno,number,oob));
+        nak.up(msg(prot, sender,seqno,number,oob));
     }
 
 
-    private static Message msg(Address sender, long seqno, int number, boolean oob) {
+    private static Message msg(Protocol prot, Address sender, long seqno, int number, boolean oob) {
         Message msg=new BytesMessage(null, number).setSrc(sender);
         if(oob)
             msg.setFlag(Message.Flag.OOB);
-        if(seqno != -1)
-            msg.putHeader(NAKACK_ID, NakAckHeader2.createMessageHeader(seqno));
+        if(seqno != -1) {
+            if(prot instanceof NAKACK2)
+                msg.putHeader(NAK2, NakAckHeader2.createMessageHeader(seqno));
+            else
+                msg.putHeader(NAK4, NakAckHeader.createMessageHeader(seqno));
+        }
         return msg;
     }
 
 
-    static class MyReceiver extends Protocol {
+    protected static class MyReceiver extends Protocol {
         final ConcurrentMap<Address, Collection<Message>> msgs=new ConcurrentHashMap<>();
 
         public ConcurrentMap<Address, Collection<Message>> getMsgs() {
             return msgs;
         }
+        public MyReceiver clear() {msgs.clear(); return this;}
         public void init(Address ... mbrs) {
             for(Address mbr: mbrs) {
                 msgs.putIfAbsent(mbr, new ConcurrentLinkedQueue<>());
@@ -254,16 +278,18 @@ public class NAKACK_Delivery_Test {
         final long    seqno;
         final int     number;
         final boolean oob;
+        final Protocol prot;
 
-        public Sender(Address sender, long seqno, int number, boolean oob) {
+        public Sender(Protocol prot, Address sender, long seqno, int number, boolean oob) {
             this.sender=sender;
             this.seqno=seqno;
             this.number=number;
             this.oob=oob;
+            this.prot=prot;
         }
 
         public void run() {
-            send(sender, seqno, number, oob);
+            send(prot, sender, seqno, number, oob);
         }
     }
 
