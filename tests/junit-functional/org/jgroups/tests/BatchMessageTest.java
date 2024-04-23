@@ -39,7 +39,9 @@ public class BatchMessageTest extends MessageTestBase {
             a.connect(BatchMessageTest.class.getSimpleName());
             b.connect(BatchMessageTest.class.getSimpleName());
             Util.waitUntilAllChannelsHaveSameView(2000, 100, a,b);
-            BatchMessage msg=new BatchMessage(DEST, SRC, new Message[]{M1,M2,M3}, 3);
+            BatchMessage msg=new BatchMessage(null, 3);
+            for(int i=1; i <= 5; i++)
+                msg.add(new ObjectMessage(null, "hello-" + i));
             a.send(msg);
             Util.waitUntil(2000, 100, () -> r1.size() == 1 && r2.size() == 1);
         }
