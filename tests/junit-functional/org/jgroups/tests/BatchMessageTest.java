@@ -38,11 +38,15 @@ public class BatchMessageTest extends MessageTestBase {
             MyReceiver<Message> r2=new MyReceiver<Message>().rawMsgs(true);
             a.connect(BatchMessageTest.class.getSimpleName());
             b.connect(BatchMessageTest.class.getSimpleName());
+            a.setReceiver(r1);
+            b.setReceiver(r2);
             Util.waitUntilAllChannelsHaveSameView(2000, 100, a,b);
             BatchMessage msg=new BatchMessage(null, 3);
             for(int i=1; i <= 5; i++)
                 msg.add(new ObjectMessage(null, "hello-" + i));
+            System.out.print("-- sending multicast BatchMessage: ");
             a.send(msg);
+            System.out.println(": done");
             Util.waitUntil(2000, 100, () -> r1.size() == 1 && r2.size() == 1);
         }
 

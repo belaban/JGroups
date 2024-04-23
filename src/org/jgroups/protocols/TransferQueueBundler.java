@@ -137,6 +137,7 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
                 }
             }
             catch(Throwable t) {
+                log.warn("%s: failed sending message: %s", transport.addr(), t);
             }
         }
     }
