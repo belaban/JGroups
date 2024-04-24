@@ -14,7 +14,7 @@ import java.util.function.Supplier;
 public class DefaultMessageFactory implements MessageFactory {
     protected static final byte                      MIN_TYPE=32;
     protected final Supplier<? extends Message>[]    creators=new Supplier[MIN_TYPE];
-    protected Map<Short,Supplier<? extends Message>> map;
+    protected Map<Short,Supplier<? extends Message>> map=new HashMap<>();
 
     public DefaultMessageFactory() {
         creators[Message.BYTES_MSG]=BytesMessage::new;
@@ -38,8 +38,6 @@ public class DefaultMessageFactory implements MessageFactory {
         Objects.requireNonNull(generator, "the creator must be non-null");
         if(type < MIN_TYPE)
             throw new IllegalArgumentException(String.format("type (%d) must be >= 32", type));
-        if(map == null)
-            map=new HashMap<>();
         if(map.containsKey(type))
             throw new IllegalArgumentException(String.format("type %d is already taken", type));
         map.put(type, generator);
