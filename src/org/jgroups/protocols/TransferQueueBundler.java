@@ -25,7 +25,7 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
 
     @Property(description="When the queue is full, senders will drop a message rather than wait until space " +
       "is available (https://issues.redhat.com/browse/JGRP-2765)")
-    protected boolean                drop_when_full;
+    protected boolean                drop_when_full=true;
 
     protected volatile boolean       running=true;
     @ManagedAttribute(description="Number of times a message was sent because the queue was full", type= SCALAR)
