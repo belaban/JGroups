@@ -3506,6 +3506,18 @@ public class Util {
         return components;
     }
 
+    public static List<Class<?>> getComponents(Class<?> clazz) {
+        if(clazz == null)
+            return null;
+        Field[] fields=Util.getAllDeclaredFieldsWithAnnotations(clazz, Component.class);
+        if(fields == null || fields.length == 0)
+            return null;
+        List<Class<?>> components=new ArrayList<>(fields.length);
+        for(Field f: fields)
+            components.add(f.getType());
+        return components;
+    }
+
     /**
      * Applies a function to all fields annotated with @Component
      * @param target The target object
