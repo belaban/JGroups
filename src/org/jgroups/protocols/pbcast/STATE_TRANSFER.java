@@ -4,7 +4,6 @@ import org.jgroups.*;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
-import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.Digest;
@@ -20,6 +19,9 @@ import java.util.*;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Supplier;
 
+import static org.jgroups.conf.AttributeType.BYTES;
+import static org.jgroups.conf.AttributeType.SCALAR;
+
 /**
  * STATE_TRANSFER protocol based on byte array transfer. A state request is sent
  * to a chosen member (coordinator if null). That member makes a copy D of its
@@ -33,9 +35,12 @@ import java.util.function.Supplier;
 @MBean(description="State transfer protocol based on byte array transfer")
 public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<Address> {
     protected long                           start, stop; // to measure state transfer time
+    @ManagedAttribute(description="The number of state requests",type=SCALAR)
     protected final LongAdder                num_state_reqs=new LongAdder();
+    @ManagedAttribute(description="The number of bytes sent (total state)",type=BYTES)
     protected final LongAdder                num_bytes_sent=new LongAdder();
-    protected double                         avg_state_size=0;
+    @ManagedAttribute(description="The average state size (in bytes)",type=BYTES)
+    protected double                         avg_state_size;
     protected volatile View                  view;
     protected final List<Address>            members=new ArrayList<>();
 
@@ -45,11 +50,9 @@ public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<
     /** set to true while waiting for a STATE_RSP */
     protected volatile boolean               waiting_for_state_response=false;
 
-    @ManagedAttribute public long   getNumberOfStateRequests()  {return num_state_reqs.sum();}
-    @ManagedAttribute(type=AttributeType.BYTES)
-                      public long   getNumberOfStateBytesSent() {return num_bytes_sent.sum();}
-    @ManagedAttribute(type=AttributeType.BYTES)
-                      public double getAverageStateSize()       {return avg_state_size;}
+    public long   getNumberOfStateRequests()  {return num_state_reqs.sum();}
+    public long   getNumberOfStateBytesSent() {return num_bytes_sent.sum();}
+    public double getAverageStateSize()       {return avg_state_size;}
 
     public List<Integer> requiredDownServices() {
         return Arrays.asList(Event.GET_DIGEST, Event.OVERWRITE_DIGEST);
@@ -61,8 +64,6 @@ public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<
         num_bytes_sent.reset();
         avg_state_size=0;
     }
-
-    public void init() throws Exception {}
 
     public void start() throws Exception {
         Map<String,Object> map=new HashMap<>();

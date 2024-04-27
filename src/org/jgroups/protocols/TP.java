@@ -28,6 +28,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static org.jgroups.conf.AttributeType.SCALAR;
+
 
 /**
  * Generic transport - specific implementations should extend this abstract class.
@@ -186,55 +188,55 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public MessageFactory   getMessageFactory()                 {return msg_factory;}
     public <T extends TP> T setMessageFactory(MessageFactory m) {msg_factory=m; return (T)this;}
 
-    public InetAddress getBindAddr() {return bind_addr;}
+    public InetAddress      getBindAddr() {return bind_addr;}
     public <T extends TP> T setBindAddr(InetAddress b) {this.bind_addr=b; return (T)this;}
 
-    public InetAddress getExternalAddr() {return external_addr;}
+    public InetAddress      getExternalAddr() {return external_addr;}
     public <T extends TP> T setExternalAddr(InetAddress e) {this.external_addr=e; return (T)this;}
 
-    public int getExternalPort() {return external_port;}
+    public int              getExternalPort() {return external_port;}
     public <T extends TP> T setExternalPort(int e) {this.external_port=e; return (T)this;}
 
-    public boolean isTrace() {return is_trace;}
+    public boolean          isTrace() {return is_trace;}
     public <T extends TP> T isTrace(boolean i) {this.is_trace=i; return (T)this;}
 
-    public boolean receiveOnAllInterfaces() {return receive_on_all_interfaces;}
+    public boolean          receiveOnAllInterfaces() {return receive_on_all_interfaces;}
     public <T extends TP> T receiveOnAllInterfaces(boolean r) {this.receive_on_all_interfaces=r; return (T)this;}
 
-    public int getLogicalAddrCacheMaxSize() {return logical_addr_cache_max_size;}
+    public int              getLogicalAddrCacheMaxSize() {return logical_addr_cache_max_size;}
     public <T extends TP> T setLogicalAddrCacheMaxSize(int l) {this.logical_addr_cache_max_size=l; return (T)this;}
 
-    public long getLogicalAddrCacheExpiration() {return logical_addr_cache_expiration;}
+    public long             getLogicalAddrCacheExpiration() {return logical_addr_cache_expiration;}
     public <T extends TP> T setLogicalAddrCacheExpiration(long l) {this.logical_addr_cache_expiration=l; return (T)this;}
 
-    public long getLogicalAddrCacheReaperInterval() {return logical_addr_cache_reaper_interval;}
+    public long             getLogicalAddrCacheReaperInterval() {return logical_addr_cache_reaper_interval;}
     public <T extends TP> T setLogicalAddrCacheReaperInterval(long l) {this.logical_addr_cache_reaper_interval=l; return (T)this;}
 
-    public boolean loopbackCopy() {return loopback_copy;}
+    public boolean          loopbackCopy() {return loopback_copy;}
     public <T extends TP> T loopbackCopy(boolean l) {this.loopback_copy=l; return (T)this;}
 
-    public boolean loopbackSeparateThread() {return loopback_separate_thread;}
+    public boolean          loopbackSeparateThread() {return loopback_separate_thread;}
     public <T extends TP> T loopbackSeparateThread(boolean l) {this.loopback_separate_thread=l; return (T)this;}
 
     public boolean          useVirtualThreads()          {return use_virtual_threads;}
     public <T extends TP> T useVirtualThreads(boolean b) {use_virtual_threads=b; return (T)this;}
 
-    public long getTimeServiceInterval() {return time_service_interval;}
+    public long             getTimeServiceInterval() {return time_service_interval;}
     public <T extends TP> T setTimeServiceInterval(long t) {this.time_service_interval=t; return (T)this;}
 
-    public boolean logDiscardMsgs() {return log_discard_msgs;}
+    public boolean          logDiscardMsgs() {return log_discard_msgs;}
     public <T extends TP> T logDiscardMsgs(boolean l) {this.log_discard_msgs=l; return (T)this;}
 
-    public boolean logDiscardMsgsVersion() {return log_discard_msgs_version;}
+    public boolean          logDiscardMsgsVersion() {return log_discard_msgs_version;}
     public <T extends TP> T logDiscardMsgsVersion(boolean l) {this.log_discard_msgs_version=l; return (T)this;}
 
-    public long getWhoHasCacheTimeout() {return who_has_cache_timeout;}
+    public long             getWhoHasCacheTimeout() {return who_has_cache_timeout;}
     public <T extends TP> T setWhoHasCacheTimeout(long w) {this.who_has_cache_timeout=w; return (T)this;}
 
-    public long getSuppressTimeDifferentVersionWarnings() {return suppress_time_different_version_warnings;}
+    public long             getSuppressTimeDifferentVersionWarnings() {return suppress_time_different_version_warnings;}
     public <T extends TP> T setSuppressTimeDifferentVersionWarnings(long s) {this.suppress_time_different_version_warnings=s; return (T)this;}
 
-    public long getSuppressTimeDifferentClusterWarnings() {return suppress_time_different_cluster_warnings;}
+    public long             getSuppressTimeDifferentClusterWarnings() {return suppress_time_different_cluster_warnings;}
     public <T extends TP> T setSuppressTimeDifferentClusterWarnings(long s) {this.suppress_time_different_cluster_warnings=s; return (T)this;}
 
     public String           getMsgFactoryClass()         {return msg_factory_class;}
@@ -313,12 +315,12 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     public AsciiString getClusterNameAscii() {return cluster_name;}
 
-    @ManagedAttribute(description="Number of messages from members in a different cluster")
+    @ManagedAttribute(description="Number of messages from members in a different cluster",type=SCALAR)
     public int getDifferentClusterMessages() {
         return suppress_log_different_cluster != null? suppress_log_different_cluster.getCache().size() : 0;
     }
 
-    @ManagedAttribute(description="Number of messages from members with a different JGroups version")
+    @ManagedAttribute(description="Number of messages from members with a different JGroups version",type=SCALAR)
     public int getDifferentVersionMessages() {
         return suppress_log_different_version != null? suppress_log_different_version.getCache().size() : 0;
     }
@@ -628,7 +630,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
 
-    @ManagedAttribute(name="timer_tasks",description="Number of timer tasks queued up for execution")
+    @ManagedAttribute(name="timer_tasks",description="Number of timer tasks queued up for execution",type=SCALAR)
     public int getNumTimerTasks() {return timer.size();}
 
     @ManagedOperation public String dumpTimerTasks() {return timer.dumpTimerTasks();}
@@ -636,10 +638,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @ManagedOperation(description="Purges cancelled tasks from the timer queue")
     public void removeCancelledTimerTasks() {timer.removeCancelledTasks();}
 
-    @ManagedAttribute(description="Number of threads currently in the pool")
+    @ManagedAttribute(description="Number of threads currently in the pool",type=SCALAR)
     public int getTimerThreads() {return timer.getCurrentThreads();}
 
-    @ManagedAttribute(description="Returns the number of live threads in the JVM")
+    @ManagedAttribute(description="Returns the number of live threads in the JVM",type=SCALAR)
     public static int getNumThreads() {return ManagementFactory.getThreadMXBean().getThreadCount();}
 
     public <T extends TP> T setLogDiscardMessages(boolean flag)     {log_discard_msgs=flag; return (T)this;}

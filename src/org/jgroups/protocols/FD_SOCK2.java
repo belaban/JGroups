@@ -75,7 +75,7 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
     @Property(description="SO_LINGER in seconds. Default of -1 disables it")
     protected int                            linger=-1; // SO_LINGER (number of seconds, -1 disables it)
 
-    @ManagedAttribute(description="Number of suspect events emitted")
+    @ManagedAttribute(description="Number of suspect events emitted",type=AttributeType.SCALAR)
     protected int                            num_suspect_events;
 
     @ManagedAttribute(description="True when this member is leaving the cluster, set to false when joining")

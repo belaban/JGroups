@@ -45,6 +45,7 @@ public class MsgStats {
     protected final LongAdder     num_batches_received=new LongAdder();
 
     /** The average number of messages in a received {@link MessageBatch} */
+    @ManagedAttribute(description="Returns the average batch size of received batches")
     protected final AverageMinMax avg_batch_size=new AverageMinMax();
 
     @ManagedAttribute(description="Number of multicast bytes sent",type=BYTES)
@@ -66,10 +67,7 @@ public class MsgStats {
     @ManagedAttribute(description="Number of messages received (mcasts and ucasts received)",type=SCALAR)
     public long     getNumMsgsReceived()        {return num_mcasts_received.sum() + num_ucasts_received.sum();}
 
-    @ManagedAttribute(description="Returns the average batch size of received batches")
-    public String   getAvgBatchSize()           {return avg_batch_size.toString();}
-
-    public AverageMinMax avgBatchSize()         {return avg_batch_size;}
+    public AverageMinMax getAvgBatchSize()      {return avg_batch_size;}
 
     @ManagedAttribute(description="Total number of bytes sent (unicast + multicast bytes)",type=BYTES)
     public long     getNumBytesSent()           {return num_mcast_bytes_sent.sum() + num_ucast_bytes_sent.sum();}

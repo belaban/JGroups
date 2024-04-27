@@ -87,7 +87,7 @@ public abstract class Discovery extends Protocol {
 
     /* ---------------------------------------------   JMX      ------------------------------------------------------ */
 
-    @ManagedAttribute(description="Total number of discovery requests sent ")
+    @ManagedAttribute(description="Total number of discovery requests sent",type=AttributeType.SCALAR)
     protected int                        num_discovery_requests;
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */

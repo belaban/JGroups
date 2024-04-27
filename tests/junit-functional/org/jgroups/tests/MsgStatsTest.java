@@ -53,7 +53,7 @@ public class MsgStatsTest {
         assert stats_b.getNumMcastsReceived() >= NUM_MSGS;
         assert stats_b.getNumMcastBytesReceived() >= TOTAL_BYTES;
         assert stats_b.getNumBatchesReceived() > 0;
-        AverageMinMax avg=stats_b.avgBatchSize();
+        AverageMinMax avg=stats_b.getAvgBatchSize();
         assert avg.getAverage() > 0;
         assert stats_a.getNumSingleMsgsSent() + stats_a.getNumBatchesSent() > 0;
     }
@@ -73,7 +73,7 @@ public class MsgStatsTest {
         assert stats_b.getNumUcastsReceived() >= NUM_MSGS;
         assert stats_b.getNumUcastBytesReceived() >= TOTAL_BYTES;
         assert stats_b.getNumBatchesReceived() > 0;
-        AverageMinMax avg=stats_b.avgBatchSize();
+        AverageMinMax avg=stats_b.getAvgBatchSize();
         assert avg.getAverage() > 0;
         assert stats_a.getNumSingleMsgsSent() + stats_a.getNumBatchesSent() > 0;
     }

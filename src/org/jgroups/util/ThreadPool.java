@@ -165,13 +165,13 @@ public class ThreadPool implements Lifecycle {
     public boolean    useVirtualThreads()                      {return use_virtual_threads;}
     public ThreadPool useVirtualThreads(boolean b)             {use_virtual_threads=b; return this;}
 
-    @ManagedAttribute(description="Number of thread dumps")
+    @ManagedAttribute(description="Number of thread dumps",type=SCALAR)
     public int getNumberOfThreadDumps() {return thread_dumps.get();}
 
     @ManagedOperation(description="Resets the thread_dumps counter")
     public void resetThreadDumps() {thread_dumps.set(0);}
 
-    @ManagedAttribute(description="Current number of threads in the thread pool")
+    @ManagedAttribute(description="Current number of threads in the thread pool",type=SCALAR)
     public int getThreadPoolSize() {
         if(thread_pool instanceof ThreadPoolExecutor)
             return ((ThreadPoolExecutor)thread_pool).getPoolSize();
@@ -179,14 +179,14 @@ public class ThreadPool implements Lifecycle {
     }
 
 
-    @ManagedAttribute(description="Current number of active threads in the thread pool")
+    @ManagedAttribute(description="Current number of active threads in the thread pool",type=SCALAR)
     public int getThreadPoolSizeActive() {
         if(thread_pool instanceof ThreadPoolExecutor)
             return ((ThreadPoolExecutor)thread_pool).getActiveCount();
         return 0;
     }
 
-    @ManagedAttribute(description="Largest number of threads in the thread pool")
+    @ManagedAttribute(description="Largest number of threads in the thread pool",type=SCALAR)
     public int getLargestSize() {
         if(thread_pool instanceof ThreadPoolExecutor)
             return ((ThreadPoolExecutor)thread_pool).getLargestPoolSize();
