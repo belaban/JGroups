@@ -28,13 +28,13 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
     protected boolean                drop_when_full=true;
 
     protected volatile boolean       running=true;
-    @ManagedAttribute(description="Number of times a message was sent because the queue was full", type= SCALAR)
+    @ManagedAttribute(description="Number of times a message was sent because the queue was full", type=SCALAR)
     protected long                   num_sends_because_full_queue;
     @ManagedAttribute(description="Number of times a message was sent because there was no message available in the queue",
-      type= SCALAR)
+      type=SCALAR)
     protected long                   num_sends_because_no_msgs;
 
-    @ManagedAttribute(description="Number of dropped messages (when drop_when_full is true)")
+    @ManagedAttribute(description="Number of dropped messages (when drop_when_full is true)",type=SCALAR)
     protected long                   num_drops_on_full_queue;
 
     @ManagedAttribute(description="Average fill size of the queue (in bytes)")
@@ -137,7 +137,7 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
                 }
             }
             catch(Throwable t) {
-                log.warn("%s: failed sending message: %s", transport.addr(), t);
+                log.trace("%s: failed sending message: %s", transport.addr(), t);
             }
         }
     }

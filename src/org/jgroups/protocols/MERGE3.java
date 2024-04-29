@@ -89,7 +89,7 @@ public class MERGE3 extends Protocol {
     @ManagedAttribute(description="Whether or not the current member is the coordinator")
     protected volatile boolean              is_coord;
     
-    @ManagedAttribute(description="Number of times a MERGE event was sent up the stack")
+    @ManagedAttribute(description="Number of times a MERGE event was sent up the stack",type=AttributeType.SCALAR)
     protected int                           num_merge_events;
 
 
