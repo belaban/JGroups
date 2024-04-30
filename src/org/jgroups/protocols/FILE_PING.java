@@ -64,10 +64,10 @@ public class FILE_PING extends Discovery {
       "joins, but not on leaves. Enabling this will increase traffic to the backend store.")
     protected boolean update_store_on_view_change=true;
 
-    @ManagedAttribute(description="Number of writes to the file system or cloud store")
+    @ManagedAttribute(description="Number of writes to the file system or cloud store",type=AttributeType.SCALAR)
     protected int     writes;
 
-    @ManagedAttribute(description="Number of reads from the file system or cloud store")
+    @ManagedAttribute(description="Number of reads from the file system or cloud store",type=AttributeType.SCALAR)
     protected int     reads;
 
 
