@@ -178,8 +178,6 @@ public class FILE_PING extends Discovery {
         }
     }
 
-
-
     protected static String addressToFilename(Address mbr) {
         String logical_name=NameCache.get(mbr);
         String name=(addressAsString(mbr) + (logical_name != null? "." + logical_name + SUFFIX : SUFFIX));
