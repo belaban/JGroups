@@ -115,18 +115,22 @@ public class MFC extends FlowControl {
         if(dest != null) // 2nd line of defense, not really needed
             return down_prot.down(msg);
 
+        boolean dont_block=msg.isFlagSet(Message.TransientFlag.DONT_BLOCK);
         while(running) {
-            boolean rc=credits.decrement(msg, length, max_block_time);
+            long timeout=dont_block? 0 : max_block_time; // timeout == 0 won't block the decrement() below
+            boolean rc=credits.decrement(msg, length, timeout);
             if(rc || !running)
                 break;
-
             if(needToSendCreditRequest()) {
                 List<Tuple<Address,Long>> targets=credits.getMembersWithCreditsLessThan(min_credits);
                 for(Tuple<Address,Long> tuple: targets)
                     sendCreditRequest(tuple.getVal1(), Math.min(max_credits, max_credits - tuple.getVal2()));
             }
+            if(dont_block) {
+                num_msgs_dropped++;
+                return null;
+            }
         }
-        
         // send message - either after regular processing, or after blocking (when enough credits are available again)
         return down_prot.down(msg);
     }

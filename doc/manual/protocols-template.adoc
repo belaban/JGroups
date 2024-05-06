@@ -1737,50 +1737,6 @@ ${BARRIER}
 
 
 
-=== pbcast.FLUSH
-
-Flushing forces group members to send all their pending messages
-            prior to a certain event. The process of flushing acquiesces the
-            cluster so that state transfer or a join can be done. It is also
-            called the stop-the-world model as nobody will be able to send
-            messages while a flush is in process. Flush is used in:
-        
-
-
-State transfer:: When a member requests state transfer, it tells everyone to
-                   stop sending messages and waits for everyone's ack. Then it have received everyone's asks,
-                   the application asks the coordinator for its state and ships it back to the
-                   requester. After the requester has received and set the state
-                   successfully, the requester tells everyone to resume sending messages.
-View changes (e.g.a join):: Before installing a new view
-                        V2, flushing ensures that all messages _sent_ in the
-                        current view V1 are indeed _delivered_ in V1, rather than in V2
-                        (in all non-faulty members). This is essentially Virtual Synchrony.
-                    
-
-
-                
-        
-
-FLUSH is designed as another protocol positioned just below the
-            channel, on top of the stack (e.g. above STATE_TRANSFER). The STATE_TRANSFER and GMS
-            protocols request a flush by sending an event up the stack, where
-            it is handled by the FLUSH protcol. Another event is sent back by
-            the FLUSH protocol to let the caller know that the flush has completed.
-            When done (e.g. view was installed or state transferred), the protocol
-            sends a message, which will allow everyone in the cluster to resume sending.
-        
-
-A channel is notified that the FLUSH phase has been started by
-            the Receiver.block() callback. 
-        
-
-Read more about flushing in <<Flushing>>.
-        
-
-${FLUSH}
-
-
 [[Security]]
 === Security
 
@@ -2203,41 +2159,6 @@ Looking at the values over time would help a support person in diagnosing the pr
 JIRA: https://issues.redhat.com/browse/JGRP-2402
 
 ${SOS}
-
-
-[[LockingProtocols]]
-==== Locking protocols
-
-The locking protocol is org.jgroups.protocols.CENTRAL_LOCK:
-
-${Locking}
-
-[[CENTRAL_LOCK]]
-===== CENTRAL_LOCK
-
-CENTRAL_LOCK has the current coordinator of a cluster grants locks, so every node has to communicate with the
-coordinator to acquire or release a lock. Lock requests by different nodes for the same lock are processed
-in the order in which they are received.
-
-A coordinator maintains a lock table. To prevent losing the knowledge of who holds which locks, the coordinator can push
-lock information to a number of backups defined by num_backups. If num_backups is 0, no replication of lock information
-happens. If num_backups is greater than 0, then the coordinator pushes information about acquired and released locks to
-all backup nodes. Topology changes might create new backup nodes, and lock information is pushed to those on
-becoming a new backup node.
-
-The advantage of CENTRAL_LOCK is that all lock requests are granted in the same order across the cluster.
-
-${CENTRAL_LOCK}
-
-
-[[CENTRAL_LOCK2]]
-===== CENTRAL_LOCK2
-
-In CENTRAL_LOCK2, the coordinator (= lock issuer) does not backup its lock table to other member(s), but instead a new
-coordinator fetches information about held locks and pending lock/unlock requests from existing members, before it
-starts processing lock requests. See <<LockService>> for details.
-
-${CENTRAL_LOCK2}
 
 
 

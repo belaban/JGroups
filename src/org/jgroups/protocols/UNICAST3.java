@@ -26,6 +26,7 @@ import java.util.stream.Stream;
 
 import static org.jgroups.Message.Flag.*;
 import static org.jgroups.Message.TransientFlag.*;
+import static org.jgroups.conf.AttributeType.SCALAR;
 import static org.jgroups.protocols.UnicastHeader3.DATA;
 
 
@@ -100,21 +101,27 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     /* --------------------------------------------- JMX  ---------------------------------------------- */
 
+    @ManagedAttribute(description="Number of message sent",type=SCALAR)
+    protected final LongAdder num_msgs_sent=new LongAdder();
+    @ManagedAttribute(description="Number of message received",type=SCALAR)
+    protected final LongAdder num_msgs_received=new LongAdder();
+    @ManagedAttribute(description="Number of acks sent",type=SCALAR)
+    protected final LongAdder num_acks_sent=new LongAdder();
+    @ManagedAttribute(description="Number of acks received",type=SCALAR)
+    protected final LongAdder num_acks_received=new LongAdder();
+    @ManagedAttribute(description="Number of retransmitted messages",type=SCALAR)
+    protected final LongAdder num_xmits=new LongAdder();
 
-    protected long    num_msgs_sent=0, num_msgs_received=0;
-    protected long    num_acks_sent=0, num_acks_received=0, num_xmits=0;
-
-    @ManagedAttribute(description="Number of retransmit requests received",type=AttributeType.SCALAR)
+    @ManagedAttribute(description="Number of retransmit requests received",type=SCALAR)
     protected final LongAdder  xmit_reqs_received=new LongAdder();
 
-    @ManagedAttribute(description="Number of retransmit requests sent",type=AttributeType.SCALAR)
+    @ManagedAttribute(description="Number of retransmit requests sent",type=SCALAR)
     protected final LongAdder  xmit_reqs_sent=new LongAdder();
 
-    @ManagedAttribute(description="Number of retransmit responses sent",type=AttributeType.SCALAR)
+    @ManagedAttribute(description="Number of retransmit responses sent",type=SCALAR)
     protected final LongAdder  xmit_rsps_sent=new LongAdder();
 
-    @ManagedAttribute(description="Number of unicast messages to self looped back up",type=AttributeType.SCALAR)
-    public long getNumLoopbacks() {return loopbed_back_msgs.sum();}
+    public long getNumLoopbacks() {return num_loopbacks.sum();}
 
     @ManagedAttribute(description="Average batch size of messages delivered to the application")
     protected final AverageMinMax avg_delivery_batch_size=new AverageMinMax();
@@ -160,7 +167,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     /** Keep track of when a SEND_FIRST_SEQNO message was sent to a given sender */
     protected ExpiryCache<Address>         last_sync_sent;
 
-    protected final LongAdder              loopbed_back_msgs=new LongAdder();
+    @ManagedAttribute(description="Number of unicast messages to self looped back up",type=SCALAR)
+    protected final LongAdder              num_loopbacks=new LongAdder();
 
     // Queues messages until a {@link ReceiverEntry} has been created. Queued messages are then removed from
     // the cache and added to the ReceiverEntry
@@ -259,16 +267,12 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         return sb.toString();
     }
 
-    @ManagedAttribute(type=AttributeType.SCALAR)
-    public long getNumMessagesSent()     {return num_msgs_sent;}
-    @ManagedAttribute(type=AttributeType.SCALAR)
-    public long getNumMessagesReceived() {return num_msgs_received;}
-    @ManagedAttribute(type=AttributeType.SCALAR)
-    public long getNumAcksSent()         {return num_acks_sent;}
-    @ManagedAttribute(type=AttributeType.SCALAR)
-    public long getNumAcksReceived()     {return num_acks_received;}
-    @ManagedAttribute(type=AttributeType.SCALAR)
-    public long getNumXmits()            {return num_xmits;}
+
+    public long getNumMessagesSent()     {return num_msgs_sent.sum();}
+    public long getNumMessagesReceived() {return num_msgs_received.sum();}
+    public long getNumAcksSent()         {return num_acks_sent.sum();}
+    public long getNumAcksReceived()     {return num_acks_received.sum();}
+    public long getNumXmits()            {return num_xmits.sum();}
     public long getMaxRetransmitTime()   {return max_retransmit_time;}
 
     @Property(description="Max number of milliseconds we try to retransmit a message to any given member. After that, " +
@@ -305,42 +309,42 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     }
 
     /** The number of messages in all Entry.sent_msgs tables (haven't received an ACK yet) */
-    @ManagedAttribute(type=AttributeType.SCALAR)
+    @ManagedAttribute(type= SCALAR)
     public int getNumUnackedMessages() {
         return accumulate(Table::size, send_table.values());
     }
 
-    @ManagedAttribute(description="Total number of undelivered messages in all receive windows",type=AttributeType.SCALAR)
+    @ManagedAttribute(description="Total number of undelivered messages in all receive windows",type=SCALAR)
     public int getXmitTableUndeliveredMessages() {
         return accumulate(Table::size, recv_table.values());
     }
 
-    @ManagedAttribute(description="Total number of missing messages in all receive windows",type=AttributeType.SCALAR)
+    @ManagedAttribute(description="Total number of missing messages in all receive windows",type=SCALAR)
     public int getXmitTableMissingMessages() {
         return accumulate(Table::getNumMissing, recv_table.values());
     }
 
-    @ManagedAttribute(description="Total number of deliverable messages in all receive windows",type=AttributeType.SCALAR)
+    @ManagedAttribute(description="Total number of deliverable messages in all receive windows",type=SCALAR)
     public int getXmitTableDeliverableMessages() {
         return accumulate(Table::getNumDeliverable, recv_table.values());
     }
 
-    @ManagedAttribute(description="Number of compactions in all (receive and send) windows")
+    @ManagedAttribute(description="Number of compactions in all (receive and send) windows",type=SCALAR)
     public int getXmitTableNumCompactions() {
         return accumulate(Table::getNumCompactions, recv_table.values(), send_table.values());
     }
 
-    @ManagedAttribute(description="Number of moves in all (receive and send) windows")
+    @ManagedAttribute(description="Number of moves in all (receive and send) windows",type=SCALAR)
     public int getXmitTableNumMoves() {
         return accumulate(Table::getNumMoves, recv_table.values(), send_table.values());
     }
 
-    @ManagedAttribute(description="Number of resizes in all (receive and send) windows")
+    @ManagedAttribute(description="Number of resizes in all (receive and send) windows",type=SCALAR)
     public int getXmitTableNumResizes() {
         return accumulate(Table::getNumResizes, recv_table.values(), send_table.values());
     }
 
-    @ManagedAttribute(description="Number of purges in all (receive and send) windows")
+    @ManagedAttribute(description="Number of purges in all (receive and send) windows",type=SCALAR)
     public int getXmitTableNumPurges() {
         return accumulate(Table::getNumPurges, recv_table.values(), send_table.values());
     }
@@ -369,10 +373,9 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
 
     public void resetStats() {
-        num_msgs_sent=num_msgs_received=num_acks_sent=num_acks_received=num_xmits=0;
         avg_delivery_batch_size.clear();
-        Stream.of(xmit_reqs_received, xmit_reqs_sent, xmit_rsps_sent).forEach(LongAdder::reset);
-        loopbed_back_msgs.reset();
+        Stream.of(num_msgs_sent, num_msgs_received, num_acks_sent, num_acks_received, num_xmits, xmit_reqs_received,
+                  xmit_reqs_sent, xmit_rsps_sent, num_loopbacks).forEach(LongAdder::reset);
     }
 
 
@@ -676,7 +679,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         if(loopback && Objects.equals(local_addr, dst)) {// https://issues.redhat.com/browse/JGRP-2547
             if(msg.isFlagSet(DONT_LOOPBACK))
                 return null;
-            loopbed_back_msgs.increment();
+            num_loopbacks.increment();
             return up_prot.up(msg);
         }
 
@@ -714,7 +717,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             log.trace(sb);
         }
 
-        num_msgs_sent++;
+        num_msgs_sent.increment();
         return down_prot.down(msg);
     }
 
@@ -818,7 +821,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             log.trace("%s --> %s: resending(#%d)", local_addr, msg.getDest(), seqno);
         }
         resend(msg);
-        num_xmits++;
+        num_xmits.increment();
     }
 
     /**
@@ -949,14 +952,14 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         if(adders.getAndIncrement() != 0)
             return;
 
-        final MessageBatch batch=new MessageBatch(win.getNumDeliverable())
-          .dest(local_addr).sender(sender).multicast(false);
+        MessageBatch batch=new MessageBatch(win.getNumDeliverable()).dest(local_addr).sender(sender).multicast(false);
         Supplier<MessageBatch> batch_creator=() -> batch;
+        MessageBatch mb=null;
         do {
             try {
                 batch.reset(); // sets index to 0: important as batch delivery may not remove messages from batch!
-                win.removeMany(true, max_batch_size, drop_oob_and_dont_loopback_msgs_filter,
-                               batch_creator, BATCH_ACCUMULATOR);
+                mb=win.removeMany(true, max_batch_size, drop_oob_and_dont_loopback_msgs_filter,
+                                  batch_creator, BATCH_ACCUMULATOR);
             }
             catch(Throwable t) {
                 log.error("%s: failed removing messages from table for %s: %s", local_addr, sender, t);
@@ -966,7 +969,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 deliverBatch(batch); // catches Throwable
             }
         }
-        while(adders.decrementAndGet() != 0);
+        while(mb != null || adders.decrementAndGet() != 0);
     }
 
 
@@ -1064,7 +1067,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         if(win != null && entry.updateLastTimestamp(timestamp)) {
             // win.forEach(win.getLow(), seqno, null);
             win.purge(seqno, true); // removes all messages <= seqno (forced purge)
-            num_acks_received++;
+            num_acks_received.increment();
         }
     }
 
@@ -1198,7 +1201,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             log.trace("%s --> %s: ACK(#%d)", local_addr, dst, seqno);
         try {
             down_prot.down(ack);
-            num_acks_sent++;
+            num_acks_sent.increment();
         }
         catch(Throwable t) {
             log.error(Util.getMessage("FailedSendingAck"), local_addr, seqno, dst, t);
@@ -1416,7 +1419,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             entry.update();
         if(entry.state() == State.CLOSING)
             entry.state(State.OPEN);
-        num_msgs_received+=num_received;
+        num_msgs_received.add(num_received);
     }
 
     /** Compares 2 timestamps, handles numeric overflow */

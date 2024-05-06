@@ -49,26 +49,6 @@ public interface Receiver {
 
 
     /**
-     * Called (usually by the {@link org.jgroups.protocols.pbcast.FLUSH} protocol), as an indication that the member
-     * should stop sending messages. Any messages sent after returning from this callback might get blocked by the FLUSH
-     * protocol. When the FLUSH protocol is done, and messages can be sent again, the FLUSH protocol
-     * will simply unblock all pending messages. If a callback for unblocking is desired, implement
-     * {@link org.jgroups.Receiver#unblock()}.
-     */
-    default void block() {}
-
-    /**
-     * Called <em>after</em> the FLUSH protocol has unblocked previously blocked senders, and
-     * messages can be sent again.
-     * <br/>
-     * Note that during new view installation we provide guarantee that unblock invocation strictly
-     * follows view installation at some node A belonging to that view. However, some other message
-     * M may squeeze in between view and unblock callbacks.<br/>
-     * For more details see <a href="https://issues.redhat.com/browse/JGRP-986">JGRP-986</a>
-     */
-    default void unblock() {}
-
-    /**
      * Allows an application to write the state to an OutputStream. After the state has
      * been written, the OutputStream doesn't need to be closed as stream closing is automatically
      * done when a calling thread returns from this callback.

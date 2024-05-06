@@ -53,7 +53,7 @@ public class NioTransport implements RtTransport {
                 continue;
             }
             if(options[i].equals("-direct")) {
-                direct_buffers=Boolean.valueOf(options[++i]);
+                direct_buffers=Boolean.parseBoolean(options[++i]);
             }
         }
         if(host == null)

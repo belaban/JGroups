@@ -350,6 +350,11 @@ public class Util {
           });
     }
 
+    public static int assertPositive(int value, String message) {
+        if(value <= 0) throw new IllegalArgumentException(message);
+        return value;
+    }
+
     public static boolean allChannelsHaveSameView(JChannel... channels) {
         View first=channels[0].getView();
         for(JChannel ch : channels) {
@@ -3501,6 +3506,18 @@ public class Util {
         return components;
     }
 
+    public static List<Class<?>> getComponents(Class<?> clazz) {
+        if(clazz == null)
+            return null;
+        Field[] fields=Util.getAllDeclaredFieldsWithAnnotations(clazz, Component.class);
+        if(fields == null || fields.length == 0)
+            return null;
+        List<Class<?>> components=new ArrayList<>(fields.length);
+        for(Field f: fields)
+            components.add(f.getType());
+        return components;
+    }
+
     /**
      * Applies a function to all fields annotated with @Component
      * @param target The target object
@@ -4000,78 +4017,6 @@ public class Util {
             return hostname.substring(0,index);
         else
             return hostname;
-    }
-
-    /**
-     * Performs the flush of the given channel for the specified flush participants and the given
-     * number of attempts along with random sleep time after each such attempt.
-     * @param c                         the channel
-     * @param flushParticipants         the flush participants in this flush attempt
-     * @param numberOfAttempts          the number of flush attempts
-     * @param randomSleepTimeoutFloor   the minimum sleep time between attempts in ms
-     * @param randomSleepTimeoutCeiling the maximum sleep time between attempts in ms
-     * @return true if channel was flushed successfully, false otherwise
-     * @see JChannel#startFlush(List,boolean)
-     */
-    public static boolean startFlush(JChannel c,List<Address> flushParticipants,
-                                     int numberOfAttempts,long randomSleepTimeoutFloor,long randomSleepTimeoutCeiling) {
-        int attemptCount=0;
-        while(attemptCount < numberOfAttempts) {
-            try {
-                c.startFlush(flushParticipants,false);
-                return true;
-            }
-            catch(Exception e) {
-                Util.sleepRandom(randomSleepTimeoutFloor,randomSleepTimeoutCeiling);
-                attemptCount++;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Performs the flush of the given channel and the specified flush participants
-     * @param c                 the channel
-     * @param flushParticipants the flush participants in this flush attempt
-     * @see JChannel#startFlush(List,boolean)
-     */
-    public static boolean startFlush(JChannel c,List<Address> flushParticipants) {
-        return startFlush(c,flushParticipants,4,1000,5000);
-    }
-
-    /**
-     * Performs the flush of the given channel within the specfied number of attempts along with random
-     * sleep time after each such attempt.
-     * @param c                         the channel
-     * @param numberOfAttempts          the number of flush attempts
-     * @param randomSleepTimeoutFloor   the minimum sleep time between attempts in ms
-     * @param randomSleepTimeoutCeiling the maximum sleep time between attempts in ms
-     * @return true if channel was flushed successfully, false otherwise
-     * @see JChannel#startFlush(boolean)
-     */
-    public static boolean startFlush(JChannel c,int numberOfAttempts,long randomSleepTimeoutFloor,long randomSleepTimeoutCeiling) {
-        int attemptCount=0;
-        while(attemptCount < numberOfAttempts) {
-            try {
-                c.startFlush(false);
-                return true;
-            }
-            catch(Exception e) {
-                Util.sleepRandom(randomSleepTimeoutFloor,randomSleepTimeoutCeiling);
-                attemptCount++;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Performs the flush of the given channel
-     * @param c the channel
-     * @return true if channel was flushed successfully, false otherwise
-     * @see JChannel#startFlush(boolean)
-     */
-    public static boolean startFlush(JChannel c) {
-        return startFlush(c,4,1000,5000);
     }
 
     public static String shortName(InetAddress hostname) {

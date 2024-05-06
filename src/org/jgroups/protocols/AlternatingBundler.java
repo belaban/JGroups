@@ -74,8 +74,6 @@ public class AlternatingBundler extends TransferQueueBundler {
             else {
                 avg_batch_size.add(target_list.size());
                 sendMessageList(target_dest, target_list.get(0).getSrc(), target_list);
-                if(transport.statsEnabled())
-                    transport.getMessageStats().incrNumBatchesSent(1);
             }
         }
         finally {

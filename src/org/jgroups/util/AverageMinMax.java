@@ -64,6 +64,7 @@ public class AverageMinMax extends Average {
 
     public String toString() {
         return count == 0? "n/a" :
+          unit != null? toString(unit) :
           String.format("min/avg/max=%,d/%,.2f/%,d%s",
                         min, getAverage(), max, unit == null? "" : " " + Util.suffix(unit));
     }

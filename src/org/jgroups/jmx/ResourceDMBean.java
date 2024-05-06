@@ -7,9 +7,12 @@ import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
+import org.jgroups.util.Average;
 import org.jgroups.util.Util;
 
 import javax.management.*;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -41,7 +44,7 @@ public class ResourceDMBean implements DynamicMBean {
     protected final boolean                        expose_all;
     protected final Log                            log=LogFactory.getLog(ResourceDMBean.class);
     protected final Object                         obj;
-    protected List<Object>                         objs;
+    protected List<Object>                         components;
     protected final MBeanAttributeInfo[]           attrInfo;
     protected final MBeanOperationInfo[]           opInfo;
     protected final HashMap<String,AttributeEntry> atts=new HashMap<>();
@@ -52,27 +55,31 @@ public class ResourceDMBean implements DynamicMBean {
     protected static final Predicate<AccessibleObject> FILTER=obj -> obj.isAnnotationPresent(ManagedAttribute.class) ||
       (obj.isAnnotationPresent(Property.class) && obj.getAnnotation(Property.class).exposeAsManagedAttribute());
 
-
     public ResourceDMBean(Object instance) {
+        this(instance, null);
+    }
+
+    public ResourceDMBean(Object instance, Predicate<AccessibleObject> filter) {
         if(instance == null)
             throw new NullPointerException("Cannot make an MBean wrapper for null instance");
         this.obj=instance;
         Class<? extends Object> c=obj.getClass();
         expose_all=c.isAnnotationPresent(MBean.class) && c.getAnnotation(MBean.class).exposeAll();
 
-        findFields(instance);
-        findMethods(instance);
+        findFields(instance, filter, null);
+        findMethods(instance, filter, null);
         fixFields(instance);
 
         List<Object> objects=Util.getComponents(instance);
         if(objects != null) {
             for(Object inst: objects) {
                 if(inst != null) {
-                    if(objs == null)
-                        objs=new ArrayList<>();
-                    objs.add(inst);
-                    findFields(inst);
-                    findMethods(inst);
+                    if(components == null)
+                        components=new ArrayList<>();
+                    String prefix=Util.methodNameToAttributeName(inst.getClass().getSimpleName());
+                    components.add(inst);
+                    findFields(inst, filter, prefix);
+                    findMethods(inst, filter, prefix);
                     fixFields(inst);
                 }
             }
@@ -91,9 +98,16 @@ public class ResourceDMBean implements DynamicMBean {
     }
 
 
-
     public MBeanInfo getMBeanInfo() {
         return new MBeanInfo(obj.getClass().getCanonicalName(), "DynamicMBean", attrInfo, null, opInfo, null);
+    }
+
+    public void forAllAttributes(BiConsumer<String,AttributeEntry> c) {
+        if(c == null)
+            return;
+        for(Map.Entry<String,AttributeEntry> e: atts.entrySet()) {
+            c.accept(e.getKey(), e.getValue());
+        }
     }
 
     public Object getAttribute(String name) {
@@ -141,8 +155,8 @@ public class ResourceDMBean implements DynamicMBean {
             for(int i=0;i < classes.length;i++)
                 classes[i]=getClassForName(sig[i]);
             Method method=null;
-            if(objs != null) {
-                for(Object o: objs) {
+            if(components != null) {
+                for(Object o: components) {
                     try {
                         method=o.getClass().getMethod(name, classes);
                     }
@@ -264,6 +278,10 @@ public class ResourceDMBean implements DynamicMBean {
         return cl.equals(float.class) || cl.equals(Float.class) || cl.equals(double.class) || cl.equals(Double.class);
     }
 
+    public static boolean isNumber(Class<?> cl) {
+        return isNumeric(cl) || isFractional(cl) || Number.class.isAssignableFrom(cl) || Average.class.isAssignableFrom(cl);
+    }
+
 
     protected static AttributeType getType(AccessibleObject ao) {
         Property prop=ao.getAnnotation(Property.class);
@@ -297,15 +315,18 @@ public class ResourceDMBean implements DynamicMBean {
         throw new ClassNotFoundException("Class " + name + " cannot be found");
     }
 
-    protected void findMethods(Object instance) {
+    protected void findMethods(Object instance, Predicate<AccessibleObject> filter, String prefix) {
         // find all methods but don't include methods from Object class
         List<Method> methods = new ArrayList<>(Arrays.asList(instance.getClass().getMethods()));
         methods.removeAll(OBJECT_METHODS);
 
         for(Method method: methods) {
+
             // does method have @ManagedAttribute annotation?
             if(method.isAnnotationPresent(ManagedAttribute.class) || method.isAnnotationPresent(Property.class)) {
-                exposeManagedAttribute(method, instance);
+                if(filter != null && !filter.test(method))
+                    continue;
+                exposeManagedAttribute(method, instance, prefix);
             }
             //or @ManagedOperation
             else if (method.isAnnotationPresent(ManagedOperation.class) || expose_all){
@@ -329,7 +350,7 @@ public class ResourceDMBean implements DynamicMBean {
 
 
 
-    protected void exposeManagedAttribute(Method method, Object instance) {
+    protected void exposeManagedAttribute(Method method, Object instance, String prefix) {
         String           methodName=method.getName();
         ManagedAttribute attr_annotation=method.getAnnotation(ManagedAttribute.class);
         Property         prop=method.getAnnotation(Property.class);
@@ -358,7 +379,7 @@ public class ResourceDMBean implements DynamicMBean {
         }
 
         String descr=attr_annotation != null ? attr_annotation.description() : prop != null? prop.description() : null;
-        AttributeEntry attr=atts.get(attr_name);
+        AttributeEntry attr=atts.get(prefix(prefix,attr_name));
         if(attr != null) {
             if(isSetMethod(method)) {
                 if(attr.setter != null) {
@@ -380,17 +401,19 @@ public class ResourceDMBean implements DynamicMBean {
         else { // create a new entry in atts
             boolean is_setter=isSetMethod(method);
             String type=is_setter? method.getParameterTypes()[0].getCanonicalName() : method.getReturnType().getCanonicalName();
-            MBeanAttributeInfo info=new MBeanAttributeInfo(attr_name, type, descr, true, writable, methodName.startsWith("is"));
-            AttributeEntry entry=new AttributeEntry(Util.methodNameToAttributeName(methodName), info);
+            MBeanAttributeInfo info=new MBeanAttributeInfo(prefix(attr_name, prefix), type, descr, true, writable, methodName.startsWith("is"));
+            AttributeEntry entry=new AttributeEntry(method, Util.methodNameToAttributeName(methodName), info);
             if(is_setter)
                 entry.setter(new MethodAccessor(method, instance));
             else
                 entry.getter(new MethodAccessor(method, instance));
-            atts.put(attr_name, entry);
+            atts.put(prefix(attr_name, prefix), entry);
         }
     }
 
-
+    protected static String prefix(String s, String prefix) {
+        return prefix == null? s : prefix + "." + s;
+    }
 
     /** Finds an accessor for an attribute. Tries to find getAttrName(), isAttrName(), attrName() methods. If not
      * found, tries to use reflection to get the value of attr_name. If still not found, creates a NullAccessor. */
@@ -407,7 +430,6 @@ public class ResourceDMBean implements DynamicMBean {
         Field field=Util.getField(clazz, attr_name);
         if(field != null)
             return new FieldAccessor(field, target);
-
         return new NoopAccessor();
     }
 
@@ -452,24 +474,28 @@ public class ResourceDMBean implements DynamicMBean {
     }
 
 
-    protected void findFields(Object instance) {
+    protected void findFields(Object instance, Predicate<AccessibleObject> filter, String prefix) {
         // traverse class hierarchy and find all annotated fields
         for(Class<?> clazz=instance.getClass(); clazz != null && clazz != Object.class; clazz=clazz.getSuperclass()) {
-
             Field[] fields=clazz.getDeclaredFields();
             for(Field field: fields) {
-                ManagedAttribute attr=field.getAnnotation(ManagedAttribute.class);
+                ManagedAttribute annotation=field.getAnnotation(ManagedAttribute.class);
                 Property prop=field.getAnnotation(Property.class);
                 boolean expose_prop=prop != null && prop.exposeAsManagedAttribute();
-                boolean expose=attr != null || expose_prop;
+                boolean expose=annotation != null || expose_prop;
 
                 if(expose) {
-                    String fieldName=attr != null? attr.name() : (prop != null? prop.name() : null);
+                    if(filter != null && !filter.test(field))
+                        continue;
+
+                    String fieldName=annotation != null? annotation.name() : (prop != null? prop.name() : null);
                     if(fieldName != null && fieldName.trim().isEmpty())
                         fieldName=field.getName();
+                    if(prefix != null)
+                        fieldName=prefix + "." + fieldName;
 
-                    String descr=attr != null? attr.description() : prop.description();
-                    boolean writable=attr != null? attr.writable() : prop.writable();
+                    String descr=annotation != null? annotation.description() : prop.description();
+                    boolean writable=annotation != null? annotation.writable() : prop.writable();
 
                     MBeanAttributeInfo info=new MBeanAttributeInfo(fieldName,
                                                                    field.getType().getCanonicalName(),
@@ -478,7 +504,7 @@ public class ResourceDMBean implements DynamicMBean {
                                                                    !Modifier.isFinal(field.getModifiers()) && writable,
                                                                    false);
 
-                    atts.put(fieldName, new AttributeEntry(field.getName(), info));
+                    atts.put(fieldName, new AttributeEntry(field, field.getName(), info));
                 }
             }
         }
@@ -521,11 +547,8 @@ public class ResourceDMBean implements DynamicMBean {
     
     
 
-
-
-
-    protected static class AttributeEntry {
-
+    public static class AttributeEntry {
+        protected final AccessibleObject   type; // method of field
         /** The name of the field or method. Can be different from the key in atts when name in @Property or
          * @ManagedAttribute  was used */
         protected final String             name;
@@ -533,21 +556,25 @@ public class ResourceDMBean implements DynamicMBean {
         protected Accessor                 getter;
         protected Accessor                 setter;
 
-        protected AttributeEntry(String name, MBeanAttributeInfo info) {
-            this(name, info, null, null);
+        public AttributeEntry(AccessibleObject type, String name, MBeanAttributeInfo info) {
+            this(type, name, info, null, null);
         }
 
-        protected AttributeEntry(String name, MBeanAttributeInfo info, Accessor getter, Accessor setter) {
+        public AttributeEntry(AccessibleObject type, String name, MBeanAttributeInfo info, Accessor getter, Accessor setter) {
+            this.type=type;
             this.name=name;
             this.info=info;
             this.getter=getter;
             this.setter=setter;
         }
 
-        protected Accessor       getter()                    {return getter;}
-        protected AttributeEntry getter(Accessor new_getter) {this.getter=new_getter; return this;}
-        protected Accessor       setter()                    {return setter;}
-        protected AttributeEntry setter(Accessor new_setter) {this.setter=new_setter; return this;}
+        public AccessibleObject   type()                      {return type;}
+        public String             name()                      {return name;}
+        public MBeanAttributeInfo info()                      {return info;}
+        public Accessor           getter()                    {return getter;}
+        public AttributeEntry     getter(Accessor new_getter) {this.getter=new_getter; return this;}
+        public Accessor           setter()                    {return setter;}
+        public AttributeEntry     setter(Accessor new_setter) {this.setter=new_setter; return this;}
 
 
         public String toString() {
@@ -588,21 +615,39 @@ public class ResourceDMBean implements DynamicMBean {
     }
 
     public static class FieldAccessor implements Accessor {
-        protected final Field  field;
-        protected final Object target;
+        protected final Field                       field;
+        protected final Object                      target;
+        protected static final MethodHandles.Lookup LOOKUP=MethodHandles.lookup();
+        protected       MethodHandle                mh;
 
         public FieldAccessor(Field field, Object target) {
             this.field=field;
             this.target=target;
             if(!field.isAccessible())
                 field.setAccessible(true);
+            try {
+                mh=LOOKUP.unreflectGetter(field);
+            }
+            catch(IllegalAccessException e) {
+                // todo: log warning?
+                // throw new RuntimeException(e);
+            }
         }
 
         public Field getField() {return field;}
 
         public Object invoke(Object new_val) throws Exception {
-            if(new_val == null)
+            if(new_val == null) {
+                if(mh != null) {
+                    try {
+                        return mh.invoke(target);
+                    }
+                    catch(Throwable e) {
+                        ;
+                    }
+                }
                 return field.get(target);
+            }
             else {
                 field.set(target, new_val);
                 return null;

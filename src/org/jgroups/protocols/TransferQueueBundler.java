@@ -5,6 +5,7 @@ import org.jgroups.Message;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.util.AverageMinMax;
+import org.jgroups.util.Util;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,16 +25,16 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
 
     @Property(description="When the queue is full, senders will drop a message rather than wait until space " +
       "is available (https://issues.redhat.com/browse/JGRP-2765)")
-    protected boolean                drop_when_full;
+    protected boolean                drop_when_full=true;
 
     protected volatile boolean       running=true;
-    @ManagedAttribute(description="Number of times a message was sent because the queue was full", type= SCALAR)
+    @ManagedAttribute(description="Number of times a message was sent because the queue was full", type=SCALAR)
     protected long                   num_sends_because_full_queue;
     @ManagedAttribute(description="Number of times a message was sent because there was no message available in the queue",
-      type= SCALAR)
+      type=SCALAR)
     protected long                   num_sends_because_no_msgs;
 
-    @ManagedAttribute(description="Number of dropped messages (when drop_when_full is true)")
+    @ManagedAttribute(description="Number of dropped messages (when drop_when_full is true)",type=SCALAR)
     protected long                   num_drops_on_full_queue;
 
     @ManagedAttribute(description="Average fill size of the queue (in bytes)")
@@ -48,16 +49,19 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
     }
 
     public TransferQueueBundler(int capacity) {
-        this(new ArrayBlockingQueue<>(assertPositive(capacity, "bundler capacity cannot be " + capacity)));
+        this(new ArrayBlockingQueue<>(Util.assertPositive(capacity, "bundler capacity cannot be " + capacity)));
     }
 
-    public Thread               getThread()               {return bundler_thread;}
+    public Thread                getThread()             {return bundler_thread;}
 
     @ManagedAttribute(description="Size of the queue")
-    public int                  getQueueSize()            {return queue.size();}
+    public int                   getQueueSize()          {return queue.size();}
 
     @ManagedAttribute(description="Size of the remove-queue")
-    public int                  removeQueueSize()         {return remove_queue.size();}
+    public int                   removeQueueSize()       {return remove_queue.size();}
+
+    public boolean               dropWhenFull()          {return drop_when_full;}
+    public <T extends Bundler> T dropWhenFull(boolean d) {this.drop_when_full=d; return (T)this;}
 
 
     @Override
@@ -75,7 +79,7 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
         if(running)
             stop();
         // todo: replace with LinkedBlockingQueue and measure impact (if any) on perf
-        queue=new ArrayBlockingQueue<>(assertPositive(capacity, "bundler capacity cannot be " + capacity));
+        queue=new ArrayBlockingQueue<>(Util.assertPositive(capacity, "bundler capacity cannot be " + capacity));
         bundler_thread=transport.getThreadFactory().newThread(this, THREAD_NAME);
         running=true;
         bundler_thread.start();
@@ -133,6 +137,7 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
                 }
             }
             catch(Throwable t) {
+                log.trace("%s: failed sending message: %s", transport.addr(), t);
             }
         }
     }
@@ -161,8 +166,4 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
     }
 
 
-    protected static int assertPositive(int value, String message) {
-        if(value <= 0) throw new IllegalArgumentException(message);
-        return value;
-    }
 }

@@ -13,11 +13,14 @@ import org.jgroups.stack.*;
 import org.jgroups.util.UUID;
 import org.jgroups.util.*;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
+import java.io.InputStream;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.util.*;
-import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Consumer;
 
@@ -63,7 +66,6 @@ public class JChannel implements Closeable {
     protected List<AddressGenerator>                address_generators;
     protected final Promise<StateTransferResult>    state_promise=new Promise<>();
     protected boolean                               state_transfer_supported; // true if state transfer prot is in the stack
-    protected volatile boolean                      flush_supported; // true if FLUSH is present in the stack
     protected final DiagnosticsHandler.ProbeHandler probe_handler=new JChannelProbeHandler(this);
 
     @ManagedAttribute(description="Collect channel statistics",writable=true)
@@ -192,7 +194,6 @@ public class JChannel implements Closeable {
     public JChannel      stats(boolean stats)                {this.stats=stats; return this;}
     public boolean       getDiscardOwnMessages()             {return discard_own_messages;}
     public JChannel      setDiscardOwnMessages(boolean flag) {discard_own_messages=flag; return this;}
-    public boolean       flushSupported()                    {return flush_supported;}
 
 
     @ManagedAttribute(name="address")
@@ -312,78 +313,41 @@ public class JChannel implements Closeable {
      */
     @ManagedOperation(description="Connects the channel to a group")
     public synchronized JChannel connect(String cluster_name) throws Exception {
-        return connect(cluster_name, true);
-    }
-
-    /** Connects the channel to a cluster. */
-    @ManagedOperation(description="Connects the channel to a group")
-    protected synchronized JChannel connect(String cluster_name, boolean useFlushIfPresent) throws Exception {
         if(!_preConnect(cluster_name))
             return this;
-        Event connect_event=new Event(useFlushIfPresent? Event.CONNECT_USE_FLUSH : Event.CONNECT, cluster_name);
+        Event connect_event=new Event(Event.CONNECT, cluster_name);
         _connect(connect_event);
         state=State.CONNECTED;
         notifyChannelConnected(this);
         return this;
     }
 
+
     /**
-     * Joins the cluster and gets the state from a specified state provider.
-     * <p/>
-     * This method essentially invokes <code>connect<code> and <code>getState<code> methods successively.
-     * If FLUSH protocol is in channel's stack definition only one flush is executed for both connecting and
-     * fetching state rather than two flushes if we invoke <code>connect<code> and <code>getState<code> in succession.<p/>
+     * Joins the cluster and gets the state from a specified state provider.</br>
+     * This method invokes <code>connect<code> and <code>getState<code> methods.
      * If the channel is closed an exception will be thrown.
      * @param cluster_name  the cluster name to connect to. Cannot be null.
-     * @param target the state provider. If null state will be fetched from coordinator, unless this channel is coordinator.
+     * @param target the state provider. If null, the state will be fetched from coordinator, unless this channel is coordinator.
      * @param timeout the timeout for state transfer.
      * @exception Exception Connecting to the cluster or state transfer was not successful
      * @exception IllegalStateException The channel is closed and therefore cannot be used
      */
     public synchronized JChannel connect(String cluster_name, Address target, long timeout) throws Exception {
-    	return connect(cluster_name, target, timeout, true);
-    }
-
-    
-    /**
-     * Joins the cluster and gets a state from a specified state provider.<p/>
-     * This method invokes {@code connect()} and then {@code getState}.<p/>
-     * If the FLUSH protocol is in the channel's stack definition, only one flush round is executed for both connecting and
-     * fetching the state rather than two flushes if we invoke {@code connect} and {@code getState} in succession.<p/>
-     * If the channel is closed a ChannelClosed exception will be thrown.
-     * @param cluster_name  The cluster name to connect to. Cannot be null.
-     * @param target The state provider. If null, the state will be fetched from the coordinator, unless this channel
-     *               is the coordinator.
-     * @param timeout The timeout for the state transfer.
-     * @exception Exception The protocol stack cannot be started, or the JOIN failed
-     * @exception IllegalStateException The channel is closed or disconnected
-     * @exception StateTransferException State transfer was not successful
-     *
-     */
-    public synchronized JChannel connect(String cluster_name, Address target, long timeout,
-                                     boolean useFlushIfPresent) throws Exception {
         if(!_preConnect(cluster_name))
             return this;
-
         boolean canFetchState=false;
-        try {
-            Event connect_event=new Event(useFlushIfPresent? Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH : Event.CONNECT_WITH_STATE_TRANSFER, cluster_name);
-            _connect(connect_event);
-            state=State.CONNECTED;
-            notifyChannelConnected(this);
-            canFetchState=view != null && view.size() > 1;
-            if(canFetchState) // if I am not the only member in cluster then ...
-                getState(target, timeout, false); // fetch state from target
-        }
-        finally {
-            // stopFlush if we fetched the state or failed to connect...
-            if((flushSupported() && useFlushIfPresent) && (canFetchState || state != State.CONNECTED) )
-                stopFlush();
-        }
+        Event connect_event=new Event(Event.CONNECT_WITH_STATE_TRANSFER, cluster_name);
+        _connect(connect_event);
+        state=State.CONNECTED;
+        notifyChannelConnected(this);
+        canFetchState=view != null && view.size() > 1;
+        if(canFetchState) // if I am not the only member in cluster then ...
+            getState(target, timeout); // fetch state from target
         return this;
     }
 
-
+    
     /**
      * Leaves the cluster (disconnects the channel if it is connected). If the channel is closed or disconnected, this
      * operation is ignored. The channel can then be used to join the same or a different cluster again.
@@ -486,108 +450,41 @@ public class JChannel implements Closeable {
 
 
     /**
-     * Retrieves the full state from the target member.
-     * <p>
+     * Retrieves the full state from the target member.<br/>
      * The state transfer is initiated by invoking getState() on this channel. The state provider in turn invokes the
      * {@link Receiver#getState(java.io.OutputStream)} callback and sends the state to this node, the state receiver.
-     * After the state arrives at the state receiver, the {@link Receiver#setState(java.io.InputStream)} callback
+     * After the state is received by the state receiver, the {@link Receiver#setState(java.io.InputStream)} callback
      * is invoked to install the state.
      * @param target the state provider. If null the coordinator is used by default
      * @param timeout the number of milliseconds to wait for the operation to complete successfully. 0
-     *           waits forever until the state has been received
+     *           waits forever, or until the state has been received
      * @see Receiver#getState(java.io.OutputStream)
      * @see Receiver#setState(java.io.InputStream)
      * @exception IllegalStateException the channel was closed or disconnected, or the flush (if present) failed
      * @exception StateTransferException raised if there was a problem during the state transfer
      */
     public JChannel getState(Address target, long timeout) throws Exception {
-        return getState(target, timeout, true);
-    }
-
-
-    /** Retrieves state from the target member. See {@link #getState(Address,long)} for details */
-    public JChannel getState(Address target, long timeout, boolean useFlushIfPresent) throws Exception {
-    	Callable<Boolean> flusher =() -> Util.startFlush(JChannel.this);
-		return getState(target, timeout, useFlushIfPresent?flusher:null);
-	}
-
-
-    /**
-     * Performs the flush of the cluster, ie. all pending application messages are flushed out of the cluster and
-     * all members ack their reception. After this call returns, no member will be allowed to send any
-     * messages until {@link #stopFlush()} is called.<p/>
-     * In the case of flush collisions (another member attempts flush at roughly the same time) start flush will
-     * fail by throwing an Exception. Applications can re-attempt flushing after certain back-off period.<p/>
-     * JGroups provides a helper random sleep time backoff algorithm for flush using Util class.
-     * @param automatic_resume if true call {@link #stopFlush()} after the flush
-     */
-    public JChannel startFlush(boolean automatic_resume) throws Exception {
-        if(!flushSupported())
-            throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
-        try {
-            down(new Event(Event.SUSPEND));
+        checkClosedOrNotConnected();
+        if(!state_transfer_supported)
+            throw new IllegalStateException("fetching state will fail as state transfer is not supported. "
+                                              + "Add one of the state transfer protocols to your configuration");
+        if(target == null)
+            target=determineCoordinator();
+        if(Objects.equals(target, local_addr)) {
+            log.trace(local_addr + ": cannot get state from myself (" + target + "): probably the first member");
             return this;
         }
-        catch (Exception e) {
-            throw new Exception("Flush failed", e.getCause());
-        }
-        finally {
-            if (automatic_resume)
-                stopFlush();
-        }
-    }
-
-    /**
-     * Performs the flush of the cluster but only for the specified flush participants.<p/>
-     * All pending messages are flushed out but only for the flush participants. The remaining members in the cluster
-     * are not included in the flush. The list of flush participants should be a proper subset of the current view.<p/>
-     * If this flush is not automatically resumed it is an obligation of the application to invoke the matching
-     * {@link #stopFlush(List)} method with the same list of members used in {@link #startFlush(List, boolean)}.
-     * @param automatic_resume if true call {@link #stopFlush()} after the flush
-     */
-    public JChannel startFlush(List<Address> flushParticipants, boolean automatic_resume) throws Exception {
-        if (!flushSupported())
-            throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
-        View v = getView();
-        boolean validParticipants = v != null && v.getMembers().containsAll(flushParticipants);
-        if (!validParticipants)
-            throw new IllegalArgumentException("Current view " + v
-                                                 + " does not contain all flush participants " + flushParticipants);
-        try {
-            down(new Event(Event.SUSPEND, flushParticipants));
-            return this;
-        }
-        catch (Exception e) {
-            throw new Exception("Flush failed", e.getCause());
-        }
-        finally {
-            if (automatic_resume)
-                stopFlush(flushParticipants);
-        }
-    }
-
-    /** Stops the current flush round. Cluster members are unblocked and allowed to send new and pending messages */
-    public JChannel stopFlush() {
-        if(!flushSupported())
-            throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
-        down(new Event(Event.RESUME));
+        state_promise.reset();
+        StateTransferInfo state_info=new StateTransferInfo(target, timeout);
+        long start=System.currentTimeMillis();
+        down(new Event(Event.GET_STATE, state_info));
+        StateTransferResult result=state_promise.getResult(state_info.timeout);
+        if(result == null)
+            throw new StateTransferException("timeout during state transfer (" + (System.currentTimeMillis() - start) + "ms)");
+        if(result.hasException())
+            throw new StateTransferException("state transfer failed", result.getException());
         return this;
     }
-
-    /**
-     * Stops the current flush of the cluster for the specified flush participants. Flush participants are unblocked and
-     * allowed to send new and pending messages.<p/>
-     * It is an obligation of the application to invoke the matching {@link #startFlush(List, boolean)} method with the
-     * same list of members prior to invocation of this method.
-     * @param flushParticipants the flush participants
-     */
-    public JChannel stopFlush(List<Address> flushParticipants) {
-        if(!flushSupported())
-            throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
-        down(new Event(Event.RESUME, flushParticipants));
-        return this;
-    }
-
 
     /**
      * Sends an event down the protocol stack. Note that - contrary to {@link #send(Message)}, if the event is a message,
@@ -603,6 +500,17 @@ public class JChannel implements Closeable {
         return msg != null? prot_stack.down(msg) : null;
     }
 
+    /**
+     * Sends a message down asynchronously. The sending is executed in the transport's thread pool. If the pool is full
+     * and the message is marked as {@link org.jgroups.Message.TransientFlag#DONT_BLOCK}, then it will be dropped,
+     * otherwise it will be sent on the caller's thread.
+     * @param msg The message to be sent
+     * @param async Whether to send the message asynchronously
+     * @return A CompletableFuture of the result (or exception)
+     */
+    public CompletableFuture<Object> down(Message msg, boolean async) {
+        return msg != null? prot_stack.down(msg, async) : null;
+    }
 
     /**
      * Callback method <BR>
@@ -626,14 +534,8 @@ public class JChannel implements Closeable {
 
             case Event.CONFIG:
                 Map<String,Object> cfg=evt.getArg();
-                if(cfg != null) {
-                    if(cfg.containsKey("state_transfer")) {
-                        state_transfer_supported=(Boolean)cfg.get("state_transfer");
-                    }
-                    if(cfg.containsKey("flush_supported")) {
-                        flush_supported=(Boolean)cfg.get("flush_supported");
-                    }
-                }
+                if(cfg != null && cfg.containsKey("state_transfer"))
+                    state_transfer_supported=(Boolean)cfg.get("state_transfer");
                 break;
                 
             case Event.GET_STATE_OK:
@@ -813,50 +715,6 @@ public class JChannel implements Closeable {
         return init();
     }
 
-    protected JChannel getState(Address target, long timeout, Callable<Boolean> flushInvoker) throws Exception {
-        checkClosedOrNotConnected();
-        if(!state_transfer_supported)
-            throw new IllegalStateException("fetching state will fail as state transfer is not supported. "
-                                              + "Add one of the state transfer protocols to your configuration");
-
-        if(target == null)
-            target=determineCoordinator();
-        if(Objects.equals(target, local_addr)) {
-            log.trace(local_addr + ": cannot get state from myself (" + target + "): probably the first member");
-            return this;
-        }
-
-        boolean initiateFlush=flushSupported() && flushInvoker != null;
-        if(initiateFlush) {
-            boolean successfulFlush=false;
-            try {
-                successfulFlush=flushInvoker.call();
-            }
-            catch(Throwable e) {
-                successfulFlush=false; // https://issues.redhat.com/browse/JGRP-759
-            }
-            if(!successfulFlush)
-                throw new IllegalStateException("Node " + local_addr + " could not flush the cluster for state retrieval");
-        }
-
-        state_promise.reset();
-        StateTransferInfo state_info=new StateTransferInfo(target, timeout);
-        long start=System.currentTimeMillis();
-        down(new Event(Event.GET_STATE, state_info));
-        StateTransferResult result=state_promise.getResult(state_info.timeout);
-
-        if(initiateFlush)
-            stopFlush();
-
-        if(result == null)
-            throw new StateTransferException("timeout during state transfer (" + (System.currentTimeMillis() - start) + "ms)");
-        if(result.hasException())
-            throw new StateTransferException("state transfer failed", result.getException());
-        return this;
-    }
-
-
-
     protected Object invokeCallback(int type, Object arg) {
         switch(type) {
             case Event.VIEW_CHANGE:
@@ -875,11 +733,6 @@ public class JChannel implements Closeable {
                     }
                 }
                 return new StateTransferInfo(null, 0L, tmp_state);
-            case Event.BLOCK:
-                receiver.block();
-                return true;
-            case Event.UNBLOCK:
-                receiver.unblock();
         }
         return null;
     }

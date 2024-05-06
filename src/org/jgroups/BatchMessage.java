@@ -122,7 +122,8 @@ public class BatchMessage extends BaseMessage implements Iterable<Message> {
     }
 
     public int size() {
-        int retval=super.size() + Global.INT_SIZE + orig_src.serializedSize(); // length + src
+        int retval=super.size() + Global.INT_SIZE;
+        retval+=Util.size(orig_src);
         if(msgs != null) {
             for(int i=0; i < index; i++)
                 retval+=msgs[i].size() + Global.SHORT_SIZE; // type

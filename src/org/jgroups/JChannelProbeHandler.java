@@ -5,6 +5,7 @@ import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.Metrics;
 import org.jgroups.util.Util;
 
 import java.lang.management.ManagementFactory;
@@ -53,6 +54,20 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
                         log.error(Util.getMessage("OperationInvocationFailure"), key.substring(index + 1), throwable);
                     }
                 }
+                continue;
+            }
+            if(key.startsWith("metrics")) {
+                Map<String,Map<String,Metrics.Entry<Object>>> m=Metrics.extract(ch, Metrics.IS_NUMBER);
+                Map<String,Map<String,Metrics.Entry<Number>>> metrics=Metrics.convert(m);
+                StringBuilder sb=new StringBuilder();
+                for(Map.Entry<String,Map<String,Metrics.Entry<Number>>> e: metrics.entrySet()) {
+                    sb.append(String.format("%s:\n", e.getKey()));
+                    for(Map.Entry<String,Metrics.Entry<Number>> e2: e.getValue().entrySet()) {
+                        Metrics.Entry<Number> val=e2.getValue();
+                        sb.append(String.format("   %s: %s\n", e2.getKey(), e2.getValue().supplier().get()));
+                    }
+                }
+                map.put(key, sb.toString());
                 continue;
             }
             if(key.startsWith("threads")) {
@@ -178,7 +193,7 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
     }
 
     public String[] supportedKeys() {
-        return new String[]{"reset-stats", "jmx", "op=<operation>[<args>]", "ops",
+        return new String[]{"reset-stats", "jmx", "op=<operation>[<args>]", "ops", "metrics",
           "threads[=<filter>[=<limit>]]", "enable-cpu", "enable-contention", "disable-cpu", "disable-contention"};
     }
 

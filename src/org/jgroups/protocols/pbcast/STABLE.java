@@ -17,13 +17,16 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import static org.jgroups.Message.Flag.*;
 import static org.jgroups.Message.TransientFlag.DONT_BLOCK;
 import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
+import static org.jgroups.conf.AttributeType.SCALAR;
 
 
 /**
@@ -55,16 +58,20 @@ public class STABLE extends Protocol {
      * be broadcast and{@code num_bytes_received} reset to 0 . If this is > 0, then ideally {@code stability_delay}
      * should be set to a low number as well
      */
-    @Property(description="Maximum number of bytes received in all messages before sending a STABLE message is triggered",
+    @Property(description="Maximum number of bytes received in all messages before sending a STABLE message",
       type=AttributeType.BYTES)
     protected long   max_bytes=2000000;
 
 
     /* --------------------------------------------- JMX  ---------------------------------------------- */
-    protected int    num_stable_msgs_sent;
-    protected int    num_stable_msgs_received;
-    protected int    num_stability_msgs_sent;
-    protected int    num_stability_msgs_received;
+    @ManagedAttribute(description="Number of stable messages sent",type= SCALAR)
+    protected final LongAdder num_stable_msgs_sent=new LongAdder();
+    @ManagedAttribute(description="Number of stable messages received",type= SCALAR)
+    protected final LongAdder num_stable_msgs_received=new LongAdder();
+    @ManagedAttribute(description="Number of stability messages sent",type= SCALAR)
+    protected final LongAdder num_stability_msgs_sent=new LongAdder();
+    @ManagedAttribute(description="Number of stability messages received",type= SCALAR)
+    protected final LongAdder num_stability_msgs_received=new LongAdder();
 
     
     /* --------------------------------------------- Fields ------------------------------------------------------ */
@@ -121,14 +128,6 @@ public class STABLE extends Protocol {
 
     // @ManagedAttribute(name="bytes_received")
     public long getBytes() {return num_bytes_received;}
-    @ManagedAttribute(type=AttributeType.SCALAR)
-    public int getStableSent() {return num_stable_msgs_sent;}
-    @ManagedAttribute(type=AttributeType.SCALAR)
-    public int getStableReceived() {return num_stable_msgs_received;}
-    @ManagedAttribute(type=AttributeType.SCALAR)
-    public int getStabilitySent() {return num_stability_msgs_sent;}
-    @ManagedAttribute(type=AttributeType.SCALAR)
-    public int getStabilityReceived() {return num_stability_msgs_received;}
     @ManagedAttribute(description="The number of votes for the current digest")
     public int getNumVotes() {return votes != null? votes.cardinality() : 0;}
 
@@ -162,7 +161,8 @@ public class STABLE extends Protocol {
 
     public void resetStats() {
         super.resetStats();
-        num_stability_msgs_received=num_stability_msgs_sent=num_stable_msgs_sent=num_stable_msgs_received=0;
+        Stream.of(num_stability_msgs_received,num_stability_msgs_sent,num_stable_msgs_sent,num_stable_msgs_received)
+          .forEach(LongAdder::reset);
     }
 
 
@@ -488,7 +488,7 @@ public class STABLE extends Protocol {
             int rank=getRank(sender, view);
             if(rank < 0 || votes.get(rank))  // already received gossip from sender; discard it
                 return;
-            num_stable_msgs_received++;
+            num_stable_msgs_received.increment();
             updateLocalDigest(d, sender);
             if(addVote(rank)) {       // votes from all members have been received
                 stable_digest=digest; // no need to copy, as digest (although mutable) is reassigned below
@@ -544,7 +544,7 @@ public class STABLE extends Protocol {
                 return;
             }
             log.trace("%s: received stability msg from %s: %s", local_addr, sender, printDigest(stable_digest));
-            num_stability_msgs_received++;
+            num_stability_msgs_received.increment();
             resetDigest();
         }
         finally {
@@ -576,7 +576,7 @@ public class STABLE extends Protocol {
         // don't send a STABLE message to self when coord, but instead update the digest directly
         if(is_coord) {
             log.trace("%s: updating the local digest with a stable message (coordinator): %s", local_addr, d);
-            num_stable_msgs_sent++;
+            num_stable_msgs_sent.increment();
             handleStableMessage(d, local_addr, current_view.getViewId());
             return;
         }
@@ -586,14 +586,14 @@ public class STABLE extends Protocol {
           .putHeader(this.id, new StableHeader(StableHeader.STABLE_GOSSIP, current_view.getViewId()));
         try {
             if(!send_in_background) {
-                num_stable_msgs_sent++;
+                num_stable_msgs_sent.increment();
                 down_prot.down(msg);
                 return;
             }
             Runnable r=new Runnable() {
                 public void run() {
                     down_prot.down(msg);
-                    num_stable_msgs_sent++;
+                    num_stable_msgs_sent.increment();
                 }
 
                 public String toString() {
@@ -628,8 +628,8 @@ public class STABLE extends Protocol {
               .setFlag(OOB, NO_RELIABILITY, NO_RELAY, NO_FC).setFlag(DONT_LOOPBACK,DONT_BLOCK)
               .putHeader(id, new StableHeader(StableHeader.STABILITY, view_id));
             log.trace("%s: sending stability msg %s", local_addr, printDigest(d));
-            num_stability_msgs_sent++;
-            num_stability_msgs_received++; // since we don't receive this message
+            num_stability_msgs_sent.increment();
+            num_stability_msgs_received.increment(); // since we don't receive this message
             down_prot.down(msg);
         }
         catch(Exception e) {

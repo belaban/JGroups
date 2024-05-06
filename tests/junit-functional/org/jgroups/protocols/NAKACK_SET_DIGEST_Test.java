@@ -37,6 +37,12 @@ public class NAKACK_SET_DIGEST_Test {
         d1=new Digest(v1.getMembersRaw(), new long[]{11,11, 30,35});
         d2=new Digest(v2.getMembersRaw(), new long[]{10,10, 30,30, 50,50});
 
+        final TP transport=getTransport();
+        nak.setDownProtocol(transport);
+        nak.start();
+    }
+
+    private static TP getTransport() {
         TP transport=new TP() {
             public boolean supportsMulticasting() {return false;}
             public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {}
@@ -47,8 +53,7 @@ public class NAKACK_SET_DIGEST_Test {
             public TimeScheduler getTimer() {return new TimeScheduler3();}
         };
         transport.setId(TP_ID);
-        nak.setDownProtocol(transport);
-        nak.start();
+        return transport;
     }
 
     @AfterMethod

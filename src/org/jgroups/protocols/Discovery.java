@@ -87,7 +87,7 @@ public abstract class Discovery extends Protocol {
 
     /* ---------------------------------------------   JMX      ------------------------------------------------------ */
 
-    @ManagedAttribute(description="Total number of discovery requests sent ")
+    @ManagedAttribute(description="Total number of discovery requests sent",type=AttributeType.SCALAR)
     protected int                        num_discovery_requests;
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
@@ -455,8 +455,6 @@ public abstract class Discovery extends Protocol {
 
             case Event.CONNECT:
             case Event.CONNECT_WITH_STATE_TRANSFER:
-            case Event.CONNECT_USE_FLUSH:
-            case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
                 is_leaving=false;
                 cluster_name=evt.getArg();
                 Object ret=down_prot.down(evt);

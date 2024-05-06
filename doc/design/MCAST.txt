@@ -1,0 +1,119 @@
+MCAST
+=====
+
+Author: Bela Ban
+Date: April 2024
+JIRA: https://issues.redhat.com/browse/JGRP-2780
+
+Contrary to NAKACK2, MCAST does not dynamically expand or shrink its xmit window, but instead uses a fixed size
+xmit window (RingBufferSeqno). This means that flow control is built in, and MFC is not required anymore.
+
+An xmit window has a low and high index, with the following semantics:
+* On the sender: low = highest acked, high = highest sent seqno
+* On the receiver: low = highest delivered, high = highest received seqno
+
+Seqnos are mapped to an index in the ring buffer.
+
+A sender blocks sending a message when no space is available in the window, while a receiver drops the message.
+
+Receivers ack delivered messages, either periodically (xmit_interval), or after delivery of N messages.
+
+When a sender has received acks from all receivers (cluster members), it computes minimum M and purges all messages
+lower than M. This may unblock sender threads waiting for space to add their messages.
+
+Every member periodically (xmit_interval) checks its receiver tables, and asks senders for missing messages.
+
+
+Fields
+------
+- capacity: number of messages in the xmit window
+- xmit-table: map of member|RingBufferSeqno tuples
+- send-window: xmit-table.get(local-addr)
+- seqno
+- ack-map: map of highest ack from each member
+
+
+Design
+------
+
+On sending of message M
+-----------------------
+- The sender increments seqno to get a new seqno S and attaches S to M
+- M is then added to send-window:
+  - If S - low >= capacity -> block the sender (no space)
+  - Else:
+      - Add M
+      - high=max(high,S)
+      - Send M
+
+On reception of message M
+-------------------------
+- Find receiver window rwin for the given sender
+- Add M to rwin:
+  - If M < low or >= low+capacity: drop, added=false
+  - Else:
+    - If M was already received -> added=false
+    - Else added=true, high=max(high,M)
+- If added:
+  - Remove and deliver messages from rwin until a gap is encountered, incr low for every removed message
+  - Send an ACK for the highest removed message back to the sender
+    (could be scheduled to be sent on xmit-interval, or sent only when N messages have been removed)
+
+
+On reception of ACK from member P
+---------------------------------
+- Set ack-map[P]=max(ack-map[P],ACK)
+- If min(ack-map) > prev min:
+  - send-window.purge(min): this advances the low index, possibly unblocking blocked sender threads
+
+
+Every xmit_interval
+-------------------
+- For each receiver window rwin:
+  - Find missing messages in rwin and send an XMIT-REQ to the sender
+
+
+On reception of XMIT-REQ from P
+-------------------------------
+- Find message M for the XMIT-REQ
+- Send M to P (as multicast, or wrapped unicast)
+
+
+On reception of view V
+----------------------
+- Remove receiver windows of non-members
+- Create new receiver windows for new members
+
+
+On reception of digest D:
+-------------------------
+- For all new members P -> create receiver window with offset=D[P]
+
+
+
+Misc
+----
+When sending a message M, incrementing seqno, adding M to the send-window and sending it down the stack,
+concurrent threads might send the messages in non-order, depending on thread scheduling. E.g. we could have
+1 -> 3 -> 4 -> 2 -> 5
+
+If a receiver receives 3, it notices a gap (2 is missing) and - if xmit-interval kicks in before 2 is received - asks
+the sender for (a spurious) retransmission of 2. To prevent this, incrementing seqno and sending message M could be
+done atomically, by using the send-window's lock:
+
+send-window.lock()
+   S=++seqno;
+   send-window.add(M) // could block
+   send M
+send-window.unlock()
+
+Sending M under the acquired lock should not be an issue, as this cannot block (MFC is missing), and
+TransferQueueBundler.drop_when_full should be set to true, so this never blocks. This would lead to the messages
+being added to the TQB's queue (and therefore sent as) as:
+
+1 -> 2 -> 3 -> 4 -> 5.
+
+This means the messages will be sent and received (unless there's packet drops) in that order, causing no spurious
+retransmission.
+
+

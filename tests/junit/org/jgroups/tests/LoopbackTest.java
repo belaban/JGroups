@@ -76,7 +76,7 @@ public class LoopbackTest extends ChannelTestBase {
         if(unicast)
             assert num_msgs_sent_after < NUM/10;
         else
-            assert num_msgs_sent_after <= NUM; // max of NUM single messages; probably some batches were sent
+            assert num_msgs_sent_after >= NUM; // max of NUM single messages; probably some batches were sent
         try {
             // wait for all messages to be received
             promise.getResultWithTimeout(TIMEOUT) ;

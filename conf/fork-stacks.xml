@@ -11,9 +11,9 @@
         </config>
     </fork-stack>
 
-    <fork-stack id="locking">
+    <fork-stack id="stats">
         <config>
-            <CENTRAL_LOCK num_backups="2"/>
+            <STATS/>
         </config>
     </fork-stack>
 

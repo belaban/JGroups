@@ -216,8 +216,6 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
         switch (evt.getType()) {
             case Event.CONNECT:
             case Event.CONNECT_WITH_STATE_TRANSFER:
-            case Event.CONNECT_USE_FLUSH:
-            case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
                 String group=evt.getArg();
                 Address local=local_addr;
                 if(stubManager != null)

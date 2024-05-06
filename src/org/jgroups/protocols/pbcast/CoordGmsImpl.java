@@ -35,11 +35,13 @@ public class CoordGmsImpl extends ServerGmsImpl {
         gms.getViewHandler().resume();
     }
 
-    public void join(Address mbr,boolean useFlushIfPresent) {
+    @Override
+    public void join(Address ignored) {
         wrongMethod("join");
     }
-    
-    public void joinWithStateTransfer(Address mbr,boolean useFlushIfPresent) {
+
+    @Override
+    public void joinWithStateTransfer(Address ignored) {
         wrongMethod("join");
     }
 
@@ -82,8 +84,6 @@ public class CoordGmsImpl extends ServerGmsImpl {
 
 
     public void handleMembershipChange(Collection<Request> requests) {
-        boolean joinAndStateTransferInitiated=false;
-        boolean useFlushIfPresent=gms.use_flush_if_present;
         Collection<Address> new_mbrs=new LinkedHashSet<>(requests.size());
         Collection<Address> suspected_mbrs=new LinkedHashSet<>(requests.size());
         Collection<Address> leaving_mbrs=new LinkedHashSet<>(requests.size());
@@ -94,14 +94,9 @@ public class CoordGmsImpl extends ServerGmsImpl {
             switch(req.type) {
                 case Request.JOIN:
                     new_mbrs.add(req.mbr);
-                    if(req.useFlushIfPresent)
-                        useFlushIfPresent=true;
                     break;
                 case Request.JOIN_WITH_STATE_TRANSFER:
                     new_mbrs.add(req.mbr);
-                    joinAndStateTransferInitiated=true;
-                    if(req.useFlushIfPresent)
-                        useFlushIfPresent=true;
                     break;
                 case Request.LEAVE:
                     leaving_mbrs.add(req.mbr);
@@ -163,19 +158,10 @@ public class CoordGmsImpl extends ServerGmsImpl {
         JoinRsp join_rsp=null;
         boolean hasJoiningMembers=!new_mbrs.isEmpty();
         try {            
-            boolean successfulFlush =!useFlushIfPresent || !gms.flushProtocolInStack || gms.startFlush(new_view);
-            if(!successfulFlush && hasJoiningMembers) {
-                // Don't send a join response if the flush fails (https://issues.redhat.com/browse/JGRP-759)
-                // The joiner should block until the previous FLUSH completed
-                sendLeaveResponses(leaving_mbrs); // we still have to send potential leave responses
-                // but let the joining client timeout and send another join request
-                return;
-            }
-            
             // we cannot garbage collect during joining a new member *if* we're the only member
             // Example: {A}, B joins, after returning JoinRsp to B, A garbage collects messages higher than those
             // in the digest returned to the client, so the client will *not* be able to ask for retransmission
-            // of those messages if he misses them            
+            // of those messages if it misses them
             if(hasJoiningMembers) {
                 gms.getDownProtocol().down(new Event(Event.SUSPEND_STABLE, MAX_SUSPEND_TIMEOUT));
                 // create a new digest, which contains the new members, minus left members
@@ -200,8 +186,6 @@ public class CoordGmsImpl extends ServerGmsImpl {
         finally {
             if(hasJoiningMembers)
                 gms.getDownProtocol().down(new Event(Event.RESUME_STABLE));
-            if(!joinAndStateTransferInitiated && useFlushIfPresent)
-                gms.stopFlush();
         }
     }
 

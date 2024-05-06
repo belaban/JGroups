@@ -36,8 +36,8 @@ public class PropertiesToAsciidoc {
         }
         String prot_file = args[0];
         String inst_file = args[1];
-        String temp_file = prot_file + ".tmp";
-        String temp_file2 = inst_file + ".tmp";
+        String temp_file = prot_file.replace("template", "generated");
+        String temp_file2 = inst_file.replace("template", "generated");
 
         try {
             // first copy protocols.adoc file into protocols.adoc.xml

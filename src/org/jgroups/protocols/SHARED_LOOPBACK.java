@@ -138,8 +138,6 @@ public class SHARED_LOOPBACK extends TP {
         switch(evt.getType()) {
             case Event.CONNECT:
             case Event.CONNECT_WITH_STATE_TRANSFER:
-            case Event.CONNECT_USE_FLUSH:
-            case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
                 register(cluster_name, local_addr, this);
                 break;
             case Event.DISCONNECT:

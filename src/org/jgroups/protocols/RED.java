@@ -48,7 +48,9 @@ public class RED extends Protocol {
       "longer to reflect the current queue size.")
     protected double          weight_factor=1;
 
+    @ManagedAttribute(description="The number of dropped messages",type=AttributeType.SCALAR)
     protected final LongAdder dropped_msgs=new LongAdder(); // dropped messages
+    @ManagedAttribute(description="Total number of messages processed",type=AttributeType.SCALAR)
     protected final LongAdder total_msgs=new LongAdder();   // total messages looked at
 
     protected Bundler         bundler;
@@ -60,17 +62,10 @@ public class RED extends Protocol {
     public boolean isEnabled()           {return enabled;}
     public RED     setEnabled(boolean e) {enabled=e; return this;}
     public double  getMinThreshold()     {return min_threshold;}
-
-
-
-    @ManagedAttribute(description="The number of dropped messages",type=AttributeType.SCALAR)
-    public long    getDroppedMessages() {return dropped_msgs.sum();}
-
-    @ManagedAttribute(description="Total number of messages processed",type=AttributeType.SCALAR)
-    public long    getTotalMessages()   {return total_msgs.sum();}
-
+    public long    getDroppedMessages()  {return dropped_msgs.sum();}
+    public long    getTotalMessages()    {return total_msgs.sum();}
     @ManagedAttribute(description="Percentage of all messages that were dropped")
-    public double  getDropRate()        {return dropped_msgs.sum() / (double)total_msgs.sum();}
+    public double  getDropRate()         {return dropped_msgs.sum() / (double)total_msgs.sum();}
 
 
     public void start() throws Exception {
@@ -94,6 +89,8 @@ public class RED extends Protocol {
     }
 
     public Object down(Message msg) {
+        if(msg.isFlagSet(Message.TransientFlag.DONT_BLOCK))
+            return down_prot.down(msg);
         if(enabled && bundler != null) {
             int current_queue_size=bundler.getQueueSize();
             double avg;

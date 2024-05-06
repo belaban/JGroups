@@ -63,14 +63,21 @@ public abstract class FlowControl extends Protocol {
     @Property(description="Computed as max_credits x min_theshold unless explicitly set",type=AttributeType.BYTES)
     protected long           min_credits;
     
+    @ManagedAttribute(description="Number of credit requests received",type=AttributeType.SCALAR)
+    protected long           num_credit_requests_received;
 
+    @ManagedAttribute(description="Number of credit requests sent",type=AttributeType.SCALAR)
+    protected long           num_credit_requests_sent;
+
+    @ManagedAttribute(description="Number of credit responses received",type=AttributeType.SCALAR)
+    protected long           num_credit_responses_received;
+
+    @ManagedAttribute(description="Number of credit responses sent",type=AttributeType.SCALAR)
+    protected long           num_credit_responses_sent;
+
+    @ManagedAttribute(description="Number of messages dropped due to DONT_BLOCK flag",type=AttributeType.SCALAR)
+    protected long           num_msgs_dropped;
     
-    
-    /* ---------------------------------------------   JMX      -------------------------------------------------- */
-    protected int  num_credit_requests_received, num_credit_requests_sent;
-    protected int  num_credit_responses_sent, num_credit_responses_received;
-
-
     /* --------------------------------------------- Fields ------------------------------------------------------ */
    
 
@@ -83,9 +90,7 @@ public abstract class FlowControl extends Protocol {
 
     /** Whether FlowControl is still running, this is set to false when the protocol terminates (on stop()) */
     protected volatile boolean          running=true;
-
     protected int                       frag_size; // remember frag_size from the fragmentation protocol
-
 
 
 
@@ -93,41 +98,24 @@ public abstract class FlowControl extends Protocol {
     public void resetStats() {
         super.resetStats();
         num_credit_responses_sent=num_credit_responses_received=num_credit_requests_received=num_credit_requests_sent=0;
+        num_msgs_dropped=0;
     }
 
-    public long                      getMaxCredits()           {return max_credits;}
-    public <T extends FlowControl> T setMaxCredits(long m)     {max_credits=m; return (T)this;}
-    public double                    getMinThreshold()         {return min_threshold;}
-    public <T extends FlowControl> T setMinThreshold(double m) {min_threshold=m; return (T)this;}
-    public long                      getMinCredits()           {return min_credits;}
-    public <T extends FlowControl> T setMinCredits(long m)     {min_credits=m; return (T)this;}
-    public long                      getMaxBlockTime()         {return max_block_time;}
-    public <T extends FlowControl> T setMaxBlockTime(long t)   {max_block_time=t; return (T)this;}
+    public abstract int              getNumberOfBlockings();
+    public abstract double           getAverageTimeBlocked();
+    public long                      getMaxCredits()                      {return max_credits;}
+    public <T extends FlowControl> T setMaxCredits(long m)                {max_credits=m; return (T)this;}
+    public double                    getMinThreshold()                    {return min_threshold;}
+    public <T extends FlowControl> T setMinThreshold(double m)            {min_threshold=m; return (T)this;}
+    public long                      getMinCredits()                      {return min_credits;}
+    public <T extends FlowControl> T setMinCredits(long m)                {min_credits=m; return (T)this;}
+    public long                      getMaxBlockTime()                    {return max_block_time;}
+    public <T extends FlowControl> T setMaxBlockTime(long t)              {max_block_time=t; return (T)this;}
+    public long                      getNumberOfCreditRequestsReceived()  {return num_credit_requests_received;}
+    public long                      getNumberOfCreditRequestsSent()      {return num_credit_requests_sent;}
+    public long                      getNumberOfCreditResponsesReceived() {return num_credit_responses_received;}
+    public long                      getNumberOfCreditResponsesSent()     {return num_credit_responses_sent;}
 
-
-    public abstract int getNumberOfBlockings();
-
-    public abstract double getAverageTimeBlocked();
-
-    @ManagedAttribute(description="Number of credit requests received",type=AttributeType.SCALAR)
-    public int getNumberOfCreditRequestsReceived() {
-        return num_credit_requests_received;
-    }
-    
-    @ManagedAttribute(description="Number of credit requests sent",type=AttributeType.SCALAR)
-    public int getNumberOfCreditRequestsSent() {
-        return num_credit_requests_sent;
-    }
-
-    @ManagedAttribute(description="Number of credit responses received",type=AttributeType.SCALAR)
-    public int getNumberOfCreditResponsesReceived() {
-        return num_credit_responses_received;
-    }
-
-    @ManagedAttribute(description="Number of credit responses sent",type=AttributeType.SCALAR)
-    public int getNumberOfCreditResponsesSent() {
-        return num_credit_responses_sent;
-    }
     
     public abstract String printSenderCredits();
 
@@ -164,8 +152,7 @@ public abstract class FlowControl extends Protocol {
         ;
     }
 
-    public void init() throws Exception {
-        boolean min_credits_set = min_credits != 0;
+    public void init() throws Exception {        boolean min_credits_set = min_credits != 0;
         if(!min_credits_set)
             min_credits=(long)(max_credits * min_threshold);
     }

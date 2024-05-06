@@ -89,7 +89,7 @@ public class MERGE3 extends Protocol {
     @ManagedAttribute(description="Whether or not the current member is the coordinator")
     protected volatile boolean              is_coord;
     
-    @ManagedAttribute(description="Number of times a MERGE event was sent up the stack")
+    @ManagedAttribute(description="Number of times a MERGE event was sent up the stack",type=AttributeType.SCALAR)
     protected int                           num_merge_events;
 
 
@@ -231,9 +231,7 @@ public class MERGE3 extends Protocol {
         switch(evt.getType()) {
 
             case Event.CONNECT:
-            case Event.CONNECT_USE_FLUSH:
             case Event.CONNECT_WITH_STATE_TRANSFER:
-            case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
                 cluster_name=evt.getArg();
                 break;
 

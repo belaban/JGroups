@@ -180,9 +180,7 @@ public class FD_HOST extends Protocol {
                 handleView(view);
                 break;
             case Event.CONNECT:
-            case Event.CONNECT_USE_FLUSH:
             case Event.CONNECT_WITH_STATE_TRANSFER:
-            case Event.CONNECT_WITH_STATE_TRANSFER_USE_FLUSH:
                 local_host=getHostFor(local_addr);
                 break;
             case Event.DISCONNECT:

@@ -17,13 +17,11 @@ import java.util.concurrent.ConcurrentMap;
  */
 @MBean(description="Protocol which exposes various statistics such as sent messages, number of bytes received etc")
 public class STATS extends Protocol {
-    protected static final short   UP=1;
-    protected static final short   DOWN=2;
     protected static final Address NULL_DEST=Global.NULL_ADDRESS;
 
     /** Global stats */
     @Component
-    protected final MsgStats mstats=new MsgStats();
+    protected final MsgStats                        mstats=new MsgStats();
 
     /** Maintains stats per target destination */
     protected final ConcurrentMap<Address,MsgStats> sent=new ConcurrentHashMap<>();
@@ -39,7 +37,16 @@ public class STATS extends Protocol {
         received.clear();
     }
 
+    public Object down(Event evt) {
+        if(evt.getType() == Event.VIEW_CHANGE)
+            handleViewChange(evt.getArg());
+        return down_prot.down(evt);
+    }
 
+    public Object down(Message msg) {
+        sent(msg);
+        return down_prot.down(msg);
+    }
 
     public Object up(Event evt) {
         if(evt.getType() == Event.VIEW_CHANGE)
@@ -48,24 +55,13 @@ public class STATS extends Protocol {
     }
 
     public Object up(Message msg) {
-        updateStats(msg.dest(), msg.src(), 1, msg.getLength(), UP);
+        received(msg);
         return up_prot.up(msg);
     }
 
     public void up(MessageBatch batch) {
-        updateStats(batch.dest(), batch.sender(), batch.size(), batch.length(), UP);
+        received(batch);
         up_prot.up(batch);
-    }
-
-    public Object down(Event evt) {
-        if(evt.getType() == Event.VIEW_CHANGE)
-            handleViewChange(evt.getArg());
-        return down_prot.down(evt);
-    }
-
-    public Object down(Message msg) {
-        updateStats(msg.dest(), msg.src(), 1, msg.getLength(), DOWN);
-        return down_prot.down(msg);
     }
 
     @ManagedOperation
@@ -91,7 +87,7 @@ public class STATS extends Protocol {
         return sb.toString();
     }
 
-    private void handleViewChange(View view) {
+    protected void handleViewChange(View view) {
         List<Address> members=view.getMembers();
         Set<Address> tmp=new LinkedHashSet<>(members);
         tmp.add(null); // for null destination (= mcast)
@@ -99,62 +95,32 @@ public class STATS extends Protocol {
         received.keySet().retainAll(tmp);
     }
 
-    protected void updateStats(Address dest, Address src, int num_msgs, int num_bytes, short direction) {
-        boolean mcast=dest == null;
 
-        if(direction == UP) { // received
-            mstats.incrNumMsgsReceived(num_msgs);
-            mstats.incrNumBytesReceived(num_bytes);
-            if(mcast) {
-                mstats.incrNumMcastMsgsReceived(num_msgs);
-                mstats.incrNumMcastBytesReceived(num_bytes);
-            }
-            else {
-                mstats.incrNumUcastMsgsReceived(num_msgs);
-                mstats.incrNumUcastBytesReceived(num_bytes);
-            }
-        }
-        else {                // sent
-            mstats.incrNumMsgsSent(num_msgs);
-            mstats.incrNumBytesSent(num_bytes);
-            if(mcast) {
-                mstats.incrNumMcastMsgsSent(num_msgs);
-                mstats.incrNumMcastBytesSent(num_bytes);
-            }
-            else {
-                mstats.incrNumUcastMsgsSent(num_msgs);
-                mstats.incrNumUcastBytesSent(num_bytes);
-            }
-        }
+    protected void sent(Message msg) {
+        mstats.sent(msg);
 
-        Address key=direction == UP? src : dest;
+        Address key=msg.dest();
         if(key == null) key=NULL_DEST;
-        Map<Address,MsgStats> map=direction == UP? received : sent;
-        MsgStats entry=map.computeIfAbsent(key, k -> new MsgStats());
-        if(direction == UP) {
-            entry.incrNumMsgsSent(num_msgs);
-            entry.incrNumBytesSent(num_bytes);
-            if(mcast) {
-                entry.incrNumMcastMsgsSent(num_msgs);
-                entry.incrNumMcastBytesSent(num_bytes);
-            }
-            else {
-                entry.incrNumUcastMsgsSent(num_msgs);
-                entry.incrNumUcastBytesSent(num_bytes);
-            }
-        }
-        else {
-            entry.incrNumMsgsReceived(num_msgs);
-            entry.incrNumBytesReceived(num_bytes);
-            if(mcast) {
-                entry.incrNumMcastMsgsReceived(num_msgs);
-                entry.incrNumMcastBytesReceived(num_bytes);
-            }
-            else {
-                entry.incrNumUcastMsgsReceived(num_msgs);
-                entry.incrNumUcastBytesReceived(num_bytes);
-            }
-        }
+        MsgStats entry=((Map<Address,MsgStats>)sent).computeIfAbsent(key, k -> new MsgStats());
+        entry.sent(msg);
+    }
+
+    protected void received(Message msg) {
+        mstats.received(msg);
+
+        Address key=msg.src();
+        if(key == null) key=NULL_DEST;
+        MsgStats entry=((Map<Address,MsgStats>)received).computeIfAbsent(key, k -> new MsgStats());
+        entry.received(msg);
+    }
+
+    protected void received(MessageBatch batch) {
+        mstats.received(batch);
+
+        Address key=batch.sender();
+        if(key == null) key=NULL_DEST;
+        MsgStats entry=((Map<Address,MsgStats>)received).computeIfAbsent(key, k -> new MsgStats());
+        entry.received(batch);
     }
 
 

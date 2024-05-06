@@ -20,7 +20,6 @@
     <class id="19" name="org.jgroups.protocols.SEQUENCER"/>
     <class id="20" name="org.jgroups.protocols.FD_ALL"/>
     <class id="21" name="org.jgroups.protocols.FD_ALL2"/>
-    <class id="22" name="org.jgroups.protocols.pbcast.FLUSH"/>
     <class id="23" name="org.jgroups.protocols.AUTH"/>
     <class id="24" name="org.jgroups.protocols.pbcast.STATE"/>
     <class id="25" name="org.jgroups.protocols.pbcast.STATE_SOCK"/>
@@ -32,7 +31,6 @@
     <class id="32" name="org.jgroups.protocols.JDBC_PING"/>
     <class id="33" name="org.jgroups.protocols.STOMP"/>
     <class id="34" name="org.jgroups.protocols.BPING"/>
-    <class id="35" name="org.jgroups.protocols.CENTRAL_LOCK"/>
     <class id="37" name="org.jgroups.protocols.COUNTER"/>
     <class id="38" name="org.jgroups.protocols.MERGE3"/>
     <class id="39" name="org.jgroups.protocols.RSVP"/>
@@ -56,7 +54,6 @@
     <class id="63" name="org.jgroups.protocols.UFC_NB"/>
     <class id="64" name="org.jgroups.protocols.MFC_NB"/>
     <class id="65" name="org.jgroups.protocols.DH_KEY_EXCHANGE"/>
-    <class id="67" name="org.jgroups.protocols.CENTRAL_LOCK2"/>
     <class id="68" name="org.jgroups.protocols.LOCAL_PING"/>
     <class id="69" name="org.jgroups.protocols.FRAG4"/>
     <class id="70" name="org.jgroups.protocols.FD_ALL3"/>

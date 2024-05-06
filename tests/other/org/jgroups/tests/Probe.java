@@ -303,8 +303,7 @@ public class Probe {
                              "probe.sh keys // dumps all valid commands\n" +
                              "probe.sh jmx=NAKACK // dumps JMX info about all NAKACK protocols\n" +
                              "probe.sh op=STABLE.runMessageGarbageCollection // invokes the method in all STABLE protocols\n" +
-                             "probe.sh jmx=UDP.oob,thread_pool // dumps all attrs of UDP starting with oob* or thread_pool*\n" +
-                             "probe.sh jmx=FLUSH.bypass=true\n");
+                             "probe.sh jmx=UDP.oob,thread_pool // dumps all attrs of UDP starting with oob* or thread_pool*\n");
     }
 
 

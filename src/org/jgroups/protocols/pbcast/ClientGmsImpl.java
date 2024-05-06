@@ -33,12 +33,14 @@ public class ClientGmsImpl extends GmsImpl {
         join_promise.reset();
     }
 
-    public void join(Address address,boolean useFlushIfPresent) {
-        joinInternal(address, false,useFlushIfPresent);
+    @Override
+    public void join(Address address) {
+        joinInternal(address, false);
     }
 
-    public void joinWithStateTransfer(Address local_addr, boolean useFlushIfPresent) {
-        joinInternal(local_addr,true,useFlushIfPresent);
+    @Override
+    public void joinWithStateTransfer(Address local_addr) {
+        joinInternal(local_addr,true);
     }
     
     /**
@@ -52,7 +54,7 @@ public class ClientGmsImpl extends GmsImpl {
      *
      * @param mbr Our own address
      */
-    protected void joinInternal(Address mbr, boolean joinWithStateTransfer, boolean useFlushIfPresent) {
+    protected void joinInternal(Address mbr, boolean joinWithStateTransfer) {
         int  join_attempts=0;
         join_promise.reset();
 
@@ -103,7 +105,7 @@ public class ClientGmsImpl extends GmsImpl {
                     }
                     for(Address coord : coords) {
                         log.debug("%s: sending JOIN(%s) to %s", gms.getAddress(), mbr, coord);
-                        sendJoinMessage(coord, mbr, joinWithStateTransfer, useFlushIfPresent);
+                        sendJoinMessage(coord, mbr, joinWithStateTransfer);
                         if(installViewIfValidJoinRsp(join_promise, true))
                             return;
                         log.warn("%s: JOIN(%s) sent to %s timed out (after %d ms), on try %d",
@@ -216,9 +218,9 @@ public class ClientGmsImpl extends GmsImpl {
     }
 
 
-    void sendJoinMessage(Address coord, Address mbr,boolean joinWithTransfer, boolean useFlushIfPresent) {
+    void sendJoinMessage(Address coord, Address mbr,boolean joinWithTransfer) {
         byte type=joinWithTransfer? GMS.GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER : GMS.GmsHeader.JOIN_REQ;
-        GMS.GmsHeader hdr=new GMS.GmsHeader(type, mbr, useFlushIfPresent);
+        GMS.GmsHeader hdr=new GMS.GmsHeader(type, mbr);
         Message msg=new BytesMessage(coord).setFlag(Message.Flag.OOB).putHeader(gms.getId(), hdr);
         gms.getDownProtocol().down(msg);
     }

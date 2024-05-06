@@ -33,8 +33,8 @@
     <property name="keystore.dir"          value="${root.dir}/keystore"/>
     <property name="javadoc.packages"      value="org.jgroups.*"/>
     <property name="timestamp"             value=".timestamp"/>
-    <property name="protocols.adoc"        value="${manual.dir}/protocols.adoc"/>
-    <property name="installation.adoc"     value="${manual.dir}/installation.adoc"/>
+    <property name="protocols.adoc"        value="${manual.dir}/protocols-template.adoc"/>
+    <property name="installation.adoc"     value="${manual.dir}/installation-template.adoc"/>
     <property name="maven.executable"      value="mvn"/>
     <property name="asciidoc.executable"   value="asciidoctor"/>
     <!-- Also available: colony.css, github.css etc -->
@@ -148,9 +148,20 @@
 
     <target name="compile" depends="prepare" description="Compiles all Java files">
         <javac destdir="${compile.dir}" release="11"
-               classpathref="jg.classpath" includeantruntime="false" debug="on"
+               classpathref="jg.classpath"
+               modulepathref="jg.classpath"
+               includeantruntime="false"
+               debug="on"
                includes="org/jgroups/**">
             <src path="${src.dir}"/>
+        </javac>
+
+        <javac destdir="${compile.dir}" release="11"
+               classpathref="jg.classpath"
+               modulepathref="jg.classpath"
+               includeantruntime="false"
+               debug="on"
+               includes="org/jgroups/**">
             <src path="${other.dir}"/>
             <src path="${junit.dir}"/>
             <src path="${junit-functional.dir}"/>
@@ -166,11 +177,14 @@
             description="Compiles sources plus selected tests (e.g. perftests) shipped with JGroups">
         <javac srcdir="${src.dir}" destdir="${compile.dir}"
                release="11" classpathref="jg.classpath"
+               modulepathref="jg.classpath"
                includeantruntime="false" debug="on"
                includes="org/jgroups/**">
         </javac>
         <javac destdir="${compile.dir}" release="11"
-               classpathref="jg.classpath" includeantruntime="false" debug="on"
+               classpathref="jg.classpath"
+               modulepathref="jg.classpath"
+               includeantruntime="false" debug="on"
                includes="org/jgroups/tests/**">
             <src path="${tests.dir}/perf"/>
             <src path="${tests.dir}/other"/>
@@ -411,7 +425,7 @@
         </delete>
         <delete>
             <fileset dir="${manual.dir}" defaultexcludes="no">
-                <include name="*.adoc.tmp"/>
+                <include name="*-generated.adoc"/>
                 <include name="*.css"/>
             </fileset>
         </delete>
@@ -504,7 +518,6 @@
             <antcall target="tcp"/>
             <antcall target="tcp-nio"/>
             <antcall target="stack-independent"/>
-            <antcall target="flush"/>
             <antcall target="time-sensitive"/>
             <antcall target="byteman"/>
         </sequential>
@@ -546,7 +559,7 @@
         <mkdir dir="${tmp.dir}/test-results/xml/udp"/>
         <runtest suitename="udp"
                  groups="base,stack-dependent"
-                 excludedgroups="stack-independent,flush,broken"
+                 excludedgroups="stack-independent,broken"
                  parallel="${parallel.classes}"
                  threadcount="5"
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
@@ -565,7 +578,7 @@
     	<mkdir dir="${tmp.dir}/test-results/xml/tcp"/>
         <runtest suitename="tcp"
                  groups="base,stack-dependent"
-                 excludedgroups="stack-independent,flush,broken"
+                 excludedgroups="stack-independent,broken"
                  parallel="${parallel.classes}"
                  threadcount="5"
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
@@ -584,7 +597,7 @@
         <mkdir dir="${tmp.dir}/test-results/xml/tcp-nio"/>
         <runtest suitename="tcp-nio"
                  groups="base,stack-dependent"
-                 excludedgroups="stack-independent,flush,broken"
+                 excludedgroups="stack-independent,broken"
                  parallel="${parallel.classes}"
                  threadcount="5"
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
@@ -610,16 +623,6 @@
                  groups="encrypt"
                  parallel="${parallel.classes}"
                  threadcount="10" />
-    </target>
-
-
-    <target name="flush" depends="postcompile,define-testng-task" description="Runs FLUSH tests">
-        <mkdir dir="${tmp.dir}/test-results/xml/flush"/>
-        <runtest suitename="flush"
-                 groups="base,flush"
-                 excludedgroups="stack-independent,stack-dependent,broken"
-                 parallel="${parallel.classes}"
-                 threadcount="5"/>
     </target>
 
     <target name="reports" description="Produces the test report">

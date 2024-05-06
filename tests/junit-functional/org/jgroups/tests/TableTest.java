@@ -1,9 +1,6 @@
 package org.jgroups.tests;
 
-import org.jgroups.BytesMessage;
-import org.jgroups.EmptyMessage;
-import org.jgroups.Global;
-import org.jgroups.Message;
+import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.NakAckHeader2;
@@ -854,10 +851,22 @@ public class TableTest {
         assert result == null;
     }
 
+    public void testRemoveManyWithMaxBatchSize() {
+        Table<Message> table=new Table<>();
+        IntStream.rangeClosed(1, 1024).forEach(n -> table.add(n,new ObjectMessage(null, "hello-" + n)));
+        assert table.size() == 1024;
+        assert table.getNumMissing() == 0;
+
+        MessageBatch batch=new MessageBatch(128);
+        Supplier<MessageBatch> batch_creator=() -> batch;
+        BiConsumer<MessageBatch,Message> accumulator=MessageBatch::add;
+        table.removeMany(true, 512, null, batch_creator, accumulator);
+        assert table.size() == 512;
+    }
 
     public void testForEach() {
         class MyVisitor<T> implements Table.Visitor<T> {
-            List<int[]> list=new ArrayList<>(20);
+            final List<int[]> list=new ArrayList<>(20);
             public boolean visit(long seqno, T element, int row, int column) {
                 System.out.println("#" + seqno + ": " + element + ", row=" + row + ", column=" + column);
                 list.add(new int[]{row,column});

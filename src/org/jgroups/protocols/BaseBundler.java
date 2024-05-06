@@ -109,8 +109,6 @@ public abstract class BaseBundler implements Bundler {
             else {
                 Address dst=entry.getKey();
                 sendMessageList(dst, list.get(0).getSrc(), list);
-                if(transport.statsEnabled())
-                    transport.getMessageStats().incrNumBatchesSent(1);
             }
             list.clear();
         }
@@ -125,8 +123,7 @@ public abstract class BaseBundler implements Bundler {
         try {
             Util.writeMessage(msg, output, dest == null);
             transport.doSend(output.buffer(), 0, output.position(), dest);
-            if(transport.statsEnabled())
-                transport.getMessageStats().incrNumSingleMsgsSent(1);
+            transport.getMessageStats().incrNumSingleMsgsSent();
         }
         catch(Throwable e) {
             log.trace(Util.getMessage("SendFailure"),
@@ -140,6 +137,7 @@ public abstract class BaseBundler implements Bundler {
         try {
             Util.writeMessageList(dest, src, transport.cluster_name.chars(), list, output, dest == null, transport.getId());
             transport.doSend(output.buffer(), 0, output.position(), dest);
+            transport.getMessageStats().incrNumBatchesSent();
         }
         catch(Throwable e) {
             log.trace(Util.getMessage("FailureSendingMsgBundle"), transport.getAddress(), e);
