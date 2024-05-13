@@ -138,8 +138,6 @@ public class IpAddress implements PhysicalAddress, Constructable<IpAddress> {
     }
 
 
-
-
     public String toString() {
         return printIpAddress();
     }
@@ -150,6 +148,10 @@ public class IpAddress implements PhysicalAddress, Constructable<IpAddress> {
 
     public String printIpAddress2() {
         return String.format("%s[%d]", ip_addr != null? ip_addr.getHostAddress() : "localhost", port);
+    }
+
+    public String printHostAddress() {
+        return ip_addr != null? ip_addr.getHostAddress() : "";
     }
 
 

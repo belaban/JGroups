@@ -6,7 +6,6 @@ import org.jgroups.Message.Flag;
 import org.jgroups.Message.TransientFlag;
 import org.jgroups.protocols.relay.SiteUUID;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.util.Bits;
 import org.jgroups.util.UUID;
 import org.jgroups.util.*;
 import org.testng.Assert;
@@ -1608,6 +1607,30 @@ public class UtilTest {
         sites_old.keySet().removeAll(sites_new.keySet());
         assert sites_old.size() == 1;
         assert sites_old.containsKey("nyc");
+    }
+
+    public void testToUUID() throws Exception {
+        Address uuid=UUID.randomUUID();
+        String s=Util.addressToString(null);
+        assert s == null;
+        s=Util.addressToString(uuid);
+        Address uuid2=Util.addressFromString(s);
+        assert uuid2.equals(uuid);
+
+        SiteUUID u1=new SiteUUID(UUID.randomUUID(), "lon", "X");
+        s=Util.addressToString(u1);
+        Address u2=Util.addressFromString(s);
+        assert u2 instanceof SiteUUID;
+        assert u2.equals(u1);
+
+        Address ip1=new IpAddress(7500);
+        s=Util.addressToString(ip1);
+        Address ip2=Util.addressFromString(s);
+        assert ip1.equals(ip2);
+        ip1=new IpAddress("127.0.0.1", 7500);
+        s=Util.addressToString(ip1);
+        ip2=Util.addressFromString(s);
+        assert ip1.equals(ip2);
     }
 
     protected static void check(Enumeration<Integer> en, Integer[] expected) {

@@ -118,6 +118,9 @@ public class Util {
     public static final boolean                     can_bind_to_mcast_addr;
     protected static ResourceBundle                 resource_bundle;
     static DateTimeFormatter                        UTF_FORMAT=DateTimeFormatter.ofPattern("E MMM d H:m:s 'UTC' y");
+    protected static final String                   UUID_PREFIX="uuid://";
+    protected static final String                   SITE_UUID_PREFIX="site-addr://";
+    protected static final String                   IP_PREFIX="ip://";
 
     static {
 
@@ -1039,8 +1042,6 @@ public class Util {
         return streamableFromByteBuffer(factory, buffer, 0, buffer.length);
     }
 
-
-
     /**
      * Poor man's serialization of an exception. Serializes only the message, stack trace and cause (not suppressed exceptions)
      */
@@ -1887,6 +1888,42 @@ public class Util {
         return retval;
     }
 
+    public static String addressToString(Address addr) {
+        if(addr == null)
+            return null;
+        if(addr.isSiteAddress()) { // SiteUUID
+            SiteUUID su=(SiteUUID)addr;
+            return String.format("%s%s:%s:%s", SITE_UUID_PREFIX, su.toStringLong(), su.getName(), su.getSite());
+        }
+        Class<? extends Address> cl=addr.getClass();
+        if(UUID.class.equals(cl))
+            return String.format("%s%s", UUID_PREFIX, ((UUID)addr).toStringLong());
+        if(IpAddress.class.equals(cl))
+            return String.format("%s%s", IP_PREFIX, addr);
+        return null;
+    }
+
+    public static Address addressFromString(String s) throws Exception {
+        if(s == null)
+            return null;
+        int index=s.indexOf(UUID_PREFIX);
+        if(index >= 0)
+            return UUID.fromString(s.substring(index+UUID_PREFIX.length()));
+        index=s.indexOf(SITE_UUID_PREFIX);
+        if(index >= 0) {
+            String[] tmp=s.substring(index + SITE_UUID_PREFIX.length()).split(":");
+            if(tmp.length == 1)
+                return UUID.fromString(tmp[0]);
+            UUID u=UUID.fromString(tmp[0]);
+            return new SiteUUID(u, tmp[1], tmp[2]);
+        }
+        index=s.indexOf(IP_PREFIX);
+        if(index >= 0)
+            return new IpAddress(s.substring(index + IP_PREFIX.length()));
+        return null;
+
+
+    }
 
     public static void writeStreamable(Streamable obj,DataOutput out) throws IOException {
         if(obj == null) {

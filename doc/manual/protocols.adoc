@@ -585,10 +585,10 @@ link:$$https://github.com/belaban/JGroups/blob/master/doc/design/CloudBasedDisco
 ===== Removal of zombie files
 
 By default, a new coordinator C never removes a file created by an old coordinator `A`. E.g. in `{A,B,C,D}` (with
-coordinator `A`), if `C` becomes coordinator on a split `{A,B} | {C,D}`, then `C` doesn't remove `A`'s file, as there
+coordinator `A`), if `C` becomes coordinator on a split `{A,B} | {C,D}`, then `C` doesn't remove `A` 's file, as there
 is no way for `C` to know whether `A` crashed or whether `A` was partitioned away.
 
-Every coordinator `P` installs a shutdown hook which removes `P`'s file on termination. However, this doesn't apply
+Every coordinator `P` installs a shutdown hook which removes `P` 's file on termination. However, this doesn't apply
 to a process killed ungracefully, e.g. by `kill -9`. In this case, no shutdown hook will get called. If we had view
 `{A,B,C}`, and `A` was killed via kill -9, and `B` takes over, we'd have files `A.list` and `B.list`.
 
@@ -613,7 +613,7 @@ it is recommended to set both attributes to false.
 ${FILE_PING}
 
 
-
+[[JDBC_PING]]
 ==== JDBC_PING
 
 JDBC_PING uses a DB to store information about cluster nodes used for discovery. All cluster nodes are supposed to be
@@ -623,13 +623,13 @@ When a node starts, it queries information about existing members from the datab
 then asks the coord to join the cluster. It also inserts information about itself into the table, so others can
 subsequently find it.
 
-When a node P has crashed, the current coordinator removes P's information from the DB. However, if there is a network
+When a node P has crashed, the current coordinator removes `P` 's information from the DB. However, if there is a network
 split, then this can be problematic, as crashed members cannot be told from partitioned-away members.
 
 For instance, if we have `{A,B,C,D}`, and the split creates 2 subclusters `{A,B}` and `{C,D}`,
 then `A` would remove `{C,D}` because it thinks they crashed, and - likewise - `C` would remove `{A,B}`.
 
-To solve this, every member re-inserts its information into the DB after a _view change_. So when `C` and `D`'s view
+To solve this, every member re-inserts its information into the DB after a _view change_. So when `C` and `D` 's view
 changes from `{A,B,C,D}` to `{C,D}`, both sides of the split re-insert their information.
 Ditto for the other side of the network split.
 
@@ -655,6 +655,89 @@ NOTE: Processes killed with kill -3 are removed from the DB as a shutdown handle
 
 ${JDBC_PING}
 
+[[JDBC_PING2]]
+==== JDBC_PING2
+
+<<JDBC_PING>> is quite old (created in 2010) and hasn't seen much maintenance ever since. JDBC_PING2
+(https://issues.redhat.com/browse/JGRP-2795) is the cleaned-up and refactored version of it. It changes the database
+schema, hence the new name.
+
+Besides the refactoring, the main change is the new schema. Whereas the old schema has binary data (`PingData`),
+the new one has only strings (varchars) and a boolean. It consists of
+
+* `address`: the stringified UUID (identity of a member)
+* `name`: the logical name of a member
+* `cluster`: the cluster name
+* `ip`: the IP address and port of the member
+* `coord`: whether this member is a coordinator
+
+Example:
+....
+bela=# select * from jgroups;
+                   address                   | name | cluster |         ip         | coord
+---------------------------------------------+------+---------+--------------------+-------
+ uuid://eb4c91b5-238c-4dc3-b241-24017d14e8af | A    | chat    | 192.168.1.110:7800 | t
+ uuid://a023a43b-c68c-48af-ba6f-c686c953698f | B    | chat    | 192.168.1.110:7801 | f
+(2 rows)
+....
+
+Whereas only binary data was seen for `address`, `ip` and `coord`, we now see human-readable data, which is
+helpful for trouble-shooting / auditing / reporting.
+
+In additional, upgrading is possibly helped by this, as incompatible JGroups versions might be able to read each
+other's data.
+
+===== Injecting a datasource
+As an alternative to setting `connection_url`, `connection_username`, `connection_password` and `connection_driver`,
+if an application already has a datasource configured, it can be injected into `JDBC_PING2`. This can be done in
+two ways:
+
+* Fetching it from JNDI: to do this, `datasource_jndi_name` needs to be set
+* User-defined code: `datasource_injecter_class` can be set to a fully-qualified class name, which implements
+`Function<JDBC_PING,DataSource>`. An instance `inst` of this class will be created and and `inst.apply(jdbc)` will
+be called, where `jdbc` points to the `JDBC_PING2` instance. The returned datasource will be used.
+
+===== Use of stored procedures
+The default SQL statements used by `JDBC_PING2` are basic, to accommodate a wide number of SQL dialects. This can be
+inefficient, especially when inserting a new row: the insertion needs to delete an existing row, before adding a new
+one. This results in a `DELETE` being sent to the database, followed by an `INSERT`, resulting in two roundtrips.
+
+To reduce the two roundtrip to one, we can use a stored procedure (defined in `insert_sp`), for example (Postgres):
+[source,xml]
+----
+<JDBC_PING2
+  insert_sp="CREATE PROCEDURE deleteAndInsert
+               (addr varchar(200), name varchar(200), cluster varchar(200), ip varchar(200), coord boolean)
+               LANGUAGE SQL
+               BEGIN ATOMIC
+                 DELETE from jgroups where address = addr;
+                 INSERT INTO jgroups VALUES(addr, name, cluster, ip, coord);
+               END"
+  call_insert_sp="call deleteAndInsert(?,?,?,?,?);"
+/>
+----
+
+The `insert_sp` defines a stored procedure `deleteAndInsert` accepting parameters `address`, `name`, `cluster`, `ip`
+and `coord`. It first deletes an existing (or non-existing row) with the same address, then inserts the new one.
+
+The stored procedure is called with the SQL statement defined in `call_insert_sp`. There are samples shipped with
+JGroups for a number of databases, e.g. Postgres, MySql, hsqldb.
+
+
+===== Upgrading from JDBC_PING
+Since the schema changed between `JDBC_PING` and `JDBC_PING2`, an upgrade needs to be done from the former to the latter.
+This is quite simple: add `JDBC_PING2` to the new configuration, so that both protocols are present. The old one will
+read from table `jgroupsping` (default); the new one from `jgroups` (table names can of course be changed).
+
+Discovery always asks all discovery protocols for members, so both `JDBC_PING` and `JDBC_PING2` are involved.
+
+When done upgrading, the old `JDBC_PING` protocol can simply be removed.
+
+NOTE: Another advantage of multiple `JDBC_PING` protocols in the same stack is that multiple databases can be used
+for high redundancy; when one DB fails, members will still be able to discover each other with the help of the
+second database.
+
+${JDBC_PING2}
 
 
 ==== BPING
