@@ -270,9 +270,14 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(policy == null)
             return;
 
-        msg_processing_policy=policy.startsWith("submit")? new SubmitToThreadPool() :
-          policy.startsWith("max")? new MaxOneThreadPerSender() :
-            policy.startsWith("direct")? new PassRegularMessagesUpDirectly() : null;
+        if(policy.startsWith("submit"))
+            msg_processing_policy=new SubmitToThreadPool();
+        else if(policy.startsWith("max"))
+            msg_processing_policy=new MaxOneThreadPerSender();
+        else if(policy.startsWith("direct"))
+            msg_processing_policy=new PassRegularMessagesUpDirectly();
+        else if(policy.startsWith("unbatch"))
+            msg_processing_policy=new UnbatchOOBBatches();
         try {
             if(msg_processing_policy == null) {
                 Class<MessageProcessingPolicy> clazz=(Class<MessageProcessingPolicy>)Util.loadClass(policy, getClass());
