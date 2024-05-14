@@ -24,18 +24,21 @@ public class TIME extends Protocol {
     @ManagedAttribute(description="Average delivery time (in microseconds) for message batches")
     protected final AverageMinMax up_delivery_batches=new AverageMinMax().unit(TimeUnit.MICROSECONDS);
 
+    @ManagedAttribute(description="Average size of received message batches")
+    protected final AverageMinMax avg_up_batch_size=new AverageMinMax();
+
     @ManagedAttribute(description="Average down delivery time (in microseconds)")
     protected final AverageMinMax down_delivery=new AverageMinMax().unit(TimeUnit.MICROSECONDS);
 
     @Property(description="Enables or disables measuring times of messages sent down")
-    protected boolean down_msgs;
+    protected boolean             down_msgs;
 
     @Property(description="Enables or disables measuring times of message batches received from below")
-    protected boolean up_batches=true;
+    protected boolean             up_batches=true;
 
     @Property(description="Enables or disables measuring times of messages received from below. Attribute " +
       "up_batches has to be true, or else up_msgs will be ignored")
-    protected boolean up_msgs;
+    protected boolean             up_msgs;
 
     /*@Property(description="When enabled, the delay until a message in a batch is processed gets added to the " +
       "up-processing time of a message. Otherwise the up-processing time of a message is the up-processing " +
@@ -47,6 +50,7 @@ public class TIME extends Protocol {
         down_delivery.clear();
         up_delivery_msgs.clear();
         up_delivery_batches.clear();
+        avg_up_batch_size.clear();
     }
 
 
@@ -96,7 +100,7 @@ public class TIME extends Protocol {
             up_prot.up(batch);
             return;
         }
-
+        int size=batch.size();
         long start=System.nanoTime();
         try {
             up_prot.up(batch);
@@ -104,15 +108,7 @@ public class TIME extends Protocol {
         finally {
             long time=(System.nanoTime() - start) / 1000; // us
             add(up_delivery_batches, time);
-            /*if(up_msgs) {
-                int size=batch.size();
-                double processing_time=include_delay? avgTimePerMessageIncludingDelay(size, time) : (double)time/size;
-                long rounded=Math.round(processing_time);
-
-                // it might be better to include this value 'size' times, so that individual messages in a batch have
-                // the same weight as individual messages
-                add(up_delivery_msgs, rounded);
-            }*/
+            avg_up_batch_size.add(size);
         }
     }
 
