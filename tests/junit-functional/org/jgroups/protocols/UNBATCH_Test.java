@@ -5,6 +5,7 @@ import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.Protocol;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -37,9 +38,20 @@ public class UNBATCH_Test {
 
     /** Tests that all unicasts sent by A to B are received as single messages by B */
     public void testUnicastSingleMessages() throws Exception {
-        Address target=b.getAddress();
-        for(int i=1; i <= 100; i++)
-            a.send(target, i);
+        sendMessages(b.getAddress(), false);
+        Util.waitUntil(5000, 100, () -> rb.numMsgs() == 100, () -> print(b));
+        System.out.printf("msgs:\n%s\n", print(b));
+        assert rb.numSingleMsgs() == 100;
+        assert rb.numBatches() == 0;
+    }
+
+    /**
+     * Tests that no unicast OOB message batches are received with message processing policy being
+     * {@link org.jgroups.util.UnbatchOOBBatches}
+     */
+    public void testUnicastBatchesWithUnbatchPolicy() throws Exception {
+        setUnbatchPolicy(a,b);
+        sendMessages(b.getAddress(), true);
         Util.waitUntil(5000, 100, () -> rb.numMsgs() == 100, () -> print(b));
         System.out.printf("msgs:\n%s\n", print(b));
         assert rb.numSingleMsgs() == 100;
@@ -48,12 +60,33 @@ public class UNBATCH_Test {
 
     /** Tests that all multicasts sent by A to B are received as single messages by A and B */
     public void testMulticastSingleMessages() throws Exception {
-        for(int i=1; i <= 100; i++)
-            a.send(null, i);
+        sendMessages(null, false);
         Util.waitUntil(5000, 100, () -> ra.numMsgs() == 100 && rb.numMsgs() == 100, () -> print(a,b));
         System.out.printf("msgs:\n%s\n", print(a,b));
         assert ra.numSingleMsgs() == 100 && rb.numSingleMsgs() == 100;
         assert ra.numBatches() == 0 && rb.numBatches() == 0;
+    }
+
+
+    public void testMulticastBatchesWithUnbatchPolicy() throws Exception {
+        setUnbatchPolicy(a,b);
+        sendMessages(null, true);
+        Util.waitUntil(500000, 100, () -> ra.numMsgs() == 100 && rb.numMsgs() == 100, () -> print(a,b));
+        System.out.printf("msgs:\n%s\n", print(a,b));
+        assert rb.numBatches() == 0 && rb.numSingleMsgs() == 100;
+        // we *cannot* assert that A doesn't get looped-back batches:
+        // * NAKACK2.down(Message msg) adds msg to the table, then loops back if dest==sender
+        // * NAKACK2.handleMessage() delivers an OOB message, then calls removeAndDeliver(): when a message was added
+        //   to the table, but not yet marked as OOB_DELIVERED, an OOB batch may be created
+    }
+
+    protected void sendMessages(Address target, boolean oob) throws Exception {
+        for(int i=1; i <= 100; i++) {
+            Message msg=new ObjectMessage(target, i);
+            if(oob)
+                msg.setFlag(Message.Flag.OOB);
+            a.send(msg);
+        }
     }
 
     protected static String print(JChannel... channels) {
@@ -72,6 +105,14 @@ public class UNBATCH_Test {
           new GMS().setJoinTimeout(100),
         };
         return new JChannel(prots).name(name);
+    }
+
+    protected static void setUnbatchPolicy(JChannel ... channels) {
+        for(JChannel ch: channels) {
+            ProtocolStack stack=ch.stack();
+            stack.removeProtocol(UNBATCH.class);
+            stack.getTransport().setMessageProcessingPolicy("unbatch");
+        }
     }
 
     protected static class MyReceiver implements Receiver {
