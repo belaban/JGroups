@@ -1,16 +1,10 @@
 
 
-org.jgroups.protocols.PerDestinationBundler$SendBuffer.addMessage
-
-org.jgroups.protocols.PerDestinationBundler$SendBuffer._addMessage
-
-org.jgroups.protocols.PerDestinationBundler$SendBuffer.sendMessages
-
-org.jgroups.protocols.PerDestinationBundler$SendBuffer.sendSingleMessage
-
-org.jgroups.protocols.PerDestinationBundler$SendBuffer.sendMessageList
 
 org.jgroups.protocols.TP.doSend
 
-org.jgroups.util.Util.writeMessageList
+org.jgroups.protocols.BaseBundler.sendBundledMessages
 
+org.jgroups.protocols.BaseBundler.sendSingleMessage
+
+org.jgroups.protocols.BaseBundler.sendMessageList
