@@ -10,6 +10,11 @@ fi
 PGM=$1
 SCRIPT=$2
 
+if [ ! -f $SCRIPT ]; then
+   echo "** Script $SCRIPT not found **"
+   exit 1
+fi
+
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 LIB=`dirname $SCRIPT_DIR`/lib
 BM_OPTS="-Dorg.jboss.byteman.compile.to.bytecode=true"
