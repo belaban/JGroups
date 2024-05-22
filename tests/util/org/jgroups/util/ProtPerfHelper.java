@@ -7,7 +7,9 @@ import org.jgroups.protocols.ProtPerfHeader;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.Protocol;
+import org.jgroups.stack.ProtocolStack;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,9 +50,31 @@ public class ProtPerfHelper extends Helper {
         if(prot != null && hdr.startDown() > 0) {
             long time=System.nanoTime() - hdr.startDown(); // ns
             if(time > 0)
-                ph.add(getClusterName(prot), prot.getClass(), time, true);
+                ph.add(getClusterName(prot), prot.getName(), time, true);
         }
         hdr.startDown(System.nanoTime());
+    }
+
+    @SuppressWarnings("MethodMayBeStatic")
+    public void downTime(String cluster, Message msg, String name) {
+        ProtPerfHeader hdr=getOrAddHeader(msg);
+        if(hdr.startDown() > 0) {
+            long time=System.nanoTime() - hdr.startDown(); // ns
+            if(time > 0)
+                ph.add(cluster, name, time, true);
+        }
+        hdr.startDown(System.nanoTime());
+    }
+
+    public void downTime(String cluster, List<Message> list, String name) {
+        for(Message msg: list)
+            downTime(cluster, msg, name);
+    }
+
+
+    @SuppressWarnings("MethodMayBeStatic")
+    public void downTime(String cluster, String name, long time) {
+        ph.add(cluster, name, time, true);
     }
 
 
@@ -61,7 +85,7 @@ public class ProtPerfHelper extends Helper {
         if(prot != null && hdr.startUp() > 0) {
             long time=System.nanoTime() - hdr.startUp(); // ns
             if(time > 0)
-                ph.add(getClusterName(prot), prot.getClass(), time, false);
+                ph.add(getClusterName(prot), prot.getName(), time, false);
         }
         hdr.startUp(System.nanoTime());
     }
@@ -72,7 +96,7 @@ public class ProtPerfHelper extends Helper {
         if(prot != null && batch.timestamp() > 0) {
             long time=System.nanoTime() - batch.timestamp(); // ns
             if(time > 0)
-                ph.add(getClusterName(prot), prot.getClass(), time, false);
+                ph.add(getClusterName(prot), prot.getName(), time, false);
         }
         batch.timestamp(System.nanoTime());
     }
@@ -115,8 +139,8 @@ public class ProtPerfHelper extends Helper {
 
 
     protected static class ProtPerfProbeHandler implements DiagnosticsHandler.ProbeHandler {
-        protected final Map<String,List<Class<? extends Protocol>>>      ordering;
-        protected final Map<String,Map<Class<? extends Protocol>,Entry>> map;
+        protected final Map<String,List<String>>      ordering;
+        protected final Map<String,Map<String,Entry>> map;
 
         public ProtPerfProbeHandler() {
             ordering=Util.createConcurrentMap(20);
@@ -125,8 +149,8 @@ public class ProtPerfHelper extends Helper {
 
         public void addOrdering(TP transport) {
             List<Protocol> protocols=transport.getProtocolStack().getProtocols();
-            List<Class<? extends Protocol>> classes=protocols.stream().map(Protocol::getClass).collect(Collectors.toList());
-            ordering.putIfAbsent(transport.getClusterName(), classes);
+            List<String>   prot_names=protocols.stream().map(Protocol::getName).collect(Collectors.toList());
+            ordering.putIfAbsent(transport.getClusterName(), prot_names);
         }
 
         public Map<String,String> handleProbe(String... keys) {
@@ -158,7 +182,8 @@ public class ProtPerfHelper extends Helper {
         }
 
         public String[] supportedKeys() {
-            return new String[]{"perf", "perf-down", "perf-up", "perf-down-detailed", "perf-up-detailed", "perf-reset"};
+            return new String[]{"perf", "perf-down", "perf-up", "perf-down-detailed", "perf-up-detailed",
+              "perf-reset", "perf-help"};
         }
 
         // perf-down=<clustername>: returns '<clustername>'
@@ -168,18 +193,18 @@ public class ProtPerfHelper extends Helper {
             return key.substring(index+1);
         }
 
-        protected void add(String cluster, Class<? extends Protocol> clazz, long value, boolean down) {
+        protected void add(String cluster, String name, long value, boolean down) {
             if(cluster == null)
                 cluster=DEFAULT;
-            Map<Class<? extends Protocol>,Entry> m=map.computeIfAbsent(cluster, k -> Util.createConcurrentMap(20));
-            Entry e=m.computeIfAbsent(clazz, cl -> new Entry());
+            Map<String,Entry> m=map.computeIfAbsent(cluster, k -> Util.createConcurrentMap(20));
+            Entry e=m.computeIfAbsent(name, cl -> new Entry());
             e.add(value, down);
         }
 
         protected String dumpStats(String cluster, boolean down, boolean up, boolean detailed) {
             if(cluster == null)
                 return dumpAllStacks(down, up, detailed);
-            Map<Class<? extends Protocol>,Entry> m=map.get(cluster);
+            Map<String,Entry> m=map.get(cluster);
             return m != null ? dumpStats(cluster, m, down, up, detailed) : String.format("cluster '%s' not found", cluster);
         }
 
@@ -189,30 +214,54 @@ public class ProtPerfHelper extends Helper {
               .collect(Collectors.joining("\n"));
         }
 
-        protected String dumpStats(String cluster, Map<Class<? extends Protocol>,Entry> m,
-                                          boolean down, boolean up, boolean detailed) {
+        protected String dumpStats(String cluster, Map<String,Entry> m, boolean down, boolean up, boolean detailed) {
+            String format=String.format("%%-20s | %%%ds", detailed? 25 : 12);
             double avg_down_sum=0, avg_up_sum=0;
-            List<Class<? extends Protocol>> order=ordering.get(cluster);
+            List<String> order=ordering.get(cluster);
             if(order != null) {
+                List<String> other_keys=new ArrayList<>(m.keySet());
+                other_keys.removeAll(order);
+                other_keys.remove(ProtocolStack.class.getSimpleName());
                 StringBuilder sb=new StringBuilder("\n");
-                for(Class<? extends Protocol> cl: order) {
-                    Entry e=m.get(cl);
+                for(String name: order) {
+                    Entry e=m.get(name);
                     if(e != null) {
                         if(down)
                             avg_down_sum+=e.avg_down.getAverage();
                         else
                             avg_up_sum+=e.avg_up.getAverage();
                     }
-                    sb.append(String.format("%-20s %s\n", cl.getSimpleName() + ":", e == null? "n/a" : e.toString(down,up,detailed)));
+                    sb.append(String.format(format, name + ":", e == null? "n/a" : e.toString(down,up,detailed)));
+                    sb.append("\n");
                 }
-                sb.append("-".repeat(30));
-                sb.append(String.format("\n%-20s %s\n", "TOTAL" + ":",
+                if(!other_keys.isEmpty()) {
+                    for(String name: other_keys) {
+                        Entry e=m.get(name);
+                        if(e != null) {
+                            if(down) {
+                                if(e.avg_down.count() == 0)
+                                    continue;
+                                avg_down_sum+=e.avg_down.getAverage();
+                            }
+                            else {
+                                if(e.avg_up.count() == 0)
+                                    continue;
+                                avg_up_sum+=e.avg_up.getAverage();
+                            }
+                        }
+                        sb.append(String.format(format, "  " + name + ":", e == null? "  n/a" : e.toString(down,up,detailed)));
+                        sb.append("\n");
+                    }
+                }
+                sb.append("-".repeat(34)).append("\n");
+                sb.append(String.format(format, "TOTAL:",
                                         down? printTime(avg_down_sum, NANOSECONDS) : printTime(avg_up_sum, NANOSECONDS)));
+                sb.append("\n");
                 return sb.toString();
             }
             else
                 return m.entrySet().stream()
-                  .map(e -> String.format("%-20s %s", e.getKey().getSimpleName() + ":", e.getValue().toString(down, up, detailed)))
+                  .map(e -> String.format(format, e.getKey() + ":", e.getValue().toString(down, up, detailed)))
                   .collect(Collectors.joining("\n"));
         }
 
@@ -254,14 +303,21 @@ public class ProtPerfHelper extends Helper {
         }
 
         public String toString(boolean down, boolean up, boolean detailed) {
-            return String.format("%s %s", down? print(avg_down, detailed) : "", up? print(avg_up, detailed) : "");
+            StringBuilder sb=new StringBuilder();
+            if(down)
+                sb.append(print(avg_down, detailed));
+            if(up) {
+                if(down)
+                    sb.append(" ");
+                sb.append(print(avg_up, detailed));
+            }
+            return sb.toString();
         }
 
         public static String print(AverageMinMax avg, boolean detailed) {
             return detailed?
               avg.toString() :
-              String.format("%,.2f %s (%s)", avg.getAverage()/1000.0, "us",
-                            String.format("%,d", avg.count()));
+              Util.printTime(avg.getAverage(), NANOSECONDS);
         }
     }
 }

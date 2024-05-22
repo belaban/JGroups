@@ -193,3 +193,69 @@ BIND msg=$1;
 IF TRUE
    DO setTime(msg, 0, true);
 ENDRULE
+
+# Measures time for sending a message via TP.doSend()
+RULE Begin TP.doSend()
+CLASS ^TP
+HELPER org.jgroups.util.ProtPerfHelper
+COMPILE
+METHOD doSend
+AT ENTRY
+BIND curr_thread=Thread.currentThread();
+IF TRUE
+   DO link(curr_thread, System.nanoTime());
+ENDRULE
+
+RULE End TP.doSend()
+CLASS ^TP
+HELPER org.jgroups.util.ProtPerfHelper
+COMPILE
+METHOD doSend
+AT EXIT
+BIND curr_thread=Thread.currentThread();
+     cluster=$this.getClusterName();
+     start_time:Long=unlink(curr_thread);
+     diff:long=System.nanoTime() - start_time;
+IF TRUE
+   DO downTime(cluster, "doSend", diff);
+ENDRULE
+
+
+# Measures the time from when a message is added to the TQB's queue (TQB.send()), until it is serialized (and then sent)
+RULE Begin QueueTime
+CLASS TransferQueueBundler
+HELPER org.jgroups.util.ProtPerfHelper
+COMPILE
+METHOD send(Message)
+AT ENTRY
+BIND msg=$1;
+IF TRUE
+   DO setTime(msg, true);
+ENDRULE
+
+
+RULE TransferQueueBundler.sendSingleMessage()
+CLASS BaseBundler
+HELPER org.jgroups.util.ProtPerfHelper
+COMPILE
+METHOD sendSingleMessage
+AT ENTRY
+BIND msg=$1;
+     cluster=$this.transport.getClusterName();
+IF TRUE
+   DO System.out.println("-- sending single msg " + msg);
+      downTime(cluster, message, "tqb");
+ENDRULE
+
+RULE TransferQueueBundler.sendMessageList()
+CLASS BaseBundler
+HELPER org.jgroups.util.ProtPerfHelper
+COMPILE
+METHOD sendMessageList
+AT ENTRY
+BIND dest=$1;
+     cluster=$this.transport.getClusterName();
+     list=$3;
+IF TRUE
+   DO downTime(cluster, list, "tqb");
+ENDRULE
