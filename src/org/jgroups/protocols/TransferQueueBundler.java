@@ -52,8 +52,6 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
         this(new ArrayBlockingQueue<>(Util.assertPositive(capacity, "bundler capacity cannot be " + capacity)));
     }
 
-    public Thread                getThread()             {return bundler_thread;}
-
     @ManagedAttribute(description="Size of the queue")
     public int                   getQueueSize()          {return queue.size();}
 
@@ -96,6 +94,10 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
             }
         }
         drain();
+    }
+
+    public void renameThread() {
+        transport.getThreadFactory().renameThread(THREAD_NAME, bundler_thread);
     }
 
     public int size() {

@@ -56,7 +56,6 @@ public class RingBufferBundler extends BaseBundler {
     }
 
     public RingBuffer<Message> buf()                     {return rb;}
-    public Thread              getThread()               {return bundler_thread.getThread();}
     public int                 size()                    {return rb.size();}
     public int                 getQueueSize()            {return rb.size();}
     public int                 numSpins()                {return num_spins;}
@@ -83,6 +82,10 @@ public class RingBufferBundler extends BaseBundler {
 
     public void stop() {
         bundler_thread.stop();
+    }
+
+    public void renameThread() {
+        transport.getThreadFactory().renameThread(THREAD_NAME, bundler_thread.getThread());
     }
 
     public void send(Message msg) throws Exception {
