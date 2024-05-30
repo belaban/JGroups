@@ -550,13 +550,15 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     public Bundler           getBundler()             {return bundler;}
 
-    /** Installs a bundler. Needs to be done before the channel is connected */
+    /** Installs a bundler */
     public <T extends TP> T setBundler(Bundler bundler) {
-        if(bundler != null)
-            this.bundler=bundler;
+        if(this.bundler != null)
+            this.bundler.stop();
+        bundler.init(this);
+        bundler.start();
+        this.bundler=bundler;
         return (T)this;
     }
-
 
     public ThreadPool getThreadPool() {
         return thread_pool;
@@ -771,8 +773,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             msg_factory=clazz.getDeclaredConstructor().newInstance();
         }
 
-        bundler=createBundler(bundler_type, getClass());
-        bundler.init(this);
+        if(bundler == null) {
+            bundler=createBundler(bundler_type, getClass());
+            bundler.init(this);
+        }
     }
 
 
