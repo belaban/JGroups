@@ -39,8 +39,6 @@ public class HeadersResizeTest {
 
     public void testResizing() throws Exception {
         BatchingBundler bundler=new BatchingBundler();
-        TP transport=a.getProtocolStack().getTransport();
-        bundler.init(transport);
         a.getProtocolStack().getTransport().setBundler(bundler);
 
         MyReceiver receiver=new MyReceiver();

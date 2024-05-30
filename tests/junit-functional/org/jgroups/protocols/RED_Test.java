@@ -91,7 +91,6 @@ public class RED_Test {
         transport.getProtocolStack().removeProtocol(UNICAST3.class);
         retval.getProtocolStack().insertProtocolInStack(red, transport, ProtocolStack.Position.ABOVE);
         bundler=new DelayBundler();
-        bundler.init(transport);
         transport.setBundler(bundler);
         ((GMS)retval.getProtocolStack().findProtocol(GMS.class)).setJoinTimeout(5);
         return retval;
