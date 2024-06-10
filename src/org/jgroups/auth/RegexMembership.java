@@ -40,16 +40,15 @@ public class RegexMembership extends AuthToken {
         return "org.jgroups.auth.RegexMembership";
     }
 
-
-    public void init() throws Exception {
-        super.init();
+    @Override
+    public void start() throws Exception {
+        super.start();
         if(!match_ip_address && !match_logical_name)
             throw new IllegalArgumentException("either match_ip_address or match_logical_address has to be true");
         if(match_string == null)
             throw new IllegalArgumentException("match_string cannot be null");
         pattern=Pattern.compile(match_string);
     }
-
 
     public boolean authenticate(AuthToken token, Message msg) {
         Address sender=msg.getSrc();
