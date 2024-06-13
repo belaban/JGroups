@@ -202,11 +202,6 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
         if(jmx)
             JmxConfigurator.register(this, Util.getMBeanServer(), "jgroups:name=GossipRouter");
 
-        if(diag.isEnabled()) {
-            StackType ip_version=bind_addr instanceof Inet6Address? StackType.IPv6 : StackType.IPv4;
-            Configurator.setDefaultAddressValues(diag, ip_version);
-            diag.start();
-        }
         // Creating the DiagnosticsHandler _before_ the TLS socket factory makes the former use regular sockets;
         // if this was not the case, Probe would have to be extended to use SSLSockets, too
         if(tls.enabled()) {
@@ -222,6 +217,13 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
           .addConnectionListener(this)
           .connExpireTimeout(expiry_time).reaperInterval(reaper_interval).linger(linger_timeout);
         server.start();
+
+        if(diag.isEnabled()) {
+            StackType ip_version=bind_addr instanceof Inet6Address? StackType.IPv6 : StackType.IPv4;
+            Configurator.setDefaultAddressValues(diag, ip_version);
+            diag.start();
+        }
+
         Runtime.getRuntime().addShutdownHook(new Thread(GossipRouter.this::stop));
         return this;
     }
