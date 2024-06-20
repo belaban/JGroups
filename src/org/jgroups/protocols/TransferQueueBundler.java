@@ -1,6 +1,5 @@
 package org.jgroups.protocols;
 
-
 import org.jgroups.Message;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
@@ -42,14 +41,6 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
     protected static final String    THREAD_NAME="TQ-Bundler";
 
     public TransferQueueBundler() {
-    }
-
-    protected TransferQueueBundler(BlockingQueue<Message> queue) {
-        this.queue=queue;
-    }
-
-    public TransferQueueBundler(int capacity) {
-        this(new ArrayBlockingQueue<>(Util.assertPositive(capacity, "bundler capacity cannot be " + capacity)));
     }
 
     @ManagedAttribute(description="Size of the queue")
