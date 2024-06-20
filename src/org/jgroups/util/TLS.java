@@ -54,6 +54,8 @@ public class TLS implements Lifecycle {
     @Property(description="The type of the truststore")
     protected String           truststore_type="pkcs12";
 
+    protected SSLContext       ssl_context;
+
     @Property(description="Defines whether client certificate authentication is required. " +
       "Legal values are NONE, WANT or NEED")
     protected TLSClientAuth    client_auth=TLSClientAuth.NONE;
@@ -98,6 +100,9 @@ public class TLS implements Lifecycle {
     public String getTruststoreType()             {return truststore_type;}
     public TLS setTruststoreType(String t)        {this.truststore_type=t; return this;}
 
+    public SSLContext getSSLContext()             {return ssl_context;}
+    public TLS setSSLContext(SSLContext c)        {this.ssl_context=c; return this;}
+
     public TLSClientAuth getClientAuth()          {return client_auth;}
     public TLS setClientAuth(TLSClientAuth c)     {this.client_auth=c; return this;}
 
@@ -137,6 +142,8 @@ public class TLS implements Lifecycle {
     }
 
     public SocketFactory createSocketFactory() {
+        if (ssl_context != null)
+            return createSocketFactory(ssl_context);
         SSLContext context=createContext();
         return createSocketFactory(context);
     }
