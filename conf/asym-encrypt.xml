@@ -6,7 +6,7 @@
     <UDP />
     <PING/>
     <MERGE3/>
-    <FD_ALL3 timeout="8000" interval="3000"/>
+    <FD_ALL3 timeout="8s" interval="3s"/>
     <FD_SOCK2/>
     <VERIFY_SUSPECT/>
     <!-- Possibly use a second FRAG2 if the public/private keys added in ASYM_ENCRYPT to the payload make the message too big -->
@@ -22,5 +22,5 @@
     <UNICAST3/>
     <pbcast.STABLE/>
     <FRAG2/>
-    <pbcast.GMS join_timeout="2000" />
+    <pbcast.GMS join_timeout="2s" />
 </config>

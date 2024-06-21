@@ -10,9 +10,9 @@
     <MERGE3 />
     <FD_SOCK/>
     <FD_ALL/>
-    <VERIFY_SUSPECT timeout="1500"  />
-    <pbcast.NAKACK2 xmit_interval="500"/>
-    <UNICAST3 xmit_interval="500"/>
+    <VERIFY_SUSPECT timeout="1.5s"  />
+    <pbcast.NAKACK2 xmit_interval="0.5s"/>
+    <UNICAST3 xmit_interval="0.5s"/>
     <pbcast.STABLE />
     <pbcast.GMS print_local_addr="true" join_timeout="1000"/>
     <UFC />
