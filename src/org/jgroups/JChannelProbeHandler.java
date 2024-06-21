@@ -352,8 +352,21 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
 
 
     protected static void convert(Map<String,Map<String,Object>> in, Map<String,String> out) {
-        if(in != null)
+        if(in != null) {
+            for(Map<String,Object> m: in.values()) {
+                for(Map.Entry<String,Object> e: m.entrySet()) {
+                    Object val=e.getValue();
+                    if(val instanceof String) {
+                        String trimmed=((String)val).trim();
+                        if(!trimmed.equals(val)) {
+                            // replace "min_interval=15s " -> "min_interval=15s"
+                            m.replace(e.getKey(), val, trimmed);
+                        }
+                    }
+                }
+            }
             in.entrySet().stream().filter(e -> e.getValue() != null).forEach(e -> out.put(e.getKey(), e.getValue().toString()));
+        }
     }
 
 

@@ -160,7 +160,7 @@ public class NonReflectiveProbeHandler extends JChannelProbeHandler {
             ResourceDMBean.Accessor setter=m.get(attr_name);
             if(setter != null) {
                 Class<?> type=((ResourceDMBean.MethodAccessor)setter).getMethod().getParameterTypes()[0];
-                converted_value=Util.convert(attr_value, type);
+                converted_value=Util.convert(attr_value, type, null);
                 invoke(protocol_name, setter, attr_name, converted_value);
                 return;
             }
@@ -174,7 +174,7 @@ public class NonReflectiveProbeHandler extends JChannelProbeHandler {
         if(setter == null)
             throw new RuntimeException(String.format("attribute %s not found in protocol %s", attr_name, protocol_name));
         if(setter instanceof ResourceDMBean.FieldAccessor) {
-            converted_value=Util.convert(attr_value, ((ResourceDMBean.FieldAccessor)setter).getField().getType());
+            converted_value=Util.convert(attr_value, ((ResourceDMBean.FieldAccessor)setter).getField().getType(), null);
             invoke(protocol_name, setter, attr_name, converted_value);
         }
     }

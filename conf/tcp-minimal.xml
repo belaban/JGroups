@@ -30,16 +30,16 @@
              initial_hosts="${jgroups.tcpping.initial_hosts:localhost[7800],localhost[7801]}"
              return_entire_cache="${jgroups.tcpping.return_entire_cache:false}"
              port_range="${jgroups.tcp.port_range:2}"/>
-    <MERGE3 max_interval="120000"
-            min_interval="30000"/>
+    <MERGE3 max_interval="2m"
+            min_interval="30s"/>
     <FD_SOCK />
     <FD_ALL3 />
-    <VERIFY_SUSPECT timeout="1500"  />
-    <pbcast.NAKACK2 xmit_interval="500" use_mcast_xmit="false"/>
+    <VERIFY_SUSPECT timeout="1.5s"  />
+    <pbcast.NAKACK2 xmit_interval="500ms" use_mcast_xmit="false"/>
     <!--UNICAST3 conn_close_timeout="60000"/-->
-    <pbcast.STABLE desired_avg_gossip="50000"
+    <pbcast.STABLE desired_avg_gossip="50s"
                    max_bytes="4M"/>
-    <pbcast.GMS print_local_addr="true" join_timeout="500"/>
+    <pbcast.GMS print_local_addr="true" join_timeout="0.5s"/>
     <MFC max_credits="2M"
          min_threshold="0.4"/>
     <FRAG4 frag_size="60K"  />

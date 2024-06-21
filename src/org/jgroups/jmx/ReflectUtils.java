@@ -1,13 +1,16 @@
 package org.jgroups.jmx;
 
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
 import org.jgroups.blocks.MethodCall;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.util.Ref;
 import org.jgroups.util.Util;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Methods to get/set attributes and invoke operations of a given instance.
@@ -163,7 +166,7 @@ public class ReflectUtils {
             converted_args=new Object[args.length];
             Class<?>[] types=method.getParameterTypes();
             for(int i=0; i < args.length; i++)
-                converted_args[i]=Util.convert(args[i], types[i]);
+                converted_args[i]=Util.convert(args[i], types[i], null);
         }
         return call.invoke(target, converted_args);
     }
@@ -210,7 +213,9 @@ public class ReflectUtils {
         Exception e1=null, e2=null;
         Field field=Util.getField(target.getClass(), attr_name);
         if(field != null) {
-            Object value=Util.convert(attr_value, field.getType());
+            Property ann=field.getAnnotation(Property.class);
+            TimeUnit unit=(ann != null && ann.type() == AttributeType.TIME)? ann.unit() : null;
+            Object value=Util.convert(attr_value, field.getType(), unit);
             if(value != null) {
                 try {
                     Util.setField(field, target, value);
@@ -230,7 +235,7 @@ public class ReflectUtils {
                   ((ResourceDMBean.FieldAccessor)setter).getField().getType() :
                   setter instanceof ResourceDMBean.MethodAccessor?
                     ((ResourceDMBean.MethodAccessor)setter).getMethod().getParameterTypes()[0] : null;
-                Object converted_value=Util.convert(attr_value, type);
+                Object converted_value=Util.convert(attr_value, type, null);
                 setter.invoke(converted_value);
                 return;
             }

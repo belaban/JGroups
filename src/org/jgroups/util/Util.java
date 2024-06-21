@@ -25,6 +25,7 @@ import java.io.*;
 import java.lang.annotation.Annotation;
 import java.lang.management.*;
 import java.lang.reflect.*;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.*;
 import java.nio.ByteBuffer;
@@ -1404,13 +1405,14 @@ public class Util {
         return left.length - right.length;
     }
 
-    public static Object convert(String arg, Class<?> type) {
+    public static Object convert(String arg, Class<?> type, TimeUnit unit) {
         if(type == String.class) return arg;
         if(type == boolean.class || type == Boolean.class) return Boolean.valueOf(arg);
         if(type == byte.class    || type == Byte.class)    return Byte.valueOf(arg);
         if(type == short.class   || type == Short.class)   return Short.valueOf(arg);
         if(type == int.class     || type == Integer.class) return Integer.valueOf(arg);
-        if(type == long.class    || type == Long.class)    return Long.valueOf(arg);
+        if(type == long.class    || type == Long.class)
+            return unit != null? Util.readDurationLong(arg, unit) : Long.parseLong(arg);
         if(type == float.class   || type == Float.class)   return Float.valueOf(arg);
         if(type == double.class  || type == Double.class)  return Double.valueOf(arg);
         if(arg == null || arg.equals("null"))
@@ -2660,28 +2662,64 @@ public class Util {
     private static Tuple<String,Long> readBytes(String input) {
         input=input.trim().toLowerCase();
 
-        int index=-1;
+        int index;
         long factor=1;
 
         if((index=input.indexOf('k')) != -1)
             factor=1000;
         else if((index=input.indexOf("kb")) != -1)
             factor=1000;
+        else if((index=input.indexOf("kib")) != -1)
+            factor=1024;
         else if((index=input.indexOf('m')) != -1)
             factor=1_000_000;
         else if((index=input.indexOf("mb")) != -1)
             factor=1_000_000;
+        else if((index=input.indexOf("mib")) != -1)
+            factor=1_048_576;
         else if((index=input.indexOf('g')) != -1)
             factor=1_000_000_000;
         else if((index=input.indexOf("gb")) != -1)
             factor=1_000_000_000;
+        else if((index=input.indexOf("gib")) != -1)
+            factor=1_073_741_824;
+
+
+        String str=index != -1? input.substring(0,index) : input;
+        return new Tuple<>(str,factor);
+    }
+
+    public static long readDurationLong(String input, TimeUnit unit) {
+        Tuple<String,Long> tuple=readDuration(input);
+        BigDecimal num = new BigDecimal(tuple.getVal1());
+        return unit.convert(num.multiply(new BigDecimal(tuple.getVal2())).longValue(), TimeUnit.MILLISECONDS);
+    }
+
+    private static Tuple<String,Long> readDuration(String input) {
+        input=input.trim().toLowerCase();
+
+        int index;
+        long factor;
+
+        if((index=input.indexOf("ms")) != -1)
+            factor=1;
+        else if((index=input.indexOf("s")) != -1)
+            factor=1000;
+        else if((index=input.indexOf('m')) != -1)
+            factor=60_000;
+        else if((index=input.indexOf("h")) != -1)
+            factor=3_600_000;
+        else if((index=input.indexOf('d')) != -1)
+            factor=86_400_000;
+        else
+            factor=1;
 
         String str=index != -1? input.substring(0,index) : input;
         return new Tuple<>(str,factor);
     }
 
     /**
-     * MB nowadays doesn't mean 1024 * 1024 bytes, but 1 million bytes, see http://en.wikipedia.org/wiki/Megabyte
+     * MB nowadays doesn't mean 1024 * 1024 bytes, but 1 million bytes, see <a href="http://en.wikipedia.org/wiki/Megabyte">http://en.wikipedia.org/wiki/Megabyte</a>
      * @param bytes
      */
     public static String printBytes(double bytes) {
@@ -2714,8 +2752,6 @@ public class Util {
         if(path == null || path.isEmpty())
             return null;
         String[] tmp=path.split(separator + "+"); // multiple separators could be present
-        if(tmp == null)
-            return null;
         if(tmp.length == 0)
             return null;
 
