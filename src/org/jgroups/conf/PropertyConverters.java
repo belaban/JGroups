@@ -1,5 +1,6 @@
 package org.jgroups.conf;
 
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.Configurator;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Policy;
@@ -157,7 +158,13 @@ public final class PropertyConverters {
     public static class Default implements PropertyConverter {
 
 
-        public Object convert(Object obj, Class<?> propertyFieldType, String propertyName, String propertyValue,
+        @Override
+        public Object convert(Object obj, Class<?> propertyFieldType, String propertyName, String propertyValue, boolean check_scope, StackType ip_version) throws Exception {
+            return convert(null, obj, propertyFieldType, propertyName, propertyValue, check_scope, ip_version);
+        }
+
+        @Override
+        public Object convert(Property annotation, Object obj, Class<?> propertyFieldType, String propertyName, String propertyValue,
                               boolean check_scope, StackType ip_version) throws Exception {
             if(propertyValue == null)
                 throw new NullPointerException("Property value cannot be null");
@@ -166,8 +173,9 @@ public final class PropertyConverters {
                 return Boolean.parseBoolean(propertyValue);
             if(Integer.TYPE.equals(propertyFieldType))
                 return Util.readBytesInteger(propertyValue);
-            if(Long.TYPE.equals(propertyFieldType))
-                return Util.readBytesLong(propertyValue);
+            if(Long.TYPE.equals(propertyFieldType)) {
+                return annotation != null && annotation.type() == AttributeType.TIME ? Util.readDurationLong(propertyValue, annotation.unit()) : Util.readBytesLong(propertyValue);
+            }
             if(Byte.TYPE.equals(propertyFieldType))
                 return Byte.parseByte(propertyValue);
             if(Double.TYPE.equals(propertyFieldType))

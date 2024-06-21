@@ -8,7 +8,7 @@
     <UDP />
     <PING/>
     <MERGE3/>
-    <FD_ALL3 timeout="8000" interval="3000"/>
+    <FD_ALL3 timeout="8s" interval="3s"/>
     <FD_SOCK2/>
     <VERIFY_SUSPECT/>
 
@@ -27,5 +27,5 @@
     <AUTH auth_class="org.jgroups.auth.MD5Token"
           auth_value="chris"
           token_hash="MD5"/>
-    <pbcast.GMS join_timeout="2000" />
+    <pbcast.GMS join_timeout="2s" />
 </config>

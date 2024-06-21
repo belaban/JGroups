@@ -28,16 +28,16 @@
          bundler_type="no-bundler" />
 
     <MPING mcast_addr="224.0.0.5" />
-    <MERGE3 max_interval="120000"
-            min_interval="30000"/>
+    <MERGE3 max_interval="2m"
+            min_interval="30s"/>
     <FD_SOCK />
     <FD_ALL3 />
-    <VERIFY_SUSPECT timeout="1500"  />
+    <VERIFY_SUSPECT timeout="1.5s"  />
     <pbcast.NAKACK2 use_mcast_xmit="false"/>
-    <UNICAST3 conn_close_timeout="60000"/>
-    <pbcast.STABLE desired_avg_gossip="50000"
+    <UNICAST3 conn_close_timeout="1m"/>
+    <pbcast.STABLE desired_avg_gossip="50s"
                    max_bytes="4M"/>
-    <pbcast.GMS print_local_addr="true" join_timeout="500"/>
+    <pbcast.GMS print_local_addr="true" join_timeout="500ms"/>
     <MFC max_credits="2M"
          min_threshold="0.4"/>
     <UFC max_credits="2M"

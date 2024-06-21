@@ -12,20 +12,20 @@
          mcast_port="${jgroups.udp.mcast_port:45588}"
          thread_pool.min_threads="0"
          thread_pool.max_threads="200"
-         thread_pool.keep_alive_time="30000"/>
+         thread_pool.keep_alive_time="30s"/>
     <RED/>
     <PING />
-    <MERGE3 max_interval="30000"
-            min_interval="10000"/>
+    <MERGE3 max_interval="30s"
+            min_interval="10s"/>
     <FD_SOCK2/>
     <FD_ALL3/>
-    <VERIFY_SUSPECT2 timeout="1500"  />
+    <VERIFY_SUSPECT2 timeout="1.5s"  />
     <BARRIER />
-    <pbcast.NAKACK2 xmit_interval="500"/>
-    <UNICAST3 xmit_interval="500" />
-    <pbcast.STABLE desired_avg_gossip="50000"
+    <pbcast.NAKACK2 xmit_interval="0.5s"/>
+    <UNICAST3 xmit_interval="0.5s" />
+    <pbcast.STABLE desired_avg_gossip="50s"
                    max_bytes="4M"/>
-    <pbcast.GMS print_local_addr="true" join_timeout="1000"/>
+    <pbcast.GMS print_local_addr="true" join_timeout="1s"/>
     <MFC max_credits="4M"
          min_threshold="0.4"/>
     <UFC max_credits="4M"

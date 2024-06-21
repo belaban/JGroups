@@ -17,6 +17,11 @@ public interface PropertyConverter {
     Object convert(Object obj, Class<?> propertyFieldType, String propertyName, String propertyValue,
                    boolean check_scope, StackType ip_version) throws Exception;
 
+    default Object convert(Property annotation, Object obj, Class<?> propertyFieldType, String propertyName, String propertyValue,
+                           boolean check_scope, StackType ip_version) throws Exception {
+        return convert(obj, propertyFieldType, propertyName, propertyValue, check_scope, ip_version);
+    }
+
     /**
      * Converts the value to a string. The default is to simply invoke Object.toString(), however, some objects need
      * to be printed specially, e.g. a long array etc.
@@ -24,4 +29,6 @@ public interface PropertyConverter {
      * @return
      */
     String toString(Object value);
+
+
 }

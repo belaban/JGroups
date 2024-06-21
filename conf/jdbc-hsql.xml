@@ -10,7 +10,7 @@ JDBC_PING2 for hsqldb
             port_range="50"
             recv_buf_size="150000"
             send_buf_size="640000"
-            sock_conn_timeout="300"
+            sock_conn_timeout="300ms"
     />
 
     <!-- Uncomment attributes 'insert_sp' and 'call_insert_sp' if you want to use stored procedures -->
@@ -34,22 +34,22 @@ JDBC_PING2 for hsqldb
             call_insert_sp="call deleteAndInsert(?,?,?,?,?);"
             -->
     />
-    <MERGE3 min_interval="10000"
-            max_interval="30000"/>
+    <MERGE3 min_interval="10s"
+            max_interval="30s"/>
     <FD_SOCK2/>
-    <FD_ALL3 timeout="40000" interval="5000" />
+    <FD_ALL3 timeout="40s" interval="5s" />
     <VERIFY_SUSPECT2 />
     <pbcast.NAKACK2
             use_mcast_xmit="false"
-            xmit_interval="100"/>
+            xmit_interval="100ms"/>
     <UNICAST3
-            xmit_interval="100"/>
+            xmit_interval="100ms"/>
     <pbcast.STABLE
-            desired_avg_gossip="5000"
+            desired_avg_gossip="5s"
             max_bytes="1000000"/>
     <pbcast.GMS
             print_local_addr="false"
-            join_timeout="1000"
+            join_timeout="1s"
             max_join_attempts="1"/>
     <UFC max_credits="2000000"
          min_threshold="0.40"/>
