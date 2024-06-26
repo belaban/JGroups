@@ -131,7 +131,7 @@ public class PropertiesToAsciidoc {
         List<String[]> rows=new ArrayList<>(nameToDescription.size() +1);
         rows.add(new String[]{"Name", "Description"});
         for(Map.Entry<String,String> entry: nameToDescription.entrySet())
-            rows.add(new String[]{entry.getKey(), entry.getValue()});
+            rows.add(new String[]{"`" + entry.getKey() + "`", entry.getValue()});
 
         String tmp=createAsciidocTable(rows, clazz.getSimpleName(), "[align=\"left\",width=\"90%\",cols=\"2,10\",options=\"header\"]");
         props.put(clazz.getSimpleName(), tmp);
@@ -179,7 +179,7 @@ public class PropertiesToAsciidoc {
                     desc="n/a";
 
                 String name = annotation.name();
-                if(name.length() < 1)
+                if(name.isEmpty())
                     name=Util.methodNameToAttributeName(method.getName());
                 if(prefix != null && !prefix.isEmpty())
                     name=prefix + "." + name;
@@ -280,13 +280,14 @@ public class PropertiesToAsciidoc {
 
     private static String fileToString(File f) throws Exception {
         StringWriter output = new StringWriter();
-        FileReader input = new FileReader(f);
-        char[] buffer = new char[8 * 1024];
-        int n = 0;
-        while (-1 != (n = input.read(buffer))) {
-            output.write(buffer, 0, n);
-        }
-        return output.toString();
+       try (FileReader input = new FileReader(f)) {
+          char[] buffer = new char[8 * 1024];
+          int n;
+          while (-1 != (n = input.read(buffer))) {
+             output.write(buffer, 0, n);
+          }
+       }
+       return output.toString();
     }
 
     public static int copy(Reader input, Writer output) throws IOException {

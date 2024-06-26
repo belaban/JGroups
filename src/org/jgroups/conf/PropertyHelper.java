@@ -18,7 +18,7 @@ import java.util.Objects;
  */
 public final class PropertyHelper {
 
-    protected static final Log log=LogFactory.getLog(PropertyHelper.class);
+    private static final Log log=LogFactory.getLog(PropertyHelper.class);
 
     private PropertyHelper() {
         throw new InstantiationError("Must not instantiate this class");
@@ -74,17 +74,13 @@ public final class PropertyHelper {
         String name=obj instanceof Protocol? ((Protocol)obj).getName() : obj.getClass().getName();
 
         PropertyConverter propertyConverter=annotation.converter().getDeclaredConstructor().newInstance();
-        if(propertyConverter == null)
-            throw new Exception("Could not find property converter for field " + propertyName + " in " + name);
-        Object converted=null;
         try {
             String tmp=obj instanceof Protocol? ((Protocol)obj).getName() + "." + propertyName : propertyName;
-            converted=propertyConverter.convert(obj, field.getType(), tmp, prop, check_scope, ip_version);
+            return propertyConverter.convert(annotation, obj, field.getType(), tmp, prop, check_scope, ip_version);
         }
         catch(Exception e) {
             throw new Exception("Conversion of " + propertyName + " in " + name + " with property value " + prop + " failed", e);
         }
-        return converted;
     }
 
 
@@ -99,17 +95,13 @@ public final class PropertyHelper {
 
         String name=obj instanceof Protocol? ((Protocol)obj).getName() : obj.getClass().getName();
         PropertyConverter propertyConverter=annotation.converter().getDeclaredConstructor().newInstance();
-        if(propertyConverter == null)
-            throw new Exception("Could not find property converter for field " + propName + " in " + name);
-        Object converted=null;
         try {
             String tmp=obj instanceof Protocol? ((Protocol)obj).getName() + "." + propName : propName;
-            converted=propertyConverter.convert(obj, field.getType(), tmp, value, check_scope, ip_version);
+            return propertyConverter.convert(obj, field.getType(), tmp, value, check_scope, ip_version);
         }
         catch(Exception e) {
             throw new Exception("Conversion of " + name + "." + " with original property value " + value + " failed", e);
         }
-        return converted;
     }
 
 
@@ -130,18 +122,14 @@ public final class PropertyHelper {
         String propertyName=getPropertyName(method);
         String name=obj instanceof Protocol? ((Protocol)obj).getName() : obj.getClass().getName();
         PropertyConverter propertyConverter=annotation.converter().getDeclaredConstructor().newInstance();
-        if(propertyConverter == null)
-            throw new Exception("Could not find property converter for method " + propertyName + " in " + name);
-        Object converted=null;
         try {
             String tmp=obj instanceof Protocol? ((Protocol)obj).getName() + "." + propertyName : propertyName;
-            converted=propertyConverter.convert(obj, method.getParameterTypes()[0], tmp, prop, check_scope, ip_version);
+            return propertyConverter.convert(obj, method.getParameterTypes()[0], tmp, prop, check_scope, ip_version);
         }
         catch(Exception e) {
             throw new Exception("Conversion of " + propertyName + " in " + name +
                                   " with original property value " + prop + " failed. Exception is " + e, e);
         }
-        return converted;
     }
 
     public static boolean usesDefaultConverter(Field field) throws IllegalArgumentException {

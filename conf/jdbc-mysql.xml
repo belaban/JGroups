@@ -10,11 +10,11 @@
             port_range="50"
             recv_buf_size="150000"
             send_buf_size="640000"
-            sock_conn_timeout="300"
+            sock_conn_timeout="300ms"
             thread_pool.enabled="true"
             thread_pool.min_threads="1"
             thread_pool.max_threads="50"
-            thread_pool.keep_alive_time="60000"
+            thread_pool.keep_alive_time="60s"
     />
 
     <!-- Uncomment attributes 'insert_sp' and 'call_insert_sp' if you want to use stored procedures -->
@@ -48,11 +48,11 @@
     <UNICAST3
             xmit_interval="100"/>
     <pbcast.STABLE
-            desired_avg_gossip="5000"
+            desired_avg_gossip="5s"
             max_bytes="1000000"/>
     <pbcast.GMS
             print_local_addr="false"
-            join_timeout="1000"
+            join_timeout="1s"
             max_join_attempts="1"/>
     <UFC max_credits="2000000"
          min_threshold="0.40"/>
