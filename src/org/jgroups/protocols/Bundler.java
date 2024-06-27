@@ -42,5 +42,7 @@ public interface Bundler {
     int             getMaxSize();
     default Bundler setMaxSize(int s) {return this;}
 
+    default void renameThread() {}
+
     default void resetStats() {}
 }

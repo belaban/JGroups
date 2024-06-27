@@ -71,6 +71,9 @@ public class RingBufferBundlerLockless2 extends BaseBundler {
         bundler_thread.stop();
     }
 
+    public void renameThread() {
+        transport.getThreadFactory().renameThread(THREAD_NAME, bundler_thread.getThread());
+    }
 
     public void send(Message msg) throws Exception {
         if(msg == null)

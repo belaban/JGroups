@@ -67,7 +67,7 @@ public class PerDestinationBundler implements Bundler {
     protected Address                       local_addr;
     protected final Map<Address,SendBuffer> dests=Util.createConcurrentMap();
     protected static final Address          NULL=new NullAddress();
-
+    protected static final String           THREAD_NAME="pd-bundler";
 
     public int     size() {
         return dests.values().stream().map(SendBuffer::size).reduce(0, Integer::sum);
@@ -200,7 +200,7 @@ public class PerDestinationBundler implements Bundler {
         public SendBuffer start() {
             if(running)
                 stop();
-            bundler_thread=transport.getThreadFactory().newThread(this, "pd-bundler"); // new Thread(this, "pd-bundler");
+            bundler_thread=transport.getThreadFactory().newThread(this, THREAD_NAME);
             running=true;
             bundler_thread.start();
             return this;
@@ -213,6 +213,9 @@ public class PerDestinationBundler implements Bundler {
                 tmp.interrupt();
         }
 
+        public void renameThread() {
+            transport.getThreadFactory().renameThread(THREAD_NAME, bundler_thread);
+        }
 
         protected void send(Message msg) throws Exception {
             queue.put(msg);

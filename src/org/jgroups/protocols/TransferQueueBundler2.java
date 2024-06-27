@@ -83,8 +83,6 @@ public class TransferQueueBundler2 implements Bundler, Runnable {
         this(new ArrayBlockingQueue<>(assertPositive(capacity, "bundler capacity cannot be " + capacity)));
     }
 
-    public Thread                getThread()               {return bundler_thread;}
-
     public int                   getCapacity()       {return capacity;}
     public Bundler               setCapacity(int c)  {this.capacity=c; return this;}
     public int                   getMaxSize()        {return max_size;}
@@ -142,6 +140,10 @@ public class TransferQueueBundler2 implements Bundler, Runnable {
             }
         }
         drain();
+    }
+
+    public void renameThread() {
+        transport.getThreadFactory().renameThread(THREAD_NAME, bundler_thread);
     }
 
     public int size() {
