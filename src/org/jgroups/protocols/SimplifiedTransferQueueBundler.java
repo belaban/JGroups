@@ -5,7 +5,6 @@ import org.jgroups.Message;
 import org.jgroups.util.Util;
 
 import java.util.Objects;
-import java.util.concurrent.ArrayBlockingQueue;
 
 /**
  * This bundler uses the same logic as {@link TransferQueueBundler} but does not allocate
@@ -18,10 +17,6 @@ public class SimplifiedTransferQueueBundler extends TransferQueueBundler {
     protected int              curr;
 
     public SimplifiedTransferQueueBundler() {
-    }
-
-    public SimplifiedTransferQueueBundler(int capacity) {
-        super(new ArrayBlockingQueue<>(Util.assertPositive(capacity, "bundler capacity cannot be " + capacity)));
     }
 
     public int size() {
