@@ -135,7 +135,7 @@ public abstract class BaseBundler implements Bundler {
 
     protected void sendMessageList(final Address dest, final Address src, final List<Message> list) {
         try {
-            Util.writeMessageList(dest, src, transport.cluster_name.chars(), list, output, dest == null, transport.getId());
+            Util.writeMessageList(dest, src, transport.cluster_name.chars(), list, output, dest == null);
             transport.doSend(output.buffer(), 0, output.position(), dest);
             transport.getMessageStats().incrNumBatchesSent();
         }

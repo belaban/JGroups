@@ -249,7 +249,7 @@ public class PerDestinationBundler implements Bundler {
             output.position(0);
             try {
                 Util.writeMessageList(dest, src, transport.cluster_name.chars(), list,
-                                      output, dest == null, transport.getId());
+                                      output, dest == null);
                 transport.doSend(output.buffer(), 0, output.position(), dest);
                 transport.getMessageStats().incrNumBatchesSent();
                 num_batches_sent.increment();

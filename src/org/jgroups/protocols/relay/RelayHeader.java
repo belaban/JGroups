@@ -152,7 +152,7 @@ public class RelayHeader extends Header {
                 Bits.writeString(s, out);
         }
         assertNonNullSites();
-        Headers.writeHeaders(original_hdrs, out, (short[])null);
+        Headers.writeHeaders(original_hdrs, out);
         out.writeShort(original_flags);
     }
 

@@ -277,7 +277,7 @@ public class BatchBundler extends NoBundler {
             try {
                 output.position(0);
                 Util.writeMessageList(dest, src, transport.cluster_name.chars(), list, 0,
-                                      length, output, dest == null, transport.getId());
+                                      length, output, dest == null);
                 transport.doSend(output.buffer(), 0, output.position(), dest);
             }
             catch(Throwable e) {
