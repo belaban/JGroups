@@ -34,8 +34,10 @@ import static org.jgroups.protocols.relay.RelayHeader.DATA;
 public class SizeTest {
 
 
-    public static void testTpHeader() throws Exception {
+    public void testTpHeader() throws Exception {
         _testSize(new TpHeader("DemoChannel"));
+        _testSize(new TpHeader("DemoChannel", (byte)1, 4));
+        _testSize(new TpHeader("DemoChannel", (byte)2, 4));
     }
 
     public void testByteArray() throws Exception {

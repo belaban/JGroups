@@ -52,13 +52,7 @@ public class HeadersResizeTest {
         }
         bundler.release(); // sends all bundled messages as a batch
 
-        for(int i=0; i < 10; i++) {
-            if(receiver.num_msgs >= 5)
-                break;
-            Util.sleep(200);
-        }
-        System.out.printf("Number of transport headers: %d\n", receiver.num_transport_headers);
-        assert receiver.num_transport_headers == 0;
+        Util.waitUntil(5000, 100, () -> receiver.num_msgs >= 5 && receiver.num_transport_headers == 5);
     }
 
 

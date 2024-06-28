@@ -385,7 +385,7 @@ public class MessageBatchTest {
         List<Message> msgs=createMessages();
         ByteArrayOutputStream output=new ByteArrayOutputStream();
         DataOutputStream out=new DataOutputStream(output);
-        Util.writeMessageList(b, a, "cluster".getBytes(), msgs, out, false, UDP_ID);
+        Util.writeMessageList(b, a, "cluster".getBytes(), msgs, out, false);
         out.flush();
 
         byte[] buf=output.toByteArray();

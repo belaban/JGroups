@@ -228,7 +228,7 @@ public class RingBufferBundlerLockless extends BaseBundler {
                 num_msgs++;
                 buf[start_index]=null;
                 output.writeShort(msg.getType());
-                msg.writeToNoAddrs(msg.getSrc(), output, transport.getId());
+                msg.writeToNoAddrs(msg.getSrc(), output);
             }
             available_msgs--;
             start_index=increment(start_index);
