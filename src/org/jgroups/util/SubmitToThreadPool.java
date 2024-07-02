@@ -101,7 +101,7 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
 
         protected byte[] getClusterName() {
             TpHeader hdr=msg.getHeader(tp_id);
-            return hdr.getClusterName();
+            return hdr.clusterName();
         }
     }
 

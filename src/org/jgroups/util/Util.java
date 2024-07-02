@@ -570,7 +570,7 @@ public class Util {
 
 
     public static byte clearFlags(byte bits,byte flag) {
-        return bits&=~flag;
+        return bits=(byte)(bits & ~flag);
     }
 
     public static String flagsToString(short flags) {
@@ -1454,39 +1454,39 @@ public class Util {
      * </pre>
      */
     public static void writeMessageList(Address dest, Address src, byte[] cluster_name, List<Message> msgs,
-                                        DataOutput dos, boolean multicast, short transport_id) throws IOException {
+                                        DataOutput dos, boolean multicast) throws IOException {
         writeMessageListHeader(dest, src, cluster_name, msgs != null ? msgs.size() : 0, dos, multicast);
 
         if(msgs != null)
             for(Message msg: msgs) {
                 dos.writeShort(msg.getType());
-                msg.writeToNoAddrs(src, dos, transport_id); // exclude the transport header
+                msg.writeToNoAddrs(src, dos);
             }
     }
 
 
     public static void writeMessageList(Address dest, Address src, byte[] cluster_name, FastArray<Message> msgs,
-                                        DataOutput dos, boolean multicast, short transport_id) throws IOException {
+                                        DataOutput dos, boolean multicast) throws IOException {
         writeMessageListHeader(dest, src, cluster_name, msgs != null ? msgs.size() : 0, dos, multicast);
 
         if(msgs != null)
             for(Message msg: msgs) {
                 dos.writeShort(msg.getType());
-                msg.writeToNoAddrs(src, dos, transport_id); // exclude the transport header
+                msg.writeToNoAddrs(src, dos);
             }
     }
 
 
     public static void writeMessageList(Address dest, Address src, byte[] cluster_name,
-                                        Message[] msgs, int offset, int length, DataOutput dos, boolean multicast,
-                                        short transport_id) throws IOException {
+                                        Message[] msgs, int offset, int length, DataOutput dos, boolean multicast)
+      throws IOException {
         writeMessageListHeader(dest, src, cluster_name, length, dos, multicast);
 
         if(msgs != null)
             for(int i=0; i < length; i++) {
                 Message msg=msgs[offset+i];
                 dos.writeShort(msg.getType());
-                msg.writeToNoAddrs(src, dos, transport_id); // exclude the transport header
+                msg.writeToNoAddrs(src, dos);
             }
     }
 
@@ -2974,7 +2974,7 @@ public class Util {
     public static boolean containsId(short id,short[] ids) {
         if(ids == null)
             return false;
-        for(short tmp : ids)
+        for(short tmp: ids)
             if(tmp == id)
                 return true;
         return false;

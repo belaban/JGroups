@@ -407,6 +407,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @Component(name="diag")
     protected DiagnosticsHandler      diag_handler;
 
+    @Component
+    protected RTT                     rtt=new RTT();
+
     /** The header including the cluster name, sent with each message */
     protected TpHeader                header;
 
@@ -452,6 +455,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
     public MsgStats getMessageStats() {return msg_stats;}
+    public RTT      getRTT()          {return rtt;}
 
     @Override
     public void enableStats(boolean flag) {
@@ -777,6 +781,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             bundler=createBundler(bundler_type, getClass());
             bundler.init(this);
         }
+        rtt.init(this);
     }
 
 
@@ -1037,7 +1042,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     /** A message needs to be sent to a single member or all members */
     public Object down(Message msg) {
         if(header != null)
-            msg.putHeader(this.id, header); // added patch by Roland Kurmann (March 20, 2003)
+            msg.putHeaderIfAbsent(this.id, header); // added patch by Roland Kurmann (March 20, 2003)
 
         setSourceAddress(msg); // very important !! listToBuffer() will fail with a null src address !!
 
@@ -1196,6 +1201,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             }
             return;
         }
+        TpHeader hdr=msg.getHeader(id);
+        if(hdr != null && hdr.flag() > 0) {
+            rtt.handleMessage(msg, hdr);
+            return;
+        }
         up_prot.up(msg);
     }
 
@@ -1222,7 +1232,16 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
         if(batch.multicast() && discard_own_mcast && local_addr != null && local_addr.equals(batch.sender()))
             return;
-        up_prot.up(batch);
+        for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
+            Message msg=it.next();
+            TpHeader hdr=msg.getHeader(id);
+            if(hdr != null && hdr.flag() > 0) {
+                it.remove();
+                rtt.handleMessage(msg, hdr);
+            }
+        }
+        if(!batch.isEmpty())
+            up_prot.up(batch);
     }
 
     protected boolean sameCluster(String req) {

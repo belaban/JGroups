@@ -123,7 +123,7 @@ public abstract class BaseMessage implements Message {
             short tmp=this.flags;
             for(Flag flag : flags)
                 if(flag != null)
-                    tmp&=~flag.value();
+                    tmp=(short)(tmp & ~flag.value());
             this.flags=tmp;
         }
         return this;
@@ -134,7 +134,7 @@ public abstract class BaseMessage implements Message {
             short tmp=this.transient_flags;
             for(TransientFlag flag : flags)
                 if(flag != null)
-                    tmp&=~flag.value();
+                    tmp=(short)(tmp & ~flag.value());
             this.transient_flags=(byte)tmp;
         }
         return this;
@@ -191,18 +191,12 @@ public abstract class BaseMessage implements Message {
 
     /** Puts a header given an ID into the hashmap. Overwrites potential existing entry. */
     public Message putHeader(short id, Header hdr) {
-        if(id < 0)
-            throw new IllegalArgumentException("An ID of " + id + " is invalid");
-        if(hdr != null)
-            hdr.setProtId(id);
-        synchronized(this) {
-            if(this.headers == null)
-                this.headers=createHeaders(Util.DEFAULT_HEADERS);
-            Header[] resized_array=Headers.putHeader(this.headers, id, hdr, true);
-            if(resized_array != null)
-                this.headers=resized_array;
-        }
-        return this;
+        return putHeader(id, hdr, true);
+    }
+
+    @Override
+    public Message putHeaderIfAbsent(short id, Header hdr) {
+        return putHeader(id, hdr, false);
     }
 
     public <T extends Header> T getHeader(short id) {
@@ -271,13 +265,13 @@ public abstract class BaseMessage implements Message {
             Util.writeAddress(sender, out);
 
         // write the headers
-        Headers.writeHeaders(this.headers, out, (short[])null);
+        Headers.writeHeaders(this.headers, out);
 
         // finally write the payload
         writePayload(out);
     }
 
-    public void writeToNoAddrs(Address src, DataOutput out, short... excluded_headers) throws IOException {
+    public void writeToNoAddrs(Address src, DataOutput out) throws IOException {
         byte leading=0;
 
         boolean write_src_addr=src == null || sender != null && !sender.equals(src);
@@ -296,7 +290,7 @@ public abstract class BaseMessage implements Message {
             Util.writeAddress(sender, out);
 
         // write the headers
-        Headers.writeHeaders(this.headers, out, excluded_headers);
+        Headers.writeHeaders(this.headers, out);
 
         // finally write the payload
         writePayload(out);
@@ -323,6 +317,20 @@ public abstract class BaseMessage implements Message {
         readPayload(in);
     }
 
+    protected Message putHeader(short id, Header hdr, boolean replace_if_present) {
+        if(id < 0)
+            throw new IllegalArgumentException("An ID of " + id + " is invalid");
+        if(hdr != null)
+            hdr.setProtId(id);
+        synchronized(this) {
+            if(this.headers == null)
+                this.headers=createHeaders(Util.DEFAULT_HEADERS);
+            Header[] resized_array=Headers.putHeader(this.headers, id, hdr, replace_if_present);
+            if(resized_array != null)
+                this.headers=resized_array;
+        }
+        return this;
+    }
 
     /** Copies the payload */
     protected Message copyPayload(Message copy) {

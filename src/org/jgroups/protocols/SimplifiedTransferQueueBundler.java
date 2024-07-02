@@ -79,7 +79,7 @@ public class SimplifiedTransferQueueBundler extends TransferQueueBundler {
                         // since we assigned the matching destination we can do plain ==
                         if(msg != null && msg.getDest() == dest) {
                             output.writeShort(msg.getType());
-                            msg.writeToNoAddrs(msg.getSrc(), output, transport.getId());
+                            msg.writeToNoAddrs(msg.getSrc(), output);
                             msg_queue[i]=null;
                         }
                     }

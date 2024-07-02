@@ -281,7 +281,7 @@ public class TransferQueueBundler2 implements Bundler, Runnable {
                 length_index=out.position() - Global.INT_SIZE;
             }
             out.writeShort(msg.getType());
-            msg.writeToNoAddrs(msg.src(), out, transport_id); // exclude the transport header
+            msg.writeToNoAddrs(msg.src(), out);
             count++;
             return this;
         }

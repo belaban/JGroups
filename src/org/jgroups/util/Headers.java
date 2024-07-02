@@ -138,16 +138,14 @@ public final class Headers {
         throw new IllegalStateException("unable to add element " + id + ", index=" + i); // we should never come here
     }
 
-    public static void writeHeaders(Header[] hdrs, DataOutput out, short... excluded_headers) throws IOException {
-        int size=Headers.size(hdrs, excluded_headers);
+    public static void writeHeaders(Header[] hdrs, DataOutput out) throws IOException {
+        int size=Headers.size(hdrs);
         out.writeShort(size);
         if(size > 0) {
             for(Header hdr: hdrs) {
                 if(hdr == null)
                     break;
                 short id=hdr.getProtId();
-                if(Util.containsId(id, excluded_headers))
-                    continue;
                 out.writeShort(id);
                 writeHeader(hdr, out);
             }
@@ -212,7 +210,7 @@ public final class Headers {
         return retval;
     }
 
-    public static int size(Header[] hdrs, short... excluded_ids) {
+    /*public static int size(Header[] hdrs, short... excluded_ids) {
         int retval=0;
         if(hdrs == null)
             return retval;
@@ -223,7 +221,7 @@ public final class Headers {
                 retval++;
         }
         return retval;
-    }
+    }*/
 
     private static void writeHeader(Header hdr, DataOutput out) throws IOException {
         short magic_number=hdr.getMagicId();

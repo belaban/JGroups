@@ -52,6 +52,9 @@ public interface Message extends SizeStreamable, Constructable<Message> {
     /** Adds a header to the message */
     Message              putHeader(short id, Header hdr);
 
+    /** Adds a header to a message if not present */
+    Message              putHeaderIfAbsent(short id, Header hdr);
+
     /** Gets a header from the message */
     <T extends Header> T getHeader(short id);
 
@@ -201,8 +204,8 @@ public interface Message extends SizeStreamable, Constructable<Message> {
      */
     int                  size();
 
-    /** Writes the message to an output stream excluding the destination (and possibly source) address, plus a number of headers */
-    void                 writeToNoAddrs(Address src, DataOutput out, short... excluded_headers) throws IOException;
+    /** Writes the message to an output stream excluding the destination (and possibly source) address */
+    void                 writeToNoAddrs(Address src, DataOutput out) throws IOException;
 
     void                 writePayload(DataOutput out) throws IOException;
 
