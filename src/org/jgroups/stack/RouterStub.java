@@ -16,7 +16,10 @@ import java.io.DataInput;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
+
+import static java.lang.System.currentTimeMillis;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.jgroups.util.Util.printTime;
 
 
 /**
@@ -132,7 +135,7 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
             _doConnect();
         }
         if(handle_heartbeats)
-            last_heartbeat=System.currentTimeMillis();
+            last_heartbeat=currentTimeMillis();
         try {
             writeRequest(new GossipData(GossipType.REGISTER, group, addr, logical_name, phys_addr));
         }
@@ -231,7 +234,7 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
                     break;
             }
             if(handle_heartbeats)
-                last_heartbeat=System.currentTimeMillis();
+                last_heartbeat=currentTimeMillis();
         } catch(Exception ex) {
             log.error(Util.getMessage("FailedReadingData"), ex);
         }
@@ -262,7 +265,7 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
         return String.format("RouterStub[local=%s, router_host=%s %s] - age: %s",
                              client != null? client.localAddress() : "n/a", remote,
                              isConnected()? "connected" : "disconnected",
-                             Util.printTime(System.currentTimeMillis()-last_heartbeat, TimeUnit.MILLISECONDS));
+                             isConnected()? printTime(currentTimeMillis()-last_heartbeat, MILLISECONDS) : "n/a");
     }
 
     /** Creates remote from remote_sa. If the latter is unresolved, tries to resolve it one more time (e.g. via DNS) */
