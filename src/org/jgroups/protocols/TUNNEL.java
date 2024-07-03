@@ -122,7 +122,7 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
         // if we get passed value of List<SocketAddress>#toString() we have to strip []
         if(hosts.startsWith("[") && hosts.endsWith("]"))
             hosts=hosts.substring(1, hosts.length() - 1);
-        gossip_router_hosts=hosts; //.addAll(Util.parseCommaDelimitedHosts2(hosts, port_range));
+        gossip_router_hosts=hosts;
         return this;
     }
 
@@ -180,6 +180,10 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
         super.init();
         if(timer == null)
             throw new Exception("timer cannot be retrieved from protocol stack");
+        if(port_range > 0) {
+            log.warn("%s: port_range=%d; setting it to 0 (https://issues.redhat.com/browse/JGRP-2806)", local_addr, port_range);
+            port_range=0; // https://issues.redhat.com/browse/JGRP-2806
+        }
         gossip_routers.clear();
         gossip_routers.addAll(Util.parseCommaDelimitedHosts2(gossip_router_hosts, port_range));
         if(gossip_routers.isEmpty())
