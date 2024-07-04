@@ -328,7 +328,7 @@ public class UDP extends TP {
             throw new IllegalArgumentException("bundler.max_size (" + bundler.getMaxSize() + ") cannot exceed the max " +
                                                  "datagram packet size of " + Global.MAX_DATAGRAM_PACKET_SIZE);
         if(is_mac && suppress_time_out_of_buffer_space > 0)
-            suppress_log_out_of_buffer_space=new SuppressLog<>(log, "FailureSendingToPhysAddr", "SuppressMsg");
+            suppress_log_out_of_buffer_space=new SuppressLog<>(log, "FailureSendingToPhysAddr");
     }
 
     /** Creates the unicast and multicast sockets and starts the unicast and multicast receiver threads */

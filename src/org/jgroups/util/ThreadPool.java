@@ -4,21 +4,17 @@ import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.Lifecycle;
 import org.jgroups.annotations.ManagedAttribute;
-import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 
 import static org.jgroups.conf.AttributeType.SCALAR;
+import static org.jgroups.conf.AttributeType.TIME;
+import static org.jgroups.util.SuppressLog.Level.warn;
 
 /**
  * Thread pool based on {@link java.util.concurrent.ThreadPoolExecutor}
@@ -30,10 +26,7 @@ public class ThreadPool implements Lifecycle {
     protected Log                 log;
     protected ThreadFactory       thread_factory;
     protected Address             address;
-
-    // Incremented when a message is rejected due to a full thread pool. When this value exceeds thread_dumps_threshold,
-    // the threads will be dumped at FATAL level, and thread_dumps will be reset to 0
-    protected final AtomicInteger thread_dumps=new AtomicInteger();
+    protected SuppressLog<String> thread_pool_full_log;
 
     @Property(description="Whether or not the thread pool is enabled. If false, tasks will be run on the caller's thread")
     protected boolean             enabled=true;
@@ -54,18 +47,28 @@ public class ThreadPool implements Lifecycle {
       "See Util.parseRejectionPolicy() for details")
     protected String              rejection_policy="abort";
 
-    @Property(description="The number of times a thread pool needs to be full before a thread dump is logged")
+    @Property(description="Time (in milliseconds) during which thread-pool full messages are suppressed",type=TIME)
+    protected long                thread_pool_full_suppress_time=60_000;
+
+    @Property(description="The number of times a thread pool needs to be full before a thread dump is logged",
+    deprecatedMessage="ignored")
+    @Deprecated(since="5.4")
     protected int                 thread_dumps_threshold=1;
 
     @Property(description="Path to which the thread dump will be written. Ignored if null",
-      systemProperty="jgroups.threaddump.path")
+      systemProperty="jgroups.threaddump.path",deprecatedMessage="ignored")
+    @Deprecated(since="5.4")
     protected String              thread_dump_path;
+
+    @Property(description="Dump threads when the thread pool is full")
+    protected boolean             thread_dumps_enabled;
 
     @Property(description="Increases max_threads by the view size + delta if enabled " +
       "(https://issues.redhat.com/browse/JGRP-2655)")
     protected boolean             increase_max_size_dynamically=true;
 
-    @Property(description="Added to the view size when the pool is increased dynamically")
+    @Property(description="If the view is greater than the max thread pool size, the latter is set to " +
+      "view size + delta. Only enabled if increase_max_size_dynamically is true")
     protected int                 delta=10;
 
     @ManagedAttribute(description="The number of messages dropped because the thread pool was full",type= SCALAR)
@@ -145,15 +148,12 @@ public class ThreadPool implements Lifecycle {
             ((ThreadPoolExecutor)thread_pool).setRejectedExecutionHandler(handler);
     }
 
-    public int getThreadDumpsThreshold() {
-        return thread_dumps_threshold;
-    }
-
-    public ThreadPool setThreadDumpsThreshold(int t) {
-        this.thread_dumps_threshold=t;
-        return this;
-    }
-
+    public long       getThreadPoolFullSuppressTime()          {return thread_pool_full_suppress_time;}
+    public ThreadPool setThreadPoolFullSuppressTime(long t)    {this.thread_pool_full_suppress_time=t; return this;}
+    public boolean    getThreadDumpsEnabled()                  {return thread_dumps_enabled;}
+    public ThreadPool setThreadDumpsEnabled(boolean b)         {thread_dumps_enabled=b; return this;}
+    @Deprecated public int        getThreadDumpsThreshold()    {return 0;}
+    @Deprecated public ThreadPool setThreadDumpsThreshold(int t) {return this;}
     public Address    getAddress()                             {return address;}
     public ThreadPool setAddress(Address a)                    {this.address=a; return this;}
     public boolean    getIncreaseMaxSizeDynamically()          {return increase_max_size_dynamically;}
@@ -165,11 +165,8 @@ public class ThreadPool implements Lifecycle {
     public boolean    useVirtualThreads()                      {return use_virtual_threads;}
     public ThreadPool useVirtualThreads(boolean b)             {use_virtual_threads=b; return this;}
 
-    @ManagedAttribute(description="Number of thread dumps",type=SCALAR)
-    public int getNumberOfThreadDumps() {return thread_dumps.get();}
-
-    @ManagedOperation(description="Resets the thread_dumps counter")
-    public void resetThreadDumps() {thread_dumps.set(0);}
+    @Deprecated public int  getNumberOfThreadDumps() {return -1;}
+    @Deprecated public void resetThreadDumps() {}
 
     @ManagedAttribute(description="Current number of threads in the thread pool",type=SCALAR)
     public int getThreadPoolSize() {
@@ -177,7 +174,6 @@ public class ThreadPool implements Lifecycle {
             return ((ThreadPoolExecutor)thread_pool).getPoolSize();
         return 0;
     }
-
 
     @ManagedAttribute(description="Current number of active threads in the thread pool",type=SCALAR)
     public int getThreadPoolSizeActive() {
@@ -202,6 +198,7 @@ public class ThreadPool implements Lifecycle {
     public void init() throws Exception {
         if(log == null)
             log=LogFactory.getLog(getClass());
+        thread_pool_full_log=new SuppressLog<>(log, "ThreadPoolFull");
         if(enabled) {
             if(thread_factory == null)
                 thread_factory=new DefaultThreadFactory("thread-pool", true, true);
@@ -225,6 +222,11 @@ public class ThreadPool implements Lifecycle {
         }
     }
 
+    public ThreadPool removeExpired() {
+        thread_pool_full_log.removeExpired(thread_pool_full_suppress_time);
+        return this;
+    }
+
     public void doExecute(Runnable task) {
         thread_pool.execute(task);
     }
@@ -238,27 +240,10 @@ public class ThreadPool implements Lifecycle {
         }
         catch(RejectedExecutionException ex) {
             num_rejected_msgs.increment();
-            // https://issues.redhat.com/browse/JGRP-2403
-            if(thread_dumps.incrementAndGet() == thread_dumps_threshold) {
-                String thread_dump=Util.dumpThreads();
-                if(thread_dump_path != null) {
-                    File file=new File(thread_dump_path, "jgroups_threaddump_" + System.currentTimeMillis() + ".txt");
-                    try(BufferedWriter writer=new BufferedWriter(new FileWriter(file))) {
-                        writer.write(thread_dump);
-                        log.fatal("%s: thread pool is full (max=%d, active=%d); thread dump (dumped once, until thread_dump is reset): %s",
-                                  address, max_threads, getThreadPoolSize(), file.getAbsolutePath());
-                    }
-                    catch(IOException e) {
-                        log.warn("%s: cannot generate the thread dump to %s: %s", address, file.getAbsolutePath(), e);
-                        log.fatal("%s: thread pool is full (max=%d, active=%d); " +
-                                    "thread dump (dumped once, until thread_dump is reset):\n%s",
-                                  address, max_threads, getThreadPoolSize(), thread_dump);
-                    }
-                }
-                else
-                    log.fatal("%s: thread pool is full (max=%d, active=%d); thread dump (dumped once, until thread_dump is reset):\n%s",
-                              address, max_threads, getThreadPoolSize(), thread_dump);
-            }
+            //https://issues.redhat.com/browse/JGRP-2802
+            String thread_dump=thread_dumps_enabled? String.format(". Threads:\n%s", Util.dumpThreads()) : "";
+            thread_pool_full_log.log(warn, "thread-pool-full", thread_pool_full_suppress_time,
+                                     address, max_threads, getThreadPoolSize(), thread_dump);
             return false;
         }
         catch(Throwable t) {
