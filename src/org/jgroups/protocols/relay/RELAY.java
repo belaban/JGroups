@@ -277,7 +277,7 @@ public abstract class RELAY extends Protocol {
 
         if(suppress_time_no_route_errors <= 0)
             throw new IllegalArgumentException("suppress_time_no_route_errors has to be > 0");
-        suppress_log_no_route=new SuppressLog<>(log, "RelayNoRouteToSite", "SuppressMsgRelay");
+        suppress_log_no_route=new SuppressLog<>(log, "RelayNoRouteToSite");
     }
 
     public void stop() {

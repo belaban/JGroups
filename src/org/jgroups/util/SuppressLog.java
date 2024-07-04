@@ -2,6 +2,8 @@ package org.jgroups.util;
 
 import org.jgroups.logging.Log;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * Log (using {@link SuppressCache}) which suppresses (certain) messages from the same member for a given time
  * @author Bela Ban
@@ -15,11 +17,11 @@ public class SuppressLog<T> {
 
     public enum Level {error,warn,trace};
 
-    public SuppressLog(Log log, String message_key, String suppress_msg) {
+    public SuppressLog(Log log, String message_key) {
         this.log=log;
         cache=new SuppressCache<>();
         message_format=Util.getMessage(message_key);
-        suppress_format=Util.getMessage(suppress_msg); // "(received %d identical messages from %s in the last %d ms)"
+        suppress_format=Util.getMessage("SuppressMsg"); // "(%d identical messages in the last %s)"
     }
 
     public SuppressCache<T> getCache()               {return cache;}
@@ -27,7 +29,7 @@ public class SuppressLog<T> {
     /**
      * Logs a message from a given member if is hasn't been logged for timeout ms
      * @param level The level, either warn or error
-     * @param key The key into the SuppressCache
+     * @param key The key into the SuppressCache, e.g. a member address or other topic ("thread_pool_full")
      * @param timeout The timeout
      * @param args The arguments to the message key
      */
@@ -37,7 +39,8 @@ public class SuppressLog<T> {
             return;
 
         String message=val.count() == 1? String.format(message_format, args) :
-          String.format(message_format, args) + " " + String.format(suppress_format, val.count(), key, val.age());
+          String.format(message_format, args) + " "
+            + String.format(suppress_format, val.count(), Util.printTime(val.age(), TimeUnit.MILLISECONDS));
 
         switch(level) {
             case error:

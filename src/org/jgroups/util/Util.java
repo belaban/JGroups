@@ -2628,10 +2628,10 @@ public class Util {
             case NANOSECONDS:  return "ns";
             case MICROSECONDS: return "us";
             case MILLISECONDS: return "ms";
-            case SECONDS:      return "s ";
-            case MINUTES:      return "m ";
-            case HOURS:        return "h ";
-            case DAYS:         return "d ";
+            case SECONDS:      return "s";
+            case MINUTES:      return "m";
+            case HOURS:        return "h";
+            case DAYS:         return "d";
             default:           return u.toString();
         }
     }
