@@ -1515,18 +1515,16 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected void setThreadNames() {
         if(diag_handler != null)
             diag_handler.setThreadNames();
-        if(bundler instanceof TransferQueueBundler)
-            thread_factory.renameThread(TransferQueueBundler.THREAD_NAME, ((TransferQueueBundler)bundler).getThread());
+        if(bundler != null)
+            bundler.renameThread();
     }
 
 
     protected void unsetThreadNames() {
         if(diag_handler != null)
             diag_handler.unsetThreadNames();
-        Thread thread=bundler instanceof TransferQueueBundler? ((TransferQueueBundler)bundler).getThread() :
-          bundler instanceof RingBufferBundler? ((RingBufferBundler)bundler).getThread() : null;
-        if(thread != null)
-            thread_factory.renameThread(TransferQueueBundler.THREAD_NAME, thread);
+        if(bundler != null)
+            bundler.renameThread();
     }
 
     protected void setInAllThreadFactories(String cluster_name, Address local_address, String pattern) {

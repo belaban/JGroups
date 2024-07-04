@@ -6,7 +6,6 @@ import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.util.AverageMinMax;
-import org.jgroups.util.DefaultThreadFactory;
 import org.jgroups.util.RingBuffer;
 import org.jgroups.util.Runner;
 
@@ -32,6 +31,7 @@ public class RemoveQueueBundler extends BaseBundler {
     protected Runner                runner;
     protected Message[]             remove_queue;
     protected final AverageMinMax   avg_batch_size=new AverageMinMax();
+    protected static final String   THREAD_NAME="rq-bundler";
 
     @Property(name="remove_queue_size",description="The capacity of the remove queue",writable=false)
     protected int                   queue_size=1024;
@@ -51,7 +51,7 @@ public class RemoveQueueBundler extends BaseBundler {
         super.init(transport);
         rb=new RingBuffer<>(Message.class, capacity);
         remove_queue=new Message[queue_size];
-        runner=new Runner(new DefaultThreadFactory("aqb", true, true), "runner", this::run, null);
+        runner=new Runner(transport.getThreadFactory(), THREAD_NAME, this::run, null);
     }
 
     public synchronized void start() {
@@ -62,6 +62,10 @@ public class RemoveQueueBundler extends BaseBundler {
     public synchronized void stop() {
         runner.stop();
         super.stop();
+    }
+
+    public void renameThread() {
+        transport.getThreadFactory().renameThread(THREAD_NAME, runner.getThread());
     }
 
     public void send(Message msg) throws Exception {
