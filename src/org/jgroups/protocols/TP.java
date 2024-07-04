@@ -731,9 +731,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         who_has_cache=new ExpiryCache<>(who_has_cache_timeout);
 
         if(suppress_time_different_version_warnings > 0)
-            suppress_log_different_version=new SuppressLog<>(log, "VersionMismatch", "SuppressMsg");
+            suppress_log_different_version=new SuppressLog<>(log, "VersionMismatch");
         if(suppress_time_different_cluster_warnings > 0)
-            suppress_log_different_cluster=new SuppressLog<>(log, "MsgDroppedDiffCluster", "SuppressMsg");
+            suppress_log_different_cluster=new SuppressLog<>(log, "MsgDroppedDiffCluster");
 
         // ========================================== Timer ==============================
         if(timer == null) {
@@ -970,6 +970,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                         thread_pool.setMaxThreads(new_size);
                     }
                 }
+                thread_pool.removeExpired();
                 break;
 
             case Event.CONNECT:

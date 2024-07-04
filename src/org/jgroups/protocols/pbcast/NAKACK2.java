@@ -512,7 +512,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         }
 
         if(suppress_time_non_member_warnings > 0)
-            suppress_log_non_member=new SuppressLog<>(log, "MsgDroppedNak", "SuppressMsg");
+            suppress_log_non_member=new SuppressLog<>(log, "MsgDroppedNak");
 
         // max bundle size (minus overhead) divided by <long size> times bits per long
         int estimated_max_msgs_in_xmit_req=(transport.getBundler().getMaxSize() -50) * Global.LONG_SIZE;
@@ -798,15 +798,15 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             log.trace("%s: message %s#%d was discarded (not yet server, queue full)", local_addr, msg.getSrc(), seqno);
     }
 
-    protected void unknownMember(Address sender, Object message) {
+    protected void unknownMember(Address sender) {
         if(leaving)
             return;
         if(log_discard_msgs && log.isWarnEnabled()) {
             if(suppress_log_non_member != null)
                 suppress_log_non_member.log(SuppressLog.Level.warn, sender, suppress_time_non_member_warnings,
-                                            local_addr, message, sender, view);
+                                            local_addr, sender, view);
             else
-                log.warn(Util.getMessage("MsgDroppedNak"), local_addr, message, sender, view);
+                log.warn(Util.getMessage("MsgDroppedNak"), local_addr, sender, view);
         }
     }
 
@@ -871,7 +871,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         Address sender=msg.getSrc();
         Table<Message> buf=xmit_table.get(sender);
         if(buf == null) {  // discard message if there is no entry for sender
-            unknownMember(sender, hdr.seqno);
+            unknownMember(sender);
             return;
         }
 
@@ -902,7 +902,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         Table<Message> buf=xmit_table.get(sender);
         if(buf == null) {  // discard message if there is no entry for sender
             mb.removeIf(HAS_HEADER, true);
-            unknownMember(sender, "batch");
+            unknownMember(sender);
             return;
         }
         int size=mb.size();
