@@ -87,9 +87,9 @@ public class JmxTest {
         JmxConfigurator.register(objs, server, "jmxtest:name=additional_obj");
         ObjectName n=new ObjectName("jmxtest:name=additional_obj");
 
-        Object val=getAttribute(n, "num_msgs_sent");
+        Object val=getAttribute(n, "additional_info.num_msgs_sent");
         assert (int)val == 0;
-        val=getAttribute(n, "num_msgs_received");
+        val=getAttribute(n, "additional_info.num_msgs_received");
         assert (int)val == 0;
     }
 
