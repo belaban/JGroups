@@ -1,5 +1,6 @@
 package org.jgroups.protocols;
 
+import org.jgroups.Address;
 import org.jgroups.BytesMessage;
 import org.jgroups.Message;
 import org.jgroups.MessageFactory;
@@ -25,11 +26,8 @@ import org.jgroups.util.Util;
  */
 @MBean(description="Serializes entire message into the payload of another message")
 public class SERIALIZE extends Protocol {
-
     protected static final short GMS_ID=ClassConfigurator.getProtocolId(GMS.class);
-    //@Property(description="If true, messages with no payload will not be serialized")
-    //protected boolean exclude_empty_msgs=true;
-    protected MessageFactory mf;
+    protected MessageFactory     mf;
 
     public void init() throws Exception {
         super.init();
@@ -49,6 +47,8 @@ public class SERIALIZE extends Protocol {
         }
         // exclude existing headers, they will be seen again when we unmarshal the message at the receiver
         Message tmp=new BytesMessage(msg.dest(), serialized_msg).setFlag(msg.getFlags(), false);
+        if(msg.isFlagSet(Message.TransientFlag.DONT_LOOPBACK))
+            tmp.setFlag(Message.TransientFlag.DONT_LOOPBACK);
         GMS.GmsHeader hdr=msg.getHeader(GMS_ID);
         if(hdr != null)
             tmp.putHeader(GMS_ID, hdr);
@@ -57,7 +57,7 @@ public class SERIALIZE extends Protocol {
 
     public Object up(Message msg) {
         try {
-            Message ret=deserialize(msg);
+            Message ret=deserialize(msg.src(), msg.getArray(), msg.getOffset(), msg.getLength());
             return up_prot.up(ret);
         }
         catch(Exception e) {
@@ -70,7 +70,7 @@ public class SERIALIZE extends Protocol {
         while(it.hasNext()) {
             Message msg=it.next();
             try {
-                Message deserialized_msg=deserialize(msg);
+                Message deserialized_msg=deserialize(msg.src(), msg.getArray(), msg.getOffset(), msg.getLength());
                 it.replace(deserialized_msg);
             }
             catch(Exception e) {
@@ -82,18 +82,17 @@ public class SERIALIZE extends Protocol {
             up_prot.up(batch);
     }
 
-
-    protected Message deserialize(Message msg) throws Exception {
+    protected Message deserialize(Address sender, byte[] buf, int offset, int length) throws Exception {
         try {
-            Message ret=Util.messageFromBuffer(msg.getArray(), msg.getOffset(), msg.getLength(), mf);
-            if(ret.getDest() == null)
-                ret.setDest(msg.getDest());
-            if(ret.getSrc() == null)
-                ret.setSrc(msg.getSrc());
-            return ret;
+            Message msg=Util.messageFromBuffer(buf, offset, length, mf);
+            if(msg.getDest() == null)
+                msg.setDest(msg.getDest());
+            if(msg.getSrc() == null)
+                msg.setSrc(msg.getSrc());
+            return msg;
         }
         catch(Exception e) {
-            throw new Exception(String.format("failed deserialize message from %s", msg.getSrc()), e);
+            throw new Exception(String.format("failed deserialize message from %s", sender), e);
         }
     }
 }
