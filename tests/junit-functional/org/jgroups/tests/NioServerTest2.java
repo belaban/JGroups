@@ -26,7 +26,7 @@ import java.util.List;
 public class NioServerTest2 {
     protected static final int     NUM_MSGS=10000;
     protected static final int     MSG_SIZE=1000;
-    protected static final int     recv_buf_size=50000, send_buf_size=10000;
+    protected static final int     recv_buf_size=100000, send_buf_size=50000;
     protected JChannel             a, b;
     protected MyReceiver           ra, rb;
 
@@ -49,7 +49,7 @@ public class NioServerTest2 {
             a.send(msg);
         }
 
-        for(int i=0; i < 20; i++) {
+        for(int i=0; i < 100; i++) {
             if(ra.total() >= NUM_MSGS && rb.total() >= NUM_MSGS)
                 break;
             System.out.printf("A.good=%d | bad=%d, B.good=%d | bad=%d\n", ra.good(), ra.bad(), rb.good(), rb.bad());
