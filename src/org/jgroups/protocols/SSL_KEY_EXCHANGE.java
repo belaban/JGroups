@@ -269,7 +269,9 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
                     .trustStoreFileName(truststore_name)
                     .trustStorePassword(truststore_password.toCharArray())
                     .sslProtocol(ssl_protocol)
-                    .provider(ssl_provider).getContext();
+                    .provider(ssl_provider)
+                    .build()
+                    .sslContext();
             if (client_ssl_ctx == null) {
                 client_ssl_ctx = sslContext;
                 client_ssl_ctx_reloader.setContext(client_ssl_ctx).setFactory(sslContextFactory);
