@@ -64,7 +64,7 @@ public class TLS implements Lifecycle {
       converter=SniMatcherConverter.class)
     protected List<SNIMatcher> sni_matchers=new ArrayList<>();
 
-
+    protected FileWatcher      watcher;
 
 
     public boolean enabled()                      {return enabled;}
@@ -109,6 +109,8 @@ public class TLS implements Lifecycle {
     public List<SNIMatcher> getSniMatchers()      {return sni_matchers;}
     public TLS setSniMatchers(List<SNIMatcher> s) {this.sni_matchers=s; return this;}
 
+    public FileWatcher getWatcher() {return watcher;}
+    public void setWatcher(FileWatcher watcher) {this.watcher = watcher;}
 
     @Override
     public void init() throws Exception {
@@ -126,8 +128,7 @@ public class TLS implements Lifecycle {
     }
 
     public SSLContext createContext() {
-        SslContextFactory sslContextFactory=new SslContextFactory();
-        sslContextFactory
+        return new SslContextFactory()
           .classLoader(this.getClass().getClassLoader())
           .sslProtocol("TLS")
           .provider(provider)
@@ -137,8 +138,10 @@ public class TLS implements Lifecycle {
           .keyAlias(keystore_alias)
           .trustStoreFileName(truststore_path)
           .trustStorePassword(truststore_password)
-          .trustStoreType(truststore_type);
-        return sslContextFactory.getContext();
+          .trustStoreType(truststore_type)
+          .watcher(watcher)
+          .build()
+          .sslContext();
     }
 
     public SocketFactory createSocketFactory() {

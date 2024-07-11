@@ -954,6 +954,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
         String type="";
         if(tls.enabled()) {
             tls.init();
+            tls.setWatcher(new FileWatcher());
             SSLContext context=tls.createContext();
             SocketFactory socket_factory=tls.createSocketFactory(context);
             router.socketFactory(socket_factory);
