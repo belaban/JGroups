@@ -152,7 +152,9 @@
                modulepathref="jg.classpath"
                includeantruntime="false"
                debug="on"
+               nowarn="on"
                includes="org/jgroups/**">
+            <compilerarg value="-proc:none"/>
             <src path="${src.dir}"/>
         </javac>
 
@@ -162,6 +164,7 @@
                includeantruntime="false"
                debug="on"
                includes="org/jgroups/**">
+            <compilerarg value="-proc:none"/>
             <src path="${other.dir}"/>
             <src path="${junit.dir}"/>
             <src path="${junit-functional.dir}"/>
@@ -180,12 +183,14 @@
                modulepathref="jg.classpath"
                includeantruntime="false" debug="on"
                includes="org/jgroups/**">
+            <compilerarg value="-proc:none"/>
         </javac>
         <javac destdir="${compile.dir}" release="11"
                classpathref="jg.classpath"
                modulepathref="jg.classpath"
                includeantruntime="false" debug="on"
                includes="org/jgroups/tests/**">
+            <compilerarg value="-proc:none"/>
             <src path="${tests.dir}/perf"/>
             <src path="${tests.dir}/other"/>
         </javac>
