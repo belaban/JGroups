@@ -48,7 +48,7 @@ FLAGS="-server -Xmx1G -Xms500M -XX:+HeapDumpOnOutOfMemoryError"
 #DEBUG="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5000"
 
 # SSL_FLAGS="-Djavax.net.debug=ssl:handshake"
-Z1=-XX:+UseZGC
+#Z1="-XX:+UseZGC -XX:+ZGenerational"
 
 java $Z1 -cp $CP $SSL_FLAGS $DEBUG $LOG $JG_FLAGS $FLAGS $JMX $JMC $*
 
