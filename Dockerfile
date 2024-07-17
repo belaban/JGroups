@@ -10,6 +10,7 @@
 
 # Multi-arch images with podman:
 # First, initialise the manifest
+# (optionally) podman manifest remove belaban/jgrp
 # podman manifest create belaban/jgrp
 
 # Build the image attaching them to the manifest
