@@ -4741,7 +4741,10 @@ public class Util {
             for(NetworkInterface intf: interfaces) {
                 if(!isUp(intf)  /*!intf.isUp()*/)
                     continue;
-                intf.getInetAddresses().asIterator().forEachRemaining(addresses::add);
+                    Enumeration<InetAddress> inetAddresses = intf.getInetAddresses();
+                    while (inetAddresses.hasMoreElements()) {
+                        addresses.add(inetAddresses.nextElement());
+                    }
             }
         }
         catch(SocketException e) {
