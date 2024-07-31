@@ -192,22 +192,22 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         return entry != null? entry.msgs : null;
     }
 
-    @ManagedAttribute(description="Returns the number of outgoing (send) connections")
+    @ManagedAttribute(description="Returns the number of outgoing (send) connections",type=SCALAR)
     public int getNumSendConnections() {
         return send_table.size();
     }
 
-    @ManagedAttribute(description="Returns the number of incoming (receive) connections")
+    @ManagedAttribute(description="Returns the number of incoming (receive) connections",type=SCALAR)
     public int getNumReceiveConnections() {
         return recv_table.size();
     }
 
-    @ManagedAttribute(description="Returns the total number of outgoing (send) and incoming (receive) connections")
+    @ManagedAttribute(description="Returns the total number of outgoing (send) and incoming (receive) connections",type=SCALAR)
     public int getNumConnections() {
         return getNumReceiveConnections() + getNumSendConnections();
     }
 
-    @ManagedAttribute(description="Next seqno issued by the timestamper")
+    @ManagedAttribute(description="Next seqno issued by the timestamper",type=SCALAR)
     public int getTimestamper() {return timestamper.get();}
 
     public int getAckThreshold() {return ack_threshold;}
@@ -267,9 +267,15 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         return sb.toString();
     }
 
-
+    /** Don't remove! https://issues.redhat.com/browse/JGRP-2814 */
+    @ManagedAttribute(type=SCALAR) @Deprecated
     public long getNumMessagesSent()     {return num_msgs_sent.sum();}
+
+    /** Don't remove! https://issues.redhat.com/browse/JGRP-2814 */
+    @ManagedAttribute(type=SCALAR) @Deprecated
     public long getNumMessagesReceived() {return num_msgs_received.sum();}
+
+
     public long getNumAcksSent()         {return num_acks_sent.sum();}
     public long getNumAcksReceived()     {return num_acks_received.sum();}
     public long getNumXmits()            {return num_xmits.sum();}
@@ -288,7 +294,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     @ManagedAttribute(description="Is the retransmit task running")
     public boolean isXmitTaskRunning() {return xmit_task != null && !xmit_task.isDone();}
 
-    @ManagedAttribute
+    @ManagedAttribute(type=SCALAR)
     public int getAgeOutCacheSize() {
         return cache != null? cache.size() : 0;
     }

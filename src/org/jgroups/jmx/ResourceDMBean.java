@@ -52,8 +52,9 @@ public class ResourceDMBean implements DynamicMBean {
 
     static {OBJECT_METHODS=new ArrayList<>(Arrays.asList(Object.class.getMethods()));}
 
-    protected static final Predicate<AccessibleObject> FILTER=obj -> obj.isAnnotationPresent(ManagedAttribute.class) ||
-      (obj.isAnnotationPresent(Property.class) && obj.getAnnotation(Property.class).exposeAsManagedAttribute());
+    protected static final Predicate<AccessibleObject> FILTER=obj -> !obj.isAnnotationPresent(Deprecated.class) &&
+      (obj.isAnnotationPresent(ManagedAttribute.class) ||
+        (obj.isAnnotationPresent(Property.class) && obj.getAnnotation(Property.class).exposeAsManagedAttribute()));
 
     public ResourceDMBean(Object instance) {
         this(instance, null);

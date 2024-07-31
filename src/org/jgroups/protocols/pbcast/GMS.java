@@ -243,7 +243,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
 
 
-    @ManagedAttribute
+    @ManagedAttribute(type=AttributeType.SCALAR)
     public int getViewHandlerSize() {return view_handler.size();}
     @ManagedAttribute
     public boolean isViewHandlerSuspended() {return view_handler.suspended();}
