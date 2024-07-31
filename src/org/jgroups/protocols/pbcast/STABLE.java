@@ -128,8 +128,17 @@ public class STABLE extends Protocol {
 
     // @ManagedAttribute(name="bytes_received")
     public long getBytes() {return num_bytes_received;}
-    @ManagedAttribute(description="The number of votes for the current digest")
+    @ManagedAttribute(description="The number of votes for the current digest",type=SCALAR)
     public int getNumVotes() {return votes != null? votes.cardinality() : 0;}
+
+    @ManagedAttribute(type=SCALAR)
+    public long getStableReceived() {return num_stable_msgs_received.sum();}
+    @ManagedAttribute(type=SCALAR)
+    public long getStableSent() {return num_stable_msgs_sent.sum();}
+    @ManagedAttribute(type=SCALAR)
+    public long getStabilityReceived() {return num_stability_msgs_received.sum();}
+    @ManagedAttribute(type=SCALAR)
+    public long getStabilitySent() {return num_stability_msgs_received.sum();}
 
     @ManagedAttribute
     public boolean getStableTaskRunning() {

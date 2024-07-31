@@ -13,6 +13,8 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static org.jgroups.conf.AttributeType.SCALAR;
+
 /**
  * Implementation of Random Early Drop: messages are discarded when the bundler's queue in the transport nears exhaustion.
  * See Floyd and Van Jacobsen's paper for details.
@@ -62,7 +64,12 @@ public class RED extends Protocol {
     public boolean isEnabled()           {return enabled;}
     public RED     setEnabled(boolean e) {enabled=e; return this;}
     public double  getMinThreshold()     {return min_threshold;}
+    /** Don't remove! https://issues.redhat.com/browse/JGRP-2814 */
+    @SuppressWarnings("DeprecatedIsStillUsed")
+    @ManagedAttribute(type=SCALAR) @Deprecated
     public long    getDroppedMessages()  {return dropped_msgs.sum();}
+    /** Don't remove! https://issues.redhat.com/browse/JGRP-2814 */
+    @ManagedAttribute(type=SCALAR) @Deprecated
     public long    getTotalMessages()    {return total_msgs.sum();}
     @ManagedAttribute(description="Percentage of all messages that were dropped")
     public double  getDropRate()         {return dropped_msgs.sum() / (double)total_msgs.sum();}

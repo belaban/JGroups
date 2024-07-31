@@ -51,8 +51,14 @@ public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<
     protected volatile boolean               waiting_for_state_response=false;
 
     protected boolean                        flushProtocolInStack=false;
+    /** Don't remove! https://issues.redhat.com/browse/JGRP-2814 */
+    @ManagedAttribute(type=SCALAR) @Deprecated
     public long   getNumberOfStateRequests()  {return num_state_reqs.sum();}
+    /** Don't remove! https://issues.redhat.com/browse/JGRP-2814 */
+    @ManagedAttribute(type=SCALAR) @Deprecated
     public long   getNumberOfStateBytesSent() {return num_bytes_sent.sum();}
+    /** Don't remove! https://issues.redhat.com/browse/JGRP-2814 */
+    @ManagedAttribute(type=SCALAR) @Deprecated
     public double getAverageStateSize()       {return avg_state_size;}
 
     public List<Integer> requiredDownServices() {

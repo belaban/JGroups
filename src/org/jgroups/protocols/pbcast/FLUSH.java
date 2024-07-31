@@ -198,7 +198,7 @@ public class FLUSH extends Protocol {
         return totalTimeInFlush;
     }
 
-    @ManagedAttribute
+    @ManagedAttribute(type=AttributeType.SCALAR)
     public int getNumberOfFlushes() {
         return numberOfFlushes;
     }

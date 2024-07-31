@@ -8,6 +8,7 @@ import org.jgroups.annotations.Property;
 import org.jgroups.blocks.locking.AwaitInfo;
 import org.jgroups.blocks.locking.LockInfo;
 import org.jgroups.blocks.locking.LockNotification;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
@@ -122,10 +123,10 @@ abstract public class Locking extends Protocol {
         return view != null? view.toString() : null;
     }
 
-    @ManagedAttribute(description="Number of server locks (only on coord)")
+    @ManagedAttribute(description="Number of server locks (only on coord)",type=AttributeType.SCALAR)
     public int getNumServerLocks() {return server_locks.size();}
 
-    @ManagedAttribute(description="Number of client locks")
+    @ManagedAttribute(description="Number of client locks",type=AttributeType.SCALAR)
     public int getNumClientLocks() {return client_lock_table.numLocks();}
 
     public void init() throws Exception {

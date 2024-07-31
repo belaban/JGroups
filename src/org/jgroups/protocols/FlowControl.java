@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 
 import static org.jgroups.Message.TransientFlag.DONT_BLOCK;
 import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
+import static org.jgroups.conf.AttributeType.SCALAR;
 
 
 /**
@@ -111,12 +112,23 @@ public abstract class FlowControl extends Protocol {
     public <T extends FlowControl> T setMinCredits(long m)                {min_credits=m; return (T)this;}
     public long                      getMaxBlockTime()                    {return max_block_time;}
     public <T extends FlowControl> T setMaxBlockTime(long t)              {max_block_time=t; return (T)this;}
+
+    /** Don't remove! https://issues.redhat.com/browse/JGRP-2814 */
+    @ManagedAttribute(type=SCALAR) @Deprecated
     public long                      getNumberOfCreditRequestsReceived()  {return num_credit_requests_received;}
+
+    /** Don't remove! https://issues.redhat.com/browse/JGRP-2814 */
+    @ManagedAttribute(type=SCALAR) @Deprecated
     public long                      getNumberOfCreditRequestsSent()      {return num_credit_requests_sent;}
+
+    /** Don't remove! https://issues.redhat.com/browse/JGRP-2814 */
+    @ManagedAttribute(type=SCALAR) @Deprecated
     public long                      getNumberOfCreditResponsesReceived() {return num_credit_responses_received;}
+
+    /** Don't remove! https://issues.redhat.com/browse/JGRP-2814 */
+    @ManagedAttribute(type=SCALAR) @Deprecated
     public long                      getNumberOfCreditResponsesSent()     {return num_credit_responses_sent;}
 
-    
     public abstract String printSenderCredits();
 
     @ManagedOperation(description="Print receiver credits")

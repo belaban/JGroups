@@ -575,6 +575,26 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         return (T)this;
     }
 
+    /** Don't remove! https://issues.redhat.com/browse/JGRP-2814 */
+    @ManagedAttribute(type=SCALAR) @Deprecated
+    public long getNumRejectedMsgs() {return thread_pool.numberOfRejectedMessages();}
+
+    /** Don't remove! https://issues.redhat.com/browse/JGRP-2814 */
+    @ManagedAttribute(type=SCALAR) @Deprecated
+    public long getNumberOfThreadDumps() {return thread_pool.getNumberOfThreadDumps();}
+
+    /** Don't remove! https://issues.redhat.com/browse/JGRP-2814 */
+    @ManagedAttribute(type=SCALAR) @Deprecated
+    public long     getNumUcastMsgsSent()       {return msg_stats.getNumUcastsSent();}
+    /** Don't remove! https://issues.redhat.com/browse/JGRP-2814 */
+    @ManagedAttribute(type=SCALAR) @Deprecated
+    public long     getNumMcastMsgsSent()       {return msg_stats.getNumMcastsSent();}
+    /** Don't remove! https://issues.redhat.com/browse/JGRP-2814 */
+    @ManagedAttribute(type=SCALAR) @Deprecated
+    public long     getNumUcastMsgsReceived()   {return msg_stats.getNumUcastsReceived();}   /** Don't remove! https://issues.redhat.com/browse/JGRP-2814 */
+    @ManagedAttribute(type=SCALAR) @Deprecated
+    public long     getNumMcastMsgsReceived()   {return msg_stats.getNumMcastsReceived();}
+
     public ThreadFactory getThreadFactory() {
         return thread_factory;
     }
