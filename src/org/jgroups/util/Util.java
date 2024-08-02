@@ -4934,7 +4934,7 @@ public class Util {
      * @param p
      * @return A string with vars replaced, or the same string if no vars found
      */
-    public static String substituteVariable(String val, Properties p) {
+    public static String substituteVariableOld(String val, Properties p) {
         if(val == null)
             return val;
         String retval=val, prev;
@@ -4946,6 +4946,62 @@ public class Util {
                 break;
         }
         return retval;
+    }
+
+    /**
+     * Replaces variables in a string.
+     * @param input The input string
+     * @param p A Properties hashmap, may be null
+     * @return The string with replaced variables, might be the same string as the input string if no substitution took place.
+     */
+    public static String substituteVariable(String input, Properties p) {
+        if(input == null)
+            return input;
+        StringBuilder sb=new StringBuilder(input.length()), cache=null;
+        for(int i=0; i < input.length(); i++) {
+            char ch=input.charAt(i);
+            switch(ch) {
+                case '$':
+                    char next=nextChar(input, i+1);
+                    if(next == 0) { // end of string
+                        sb.append(ch);
+                        continue; // will terminate
+                    }
+                    if(next == '{') { // found '${'
+                        i++;
+                        if(cache != null) // we've already encountered a '${', but it is ignored
+                            sb.append(cache);
+                        cache=new StringBuilder(input.length()).append(ch).append(next);
+                    }
+                    else
+                        sb.append(ch); // .append(next);
+                    break;
+                case '}':
+                    if(cache != null) {
+                        String val=cache.substring(2);
+                        String tmp=getProperty(val, p);
+                        if(tmp != null)
+                            sb.append(tmp);
+                        cache=null;
+                    }
+                    else
+                        sb.append(ch);
+                    break;
+                default:
+                    if(cache != null)
+                        cache.append(ch);
+                    else
+                        sb.append(ch);
+                    break;
+            }
+        }
+        if(cache != null)
+            sb.append(cache);
+        return sb.toString();
+    }
+
+    protected static char nextChar(String s, int index) {
+        return index >= s.length()? 0 : s.charAt(index);
     }
 
     private static String _substituteVar(String val, Properties p) {
