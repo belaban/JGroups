@@ -361,7 +361,7 @@ public abstract class Discovery extends Protocol {
                 if(max_rank_to_reply > 0 && hdr.initialDiscovery() && Util.getRank(view, local_addr) > max_rank_to_reply)
                     return null;
                 // Only send a response if hdr.mbrs is not empty and contains myself. Otherwise, always send my info
-                if(data.stream().anyMatch(pd -> pd.mbrs() != null && pd.mbrs().contains(local_addr)))
+                if (data != null && data.stream().map(PingData::mbrs).filter(Objects::nonNull).anyMatch(mbrs -> mbrs.contains(local_addr)))
                     return null;
                 PhysicalAddress physical_addr=(PhysicalAddress)down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
                 PingData p=new PingData(local_addr, is_server, NameCache.get(local_addr), physical_addr).coord(is_coord);
