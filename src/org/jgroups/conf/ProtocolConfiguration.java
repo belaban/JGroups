@@ -115,6 +115,8 @@ public class ProtocolConfiguration {
                 String replacement=Util.substituteVariable(val);
                 if(replacement != null)
                     properties.put(key, replacement);
+                else
+                    it.remove();
             }
         }
         properties_str=propertiesToString();

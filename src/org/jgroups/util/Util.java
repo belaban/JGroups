@@ -4997,7 +4997,7 @@ public class Util {
         }
         if(cache != null)
             sb.append(cache);
-        return sb.toString();
+        return sb.length() == 0? null : sb.toString();
     }
 
     protected static char nextChar(String s, int index) {

@@ -1277,6 +1277,10 @@ public class UtilTest {
         val="hello ${name and end";
         replacement=Util.substituteVariable(val);
         assert val.equals(replacement);
+
+        val="${hello.world}";
+        replacement=Util.substituteVariable(val);
+        assert replacement == null;
     }
 
 
