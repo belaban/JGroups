@@ -1230,12 +1230,11 @@ public class UtilTest {
             System.out.println("line = \"" + line + "\"");
             list.add(line);
         }
-
         assert list.size() == 4;
     }
 
 
-    public static void testVariableSubstitution() {
+    public void testVariableSubstitution() {
         String val="hello world", replacement;
         replacement=Util.substituteVariable(val);
         Assert.assertEquals(val, replacement);
@@ -1267,6 +1266,14 @@ public class UtilTest {
         catch(Throwable t) {
             Assert.assertEquals(IllegalArgumentException.class, t.getClass());
         }
+        System.setProperty("name", "Bela");
+        val="bela${ban ${name} bong}done";
+        replacement=Util.substituteVariable(val);
+        assert val.equals("bela${ban bela bong}done");
+
+        val="be}la${ban ${name} bong}done ${name}";
+        replacement=Util.substituteVariable(val);
+        assert val.equals("be}la${ban bela bong}done bela");
     }
 
 
