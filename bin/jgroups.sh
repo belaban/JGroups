@@ -50,5 +50,8 @@ FLAGS="-server -Xmx1G -Xms500M -XX:+HeapDumpOnOutOfMemoryError"
 # SSL_FLAGS="-Djavax.net.debug=ssl:handshake"
 #Z1="-XX:+UseZGC -XX:+ZGenerational"
 
-java $Z1 -cp $CP $SSL_FLAGS $DEBUG $LOG $JG_FLAGS $FLAGS $JMX $JMC $*
+# Dump with jcmd <pid> Thread.dump_to_file <filename>
+# DUMP_VTHREADS=-Djdk.trackAllThreads=true
+
+java $DUMP_VTHREADS $Z1 -cp $CP $SSL_FLAGS $DEBUG $LOG $JG_FLAGS $FLAGS $JMX $JMC $*
 
