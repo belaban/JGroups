@@ -182,35 +182,20 @@ public class UtilTest {
 
     public void testReplaceProperties() {
         String input="hello ${my.name:Bela}";
-
         String out=Util.substituteVariable(input);
         System.out.println("out = " + out);
-
         assert out.equals("hello Bela");
+
         Properties props=new Properties();
         props.put("my.name", "Michelle");
         out=Util.substituteVariable(input, props);
         System.out.println("out = " + out);
         assert out.equals("hello Michelle");
 
-        input="hello \\${my.name:Bela}"; // no replacement as the trailing slash prevents this
-        out=Util.substituteVariable(input, props);
-        System.out.println("out = " + out);
-
-        assert out.equals(input);
-
-        input="\\${escape:bla}";
+        input="<UDP bind_addr=\"${my.bind_addr:127.0.0.1}\" ... />";
         out=Util.substituteVariable(input);
         System.out.println("out = " + out);
-
-        assert input.equals(out);
-
-
-        input="<UDP bind_addr=\"\\${my.bind_addr:127.0.0.1}\" ... />";
-        out=Util.substituteVariable(input);
-        System.out.println("out = " + out);
-
-        assert input.equals(out);
+        assert out.equals("<UDP bind_addr=\"127.0.0.1\" ... />");
     }
 
 
@@ -1230,43 +1215,72 @@ public class UtilTest {
             System.out.println("line = \"" + line + "\"");
             list.add(line);
         }
-
         assert list.size() == 4;
     }
 
 
-    public static void testVariableSubstitution() {
+    public void testVariableSubstitution() {
         String val="hello world", replacement;
         replacement=Util.substituteVariable(val);
-        Assert.assertEquals(val, replacement);
+        assert val.equals(replacement);
 
         val="my name is ${user.name}";
         replacement=Util.substituteVariable(val);
-        Assert.assertNotSame(val, replacement);
-        assert !(val.equals(replacement));
+        assert !val.equals(replacement);
 
         val="my name is ${user.name} and ${user.name}";
         replacement=Util.substituteVariable(val);
         assert !(val.equals(replacement));
-        Assert.assertEquals(-1, replacement.indexOf("${"));
 
         val="my name is ${unknown.var:Bela Ban}";
         replacement=Util.substituteVariable(val);
         assert replacement.contains("Bela Ban");
-        Assert.assertEquals(-1, replacement.indexOf("${"));
+        assert !replacement.contains("${");
 
         val="my name is ${unknown.var}";
         replacement=Util.substituteVariable(val);
-        assert replacement.contains("${");
+        assert replacement.equals("my name is ");
 
         val="here is an invalid ${argument because it doesn't contains a closing bracket";
-        try {
-            replacement=Util.substituteVariable(val);
-            assert false : "should be an IllegalArgumentException";
-        }
-        catch(Throwable t) {
-            Assert.assertEquals(IllegalArgumentException.class, t.getClass());
-        }
+        replacement=Util.substituteVariable(val);
+        assert val.equals(replacement);
+
+        System.setProperty("name", "Bela");
+        val="bela${ban ${name} bong}done";
+        replacement=Util.substituteVariable(val);
+        assert replacement.equals("bela${ban Bela bong}done");
+
+        val="be}la${ban ${name} bong}done ${name}. done ";
+        replacement=Util.substituteVariable(val);
+        assert replacement.equals("be}la${ban Bela bong}done Bela. done ");
+
+        val="bla$";
+        replacement=Util.substituteVariable(val);
+        assert val.equals(replacement);
+
+        val="bla${";
+        replacement=Util.substituteVariable(val);
+        assert val.equals(replacement);
+
+        val="bla${b";
+        replacement=Util.substituteVariable(val);
+        assert val.equals(replacement);
+
+        val="bla}";
+        replacement=Util.substituteVariable(val);
+        assert val.equals(replacement);
+
+        val="hello $Bela{";
+        replacement=Util.substituteVariable(val);
+        assert val.equals(replacement);
+
+        val="hello ${name and end";
+        replacement=Util.substituteVariable(val);
+        assert val.equals(replacement);
+
+        val="${hello.world}";
+        replacement=Util.substituteVariable(val);
+        assert replacement == null;
     }
 
 

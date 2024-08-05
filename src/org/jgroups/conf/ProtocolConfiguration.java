@@ -111,18 +111,16 @@ public class ProtocolConfiguration {
             Map.Entry<String, String> entry=it.next();
             String key=entry.getKey();
             String val=entry.getValue();
-            String tmp=Util.substituteVariable(val);
-            if(!val.equals(tmp)) {
-                properties.put(key, tmp);
-            }
-            else {
-                if(tmp.contains("${"))
+            if(val.contains("${")) {
+                String replacement=Util.substituteVariable(val);
+                if(replacement != null)
+                    properties.put(key, replacement);
+                else
                     it.remove();
             }
         }
         properties_str=propertiesToString();
     }
-
 
     public String toString() {
         StringBuilder retval=new StringBuilder();
@@ -158,7 +156,6 @@ public class ProtocolConfiguration {
         }
         return buf.toString();
     }
-
 
     public String getProtocolStringNewXml() {
         StringBuilder buf=new StringBuilder(protocol_name + ' ');
