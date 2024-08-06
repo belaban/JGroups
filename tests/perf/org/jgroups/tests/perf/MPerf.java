@@ -49,6 +49,7 @@ public class MPerf implements Receiver {
     protected final Log                       log=LogFactory.getLog(getClass());
     protected Path                            out_file_path;
     protected boolean                         looping=true;
+    protected long                            sleep;
     protected final ResponseCollector<Result> results=new ResponseCollector<>();
     protected ThreadFactory                   thread_factory;
     protected static final short              ID=ClassConfigurator.getProtocolId(MPerf.class);
@@ -99,14 +100,14 @@ public class MPerf implements Receiver {
         final String INPUT=
           "[1] Start test [2] View [4] Threads (%d) [6] Time (%,ds) [7] Msg size (%s)\n" +
             "[8] Number of senders (%s) [o] Toggle OOB (%s) [l] Toggle measure local messages (%s)\n" +
-            "[s] Display message sources (%s)\n" +
+            "[s] Display message sources (%s) [9] sleep (%d ms)\n" +
             "[x] Exit this [X] Exit all";
 
         while(looping) {
             try {
                 int c=Util.keyPress(String.format(INPUT, num_threads, time, Util.printBytes(msg_size),
                                               num_senders <= 0? "all" : String.valueOf(num_senders),
-                                              oob, log_local, display_msg_src));
+                                              oob, log_local, display_msg_src, sleep));
                 switch(c) {
                     case '1':
                         startTest();
@@ -125,6 +126,9 @@ public class MPerf implements Receiver {
                         break;
                     case '8':
                         configChange("num_senders");
+                        break;
+                    case '9':
+                        configChange("sleep");
                         break;
                     case 'o':
                         ConfigChange change=new ConfigChange("oob", !oob);
@@ -208,6 +212,7 @@ public class MPerf implements Receiver {
         sb.append("num_senders=").append(num_senders).append('\n');
         sb.append("oob=").append(oob).append('\n');
         sb.append("log_local=").append(log_local).append('\n');
+        sb.append("sleep=").append(sleep).append('\n');
         sb.append("display_msg_src=").append(display_msg_src).append('\n');
         return sb.toString();
     }
@@ -267,6 +272,8 @@ public class MPerf implements Receiver {
             case MPerfHeader.DATA:
                 if (log_local || !Objects.equals(msg.getSrc(), local_addr)) {
                     received_msgs_map.addMessage(msg.getSrc());
+                    if(sleep > 0)
+                        Util.sleep(sleep);
                 }
                 break;
 
@@ -323,6 +330,8 @@ public class MPerf implements Receiver {
             if(type == MPerfHeader.DATA) {
                 if (log_local || !Objects.equals(msg.getSrc(), local_addr)) {
                     received_msgs_map.addMessage(msg.getSrc());
+                    if(sleep > 0)
+                        Util.sleep(sleep);
                 }
             } else {
                 receive(msg);
@@ -362,6 +371,7 @@ public class MPerf implements Receiver {
         cfg.addChange("num_senders", num_senders);
         cfg.addChange("oob",         oob);
         cfg.addChange("log_local",   log_local);
+        cfg.addChange("sleep",       sleep);
         send(sender,cfg,MPerfHeader.CONFIG_RSP);
     }
 

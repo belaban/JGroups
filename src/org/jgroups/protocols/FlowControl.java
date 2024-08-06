@@ -44,7 +44,7 @@ public abstract class FlowControl extends Protocol {
      * a REPLENISHMENT request to the members from which we expect credits. A value <= 0 means to wait forever.
      */
     @Property(description="Max time (in ms) to block",type=AttributeType.TIME)
-    protected long           max_block_time=500;
+    protected long           max_block_time=5000;
 
 
     /**
@@ -55,7 +55,7 @@ public abstract class FlowControl extends Protocol {
     @Property(description="The threshold (as a percentage of max_credits) at which a receiver sends more credits to " +
             "a sender. Example: if max_credits is 1'000'000, and min_threshold 0.25, then we send ca. 250'000 credits " +
             "to P once we've got only 250'000 credits left for P (we've received 750'000 bytes from P)")
-    protected double         min_threshold=0.40;
+    protected double         min_threshold=0.20;
 
     /**
      * Computed as <tt>max_credits</tt> times <tt>min_theshold</tt>. If explicitly set, this will
