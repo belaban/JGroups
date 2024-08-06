@@ -394,7 +394,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
         }
 
         if(suppress_time_non_member_warnings > 0)
-            suppress_log_non_member=new SuppressLog<>(log, "MsgDroppedNak", "SuppressMsg");
+            suppress_log_non_member=new SuppressLog<>(log, "MsgDroppedNak");
 
         // max bundle size (minus overhead) divided by <long size> times bits per long
         int estimated_max_msgs_in_xmit_req=(transport.getBundler().getMaxSize() -50) * Global.LONG_SIZE;
