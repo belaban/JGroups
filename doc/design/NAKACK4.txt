@@ -9,7 +9,7 @@ Contrary to NAKACK2, NAKACK4 does not dynamically expand or shrink its xmit wind
 ring buffer (FixedBuffer). This means that flow control is built in, and MFC is not required anymore.
 
 NAKACK4 is the new class with a fixed xmit window; NAKACK3 is a copy of NAKACK2, but extending ReliableMulticast. This
-was done to leave NAKACK2 completely untouched. This means that one of the following adaption pattern can be used:
+was done to leave NAKACK2 completely untouched. This means that one of the following adoption patterns can be used:
 * Continue using NAKACK2 -> absolutely no risk, as there are no code changes
 * Switch to NAKACK3 -> minimal risk, as this is the same code as NAKACK2, but refactored (which can introduce bugs)
 * Switch to NAKACK4 -> no risk no fun :-) But because this class extends ReliableMulticast (which started as a copy of

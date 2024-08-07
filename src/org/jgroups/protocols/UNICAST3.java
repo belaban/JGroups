@@ -136,8 +136,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     /* --------------------------------------------- Fields ------------------------------------------------ */
 
 
-    protected final ConcurrentMap<Address,SenderEntry>   send_table=Util.createConcurrentMap();
-    protected final ConcurrentMap<Address,ReceiverEntry> recv_table=Util.createConcurrentMap();
+    protected final Map<Address,SenderEntry>   send_table=Util.createConcurrentMap();
+    protected final Map<Address,ReceiverEntry> recv_table=Util.createConcurrentMap();
 
     protected final ReentrantLock          recv_table_lock=new ReentrantLock();
 
