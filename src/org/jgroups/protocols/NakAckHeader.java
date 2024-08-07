@@ -23,10 +23,11 @@ public class NakAckHeader extends Header {
     public static final byte XMIT_REQ      = 2;  // retransmit request
     public static final byte XMIT_RSP      = 3;  // retransmit response (contains one or more messages)
     public static final byte HIGHEST_SEQNO = 4;  // the highest sent seqno
+    public static final byte ACK           = 5;  // ack of the highest delivered seqno (send from receiver->sender)
 
-    byte      type;
-    long      seqno=-1;        // seqno of regular message (MSG, HIGHEST_SEQNO)
-    Address   sender;          // the original sender of the message (for XMIT_REQ)
+    protected byte           type;
+    protected long           seqno=-1;        // seqno of regular message (MSG, HIGHEST_SEQNO)
+    protected Address        sender;          // the original sender of the message (for XMIT_REQ)
 
 
     public NakAckHeader() {
@@ -50,19 +51,17 @@ public class NakAckHeader extends Header {
 
     public static NakAckHeader createHighestSeqnoHeader(long seqno) {return new NakAckHeader(HIGHEST_SEQNO, seqno);}
 
+    public static NakAckHeader createAckHeader(long ack) {return new NakAckHeader(ACK, ack);}
 
-    /**
-     * Constructor for regular messages or XMIT responses
-     */
+
+    /** Constructor for regular messages or XMIT responses */
     private NakAckHeader(byte type, long seqno) {
         this.type=type;
         this.seqno=seqno;
     }
 
 
-    /**
-     * Constructor for retransmit requests (XMIT_REQs) (low and high define the range of msgs)
-     */
+    /** Constructor for retransmit requests (XMIT_REQs) (low and high define the range of msgs) */
     private NakAckHeader(byte type, Address sender) {
         this.type=type;
         this.sender=sender;
@@ -79,6 +78,7 @@ public class NakAckHeader extends Header {
             case MSG:
             case XMIT_RSP:
             case HIGHEST_SEQNO:
+            case ACK:
                 Bits.writeLongCompressed(seqno, out);
                 break;
             case XMIT_REQ:
@@ -94,6 +94,7 @@ public class NakAckHeader extends Header {
             case MSG:
             case XMIT_RSP:
             case HIGHEST_SEQNO:
+            case ACK:
                 seqno=Bits.readLongCompressed(in);
                 break;
             case XMIT_REQ:
@@ -109,6 +110,7 @@ public class NakAckHeader extends Header {
             case MSG:
             case XMIT_RSP:
             case HIGHEST_SEQNO:
+            case ACK:
                 return retval + Bits.size(seqno);
 
             case XMIT_REQ:
@@ -134,6 +136,7 @@ public class NakAckHeader extends Header {
             case XMIT_REQ:      return "XMIT_REQ";
             case XMIT_RSP:      return "XMIT_RSP";
             case HIGHEST_SEQNO: return "HIGHEST_SEQNO";
+            case ACK:           return "ACK";
             default:            return "<undefined>";
         }
     }
@@ -146,6 +149,7 @@ public class NakAckHeader extends Header {
             case MSG:
             case XMIT_RSP: // seqno and sender
             case HIGHEST_SEQNO:
+            case ACK:
                 ret.append(", seqno=").append(seqno);
                 break;
             case XMIT_REQ:  // range and sender

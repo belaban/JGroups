@@ -140,10 +140,17 @@ public class SizeTest {
         _testSize(digest);
     }
 
-    public static void testNakackHeader() throws Exception {
+    public void testNakackHeader2() throws Exception {
         _testSize(NakAckHeader2.createMessageHeader(322649));
         _testSize(NakAckHeader2.createXmitRequestHeader(Util.createRandomAddress()));
         _testSize(NakAckHeader2.createXmitResponseHeader());
+    }
+
+    public void testNakackHeader() throws Exception {
+        _testSize(NakAckHeader.createMessageHeader(322649));
+        _testSize(NakAckHeader.createXmitRequestHeader(Util.createRandomAddress()));
+        _testSize(NakAckHeader.createXmitResponseHeader());
+        _testSize(NakAckHeader.createAckHeader(322649));
     }
 
 

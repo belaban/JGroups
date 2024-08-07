@@ -333,6 +333,10 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
         return sb.toString();
     }
 
+    protected Buffer<Message> sendWin() {
+        return local_xmit_table != null? local_xmit_table : (local_xmit_table=xmit_table.get(local_addr));
+    }
+
     @ManagedOperation(description="Resets all statistics")
     public void resetStats() {
         num_messages_sent=num_messages_received=0;
@@ -673,8 +677,8 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
             return;
         }
 
-        Buffer<Message> win=local_xmit_table;
-        if(win == null && (win=local_xmit_table=xmit_table.get(local_addr)) == null) // discard message if there is no entry for local_addr
+        Buffer<Message> win=sendWin();
+        if(win == null) // discard message if there is no entry for local_addr
             return;
 
         if(msg.getSrc() == null)
