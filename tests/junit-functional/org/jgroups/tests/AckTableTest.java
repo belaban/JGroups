@@ -64,5 +64,9 @@ public class AckTableTest {
         table.adjust(List.of(a,b,c,d));
         assert table.size() == 4;
         assert table.min() == 0;
+
+        table.clear();
+        assert table.size() == 0;
+        assert table.min() == 0;
     }
 }
