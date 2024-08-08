@@ -4,6 +4,7 @@ import org.jgroups.annotations.GuardedBy;
 
 import java.io.Closeable;
 import java.util.*;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Condition;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -28,6 +29,8 @@ public class FixedBuffer<T> extends Buffer<T> implements Closeable {
 
     /** Used to unblock blocked senders on close() */
     protected boolean         open=true;
+
+    protected final LongAdder num_blockings=new LongAdder();
 
 
     public FixedBuffer() {
@@ -54,7 +57,8 @@ public class FixedBuffer<T> extends Buffer<T> implements Closeable {
         this.low=this.hd=this.high=this.offset=offset;
     }
 
-    @Override public int capacity() {return buf.length;}
+    @Override public int capacity()     {return buf.length;}
+    public long          numBlockings() {return num_blockings.sum();}
 
     /**
      * Adds a new element to the buffer
@@ -276,6 +280,12 @@ public class FixedBuffer<T> extends Buffer<T> implements Closeable {
     }
 
     @Override
+    public void resetStats() {
+        super.resetStats();
+        num_blockings.reset();
+    }
+
+    @Override
     public void close() {
         lock.lock();
         try {
@@ -323,6 +333,7 @@ public class FixedBuffer<T> extends Buffer<T> implements Closeable {
     protected boolean block(long seqno) {
         while(open && seqno - low > capacity()) {
             try {
+                num_blockings.increment();
                 buffer_full.await();
             }
             catch(InterruptedException e) {

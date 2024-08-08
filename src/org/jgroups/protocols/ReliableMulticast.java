@@ -313,7 +313,11 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
         for(Map.Entry<Address,Buffer<Message>> entry: xmit_table.entrySet()) {
             Address addr=entry.getKey();
             Buffer<Message> win=entry.getValue();
-            ret.append(addr).append(": ").append(win.toString()).append('\n');
+            int cap=win.capacity();
+            ret.append(addr).append(": ").append(win);
+            if(cap >0)
+                ret.append(String.format(" [capacity: %s]", cap));
+            ret.append('\n');
         }
         return ret.toString();
     }
@@ -333,7 +337,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
         return sb.toString();
     }
 
-    protected Buffer<Message> sendWin() {
+    protected Buffer<Message> sendBuf() {
         return local_xmit_table != null? local_xmit_table : (local_xmit_table=xmit_table.get(local_addr));
     }
 
@@ -559,6 +563,10 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
                 handleHighestSeqno(msg.getSrc(), hdr.seqno);
                 return null;
 
+            case NakAckHeader.ACK:
+                handleAck(msg.src(), hdr.seqno);
+                return null;
+
             default:
                 log.error(Util.getMessage("HeaderTypeNotKnown"), local_addr, hdr.type);
                 return null;
@@ -572,6 +580,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
                 up_prot.up(mb);
             return;
         }
+        long highest_ack=0;
         for(FastArray<Message>.FastIterator it=(FastArray<Message>.FastIterator)mb.iterator(); it.hasNext();) {
             final Message msg=it.next();
             NakAckHeader hdr;
@@ -607,10 +616,17 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
                     it.remove();
                     handleHighestSeqno(mb.sender(), hdr.seqno);
                     break;
+                case NakAckHeader.ACK:
+                    it.remove();
+                    highest_ack=Math.max(highest_ack, hdr.seqno);
+                    break;
                 default:
                     log.error(Util.getMessage("HeaderTypeNotKnown"), local_addr, hdr.type);
             }
         }
+
+        if(highest_ack > 0)
+            handleAck(mb.sender(), highest_ack);
 
         if(!mb.isEmpty())
             handleMessageBatch(mb);
@@ -677,7 +693,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
             return;
         }
 
-        Buffer<Message> win=sendWin();
+        Buffer<Message> win=sendBuf();
         if(win == null) // discard message if there is no entry for local_addr
             return;
 
@@ -810,6 +826,8 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
             if(size > 0) {
                 if(stats)
                     avg_batch_size.add(size);
+                long hd=win.highestDelivered();
+                down_prot.down(new EmptyMessage(sender).putHeader(id, NakAckHeader.createAckHeader(hd)).setFlag(OOB));
                 deliverBatch(batch);
             }
         }
@@ -973,6 +991,9 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
                       local_addr, sender, my_highest_received, sender, seqno);
             retransmit(seqno, seqno, sender, false);
         }
+    }
+
+    protected void handleAck(Address sender, long ack) {
     }
 
     protected Message msgFromXmitRsp(Message msg, NakAckHeader hdr) {
