@@ -4,6 +4,7 @@ import org.jgroups.annotations.GuardedBy;
 
 import java.io.Closeable;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Condition;
 import java.util.function.BiConsumer;
@@ -24,13 +25,14 @@ import java.util.stream.StreamSupport;
  */
 public class FixedBuffer<T> extends Buffer<T> implements Closeable {
     /** Holds the elements */
-    protected final T[]       buf;
-    protected final Condition buffer_full=lock.newCondition();
+    protected final T[]           buf;
+    protected final Condition     buffer_full=lock.newCondition();
 
     /** Used to unblock blocked senders on close() */
-    protected boolean         open=true;
+    protected boolean             open=true;
 
-    protected final LongAdder num_blockings=new LongAdder();
+    protected final LongAdder     num_blockings=new LongAdder();
+    protected final AverageMinMax avg_time_blocked=new AverageMinMax().unit(TimeUnit.NANOSECONDS);
 
 
     public FixedBuffer() {
@@ -57,8 +59,9 @@ public class FixedBuffer<T> extends Buffer<T> implements Closeable {
         this.low=this.hd=this.high=this.offset=offset;
     }
 
-    @Override public int capacity()     {return buf.length;}
-    public long          numBlockings() {return num_blockings.sum();}
+    @Override public int capacity()       {return buf.length;}
+    public long          numBlockings()   {return num_blockings.sum();}
+    public AverageMinMax avgTimeBlocked() {return avg_time_blocked;}
 
     /**
      * Adds a new element to the buffer
@@ -283,6 +286,7 @@ public class FixedBuffer<T> extends Buffer<T> implements Closeable {
     public void resetStats() {
         super.resetStats();
         num_blockings.reset();
+        avg_time_blocked.clear();
     }
 
     @Override
@@ -332,11 +336,16 @@ public class FixedBuffer<T> extends Buffer<T> implements Closeable {
     @GuardedBy("lock")
     protected boolean block(long seqno) {
         while(open && seqno - low > capacity()) {
+            num_blockings.increment();
+            long start=System.nanoTime();
             try {
-                num_blockings.increment();
                 buffer_full.await();
             }
             catch(InterruptedException e) {
+            }
+            finally {
+                long time=System.nanoTime()-start;
+                avg_time_blocked.add(time);
             }
         }
         return open;

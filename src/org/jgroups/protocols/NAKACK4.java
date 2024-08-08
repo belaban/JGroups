@@ -6,6 +6,7 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.util.AckTable;
+import org.jgroups.util.AverageMinMax;
 import org.jgroups.util.Buffer;
 import org.jgroups.util.Buffer.Options;
 import org.jgroups.util.FixedBuffer;
@@ -35,6 +36,12 @@ public class NAKACK4 extends ReliableMulticast {
     public long getNumBlockings() {
         FixedBuffer<Message> buf=(FixedBuffer<Message>)sendBuf();
         return buf != null? buf.numBlockings() : -1;
+    }
+
+    @ManagedAttribute(description="Average time blocked")
+    public AverageMinMax getAvgTimeBlocked() {
+        FixedBuffer<Message> buf=(FixedBuffer<Message>)sendBuf();
+        return buf != null? buf.avgTimeBlocked() : null;
     }
 
     @Override
