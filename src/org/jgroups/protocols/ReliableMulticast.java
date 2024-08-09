@@ -861,8 +861,10 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
         for(long i: missing_msgs) {
             Message msg=win.get(i);
             if(msg == null) {
-                if(log.isWarnEnabled() && log_not_found_msgs && !local_addr.equals(xmit_requester) && i > win.low())
-                    log.warn(Util.getMessage("MessageNotFound"), local_addr, original_sender, i);
+                if(log.isWarnEnabled() && log_not_found_msgs && !local_addr.equals(xmit_requester) && i > win.low()) {
+                    log.warn("%s: message %s::%d not found in retransmission table, requester: %s, win: %s",
+                             local_addr, original_sender, i, xmit_requester, win);
+                }
                 continue;
             }
             sendXmitRsp(xmit_requester, msg);
