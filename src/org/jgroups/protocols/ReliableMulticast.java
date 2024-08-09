@@ -190,7 +190,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
     protected volatile boolean          is_server;
     protected volatile List<Address>    members=new ArrayList<>();
     protected volatile View             view;
-    private final AtomicLong            seqno=new AtomicLong(0); // current message sequence number (starts with 1)
+    protected final AtomicLong          seqno=new AtomicLong(0); // current message sequence number (starts with 1)
 
     /** Map to store sent and received messages (keyed by sender) */
     protected final ConcurrentMap<Address,Buffer<Message>> xmit_table=Util.createConcurrentMap();
@@ -508,7 +508,21 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
         Address dest=msg.getDest();
         if(dest != null || msg.isFlagSet(Message.Flag.NO_RELIABILITY))
             return down_prot.down(msg); // unicast address: not null and not mcast, pass down unchanged
-        send(msg);
+
+        if(!running) {
+            log.trace("%s: discarded message as we're not in the 'running' state, message: %s", local_addr, msg);
+            return null;
+        }
+        Buffer<Message> win=sendBuf();
+        if(win == null) // discard message if there is no send buffer (should never happen)
+            return null;
+
+        if(msg.getSrc() == null)
+            msg.setSrc(local_addr); // this needs to be done so we can check whether the message sender is the local_addr
+        send(msg, win);
+        num_messages_sent++;
+        if(resend_last_seqno && last_seqno_resender != null)
+            last_seqno_resender.skipNext();
         return null;    // don't pass down the stack
     }
 
@@ -687,19 +701,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
      * Made seqno increment and adding to sent_msgs atomic, e.g. seqno won't get incremented if adding to
      * sent_msgs fails e.g. due to an OOM (see https://issues.redhat.com/browse/JGRP-179). bela Jan 13 2006
      */
-    protected void send(Message msg) {
-        if(!running) {
-            log.trace("%s: discarded message as we're not in the 'running' state, message: %s", local_addr, msg);
-            return;
-        }
-
-        Buffer<Message> win=sendBuf();
-        if(win == null) // discard message if there is no entry for local_addr
-            return;
-
-        if(msg.getSrc() == null)
-            msg.setSrc(local_addr); // this needs to be done so we can check whether the message sender is the local_addr
-
+    protected void send(Message msg, Buffer<Message> win) {
         boolean dont_loopback_set=msg.isFlagSet(DONT_LOOPBACK);
         long msg_id=seqno.incrementAndGet();
         msg.putHeader(this.id, NakAckHeader.createMessageHeader(msg_id));
@@ -722,10 +724,6 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
         if(is_trace)
             log.trace("%s --> [all]: #%d", local_addr, msg_id);
         down_prot.down(msg); // if this fails, since msg is in sent_msgs, it can be retransmitted
-        num_messages_sent++;
-
-        if(resend_last_seqno && last_seqno_resender != null)
-            last_seqno_resender.skipNext();
     }
 
 
