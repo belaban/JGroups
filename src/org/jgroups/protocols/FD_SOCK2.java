@@ -163,7 +163,7 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
         srv=createServer(bind_ports);
         srv.receiver(this).clientBindPort(client_bind_port).usePeerConnections(true).addConnectionListener(this).linger(linger);
         srv.start();
-        log.info("server listening on %s", bind_addr != null? srv.getChannel().getLocalAddress() : "*." + getActualBindPort());
+        log.info("server listening on %s", bind_addr != null? srv.getChannel().getLocalAddress() : "*:" + getActualBindPort());
     }
 
     public void stop() {
