@@ -27,7 +27,7 @@ public class NAKACK4 extends ReliableMulticast {
     protected static final Options SEND_OPTIONS=new Options().block(true);
 
     @Property(description="Size of the send/receive buffers, in messages",writable=false)
-    protected int                  capacity=1024;
+    protected int                  capacity=8192;
 
     @ManagedAttribute(description="Number of ACKs received",type=SCALAR)
     protected final LongAdder      acks_received=new LongAdder();
