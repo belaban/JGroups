@@ -1300,8 +1300,15 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
             else if(!xmit_task_map.isEmpty())
                 xmit_task_map.remove(target); // no current gaps for target
         }
-        if(resend_last_seqno && last_seqno_resender != null)
-            last_seqno_resender.execute(seqno.get());
+        if(resend_last_seqno && last_seqno_resender != null) {
+            // don't send the seqno.get(), as senders might have incremented the seqno, but not yet added the message
+            // to the table: send the highest message in the table
+            Buffer<Message> local_buf=sendBuf();
+            if(local_buf != null) {
+                long highest_sent_seqno=local_buf.high();
+                last_seqno_resender.execute(highest_sent_seqno);
+            }
+        }
     }
 
 
