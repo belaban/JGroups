@@ -151,7 +151,8 @@ public abstract class NioBaseServer extends BaseServer {
                         closeConnection(conn);
                     }
                     finally {
-                        it.remove();
+                        if(key.isValid())
+                            it.remove();
                     }
                 }
             }
