@@ -3892,12 +3892,10 @@ public class Util {
     }
 
     /**
-     * Reads a line of text.  A line is considered to be terminated by any one
-     * of a line feed ('\n'), a carriage return ('\r'), or a carriage return
-     * followed immediately by a linefeed.
-     * @return A String containing the contents of the line, not including
-     * any line-termination characters, or null if the end of the
-     * stream has been reached
+     * Reads a line of text.  A line is considered to be terminated by any one of a line feed ('\n'), a carriage
+     * return ('\r'), or a carriage return followed immediately by a linefeed.
+     * @return A String containing the contents of the line, not including any line-termination characters, or
+     * null if the end of the stream has been reached
      * @throws IOException If an I/O error occurs
      */
     public static String readLine(InputStream in) throws IOException {
@@ -3921,6 +3919,26 @@ public class Util {
         return sb.toString();
     }
 
+    /** Reads all bytes fro, an input stream, until eof (-1) is reached */
+    public static ByteArray readBytes(InputStream in) throws IOException {
+        byte[] retval=new byte[in.available()];
+        int index=0;
+        while(true) {
+            int ch=in.read();
+            switch(ch) {
+                //case '\r':
+                  //  break;
+                case '\n':
+                case -1:
+                    return new ByteArray(retval, 0, index);
+                default:
+                    if(index+1 >= retval.length)
+                        retval=Arrays.copyOf(retval, retval.length+5);
+                    retval[index++]=(byte)ch;
+                    break;
+            }
+        }
+    }
 
     /**
      * @param s

@@ -369,6 +369,13 @@ public class UtilTest {
         assert !Util.isAsciiString("\u1F601");
     }
 
+    public void testReadBytes2() throws IOException {
+        byte[] input="hello world".getBytes();
+        InputStream in=new ByteArrayInputStream(input);
+        ByteArray output=Util.readBytes(in);
+        byte[] tmp=output.getBytes();
+        assert Arrays.equals(input, tmp);
+    }
 
     public static void testReadBytes() {
         assert 10 == Util.readBytesInteger("10");

@@ -212,10 +212,10 @@ public class DiagnosticsHandler extends ReceiverAdapter implements Closeable {
             udp_mcast_sock.receive(packet);
             int payloadStartOffset = 0;
             if(passcode != null)
-                payloadStartOffset=authorizeProbeRequest(packet);
-            handleDiagnosticProbe(packet.getSocketAddress(),
-                                  new String(packet.getData(), packet.getOffset() + payloadStartOffset, packet.getLength()),
-                                  udp_response_sender);
+                payloadStartOffset=authorizeProbeRequest(packet.getData());
+            int len=packet.getLength();
+            String req=new String(packet.getData(), payloadStartOffset, len-payloadStartOffset);
+            handleDiagnosticProbe(packet.getSocketAddress(), req, udp_response_sender);
         }
         catch(IOException socket_ex) {
         }
@@ -230,8 +230,13 @@ public class DiagnosticsHandler extends ReceiverAdapter implements Closeable {
             InputStream input=client_sock.getInputStream();
             OutputStream output=client_sock.getOutputStream();) {
             sender=client_sock.getRemoteSocketAddress();
-            String request=Util.readLine(input);
-            handleDiagnosticProbe(sender, request, (snd,response) -> {
+            byte[] request=Util.readBytes(input).getBytes();
+            int payloadStartOffset=0;
+            if(passcode != null)
+                payloadStartOffset=authorizeProbeRequest(request);
+
+            String req=new String(request, payloadStartOffset, request.length-payloadStartOffset);
+            handleDiagnosticProbe(sender, req, (snd,response) -> {
                 try {
                     output.write(response.getBytes());
                 }
@@ -347,14 +352,14 @@ public class DiagnosticsHandler extends ReceiverAdapter implements Closeable {
 
 
     /**
-     * Performs authorization on given DatagramPacket.
-     * @param packet to authorize
+     * Performs authorization on given byte array
+     * @param request to authorize
      * @return offset in DatagramPacket where request payload starts
      * @throws Exception thrown if passcode received from client does not match set passcode
      */
-    protected int authorizeProbeRequest(DatagramPacket packet) throws Exception {
+    protected int authorizeProbeRequest(byte[] request) throws Exception {
         int offset = 0;
-        ByteArrayInputStream bis = new ByteArrayInputStream(packet.getData());
+        ByteArrayInputStream bis = new ByteArrayInputStream(request);
         DataInputStream in = new DataInputStream(bis);
         long t1 = in.readLong();
         double q1 = in.readDouble();
