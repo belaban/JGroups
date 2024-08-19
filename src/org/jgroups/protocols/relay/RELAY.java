@@ -29,7 +29,7 @@ import static org.jgroups.protocols.relay.RelayHeader.SITES_UP;
  * @since  5.2.17
  */
 @XmlInclude(schema="relay.xsd",type=XmlInclude.Type.EMBED,namespace="urn:jgroups:relay:1.0",alias="relay")
-@XmlElement(name="RelayConfiguration",type="relay:RelayConfigurationType")
+@XmlElement(name="RelayConfiguration",type="tns:RelayConfigurationType")
 public abstract class RELAY extends Protocol {
     // reserved flags
     public static final short              can_become_site_master_flag = 1 << 1;
