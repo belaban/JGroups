@@ -174,15 +174,11 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
         ping_dest.reset();
     }
 
-
     public void resetStats() {
         super.resetStats();
         num_suspect_events=0;
         suspect_history.clear();
     }
-
-
-
 
     public Object up(Message msg) {
         FdHeader hdr=msg.getHeader(this.id);
