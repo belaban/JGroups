@@ -134,7 +134,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @Property(description="The fully qualified name of a class implementing LocalTransport")
     protected String  local_transport_class;
 
-    @Property(description="If true, create virtual threads, otherwise create native threads")
+    @Deprecated
+    @Property(description="If true, create virtual threads, otherwise create native threads",
+      deprecatedMessage="use thread_pool.use_virtual_threads instead")
     protected boolean use_virtual_threads;
 
     @Property(description="Thread naming pattern for threads in this channel. Valid values are \"pcl\": " +
@@ -217,9 +219,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     public boolean          loopbackSeparateThread() {return loopback_separate_thread;}
     public <T extends TP> T loopbackSeparateThread(boolean l) {this.loopback_separate_thread=l; return (T)this;}
-
-    public boolean          useVirtualThreads()          {return use_virtual_threads;}
-    public <T extends TP> T useVirtualThreads(boolean b) {use_virtual_threads=b; return (T)this;}
 
     public long             getTimeServiceInterval() {return time_service_interval;}
     public <T extends TP> T setTimeServiceInterval(long t) {this.time_service_interval=t; return (T)this;}

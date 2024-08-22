@@ -21,7 +21,7 @@
          thread_pool.rejection_policy="run"
 
          message_processing_policy="direct"
-         use_virtual_threads="false"
+         thread_pool.use_virtual_threads="false"
          use_acks="true"
          bundler_type="transfer-queue"
          policies="org.jgroups.stack.CheckCallerRunsPolicy,org.jgroups.stack.CheckForAbsenceOfRED" />
