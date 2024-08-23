@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.LongAdder;
 
 /**
  * Dynamic tool to measure multicast performance of JGroups; every member sends N messages and we measure how long it
- * takes for all receivers to receive them. MPerf is <em>dynamic</em> because it doesn't accept any configuration
+ * takes for all receivers to receive them. MPerfOld is <em>dynamic</em> because it doesn't accept any configuration
  * parameters (besides the channel config file and name); all configuration is done at runtime, and will be broadcast
  * to all cluster members.
  * @author Bela Ban (belaban@yahoo.com)
@@ -39,7 +39,7 @@ public class UdpPerf {
 
     public void start() throws Exception {
         StringBuilder sb=new StringBuilder();
-        sb.append("\n\n----------------------- MPerf -----------------------\n");
+        sb.append("\n\n----------------------- MPerfOld -----------------------\n");
         sb.append("Date: ").append(new Date()).append('\n');
         sb.append("Run by: ").append(System.getProperty("user.name")).append("\n");
         System.out.println(sb);

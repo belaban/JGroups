@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Dynamic tool to measure multicast RPC performance of JGroups; every member invokes N RPCs and we measure how long it
  * takes for all receivers to receive them.<p/>
- * Initially copied from {@link MPerf}.
+ * Initially copied from {@link MPerfOld}.
  * @author Bela Ban (belaban@yahoo.com)
  * @since 3.3
  */
@@ -100,7 +100,7 @@ public class MPerfRpc extends ReceiverAdapter {
         this.props=props;
         this.name=name;
         StringBuilder sb=new StringBuilder();
-        sb.append("\n\n----------------------- MPerf -----------------------\n");
+        sb.append("\n\n----------------------- MPerfOld -----------------------\n");
         sb.append("Date: ").append(new Date()).append('\n');
         sb.append("Run by: ").append(System.getProperty("user.name")).append("\n");
         sb.append("JGroups version: ").append(Version.description).append('\n');
@@ -685,7 +685,7 @@ public class MPerfRpc extends ReceiverAdapter {
                 name=args[++i];
                 continue;
             }
-            System.out.println("MPerf [-props <stack config>] [-name <logical name>]");
+            System.out.println("MPerfOld [-props <stack config>] [-name <logical name>]");
             return;
         }
 
@@ -695,7 +695,7 @@ public class MPerfRpc extends ReceiverAdapter {
 
             // this kludge is needed in order to terminate the program gracefully when 'X' is pressed
             // (otherwise System.in.read() would not terminate)
-            Thread thread=new Thread("MPerf runner") {
+            Thread thread=new Thread("MPerfOld runner") {
                 public void run() {
                     test.loop();
                 }

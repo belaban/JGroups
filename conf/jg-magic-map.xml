@@ -54,7 +54,7 @@
     <class id="74"  name="org.jgroups.protocols.COUNTER$CounterHeader"/>
     <class id="75"  name="org.jgroups.protocols.MERGE3$MergeHeader"/>
     <class id="76"  name="org.jgroups.protocols.RSVP$RsvpHeader"/>
-    <class id="77"  name="org.jgroups.tests.perf.MPerf$MPerfHeader"/>
+    <class id="77"  name="org.jgroups.tests.perf.MPerfOld$MPerfHeader"/>
     <class id="78"  name="org.jgroups.protocols.pbcast.NakAckHeader2"/>
     <class id="79"  name="org.jgroups.protocols.tom.ToaHeader"/>
     <class id="80"  name="org.jgroups.protocols.relay.RELAY2$Relay2Header"/>
@@ -69,5 +69,6 @@
     <class id="89"  name="org.jgroups.protocols.NAMING$Header"/>
     <class id="91"  name="org.jgroups.protocols.Frag3Header"/>
     <class id="92"  name="org.jgroups.protocols.DH_KEY_EXCHANGE$DhHeader"/>
+    <class id="93"  name="org.jgroups.tests.perf.MPerf$MPerfHeader"/>
 </magic-number-class-mapping>
 
