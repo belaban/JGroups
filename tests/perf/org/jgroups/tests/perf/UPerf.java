@@ -145,8 +145,7 @@ public class UPerf extends ReceiverAdapter {
     }
 
     protected void startEventThread(boolean use_fibers) {
-        event_loop_thread=use_fibers? Util.createFiber(UPerf.this::eventLoop,"EventLoop")
-          : new Thread(UPerf.this::eventLoop,"EventLoop");
+        event_loop_thread=ThreadCreator.createThread(this::eventLoop, "EventLoop", true, use_fibers);
         event_loop_thread.start();
     }
 

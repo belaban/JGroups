@@ -175,7 +175,7 @@ public class Util {
     }
 
     public static boolean fibersAvailable() {
-        return VIRTUAL != null;
+        return ThreadCreator.hasVirtualThreads();
     }
 
     /**
