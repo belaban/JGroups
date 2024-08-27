@@ -890,6 +890,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             return;
         boolean remove_msgs=discard_delivered_msgs && !loopback;
         MessageBatch batch=new MessageBatch(buf.size()).dest(null).sender(sender).clusterName(cluster_name).multicast(true);
+        batch.array().increment(1024);
         Supplier<MessageBatch> batch_creator=() -> batch;
         MessageBatch mb=null;
         do {
