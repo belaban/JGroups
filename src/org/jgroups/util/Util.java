@@ -2205,7 +2205,7 @@ public class Util {
 
     private static String dumpThreadInfo(ThreadInfo thread) { // copied from Infinispan
         StringBuilder sb=new StringBuilder(String.format("\"%s\" #%s prio=0 tid=0x%x nid=NA %s%n", thread.getThreadName(), thread.getThreadId(),
-                                                         thread.getThreadId(), thread.getThreadState().toString().toLowerCase()));
+                                                  thread.getThreadId(), thread.getThreadState().toString().toLowerCase()));
         sb.append(String.format("   java.lang.Thread.State: %s%n", thread.getThreadState()));
         LockInfo blockedLock = thread.getLockInfo();
         StackTraceElement[] s = thread.getStackTrace();
@@ -2216,7 +2216,7 @@ public class Util {
             if (i == 0 && blockedLock != null) {
                 boolean parking = ste.isNativeMethod() && ste.getMethodName().equals("park");
                 sb.append(String.format("\t- %s <0x%x> (a %s)%n", blockedState(thread, blockedLock, parking),
-                                        blockedLock.getIdentityHashCode(), blockedLock.getClassName()));
+                                 blockedLock.getIdentityHashCode(), blockedLock.getClassName()));
             }
             if (monitors != null) {
                 for (MonitorInfo monitor : monitors) {
@@ -2304,18 +2304,29 @@ public class Util {
         return String.format("%.2f ns (%.2f us)", time_ns, us);
     }
 
-    public static String printTime(long time,TimeUnit unit) {
-        long ns=TimeUnit.NANOSECONDS.convert(time,unit);
-        long us=TimeUnit.MICROSECONDS.convert(time,unit);
-        long ms=TimeUnit.MILLISECONDS.convert(time,unit);
-        long secs=TimeUnit.SECONDS.convert(time,unit);
-
-        if(secs > 0) return secs + "s";
-        if(ms > 0) return ms + "ms";
-        if(us > 0) return us + " us";
-        return ns + "ns";
+    public static String printTime(double time, TimeUnit unit) {
+        switch(unit) {
+            case NANOSECONDS:
+                if(time < 1000) return print(time, unit);
+                return printTime(time / 1000.0, TimeUnit.MICROSECONDS);
+            case MICROSECONDS:
+                if(time < 1000) return print(time, unit);
+                return printTime(time / 1000.0, TimeUnit.MILLISECONDS);
+            case MILLISECONDS:
+                if(time < 1000) return print(time, unit);
+                return printTime(time / 1000.0, TimeUnit.SECONDS);
+            case SECONDS:
+                if(time < 60) return print(time, unit);
+                return printTime(time / 60.0, TimeUnit.MINUTES);
+            case MINUTES:
+                if(time < 60) return print(time, unit);
+                return printTime(time / 60.0, TimeUnit.HOURS);
+            case HOURS:
+                if(time < 24) return print(time, unit);
+                return printTime(time / 24.0, TimeUnit.DAYS);
+            default:           return print(time, unit);
+        }
     }
-
 
     public static long readBytesLong(String input) {
         Tuple<String,Long> tuple=readBytes(input);
@@ -2357,6 +2368,30 @@ public class Util {
         String str=index != -1? input.substring(0,index) : input;
         return new Tuple<>(str,factor);
     }
+
+    public static String suffix(TimeUnit u) {
+        switch(u) {
+            case NANOSECONDS:  return "ns";
+            case MICROSECONDS: return "us";
+            case MILLISECONDS: return "ms";
+            case SECONDS:      return "s";
+            case MINUTES:      return "m";
+            case HOURS:        return "h";
+            case DAYS:         return "d";
+            default:           return u.toString();
+        }
+    }
+
+    public static String format(double val, String suffix) {
+        int trailing=Math.floor(val) == val? 0 : 2;
+        String fmt=String.format("%%,.%df%s", trailing, suffix);
+        return String.format(fmt, val);
+    }
+
+    public static String print(double time, TimeUnit unit) {
+        return format(time, suffix(unit));
+    }
+
 
     /**
      * MByte nowadays doesn't mean 1024 * 1024 bytes, but 1 million bytes, see http://en.wikipedia.org/wiki/Megabyte
