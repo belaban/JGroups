@@ -31,7 +31,7 @@ public class MessageBatch implements Iterable<Message> {
     protected boolean            multicast;
 
     /** Whether this message batch contains only OOB messages, or only regular messages */
-    protected Mode               mode=Mode.REG;
+    protected Mode               mode;
 
     /** For benchmarking; may get removed without notice */
     protected long               timestamp; // ns
@@ -85,10 +85,10 @@ public class MessageBatch implements Iterable<Message> {
     public boolean      multicast()                      {return multicast;}
     public MessageBatch multicast(boolean flag)          {multicast=flag; return this;}
     public MessageBatch mcast(boolean flag)              {multicast=flag; return this;}
-    public Mode         getMode()                        {return mode;}
+    public Mode         getMode()                        {return mode();}
     public Mode         mode()                           {return mode;}
-    public MessageBatch setMode(Mode mode)               {this.mode=mode; return this;}
-    public MessageBatch mode(Mode mode)                  {this.mode=mode; return this;}
+    public MessageBatch setMode(Mode m)                  {return mode(m);}
+    public MessageBatch mode(Mode m)                     {if(mode == null) mode=m; return this;}
     public int          capacity()                       {return messages.capacity();}
     public long         timestamp()                      {return timestamp;}
     public MessageBatch timestamp(long ts)               {timestamp=ts; return this;}
@@ -126,7 +126,7 @@ public class MessageBatch implements Iterable<Message> {
     public int add(final Message msg, boolean resize) {
         int added=messages.add(msg, resize);
         if(added > 0)
-            determineMode(msg);
+            determineMode();
         return added;
     }
 
@@ -280,7 +280,8 @@ public class MessageBatch implements Iterable<Message> {
         sb.append("dest=" + dest);
         if(sender != null)
             sb.append(", sender=").append(sender);
-        sb.append(", mode=" + mode);
+        if(mode != null)
+            sb.append(", mode=" + mode);
         if(cluster_name != null)
             sb.append(", cluster=").append(cluster_name);
         if(sb.length() > 0)
@@ -303,34 +304,13 @@ public class MessageBatch implements Iterable<Message> {
 
 
 
-    public enum Mode {OOB, REG, MIXED}
+    public enum Mode {OOB, REG}
 
     protected MessageBatch determineMode() {
-        boolean first=true;
-        for(Iterator<Message> it=messages.iterator(); it.hasNext();) {
-            Message msg=it.next();
-            if(first) {
-                mode=msg.isFlagSet(Message.Flag.OOB)? Mode.OOB : Mode.REG;
-                first=false;
-                continue;
-            }
-            if(mode == Mode.REG && msg.isFlagSet(Message.Flag.OOB) || mode == Mode.OOB && !msg.isFlagSet(Message.Flag.OOB))
-                return setMode(Mode.MIXED);
-        }
-        return this;
+        if(mode != null || messages.isEmpty())
+            return this;
+        Message first=messages.get(0);
+        return mode(first.isFlagSet(Message.Flag.OOB)? Mode.OOB : Mode.REG);
     }
-
-    protected MessageBatch determineMode(Message msg) {
-        if(msg == null) return this;
-        if(messages.size() <= 1)
-            mode=msg.isFlagSet(Message.Flag.OOB)? Mode.OOB : Mode.REG;
-        else {
-            if(mode == Mode.REG && msg.isFlagSet(Message.Flag.OOB)
-              || mode == Mode.OOB && !msg.isFlagSet(Message.Flag.OOB))
-                return setMode(Mode.MIXED);
-        }
-        return this;
-    }
-
 
 }

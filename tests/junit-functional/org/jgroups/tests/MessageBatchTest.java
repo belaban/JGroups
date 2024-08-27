@@ -643,20 +643,20 @@ public class MessageBatchTest {
         for(int i=0; i < 3; i++)
             l.add(new EmptyMessage(null).setFlag(Message.Flag.OOB));
         MessageBatch batch=new MessageBatch(null, null, new AsciiString("cluster"), true, l);
-        assert batch.getMode() == MessageBatch.Mode.OOB;
+        assert batch.mode() == MessageBatch.Mode.OOB;
         batch.add(new EmptyMessage(null));
-        assert batch.getMode() == MessageBatch.Mode.MIXED;
+        assert batch.mode() == MessageBatch.Mode.OOB; // mode cannot be changed after it is set the first time
 
         batch=new MessageBatch(3);
         batch.add(new EmptyMessage(null));
-        assert batch.getMode() == MessageBatch.Mode.REG;
+        assert batch.mode() == MessageBatch.Mode.REG;
         batch.add(new EmptyMessage(null).setFlag(Message.Flag.OOB));
-        assert batch.getMode() == MessageBatch.Mode.MIXED;
+        assert batch.mode() == MessageBatch.Mode.REG;
 
         batch=new MessageBatch(3);
         l.add(new EmptyMessage(null));
         batch.add(l);
-        assert batch.getMode() == MessageBatch.Mode.MIXED;
+        assert batch.mode() == MessageBatch.Mode.OOB;
     }
 
     public void testShuffle() {
