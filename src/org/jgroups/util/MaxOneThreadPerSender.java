@@ -84,7 +84,13 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
         }
 
         protected Entry get(final Address sender, boolean multicast) {
-            return map.computeIfAbsent(sender, s -> new Entry(sender, multicast, tp.getClusterNameAscii()));
+            Entry e=map.get(sender);
+            if(e != null)
+                return e;
+            // not so elegant, but avoids lambda allocation!
+            Entry tmp=map.putIfAbsent(sender, (e=new Entry(sender, multicast, tp.getClusterNameAscii())));
+            return tmp!= null? tmp: e;
+            // return map.computeIfAbsent(sender, s -> new Entry(sender, multicast, tp.getClusterNameAscii()));
         }
 
         protected void clear() {map.clear();}
