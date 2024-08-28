@@ -1181,8 +1181,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         }
     }
 
-
-
     /**
      * If the sender is null, set our own address. We cannot just go ahead and set the address anyway, as we might send
      * a message on behalf of someone else, e.g. in case of retransmission, when the original sender has crashed.
@@ -1191,7 +1189,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         if(msg.getSrc() == null && local_addr != null)
             msg.setSrc(local_addr);
     }
-
 
     public void passMessageUp(Message msg, byte[] cluster_name, boolean perform_cluster_name_matching,
                               boolean multicast, boolean discard_own_mcast) {
