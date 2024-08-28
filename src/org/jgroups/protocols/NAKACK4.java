@@ -12,11 +12,10 @@ import org.jgroups.util.Buffer.Options;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.LongAdder;
-import java.util.concurrent.locks.Lock;
 import java.util.function.IntBinaryOperator;
+import java.util.function.Predicate;
 
 import static org.jgroups.Message.Flag.OOB;
-import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
 import static org.jgroups.conf.AttributeType.SCALAR;
 
 /**
@@ -31,10 +30,6 @@ public class NAKACK4 extends ReliableMulticast {
 
     @Property(description="Size of the send/receive buffers, in messages",writable=false)
     protected int                     capacity=2048;
-
-    @Property(description="Increment seqno and send a message atomically. Reduces retransmissions. " +
-      "Description in doc/design/NAKACK4.txt ('misc')")
-    protected boolean                 send_atomically;
 
     @Property(description="Number of ACKs to skip before one is sent. For example, a value of 500 means that only " +
       "every 500th ACk is sent; all others are dropped. If not set, defaulted to capacity/4",type=SCALAR)
@@ -52,8 +47,6 @@ public class NAKACK4 extends ReliableMulticast {
 
     public int               capacity()                {return capacity;}
     public NAKACK4           capacity(int c)           {capacity=c; return this;}
-    public boolean           sendAtomically()          {return send_atomically;}
-    public NAKACK4           sendAtomically(boolean f) {send_atomically=f; return this;}
     public int               ackThreshold()            {return ack_threshold;}
     public NAKACK4           ackThreshold(int t)       {ack_threshold=t; return this;}
     @Override public Options sendOptions()             {return SEND_OPTIONS;}
@@ -100,7 +93,7 @@ public class NAKACK4 extends ReliableMulticast {
     }
 
     @ManagedOperation(description="Prints the ACKs received from members")
-    public String printAckTable() {return ack_table.toString();}
+    public String printAckTable() {return "\n" + ack_table;}
 
     @ManagedOperation(description="Sends ACKs immediately for entries which are marked as pending")
     public void sendPendingAcks() {
@@ -172,32 +165,7 @@ public class NAKACK4 extends ReliableMulticast {
     }
 
     @Override
-    protected void send(Message msg, Buffer<Message> win) {
-        if(!send_atomically) {
-            super.send(msg, win);
-            return;
-        }
-        boolean dont_loopback_set=msg.isFlagSet(DONT_LOOPBACK);
-        long msg_id=0;
-
-        // As described in doc/design/NAKACK4 ("misc"): if we hold the lock while (1) getting the seqno for a message,
-        // (2) adding it to the send window and (3) sending it (so it is sent by the transport in that order),
-        // messages should be received in order and therefore not require retransmissions.
-        // Passing the message down should not block with TransferQueueBundler (default), as drop_when_fule==true
-        Lock lock=win.lock();
-        lock.lock();
-        try {
-            msg_id=seqno.incrementAndGet();
-            msg.putHeader(this.id, NakAckHeader.createMessageHeader(msg_id));
-            win.add(msg_id, msg, dont_loopback_set? remove_filter : null, sendOptions());
-            if(dont_loopback_set)
-                win.purge(win.highestDelivered());
-            down_prot.down(msg); // if this fails, since msg is in sent_msgs, it can be retransmitted
-        }
-        finally {
-            lock.unlock();
-        }
-        if(is_trace)
-            log.trace("%s --> [all]: #%d", local_addr, msg_id);
+    protected void addToSendWindow(Buffer<Message> win, long seq, Message msg, Predicate<Message> filter) {
+        win.add(seq, msg, filter, sendOptions());
     }
 }

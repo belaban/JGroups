@@ -89,9 +89,9 @@ public class AckTable {
 
     // no need for the lock - approximation, may be incorrect, that's ok
     @Override public String toString() {
-        String tmp=acks.entrySet().stream().map(e -> String.format("%s: %d", e.getKey(), e.getValue()))
+        String tmp=acks.entrySet().stream().map(e -> String.format("%s: %,d", e.getKey(), e.getValue()))
           .collect(Collectors.joining("\n"));
-        return tmp.isEmpty()? "min: " + min : tmp + "\nmin: " + min;
+        return tmp.isEmpty()? String.format("min: %,d", min) : String.format("%s\nmin: %,d", tmp, min);
     }
 
     @GuardedBy("lock")

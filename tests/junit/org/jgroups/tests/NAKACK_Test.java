@@ -11,9 +11,12 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.List;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.jgroups.stack.ProtocolStack.Position.BELOW;
@@ -119,29 +122,72 @@ public class NAKACK_Test extends ChannelTestBase {
         a.connect("NAKACK_Test").setReceiver(r1);
         b.connect("NAKACK_Test").setReceiver(r2);
         c.connect("NAKACK_Test").setReceiver(r3);
-        Util.waitUntilAllChannelsHaveSameView(5000, 500, a,b,c);
+        Util.waitUntilAllChannelsHaveSameView(5000, 200, a,b,c);
 
-        for(int i=1; i <= 10; i++)
+        List<Integer> msgs=msgs(1, 10);
+        for(int i: msgs)
             a.send(null, i);
-        Util.waitUntil(5000, 200, () -> Stream.of(r1,r2,r3).allMatch(r -> r.size() == 10));
+        waitUntilReceiversHaveMessages(10, r1,r2,r3);
+        check(msgs, r1,r2,r3);
 
         System.out.println("-- disconnecting and reconnecting A:");
         a.disconnect();
-        Util.sleep(1000);
+        Util.waitUntilAllChannelsHaveSameView(5000, 200, b,c);
+        a.connect("NAKACK_Test").setReceiver(r1);
+        Util.waitUntilAllChannelsHaveSameView(5000, 200, a,b,c);
+
+        Stream.of(r1,r2,r3).forEach(MyReceiver::clear);
+        msgs=msgs(11,20);
+        for(int i: msgs)
+            a.send(null, i);
+        waitUntilReceiversHaveMessages(10, r1,r2,r3);
+        check(msgs, r1,r2,r3);
+
+        a.disconnect();
+        Util.waitUntilAllChannelsHaveSameView(5000, 200, b,c);
+        Stream.of(r1,r2,r3).forEach(MyReceiver::clear);
+        msgs=msgs(21,30);
+        for(int i: msgs)
+            b.send(null, i);
+        waitUntilReceiversHaveMessages(10, r2,r3);
+        check(msgs, r2,r3);
+
+        // B has a higher digest; make sure A fetches it correctly
         a.connect("NAKACK_Test").setReceiver(r1);
 
         Stream.of(r1,r2,r3).forEach(MyReceiver::clear);
-        for(int i=11; i <= 20; i++)
-            a.send(null, i);
-        Util.waitUntil(5000, 200,
-                       () -> Stream.of(r1,r2,r3).allMatch(r -> r.size() == 10),
-                       () -> Stream.of(r1,r2,r3)
-                         .map(r -> String.format("%s: %s", r.name(), r.getSeqnos())).collect(Collectors.joining("\n")));
-        System.out.printf("-- receivers:\n%s\n",
-                          Stream.of(r1,r2,r3).map(r -> String.format("%s: %s", r.name, r.seqnos))
-                            .collect(Collectors.joining("\n")));
+        msgs=msgs(31,40);
+        for(int i: msgs)
+            b.send(null, i);
+        waitUntilReceiversHaveMessages(10, r1,r2,r3);
+        check(msgs, r1,r2,r3);
     }
 
+    protected static List<Integer> msgs(int from, int to) {
+        return IntStream.rangeClosed(from,to).boxed().collect(Collectors.toList());
+    }
+
+    protected static void check(List<Integer> expected, MyReceiver ... receivers) {
+        System.out.printf("-- receivers:\n%s\n", print(receivers));
+        for(MyReceiver r: receivers) {
+            Collection<Integer> actual=r.getSeqnos();
+            assert expected.equals(actual) : String.format("%s: expected: %s, actual: %s", r.name(), expected, actual);
+        }
+    }
+
+    protected static String print(MyReceiver ... receivers) {
+        return Stream.of(receivers)
+          .map(r -> String.format("%s: %s", r.name(), r.getSeqnos())).collect(Collectors.joining("\n"));
+    }
+
+    protected static final boolean match(List<Integer> expected, List<Integer> actual) {
+        return expected.equals(actual);
+    }
+
+    protected static void waitUntilReceiversHaveMessages(int expected, MyReceiver... receivers) throws TimeoutException {
+        Util.waitUntil(5000, 200,
+                       () -> Stream.of(receivers).allMatch(r -> r.size() == expected), () -> print(receivers));
+    }
 
     /**
      * Checks whether the numbers are in order *after* removing 4: the latter is OOB and can therefore appear anywhere
@@ -164,8 +210,8 @@ public class NAKACK_Test extends ChannelTestBase {
 
 
     public static class MyReceiver implements Receiver {
-        protected final Collection<Integer> seqnos=new ConcurrentLinkedQueue<>();
-        protected final String              name;
+        protected final List<Integer> seqnos=new ArrayList<>();
+        protected final String        name;
 
         public MyReceiver(String name) {
             this.name=name;
@@ -178,11 +224,19 @@ public class NAKACK_Test extends ChannelTestBase {
         public void receive(Message msg) {
             if(msg != null) {
                 Integer num=msg.getObject();
-                seqnos.add(num);
+                synchronized(this) {
+                    seqnos.add(num);
+                }
             }
         }
 
         public int size() {return seqnos.size();}
+
+        @Override
+        public String toString() {
+            return String.format("(%d) %s", size(), seqnos);
+        }
     }
+
 
 }

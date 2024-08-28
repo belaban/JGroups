@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.locks.Lock;
 import java.util.function.*;
 import java.util.stream.Collectors;
 
@@ -87,6 +88,10 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
     @Property(description="Reuses the same message batch for delivery of regular messages (only done by a single " +
       "thread anyway). Not advisable for buffers that can grow infinitely (NAKACK3)")
     protected boolean reuse_message_batches=true;
+
+    @Property(description="Increment seqno and send a message atomically. Reduces retransmissions. " +
+      "Description in doc/design/NAKACK4.txt ('misc')")
+    protected boolean send_atomically;
 
     @ManagedAttribute(description="True if sending a message can block at the transport level")
     protected boolean sends_can_block=true;
@@ -167,6 +172,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
 
     /* Optimization: this is the table for my own messages (used in send()) */
     protected Buffer<Message>                    local_xmit_table;
+    protected Entry                              local_send_entry;
 
     /** RetransmitTask running every xmit_interval ms */
     protected Future<?>                          xmit_task;
@@ -226,6 +232,8 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
     public ReliableMulticast setNumMessagesReceived(int n)            {this.num_messages_received=n; return this;}
     public boolean           reuseMessageBatches()                    {return reuse_message_batches;}
     public ReliableMulticast reuseMessageBatches(boolean b)           {this.reuse_message_batches=b; return this;}
+    public boolean           sendAtomically()                         {return send_atomically;}
+    public ReliableMulticast sendAtomically(boolean f)                {send_atomically=f; return this;}
     public boolean           isTrace() {return is_trace;}
     public ReliableMulticast isTrace(boolean i) {this.is_trace=i; return this;}
 
@@ -246,6 +254,12 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
             return null;
         Entry entry=xmit_table.get(sender);
         return entry != null? (T)entry.buf() : null;
+    }
+
+    protected Entry getEntry(Address sender) {
+        if(sender == null)
+            return null;
+        return xmit_table.get(sender);
     }
 
     /** Only used for unit tests, don't use ! */
@@ -283,7 +297,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
 
     @ManagedOperation(description="Prints the contents of the receiver windows for all members")
     public String printMessages() {
-        StringBuilder ret=new StringBuilder(local_addr + ":\n");
+        StringBuilder ret=new StringBuilder("\n");
         for(Map.Entry<Address,Entry> entry: xmit_table.entrySet()) {
             Address addr=entry.getKey();
             Buffer<Message> win=entry.getValue().buf();
@@ -319,6 +333,10 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
 
     protected Buffer<Message> sendBuf() {
         return local_xmit_table != null? local_xmit_table : (local_xmit_table=getBuf(local_addr));
+    }
+
+    protected Entry sendEntry() {
+        return local_send_entry != null? local_send_entry : (local_send_entry=getEntry(local_addr));
     }
 
     @ManagedOperation(description="Resets all statistics")
@@ -420,6 +438,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
         xmit_task_map.clear();
         stable_xmit_map.clear();
         local_xmit_table=null; // fixes https://issues.redhat.com/browse/JGRP-2720
+        local_send_entry=null;
         reset();
     }
 
@@ -491,15 +510,19 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
             log.trace("%s: discarded message as we're not in the 'running' state, message: %s", local_addr, msg);
             return null;
         }
-        Buffer<Message> win=sendBuf();
-        if(win == null) // discard message if there is no send buffer (should never happen)
+        Entry send_entry=sendEntry();
+        if(send_entry == null)
             return null;
 
         if(msg.getSrc() == null)
             msg.setSrc(local_addr); // this needs to be done so we can check whether the message sender is the local_addr
-        send(msg, win);
+        boolean dont_loopback_set=msg.isFlagSet(DONT_LOOPBACK);
+        Buffer<Message> win=send_entry.buf();
+        send(msg, win, dont_loopback_set);
         num_messages_sent++;
         last_seqno_resender.skipNext();
+        if(dont_loopback_set && needToSendAck(send_entry, 1))
+            handleAck(local_addr, win.highestDelivered()); // https://issues.redhat.com/browse/JGRP-2829
         return null;    // don't pass down the stack
     }
 
@@ -648,8 +671,6 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
     }
 
 
-
-
     /* --------------------------------- Private Methods --------------------------------------- */
 
     protected void queueMessage(Message msg, long seqno) {
@@ -671,21 +692,38 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
         }
     }
 
-    /**
-     * Adds the message to the sent_msgs table and then passes it down the stack. Change Bela Ban May 26 2002: we don't
-     * store a copy of the message, but a reference ! This saves us a lot of memory. However, this also means that a
-     * message should not be changed after storing it in the sent-table ! See protocols/DESIGN for details.
-     * Made seqno increment and adding to sent_msgs atomic, e.g. seqno won't get incremented if adding to
-     * sent_msgs fails e.g. due to an OOM (see https://issues.redhat.com/browse/JGRP-179). bela Jan 13 2006
-     */
-    protected void send(Message msg, Buffer<Message> win) {
-        boolean dont_loopback_set=msg.isFlagSet(DONT_LOOPBACK);
+    protected void send(Message msg, Buffer<Message> win, boolean dont_loopback_set) {
         long msg_id=seqno.incrementAndGet();
+        if(is_trace)
+            log.trace("%s --> [all]: #%d", local_addr, msg_id);
         msg.putHeader(this.id, NakAckHeader.createMessageHeader(msg_id));
+        final Lock lock=send_atomically? win.lock() : null;
+        if(lock != null) {
+            // As described in doc/design/NAKACK4 ("misc"): if we hold the lock while (1) getting the seqno for a message,
+            // (2) adding it to the send window and (3) sending it (so it is sent by the transport in that order).
+            // Messages should be received in order and therefore not require retransmissions.
+            // Passing the message down should not block with TransferQueueBundler (default), as drop_when_full==true
+            //noinspection LockAcquiredButNotSafelyReleased
+            lock.lock();
+        }
+        try {
+            addToSendWindow(win, msg_id, msg, dont_loopback_set? remove_filter : null);
+            down_prot.down(msg); // if this fails, since msg is in sent_msgs, it can be retransmitted
+        }
+        finally {
+            if(lock != null)
+                lock.unlock();
+        }
+    }
+
+    /**
+     * Adds the message to the send window. The loop tries to handle temporary OOMEs by retrying if add() failed.
+     */
+    protected void addToSendWindow(Buffer<Message> win, long seq, Message msg, Predicate<Message> filter) {
         long sleep=10;
         do {
             try {
-                win.add(msg_id, msg, dont_loopback_set? remove_filter : null, sendOptions());
+                win.add(seq, msg, filter, sendOptions());
                 break;
             }
             catch(Throwable t) {
@@ -696,13 +734,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
             }
         }
         while(running);
-
-        // moved down_prot.down() out of synchronized clause (bela Sept 7 2006) https://issues.redhat.com/browse/JGRP-300
-        if(is_trace)
-            log.trace("%s --> [all]: #%d", local_addr, msg_id);
-        down_prot.down(msg); // if this fails, since msg is in sent_msgs, it can be retransmitted
     }
-
 
     protected void resend(Message msg) { // needed for byteman ProtPerf script - don't remove!
         down_prot.down(msg);
