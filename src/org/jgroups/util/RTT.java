@@ -21,6 +21,9 @@ public class RTT {
     protected TP                transport;
     protected short             tp_id;
 
+    @Property(description="Enables or disables RTT functionality")
+    protected boolean           enabled;
+
     @Property(description="The number of RPCs to send")
     protected int               num_reqs=10;
 
@@ -36,6 +39,8 @@ public class RTT {
     protected final Map<Address,AverageMinMax> rtts=Util.createConcurrentMap();
     protected final Map<Address,long[]>        times=Util.createConcurrentMap(); // list of start times (us)
 
+    public boolean enabled()              {return enabled;}
+    public RTT     enabled(boolean f)     {enabled=f; return this;}
     public int     numReqs()              {return num_reqs;}
     public RTT     numReqs(int n)         {this.num_reqs=n; return this;}
     public long    timeout()              {return timeout;}
@@ -74,6 +79,8 @@ public class RTT {
      */
     @ManagedOperation(description="Sends N RPCs to all other nodes and computes min/avg/max RTT")
     public String rtt(int num_reqs, int size, boolean details, boolean exclude_self) {
+        if(!enabled)
+            return "RTT functionality is disabled";
         Map<Address,AverageMinMax> m=_rtt(num_reqs, size, exclude_self);
         return m.entrySet().stream()
           .map(e -> String.format("%s: %s", e.getKey(), print(e.getValue(), details, TimeUnit.MICROSECONDS, num_reqs)))

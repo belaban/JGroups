@@ -1214,10 +1214,12 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             }
             return;
         }
-        TpHeader hdr=msg.getHeader(id);
-        if(hdr != null && hdr.flag() > 0) {
-            rtt.handleMessage(msg, hdr);
-            return;
+        if(rtt.enabled()) {
+            TpHeader hdr=msg.getHeader(id);
+            if(hdr != null && hdr.flag() > 0) {
+                rtt.handleMessage(msg, hdr);
+                return;
+            }
         }
         up_prot.up(msg);
     }
@@ -1245,12 +1247,14 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
         if(batch.multicast() && discard_own_mcast && local_addr != null && local_addr.equals(batch.sender()))
             return;
-        for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
-            Message msg=it.next();
-            TpHeader hdr=msg.getHeader(id);
-            if(hdr != null && hdr.flag() > 0) {
-                it.remove();
-                rtt.handleMessage(msg, hdr);
+        if(rtt.enabled()) {
+            for(Iterator<Message> it=batch.iterator(); it.hasNext(); ) {
+                Message msg=it.next();
+                TpHeader hdr=msg.getHeader(id);
+                if(hdr != null && hdr.flag() > 0) {
+                    it.remove();
+                    rtt.handleMessage(msg, hdr);
+                }
             }
         }
         if(!batch.isEmpty())
