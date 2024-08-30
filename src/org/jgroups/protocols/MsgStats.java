@@ -84,11 +84,11 @@ public class MsgStats {
     public long     getNumMcastsReceived()      {return num_mcasts_received.sum();}
 
     public long     getNumSingleMsgsSent()      {return num_single_msgs_sent.sum();}
-    public MsgStats incrNumSingleMsgsSent()     {num_single_msgs_sent.increment(); return this;}
+    public MsgStats incrNumSingleMsgsSent()     {if(enabled) num_single_msgs_sent.increment(); return this;}
 
     public long     getNumBatchesSent()         {return num_batches_sent.sum();}
-    public MsgStats incrNumBatchesSent()        {num_batches_sent.increment(); return this;}
-    public MsgStats incrNumBatchesSent(int n)   {num_batches_sent.add(n); return this;}
+    public MsgStats incrNumBatchesSent()        {if(enabled) num_batches_sent.increment(); return this;}
+    public MsgStats incrNumBatchesSent(int n)   {if(enabled) num_batches_sent.add(n); return this;}
 
     public long     getNumBatchesReceived()     {return num_batches_received.sum();}
 
