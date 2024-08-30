@@ -33,7 +33,7 @@ if [ -f $HOME/logging.properties ]; then
 fi;
 
 #JG_FLAGS="-Djgroups.bind_addr=match-address:192.168.1.*"
-FLAGS="-server -Xmx1G -Xms500M"
+FLAGS="-server -Xmx1G -Xms500M -Djava.net.preferIPv4Stack=true"
 GC="-XX:+UseG1GC"
 
 JMX="-Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost"
