@@ -296,7 +296,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @Component(name="msg_stats")
     protected final MsgStats msg_stats=new MsgStats().enable(stats);
 
-
     /** The name of the group to which this member is connected. With a shared transport, the channel name is
      * in TP.ProtocolAdapter (cluster_name), and this field is not used */
     @ManagedAttribute(description="Channel (cluster) name")
@@ -343,6 +342,12 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         return (T)this;
     }
 
+    @ManagedOperation(description="Enabled or disabled all stats in all protocols")
+    public void enableAllStats(boolean flag) {
+        for(Protocol p=this; p != null; p=p.getUpProtocol()) {
+            p.enableStats(flag);
+        }
+    }
 
     @ManagedAttribute(description="Type of logger used")
     public static String loggerType() {return LogFactory.loggerType();}
