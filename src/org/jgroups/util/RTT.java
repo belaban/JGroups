@@ -152,7 +152,7 @@ public class RTT {
     }
 
     protected static String percentiles(AverageMinMax avg, int num_reqs) {
-        List<Long> values=avg.values();
+        List<Double> values=avg.values();
         int received=values.size(), non_received=num_reqs - received;
         double failure_rate=non_received == 0? 0.0 : (double)non_received / received;
         String failures=non_received == 0? "" : String.format(" (failure rate: %.2f)", failure_rate);

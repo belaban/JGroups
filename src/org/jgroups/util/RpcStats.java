@@ -155,8 +155,8 @@ public class RpcStats {
         protected final AverageMinMax avg=new AverageMinMax();
         protected long                sync()  {return sync;}
         protected long                async() {return async;}
-        protected long                min()   {return avg.min();}
-        protected long                max()   {return avg.max();}
+        protected double              min()   {return avg.min();}
+        protected double              max()   {return avg.max();}
         protected synchronized double avg()   {return avg.average();}
 
         protected synchronized void add(boolean sync, long time) {

@@ -26,11 +26,11 @@ public class AverageTest {
 
         double expected_avg=total/1000.0;
 
-        Average a=new Average();
+        Average a=new Average(1000);
         for(long num: numbers)
             a.add(num);
 
-        double avg=a.getAverage();
+        double avg=a.average();
 
         expected_avg=Math.floor(expected_avg);
         avg=Math.floor(avg);
@@ -45,9 +45,9 @@ public class AverageTest {
         for(int i=0; i < 1000; i++)
             avg.add(start++);
 
-        long cnt=avg.getCount();
+        long cnt=avg.count();
         System.out.printf("cnt=%d, avg=%.2f\n", cnt, avg.getAverage());
-        assert cnt == 500; // was reset at i=500
+        assert cnt == 1000; // was reset at i=500
     }
 
     public void testMinMax() {
@@ -60,29 +60,35 @@ public class AverageTest {
     }
 
     public void testMerge() {
-        AverageMinMax avg1=new AverageMinMax(), avg2=new AverageMinMax();
+        AverageMinMax avg1=new AverageMinMax(11000), avg2=new AverageMinMax(10000);
         IntStream.rangeClosed(1, 1000).forEach(i -> avg1.add(1));
         IntStream.rangeClosed(1, 10000).forEach(i -> avg2.add(2));
         System.out.printf("avg1: %s, avg2: %s\n", avg1, avg2);
         avg1.merge(avg2);
         System.out.printf("merged avg1: %s\n", avg1);
-        assert avg1.count() == 5500;
-        double diff=Math.abs(avg1.getAverage() - 1.90);
+        assert avg1.count() == 11_000;
+        double diff=Math.abs(avg1.average() - 1.90);
         assert diff < 0.01;
         assert avg1.min() == 1;
         assert avg1.max() == 2;
     }
 
     public void testMerger2() {
-        AverageMinMax avg1=new AverageMinMax(), avg2=new AverageMinMax();
+        AverageMinMax avg1=new AverageMinMax(10000), avg2=new AverageMinMax(10000);
         IntStream.rangeClosed(1, 10000).forEach(i -> avg2.add(2));
         System.out.printf("avg1: %s, avg2: %s\n", avg1, avg2);
         avg1.merge(avg2);
         System.out.printf("merged avg1: %s\n", avg1);
-        assert avg1.count() == 5000;
+        assert avg1.count() == 10000;
         assert avg1.average() == 2.0;
         assert avg1.min() == 2;
         assert avg1.max() == 2;
+    }
+
+    public void testAverageWithNoElements() {
+        Average avg=new AverageMinMax();
+        double av=avg.average();
+        assert av == 0.0;
     }
 
 }

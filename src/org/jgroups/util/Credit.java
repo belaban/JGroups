@@ -21,7 +21,7 @@ public class Credit {
     protected long            credits_left;
     protected int             num_blockings;
     protected long            last_credit_request; // ns
-    protected final Average   avg_blockings=new Average(); // ns
+    protected final Average   avg_blockings=new Average(512); // ns
 
 
     public Credit(long credits) {

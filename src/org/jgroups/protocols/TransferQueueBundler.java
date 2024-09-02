@@ -37,7 +37,7 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
     protected long                   num_drops_on_full_queue;
 
     @ManagedAttribute(description="Average fill size of the queue (in bytes)")
-    protected final AverageMinMax    avg_fill_count=new AverageMinMax(); // avg number of bytes when a batch is sent
+    protected final AverageMinMax    avg_fill_count=new AverageMinMax(512); // avg number of bytes when a batch is sent
     protected static final String    THREAD_NAME="TQ-Bundler";
 
     public TransferQueueBundler() {
@@ -121,9 +121,10 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
                     remove_queue.forEach(this::addAndSendIfSizeExceeded); // ArrayList.forEach() avoids array bounds check
                 }
                 if(count > 0) {
-                    num_sends_because_no_msgs++;
-                    avg_fill_count.add(count);
+                    if(transport.statsEnabled())
+                        avg_fill_count.add(count);
                     sendBundledMessages();
+                    num_sends_because_no_msgs++;
                 }
             }
             catch(Throwable t) {
@@ -136,9 +137,10 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
     protected void addAndSendIfSizeExceeded(Message msg) {
         int size=msg.size();
         if(count + size > max_size) {
-            num_sends_because_full_queue++;
-            avg_fill_count.add(count);
+            if(transport.statsEnabled())
+                avg_fill_count.add(count);
             sendBundledMessages();
+            num_sends_because_full_queue++;
         }
         addMessage(msg, size);
     }

@@ -838,8 +838,11 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
             }
             int size=batch.size();
             if(size > 0) {
-                if(stats)
-                    avg_batch_size.add(size);
+                if(stats) {
+                    synchronized(avg_batch_size) {
+                        avg_batch_size.add(size);
+                    }
+                }
                 deliverBatch(batch, e);
             }
         }

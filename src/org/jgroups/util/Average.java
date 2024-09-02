@@ -3,71 +3,75 @@ package org.jgroups.util;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import static org.jgroups.util.Util.printTime;
 
 /**
- * Maintains an approximation of an average of values. Done by keeping track of the number of samples, and computing
- * the new average as (count*avg + new-sample) / ++count. We reset the count if count*avg would lead to an overflow.<p/>
+ * Maintains an approximation of an average of positive values by keeping a number of values and overwriting the
+ * oldest values when new values are added.
  * This class is not thread-safe and relies on external synchronization.
  * @author Bela Ban
  * @since  3.4
  */
 public class Average implements Streamable {
-    protected double   avg;
+    protected double   total;
+    protected double[] samples;
+    protected int      index;
     protected long     count;
     protected TimeUnit unit;
 
+    public Average() {
+        this(128);
+    }
 
-    public <T extends Average> T add(long num) {
+    public Average(final int capacity) {
+        this.samples=new double[capacity];
+    }
+
+    public <T extends Average> T add(double num) {
         if(num < 0)
             return (T)this;
-
-        // If the product of the average and the number of samples would be greater than Long.MAX_VALUE, we have
-        // to reset the count and average to prevent a long overflow. This will temporarily lose the sample history, and
-        // the next sample will be the new average, but with more data points, the average should become more precise.
-        // Note that overflow should be extremely seldom, as we usually use Average in cases where we don't have a huge
-        // number of sample and the average is pretty small (e.g. an RPC invocation)
-        if(Util.productGreaterThan(count, (long)Math.ceil(avg), Long.MAX_VALUE))
-            clear();
-        double total=count * avg;
-        avg=(total + num) / ++count;
+        total-=samples[index];
+        samples[index]=num;
+        total+=num;
+        if(++index == samples.length) {
+            index=0; // cheaper than modulus
+        }
+        count++;
         return (T)this;
     }
 
     /** Merges this average with another one */
     public <T extends Average> T merge(T other) {
-        if(Util.productGreaterThan(count, (long)Math.ceil(avg), Long.MAX_VALUE) ||
-          Util.productGreaterThan(other.count(), (long)Math.ceil(other.average()), Long.MAX_VALUE)) {
-            // the above computation is not correct as the sum of the 2 products can still lead to overflow
-            // a non-weighted avg
-            avg=avg + other.average() / 2.0;
-        }
-        else { // compute the new average weighted by count
-            long total_count=count + other.count();
-            avg=(count * avg + other.count() * other.average()) / total_count;
-            count=total_count/2;
-        }
+        if(other == null)
+            return (T)this;
+        for(int i=0; i < other.samples.length; i++)
+            add(other.samples[i]);
         return (T)this;
     }
 
-
-    public double                getAverage()     {return avg;}
-    public double                average()        {return avg;}
-    public long                  getCount()       {return count;}
+    public double                getAverage()     {return average();}
     public long                  count()          {return count;}
+    public double                getTotal()       {return total;}
     public TimeUnit              unit()           {return unit;}
     public <T extends Average> T unit(TimeUnit u) {this.unit=u; return (T)this;}
 
+    public double average() {
+        int len=(count < samples.length? index : samples.length);
+        if(len == 0)
+            return 0.0;
+        return total / len;
+    }
 
     public void clear() {
-        avg=0.0;
-        count=0;
+        Arrays.fill(samples, 0d);
+        total=count=0;
     }
 
     public String toString() {
-        return unit != null? toString(unit) : String.format("%,.2f %s", avg, unit == null? "" : Util.suffix(unit));
+        return unit != null? toString(unit) : String.format("%,.2f %s", average(), unit == null? "" : Util.suffix(unit));
     }
 
     public String toString(TimeUnit u) {
@@ -78,13 +82,18 @@ public class Average implements Streamable {
 
     @Override
     public void writeTo(DataOutput out) throws IOException {
-        out.writeDouble(avg);
-        Bits.writeLongCompressed(count, out);
+        Bits.writeIntCompressed(samples.length, out);
+        for(int i=0; i < samples.length; i++)
+            Bits.writeDouble(samples[i], out);
+        Bits.writeDouble(total, out);
     }
 
     @Override
     public void readFrom(DataInput in) throws IOException {
-        avg=in.readDouble();
-        count=Bits.readLongCompressed(in);
+        int len=Bits.readIntCompressed(in);
+        samples=new double[len];
+        for(int i=0; i < samples.length; i++)
+            samples[i]=Bits.readDouble(in);
+        total=Bits.readDouble(in);
     }
 }

@@ -24,7 +24,7 @@ public class CreditMap {
     protected final Lock              lock;
     protected final Condition         credits_available;
     protected int                     num_blockings;
-    protected final Average           avg_block_time=new Average(); // in ns
+    protected final Average           avg_block_time=new Average(512); // in ns
     protected boolean                 done;
 
 

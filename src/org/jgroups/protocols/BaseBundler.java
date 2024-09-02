@@ -49,7 +49,7 @@ public abstract class BaseBundler implements Bundler {
     protected int                               capacity=16384;
 
     @ManagedAttribute(description="Time (us) to send the bundled messages")
-    protected final AverageMinMax               avg_send_time=new AverageMinMax().unit(TimeUnit.MICROSECONDS);
+    protected final AverageMinMax               avg_send_time=new AverageMinMax().unit(TimeUnit.NANOSECONDS);
 
 
 
@@ -98,7 +98,8 @@ public abstract class BaseBundler implements Bundler {
      * The map will be cleared when done.
      */
     @GuardedBy("lock") protected void sendBundledMessages() {
-        long start=System.nanoTime();
+        boolean stats_enabled=transport.statsEnabled();
+        long start=stats_enabled? System.nanoTime() : 0;
         for(Map.Entry<Address,List<Message>> entry: msgs.entrySet()) {
             List<Message> list=entry.getValue();
             if(list.isEmpty())
@@ -113,8 +114,10 @@ public abstract class BaseBundler implements Bundler {
             list.clear();
         }
         count=0;
-        long time_us=(System.nanoTime()-start) / 1_000;
-        avg_send_time.add(time_us);
+        if(stats_enabled) {
+            long time=System.nanoTime() - start;
+            avg_send_time.add(time);
+        }
     }
 
 

@@ -31,7 +31,7 @@ public class PERF extends Protocol {
     protected Average avg;
 
     @Property(description="Number of samples to maintain for rolling average")
-    protected int     avg_size=20;
+    protected int     avg_size=1024;
 
     @ManagedAttribute(description="Average latency in ns",type=AttributeType.TIME,unit=TimeUnit.NANOSECONDS)
     public double latencyInNs() {return avg.getAverage();}
@@ -41,7 +41,7 @@ public class PERF extends Protocol {
 
     public void init() throws Exception {
         super.init();
-        avg=new Average();
+        avg=new Average(avg_size);
     }
 
     public void resetStats() {
