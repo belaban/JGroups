@@ -1164,8 +1164,11 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 sb.append(" (" + batch.size()).append(" messages)");
                 log.trace(sb);
             }
-            if(stats)
-                avg_delivery_batch_size.add(batch.size());
+            if(stats) {
+                synchronized(avg_delivery_batch_size) { // can be accessed by different threads concurrently
+                    avg_delivery_batch_size.add(batch.size());
+                }
+            }
             up_prot.up(batch);
         }
         catch(Throwable t) {
