@@ -24,7 +24,7 @@ public class CreditMap {
     protected final Lock              lock;
     protected final Condition         credits_available;
     protected int                     num_blockings;
-    protected final Average           avg_block_time=new Average(512); // in ns
+    protected final Average           avg_block_time=new Average(512).unit(TimeUnit.NANOSECONDS); // in ns
     protected boolean                 done;
 
 
@@ -42,7 +42,7 @@ public class CreditMap {
     public long   getAccumulatedCredits() {return accumulated_credits;}
     public long   getMinCredits()         {return min_credits;}
     public int    getNumBlockings()       {return num_blockings;}
-    public double getAverageBlockTime()   {return avg_block_time.getAverage() / 1_000_000.0;} // in ms
+    public double getAverageBlockTime()   {return avg_block_time.getAverage();} // ns
 
     public Set<Address> keys() {
         lock.lock();
