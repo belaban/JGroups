@@ -294,7 +294,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     /* --------------------------------------------- JMX  ---------------------------------------------- */
     @Component(name="msg_stats")
-    protected final MsgStats msg_stats=new MsgStats().enable(stats);
+    protected final MsgStats msg_stats=new MsgStats();
 
     /** The name of the group to which this member is connected. With a shared transport, the channel name is
      * in TP.ProtocolAdapter (cluster_name), and this field is not used */
@@ -806,6 +806,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             bundler.init(this);
         }
         rtt.init(this);
+        // When stats is false, we'll set msg_stats.enabled to false, too. However, msg_stats.enabled=false can be
+        // set to false even if stats is true
+        if(!stats)
+            msg_stats.enable(false);
     }
 
 
