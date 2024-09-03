@@ -22,7 +22,7 @@ import static org.jgroups.conf.AttributeType.SCALAR;
  */
 public class MsgStats {
     @Property(description="Whether metrics should be logged")
-    protected boolean             enabled=true;
+    protected boolean             enabled;
 
     @ManagedAttribute(description="Number of unicast messages sent",type=SCALAR)
     protected final LongAdder     num_ucasts_sent=new LongAdder();
