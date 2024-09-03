@@ -173,9 +173,9 @@ public class FixedBuffer<T> extends Buffer<T> implements Closeable {
 
     @Override
     public <R> R removeMany(boolean nullify, int max_results, Predicate<T> filter, Supplier<R> result_creator, BiConsumer<R,T> accumulator) {
+        Remover<R> remover=new Remover<R>(max_results, filter, result_creator, accumulator);
         lock.lock();
         try {
-            Remover<R> remover=new Remover<R>(max_results, filter, result_creator, accumulator);
             forEach(remover, nullify);
             return remover.getResult();
         }
