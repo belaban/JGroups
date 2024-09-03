@@ -71,19 +71,26 @@ public class AverageMinMax extends Average {
         if(values == null) return "n/a";
         sort();
         double stddev=stddev();
-        return String.format("stddev: %.2f, 50: %f, 90: %f, 99: %f, 99.9: %f, 99.99: %f, 99.999: %f, 100: %f\n",
-                             stddev, p(50), p(90), p(99), p(99.9), p(99.99), p(99.999), p(100));
+        return String.format("stddev: %s, 50: %s, 90: %s, 99: %s, 99.9: %s, 99.99: %s, 99.999: %s, 100: %s\n",
+                             printTime(stddev, unit),
+                             printTime(p(50), unit),
+                             printTime(p(90), unit),
+                             printTime(p(99), unit),
+                             printTime(p(99.9), unit),
+                             printTime(p(99.99), unit),
+                             printTime(p(99.999), unit),
+                             printTime(p(100), unit));
     }
 
     public String toString() {
-        return count == 0? "n/a" :
+        return count.sum() == 0? "n/a" :
           unit != null? toString(unit) :
           String.format("min/avg/max=%.2f/%.2f/%.2f%s",
                         min, getAverage(), max, unit == null? "" : " " + Util.suffix(unit));
     }
 
     public String toString(TimeUnit u) {
-        if(count == 0)
+        if(count.sum() == 0)
             return "n/a";
         return String.format("%s/%s/%s", printTime(min, u), printTime(getAverage(), u), printTime(max, u));
     }
@@ -131,6 +138,5 @@ public class AverageMinMax extends Average {
         }
         return this;
     }
-
 
 }
