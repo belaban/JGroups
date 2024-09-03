@@ -23,7 +23,7 @@ public class DefaultThreadFactory implements ThreadFactory {
     protected String          clusterName;
     protected boolean         includeLocalAddress;
     protected String          address;
-    protected boolean         use_virtual_threads; // use fibers instead of threads (requires Java 15)
+    protected boolean         use_vthreads; // use fibers instead of threads (requires Java 15)
     protected Log             log;
 
 
@@ -60,8 +60,9 @@ public class DefaultThreadFactory implements ThreadFactory {
     public boolean                            useFibers()                  {return useVirtualThreads();}
     @Deprecated(forRemoval=true)
     public <T extends DefaultThreadFactory> T useFibers(boolean f)         {return useVirtualThreads(f);}
-    public boolean                            useVirtualThreads()          {return use_virtual_threads;}
-    public <T extends DefaultThreadFactory> T useVirtualThreads(boolean f) {this.use_virtual_threads=f; return (T)this;}
+    @Override
+    public boolean                            useVirtualThreads()          {return use_vthreads;}
+    public <T extends DefaultThreadFactory> T useVirtualThreads(boolean f) {this.use_vthreads=f; return (T)this;}
     public <T extends DefaultThreadFactory> T log(Log l)                   {this.log=l; return (T)this;}
 
     public Thread newThread(Runnable r, String name) {
@@ -74,7 +75,7 @@ public class DefaultThreadFactory implements ThreadFactory {
 
     protected Thread newThread(Runnable r, String name, String addr, String cluster_name) {
         String thread_name=getNewThreadName(name, addr, cluster_name);
-        return ThreadCreator.createThread(r, thread_name, createDaemons, use_virtual_threads);
+        return ThreadCreator.createThread(r, thread_name, createDaemons, use_vthreads);
     }
 
     public void renameThread(String base_name, Thread thread) {

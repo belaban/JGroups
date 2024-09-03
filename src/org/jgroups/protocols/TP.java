@@ -134,10 +134,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @Property(description="The fully qualified name of a class implementing LocalTransport")
     protected String  local_transport_class;
 
-    @Deprecated
-    @Property(description="If true, create virtual threads, otherwise create native threads",
-      deprecatedMessage="use thread_pool.use_virtual_threads instead")
-    protected boolean use_virtual_threads;
+    @Property(description="If true, create virtual threads, otherwise create native threads")
+    protected boolean use_vthreads;
 
     @Property(description="Thread naming pattern for threads in this channel. Valid values are \"pcl\": " +
       "\"p\": includes the thread name, e.g. \"Incoming thread-1\", \"UDP ucast receiver\", " +
@@ -585,7 +583,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     /** Don't remove! https://issues.redhat.com/browse/JGRP-2814 */
     @ManagedAttribute(type=SCALAR) @Deprecated
-    public long getNumberOfThreadDumps() {return thread_pool.getNumberOfThreadDumps();}
+    public static long getNumberOfThreadDumps() {return ThreadPool.getNumberOfThreadDumps();}
 
     /** Don't remove! https://issues.redhat.com/browse/JGRP-2814 */
     @ManagedAttribute(type=SCALAR) @Deprecated
@@ -731,12 +729,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public void init() throws Exception {
         this.id=ClassConfigurator.getProtocolId(TP.class);
 
-        if(use_virtual_threads && !Util.virtualThreadsAvailable()) {
+        if(use_vthreads && !Util.virtualThreadsAvailable()) {
             log.debug("use_virtual_threads was set to false, as virtual threads are not available in this Java version");
-            use_virtual_threads=false;
+            use_vthreads=false;
         }
-        thread_pool.useVirtualThreads(this.use_virtual_threads);
-
         if(local_transport_class != null) {
             Class<?> cl=Util.loadClass(local_transport_class, getClass());
             local_transport=(LocalTransport)cl.getDeclaredConstructor().newInstance();
@@ -745,7 +741,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
         if(thread_factory == null)
             setThreadFactory(new LazyThreadFactory("jgroups", false, true)
-                               .useVirtualThreads(use_virtual_threads).log(this.log));
+                               .useVirtualThreads(use_vthreads).log(this.log));
 
         // local_addr is null when shared transport, channel_name is not used
         setInAllThreadFactories(cluster_name != null? cluster_name.toString() : null, local_addr, thread_naming_pattern);

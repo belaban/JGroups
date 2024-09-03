@@ -9,6 +9,9 @@ import org.jgroups.conf.AttributeType;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.LongAdder;
 
@@ -22,6 +25,7 @@ import static org.jgroups.util.SuppressLog.Level.warn;
  * @since  5.2
  */
 public class ThreadPool implements Lifecycle {
+    private static final MethodHandle EXECUTORS_NEW_VIRTUAL_THREAD_FACTORY=getNewVirtualThreadFactoryHandle();
     protected Executor            thread_pool;
     protected Log                 log;
     protected ThreadFactory       thread_factory;
@@ -30,9 +34,6 @@ public class ThreadPool implements Lifecycle {
 
     @Property(description="Whether or not the thread pool is enabled. If false, tasks will be run on the caller's thread")
     protected boolean             enabled=true;
-
-    @Property(description="If true, create virtual threads, otherwise create native threads")
-    protected boolean             use_virtual_threads;
 
     @Property(description="Minimum thread pool size for the thread pool")
     protected int                 min_threads;
@@ -152,8 +153,6 @@ public class ThreadPool implements Lifecycle {
     public ThreadPool setThreadPoolFullSuppressTime(long t)    {this.thread_pool_full_suppress_time=t; return this;}
     public boolean    getThreadDumpsEnabled()                  {return thread_dumps_enabled;}
     public ThreadPool setThreadDumpsEnabled(boolean b)         {thread_dumps_enabled=b; return this;}
-    @Deprecated public int        getThreadDumpsThreshold()    {return 0;}
-    @Deprecated public ThreadPool setThreadDumpsThreshold(int t) {return this;}
     public Address    getAddress()                             {return address;}
     public ThreadPool setAddress(Address a)                    {this.address=a; return this;}
     public boolean    getIncreaseMaxSizeDynamically()          {return increase_max_size_dynamically;}
@@ -162,11 +161,11 @@ public class ThreadPool implements Lifecycle {
     public ThreadPool setDelta(int d)                          {delta=d; return this;}
     public long       numberOfRejectedMessages()               {return num_rejected_msgs.sum();}
     public ThreadPool log(Log l)                               {log=l; return this;}
-    public boolean    useVirtualThreads()                      {return use_virtual_threads;}
-    public ThreadPool useVirtualThreads(boolean b)             {use_virtual_threads=b; return this;}
 
-    @Deprecated public int  getNumberOfThreadDumps() {return -1;}
-    @Deprecated public void resetThreadDumps() {}
+    @Deprecated public static int getThreadDumpsThreshold()           {return 0;}
+    @Deprecated public ThreadPool setThreadDumpsThreshold(int ignore) {return this;}
+    @Deprecated public static int getNumberOfThreadDumps()            {return -1;}
+    @Deprecated public void       resetThreadDumps()                  {}
 
     @ManagedAttribute(description="Current number of threads in the thread pool",type=SCALAR)
     public int getThreadPoolSize() {
@@ -202,8 +201,8 @@ public class ThreadPool implements Lifecycle {
         if(enabled) {
             if(thread_factory == null)
                 thread_factory=new DefaultThreadFactory("thread-pool", true, true);
-            thread_pool=ThreadCreator.createThreadPool(min_threads, max_threads, keep_alive_time,
-                                  rejection_policy, new SynchronousQueue<>(), thread_factory, use_virtual_threads, log);
+            thread_pool=createThreadPool(min_threads, max_threads, keep_alive_time,
+                                         rejection_policy, new SynchronousQueue<>(), thread_factory, log);
         }
         else // otherwise use the caller's thread to unmarshal the byte buffer into a message
             thread_pool=new DirectExecutor();
@@ -257,14 +256,46 @@ public class ThreadPool implements Lifecycle {
         return thread_pool != null? thread_pool.toString() : "n/a";
     }
 
+
     protected static ExecutorService createThreadPool(int min_threads, int max_threads, long keep_alive_time,
                                                       String rejection_policy,
-                                                      BlockingQueue<Runnable> queue, final ThreadFactory factory) {
-        ThreadPoolExecutor pool=new ThreadPoolExecutor(min_threads, max_threads, keep_alive_time, TimeUnit.MILLISECONDS,
-                                                       queue, factory);
-        RejectedExecutionHandler handler=Util.parseRejectionPolicy(rejection_policy);
-        pool.setRejectedExecutionHandler(new ShutdownRejectedExecutionHandler(handler));
-        return pool;
+                                                      BlockingQueue<Runnable> queue, final ThreadFactory factory,
+                                                      Log log) {
+        if(!factory.useVirtualThreads() || EXECUTORS_NEW_VIRTUAL_THREAD_FACTORY == null) {
+            ThreadPoolExecutor pool=new ThreadPoolExecutor(min_threads, max_threads, keep_alive_time,
+                                                           TimeUnit.MILLISECONDS, queue, factory);
+            RejectedExecutionHandler handler=Util.parseRejectionPolicy(rejection_policy);
+            pool.setRejectedExecutionHandler(new ShutdownRejectedExecutionHandler(handler));
+            if(log != null)
+                log.debug("thread pool min/max/keep-alive (ms): %d/%d/%d", min_threads, max_threads, keep_alive_time);
+            return pool;
+        }
+
+        try {
+            return (ExecutorService)EXECUTORS_NEW_VIRTUAL_THREAD_FACTORY.invokeExact();
+        }
+        catch(Throwable t) {
+            throw new IllegalStateException(String.format("failed to create virtual thread pool: %s", t));
+        }
+    }
+
+    protected static MethodHandle getNewVirtualThreadFactoryHandle() {
+        MethodType type=MethodType.methodType(ExecutorService.class);
+        String[] names={
+          "newVirtualThreadPerTaskExecutor",  // jdk 18-21
+          "newVirtualThreadExecutor",         // jdk 17
+          "newUnboundedVirtualThreadExecutor" // jdk 15 & 16
+        };
+
+        MethodHandles.Lookup LOOKUP=MethodHandles.publicLookup();
+        for(int i=0; i < names.length; i++) {
+            try {
+                return LOOKUP.findStatic(Executors.class, names[i], type);
+            }
+            catch(Exception e) {
+            }
+        }
+        return null;
     }
 
 }

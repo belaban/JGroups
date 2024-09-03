@@ -2,7 +2,7 @@ package org.jgroups.util;
 
 public interface ThreadFactory extends java.util.concurrent.ThreadFactory {
     Thread newThread(Runnable r, String name);
-
+    boolean useVirtualThreads();
     void setPattern(String pattern);
     void setIncludeClusterName(boolean includeClusterName);
     void setClusterName(String channelName);

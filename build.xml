@@ -531,6 +531,17 @@
         </sequential>
     </target>
 
+    <target name="smoke-tests" depends="delete-reports" description="Runs all tests">
+        <sequential>
+            <antcall target="functional"/>
+            <antcall target="udp"/>
+            <antcall target="tcp"/>
+            <antcall target="stack-independent"/>
+            <antcall target="time-sensitive"/>
+            <antcall target="byteman"/>
+        </sequential>
+    </target>
+
     <target name="functional" depends="postcompile,define-testng-task" description="Runs functional tests">
         <mkdir dir="${tmp.dir}/test-results/xml/functional"/>
         <runtest suitename="functional"
