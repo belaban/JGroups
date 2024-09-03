@@ -14,6 +14,7 @@ import java.util.stream.StreamSupport;
  * @since  3.3
  */
 public class MessageBatch implements Iterable<Message> {
+    public enum Mode {OOB, REG}
 
     /** The destination address. Null if this is a multicast message batch, non-null if the batch is sent to a specific member */
     protected Address            dest;
@@ -114,7 +115,7 @@ public class MessageBatch implements Iterable<Message> {
     }
 
     public MessageBatch add(final Message msg) {
-        add(msg, true);
+        add(msg, true, true);
         return this;
     }
 
@@ -124,8 +125,17 @@ public class MessageBatch implements Iterable<Message> {
      * @return always 1 if resize==true, else 1 if the message was added or 0 if not
      */
     public int add(final Message msg, boolean resize) {
+        return add(msg, resize, true);
+    }
+
+    /** Adds a message to the table
+     * @param msg the message
+     * @param resize whether or not to resize the table. If true, the method will always return 1
+     * @return always 1 if resize==true, else 1 if the message was added or 0 if not
+     */
+    public int add(final Message msg, boolean resize, boolean determine_mode) {
         int added=messages.add(msg, resize);
-        if(added > 0)
+        if(added > 0 && determine_mode)
             determineMode();
         return added;
     }
@@ -219,7 +229,12 @@ public class MessageBatch implements Iterable<Message> {
         return messages.anyMatch(pred);
     }
 
-
+    public MessageBatch determineMode() {
+        if(mode != null || messages.isEmpty())
+            return this;
+        Message first=messages.get(0);
+        return mode(first.isFlagSet(Message.Flag.OOB)? Mode.OOB : Mode.REG);
+    }
 
     /** Returns the number of non-null messages */
     public int size() {
@@ -229,7 +244,6 @@ public class MessageBatch implements Iterable<Message> {
     public boolean isEmpty() {
         return messages.isEmpty();
     }
-
 
     /** Returns the size of the message batch (by calling {@link Message#size()} on all messages) */
     public long totalSize() {
@@ -302,15 +316,5 @@ public class MessageBatch implements Iterable<Message> {
         return sb.toString();
     }
 
-
-
-    public enum Mode {OOB, REG}
-
-    protected MessageBatch determineMode() {
-        if(mode != null || messages.isEmpty())
-            return this;
-        Message first=messages.get(0);
-        return mode(first.isFlagSet(Message.Flag.OOB)? Mode.OOB : Mode.REG);
-    }
 
 }

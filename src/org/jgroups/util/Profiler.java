@@ -40,9 +40,7 @@ public class Profiler {
         Long start=threads.remove(curr_thread);
         if(start != null) {
             double time=System.nanoTime() - start;
-            synchronized(avg) {
-                avg.add(time);
-            }
+            avg.add(time);
         }
     }
 

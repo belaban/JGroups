@@ -905,13 +905,9 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             }
             int size=batch.size();
             if(size > 0) {
-                if(stats) {
-                    synchronized(avg_batch_size) {
-                        // accessed by multiple threads concurrently
-                        avg_batch_size.add(size);
-                    }
-                }
                 deliverBatch(batch);
+                if(stats)
+                    avg_batch_size.add(size);
             }
         }
         while(mb != null || adders.decrementAndGet() != 0);

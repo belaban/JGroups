@@ -4,10 +4,11 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.atomic.DoubleAdder;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static org.jgroups.util.Util.printTime;
 
@@ -21,9 +22,10 @@ import static org.jgroups.util.Util.printTime;
 public class Average implements Streamable {
     protected final DoubleAdder            total=new DoubleAdder();
     protected AtomicReferenceArray<Double> samples;
-    protected final AtomicInteger          index=new AtomicInteger(-1);
+    protected int                          index=-1;
     protected final LongAdder              count=new LongAdder();
     protected TimeUnit                     unit;
+    protected final Lock                   lock=new ReentrantLock(); // for nextIndex()
 
     public Average() {
         this(128);
@@ -59,7 +61,7 @@ public class Average implements Streamable {
     public <T extends Average> T unit(TimeUnit u) {this.unit=u; return (T)this;}
 
     public double average() {
-        int len=(count.sum() < samples.length()? index.get()+1 : samples.length());
+        int len=(count.sum() < samples.length()? index+1 : samples.length());
         if(len == 0)
             return 0.0;
         return total.sum() / len;
@@ -100,12 +102,21 @@ public class Average implements Streamable {
     }
 
     protected int nextIndex() {
-        return index.accumulateAndGet(1, (l, __) -> {
-            if(l+1 >= samples.length()) {
+        lock.lock();
+        try {
+            if(++index >= samples.length())
+                index=0;
+            return index;
+        }
+        finally {
+            lock.unlock();
+        }
+        // using a lock is orders of magnitude faster than AtomicInteger.accumulateAndGet()!
+        /*return index.accumulateAndGet(1, (l, __) -> {
+            if(l+1 >= samples.length())
                 return 0;
-            }
             else
                 return l+1;
-        });
+        });*/
     }
 }

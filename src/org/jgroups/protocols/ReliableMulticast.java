@@ -116,7 +116,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
     protected static final Predicate<Message> remove_filter=m -> m != null
       && (m.isFlagSet(DONT_LOOPBACK) || m == DUMMY_OOB_MSG || m.isFlagSet(OOB_DELIVERED));
 
-    protected static final BiConsumer<MessageBatch,Message> BATCH_ACCUMULATOR=MessageBatch::add;
+    protected static final BiConsumer<MessageBatch,Message> BATCH_ACCUMULATOR=(mb, m) -> mb.add(m, true, false);
 
     protected final Function<Message,Long> SEQNO_GETTER= m -> {
         NakAckHeader hdr=m != null? m.getHeader(id) : null;
@@ -832,18 +832,16 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
                 // Don't include DUMMY and OOB_DELIVERED messages in the removed set
                 mb=win.removeMany(remove_msgs, max_batch_size, no_dummy_and_no_oob_delivered_msgs_and_no_dont_loopback_msgs,
                                   batch_creator, BATCH_ACCUMULATOR);
+                batch.determineMode();
             }
             catch(Throwable t) {
                 log.error("failed removing messages from table for " + sender, t);
             }
             int size=batch.size();
             if(size > 0) {
-                if(stats) {
-                    synchronized(avg_batch_size) {
-                        avg_batch_size.add(size);
-                    }
-                }
                 deliverBatch(batch, e);
+                if(stats)
+                    avg_batch_size.add(size);
             }
         }
         while(mb != null || adders.decrementAndGet() != 0);
