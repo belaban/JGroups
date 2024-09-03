@@ -21,7 +21,12 @@ import java.util.concurrent.TimeoutException;
 public class LoopbackTest extends ChannelTestBase {
     protected JChannel channel;
 
-    @BeforeMethod protected void setUp()    throws Exception {channel=createChannel().name("A"); makeUnique(channel);}
+    @BeforeMethod protected void setUp() throws Exception {
+        channel=createChannel().name("A");
+        channel.stack().getTransport().getMessageStats().enable(true);
+        makeUnique(channel);
+    }
+
     @AfterMethod  protected void tearDown() throws Exception {Util.close(channel);}
 
 
