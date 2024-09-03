@@ -30,8 +30,8 @@ public class MsgStatsTest {
         a=new JChannel(Util.getTestStack()).name("A").connect(CLUSTER).setReceiver(ra=new MyReceiver());
         b=new JChannel(Util.getTestStack()).name("B").connect(CLUSTER).setReceiver(rb=new MyReceiver());
         Util.waitUntilAllChannelsHaveSameView(5000, 100, a,b);
-        stats_a=a.stack().getTransport().getMessageStats();
-        stats_b=b.stack().getTransport().getMessageStats();
+        stats_a=a.stack().getTransport().getMessageStats().enable(true);
+        stats_b=b.stack().getTransport().getMessageStats().enable(true);
     }
 
     @AfterMethod
