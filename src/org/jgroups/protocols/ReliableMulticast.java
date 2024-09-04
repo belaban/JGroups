@@ -100,10 +100,10 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
 
 
     @ManagedAttribute(description="Number of messages sent",type=SCALAR)
-    protected int     num_messages_sent;
+    protected final LongAdder num_messages_sent=new LongAdder();
 
     @ManagedAttribute(description="Number of messages received",type=SCALAR)
-    protected int     num_messages_received;
+    protected final LongAdder num_messages_received=new LongAdder();
 
     protected static final Message DUMMY_OOB_MSG=new EmptyMessage().setFlag(OOB);
 
@@ -226,10 +226,8 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
     public ReliableMulticast setMaxXmitReqSize(int m)                 {this.max_xmit_req_size=m; return this;}
     public boolean           sendsCanBlock()                          {return sends_can_block;}
     public ReliableMulticast sendsCanBlock(boolean s)                 {this.sends_can_block=s; return this;}
-    public int               getNumMessagesSent()                     {return num_messages_sent;}
-    public ReliableMulticast setNumMessagesSent(int n)                {this.num_messages_sent=n; return this;}
-    public int               getNumMessagesReceived()                 {return num_messages_received;}
-    public ReliableMulticast setNumMessagesReceived(int n)            {this.num_messages_received=n; return this;}
+    public long              getNumMessagesSent()                     {return num_messages_sent.sum();}
+    public long              getNumMessagesReceived()                 {return num_messages_received.sum();}
     public boolean           reuseMessageBatches()                    {return reuse_message_batches;}
     public ReliableMulticast reuseMessageBatches(boolean b)           {this.reuse_message_batches=b; return this;}
     public boolean           sendAtomically()                         {return send_atomically;}
@@ -341,7 +339,8 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
 
     @ManagedOperation(description="Resets all statistics")
     public void resetStats() {
-        num_messages_sent=num_messages_received=0;
+        num_messages_sent.reset();
+        num_messages_received.reset();
         xmit_reqs_received.reset();
         xmit_reqs_sent.reset();
         xmit_rsps_received.reset();
@@ -519,7 +518,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
         boolean dont_loopback_set=msg.isFlagSet(DONT_LOOPBACK);
         Buffer<Message> win=send_entry.buf();
         send(msg, win, dont_loopback_set);
-        num_messages_sent++;
+        num_messages_sent.increment();
         last_seqno_resender.skipNext();
         if(dont_loopback_set && needToSendAck(send_entry, 1))
             handleAck(local_addr, win.highestDelivered()); // https://issues.redhat.com/browse/JGRP-2829
@@ -752,7 +751,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
             return;
         }
 
-        num_messages_received++;
+        num_messages_received.increment();
         boolean loopback=local_addr.equals(sender);
         Buffer<Message> win=getBuf(sender);
 
@@ -783,7 +782,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
             return;
         }
         int size=mb.size();
-        num_messages_received+=size;
+        num_messages_received.add(size);
         boolean loopback=local_addr.equals(sender), oob=mb.mode() == MessageBatch.Mode.OOB;
         Buffer<Message> win=getBuf(sender);
         boolean added=loopback || win.add(mb, SEQNO_GETTER, !oob, oob? DUMMY_OOB_MSG : null);
