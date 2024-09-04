@@ -120,12 +120,8 @@ public class TIME extends Protocol {
     }
 
     protected static void add(final AverageMinMax avg, long num) {
-        if(num > 0) {
-            //noinspection SynchronizationOnLocalVariableOrMethodParameter
-            synchronized(avg) {
-                avg.add(num);
-            }
-        }
+        if(num > 0)
+            avg.add(num);
     }
 
 }
