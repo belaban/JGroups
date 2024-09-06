@@ -1,17 +1,12 @@
 package org.jgroups.protocols;
 
-import org.jgroups.Address;
-import org.jgroups.Message;
-import org.jgroups.NullAddress;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.logging.Log;
-import org.jgroups.util.ByteArrayDataOutputStream;
-import org.jgroups.util.FastArray;
-import org.jgroups.util.Profiler;
-import org.jgroups.util.Util;
+import org.jgroups.stack.MessageProcessingPolicy;
+import org.jgroups.util.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,12 +14,16 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Stream;
 
+import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
 import static org.jgroups.protocols.TP.MSG_OVERHEAD;
+import static org.jgroups.util.MessageBatch.Mode.OOB;
+import static org.jgroups.util.MessageBatch.Mode.REG;
 
 /**
  * Queues messages per destination ('null' is a special destination), sending when the last sender thread to the same
@@ -36,7 +35,6 @@ import static org.jgroups.protocols.TP.MSG_OVERHEAD;
  * @since  5.2.7
  */
 public class PerDestinationBundler implements Bundler {
-
 
     /**
      * Maximum number of bytes for messages to be queued until they are sent.
@@ -62,7 +60,12 @@ public class PerDestinationBundler implements Bundler {
     @ManagedAttribute(description="Number of batches sent because the queue was full",type=AttributeType.SCALAR)
     protected final LongAdder               num_sends_due_to_max_size=new LongAdder();
 
+    @ManagedAttribute(description="Times to send messages")
+    protected final AverageMinMax           send_times=new AverageMinMax().unit(TimeUnit.NANOSECONDS);
+
     protected TP                            transport;
+    protected MsgStats                      msg_stats;
+    protected MessageProcessingPolicy       msg_processing_policy;
     protected Log                           log;
     protected Address                       local_addr;
     protected final Map<Address,SendBuffer> dests=Util.createConcurrentMap();
@@ -88,13 +91,13 @@ public class PerDestinationBundler implements Bundler {
     @Override public void resetStats() {
         Stream.of(total_msgs_sent, num_batches_sent, num_single_msgs_sent, num_sends_due_to_max_size)
           .forEach(LongAdder::reset);
-        p_send_msg_list.reset();
-        p_send_single_msg.reset();
-        p_send_msgs.reset();
+        send_times.clear();
     }
 
     public void init(TP transport) {
         this.transport=Objects.requireNonNull(transport);
+        msg_processing_policy=transport.msgProcessingPolicy();
+        msg_stats=transport.getMessageStats();
         this.log=transport.getLog();
     }
 
@@ -128,11 +131,6 @@ public class PerDestinationBundler implements Bundler {
     }
 
 
-    @ManagedAttribute final Profiler p_send_msg_list=new Profiler(),
-      p_send_single_msg=new Profiler(),
-      p_send_msgs=new Profiler();
-
-
     protected class SendBuffer implements Runnable {
         private final Address                   dest;
         protected final FastArray<Message>      msgs=new FastArray<Message>(16).increment(10);
@@ -149,6 +147,21 @@ public class PerDestinationBundler implements Bundler {
             this.dest=dest;
         }
 
+        public SendBuffer start() {
+            if(running)
+                stop();
+            bundler_thread=transport.getThreadFactory().newThread(this, THREAD_NAME);
+            running=true;
+            bundler_thread.start();
+            return this;
+        }
+
+        public void stop() {
+            running=false;
+            Thread tmp=bundler_thread;
+            if(tmp != null)
+                tmp.interrupt();
+        }
 
         public void run() {
             while(running) {
@@ -191,98 +204,128 @@ public class PerDestinationBundler implements Bundler {
             count+=size;
         }
 
-        protected void sendBundledMessages() {
-            sendBatch(dest, msgs);
-            msgs.clear(false);
-            count=0;
-        }
-
-        public SendBuffer start() {
-            if(running)
-                stop();
-            bundler_thread=transport.getThreadFactory().newThread(this, THREAD_NAME);
-            running=true;
-            bundler_thread.start();
-            return this;
-        }
-
-        public void stop() {
-            running=false;
-            Thread tmp=bundler_thread;
-            if(tmp != null)
-                tmp.interrupt();
-        }
-
-        public void renameThread() {
-            transport.getThreadFactory().renameThread(THREAD_NAME, bundler_thread);
-        }
-
         protected void send(Message msg) throws Exception {
             queue.put(msg);
         }
 
-
-        protected void sendBatch(Address destination, FastArray<Message> list) {
-            if(list.isEmpty()) // should never happen!
+        protected void sendBundledMessages() {
+            if(msgs.isEmpty()) // should never happen!
                 return;
-            Address dst=destination == NULL? null : destination;
-            sendMessages(dst, local_addr, list);
+            Address dst=dest == NULL? null : dest;
+            sendMessages(dst, local_addr, msgs);
+            msgs.clear(false);
+            count=0;
         }
 
-        protected void sendSingleMessage(final Address dest, final Message msg) {
-            p_send_single_msg.start();
+        protected void sendMessages(final Address dest, final Address src, final FastArray<Message> list) {
+            long start=transport.statsEnabled()? System.nanoTime() : 0;
             try {
-                output.position(0);
-                Util.writeMessage(msg, output, dest == null);
-                transport.doSend(output.buffer(), 0, output.position(), dest);
+                int size=list.size();
+                if(size == 0)
+                    return;
+                if(size == 1)
+                    sendSingle(dest, list.get(0), this.output);
+                else
+                    sendMultiple(dest, src, list, this.output);
+                if(start > 0)
+                    send_times.add(System.nanoTime()-start);
+                total_msgs_sent.add(size);
+            }
+            catch(Throwable e) {
+                log.trace(Util.getMessage("FailureSendingMsgBundle"), transport.getAddress(), e);
+            }
+        }
+
+        protected void sendSingle(Address dst, Message msg, ByteArrayDataOutputStream out) {
+            if(dst == null) { // multicast
+                sendSingleMessage(msg.dest(), msg, out);
+                loopbackUnlessDontLoopbackIsSet(msg);
+            }
+            else {            // unicast
+                boolean send_to_self=Objects.equals(transport.getAddress(), dst)
+                  || dst instanceof PhysicalAddress && dst.equals(transport.localPhysicalAddress());
+                if(send_to_self)
+                    loopbackUnlessDontLoopbackIsSet(msg);
+                else
+                    sendSingleMessage(msg.dest(), msg, out);
+            }
+        }
+
+        protected void sendMultiple(Address dst, Address sender, FastArray<Message> list, ByteArrayDataOutputStream out) {
+            if(dst == null) { // multicast
+                sendMessageList(dst, sender, list, out);
+                loopback(dst, transport.getAddress(), list);
+            }
+            else {            // unicast
+                boolean loopback=Objects.equals(transport.getAddress(), dst)
+                  || dst instanceof PhysicalAddress && dst.equals(transport.localPhysicalAddress());
+                if(loopback)
+                    loopback(dst, transport.getAddress(), list);
+                else
+                    sendMessageList(dst, sender, list, out);
+            }
+        }
+
+        protected void sendSingleMessage(final Address dest, final Message msg, ByteArrayDataOutputStream out) {
+            try {
+                out.position(0);
+                Util.writeMessage(msg, out, dest == null);
+                transport.doSend(out.buffer(), 0, out.position(), dest);
                 transport.getMessageStats().incrNumSingleMsgsSent();
                 num_single_msgs_sent.increment();
             }
             catch(Throwable e) {
                 log.error("%s: failed sending message to %s: %s", local_addr, dest, e);
             }
-            finally {
-                p_send_single_msg.stop();
-            }
         }
 
-
-        protected void sendMessageList(final Address dest, final Address src, final FastArray<Message> list) {
-            p_send_msg_list.start();
-            output.position(0);
+        protected void sendMessageList(Address dest, Address src, FastArray<Message> list, ByteArrayDataOutputStream out) {
+            out.position(0);
             try {
                 Util.writeMessageList(dest, src, transport.cluster_name.chars(), list,
-                                      output, dest == null);
-                transport.doSend(output.buffer(), 0, output.position(), dest);
+                                      out, dest == null);
+                transport.doSend(out.buffer(), 0, out.position(), dest);
                 transport.getMessageStats().incrNumBatchesSent();
                 num_batches_sent.increment();
             }
             catch(Throwable e) {
                 log.trace(Util.getMessage("FailureSendingMsgBundle"), transport.getAddress(), e);
             }
-            finally {
-                p_send_msg_list.stop();
+        }
+
+        protected void loopback(Address dest, Address sender, FastArray<Message> list) {
+            MessageBatch reg=null, oob=null;
+            for(Message msg: list) {
+                if(msg.isFlagSet(DONT_LOOPBACK))
+                    continue;
+                if(msg.isFlagSet(Message.Flag.OOB)) {
+                    // we cannot reuse message batches (like in ReliableMulticast.removeAndDeliver()), because batches are
+                    // submitted to a thread pool and new calls of this method might change them while they're being passed up
+                    if(oob == null)
+                        oob=new MessageBatch(dest, sender, transport.getClusterNameAscii(), dest == null, OOB, list.size());
+                    oob.add(msg);
+                }
+                else {
+                    if(reg == null)
+                        reg=new MessageBatch(dest, sender, transport.getClusterNameAscii(), dest == null, REG, list.size());
+                    reg.add(msg);
+                }
+            }
+            if(reg != null) {
+                msg_stats.received(reg);
+                msg_processing_policy.loopback(reg, false);
+            }
+            if(oob != null) {
+                msg_stats.received(oob);
+                msg_processing_policy.loopback(oob, true);
             }
         }
 
-        protected void sendMessages(final Address dest, final Address src, final FastArray<Message> list) {
-            p_send_msgs.start();
-            try {
-                int size=list.size();
-                if(size == 0)
-                    return;
-                if(size == 1)
-                    sendSingleMessage(dest, list.get(0));
-                else
-                    sendMessageList(dest, src, list);
-                total_msgs_sent.add(size);
-            }
-            catch(Throwable e) {
-                log.trace(Util.getMessage("FailureSendingMsgBundle"), transport.getAddress(), e);
-            }
-            finally {
-                p_send_msgs.stop();
-            }
+        protected void loopbackUnlessDontLoopbackIsSet(Message msg) {
+            if(msg.isFlagSet(DONT_LOOPBACK))
+                return;
+            msg_stats.received(msg);
+            msg_processing_policy.loopback(msg, msg.isFlagSet(Message.Flag.OOB));
         }
 
         public String toString() {

@@ -68,6 +68,10 @@ public class MPerf implements Receiver {
         }
     }
 
+    public MPerf time(int t)    {this.time=t; return this;}
+    public MPerf size(int s)    {this.msg_size=s; return this;}
+    public MPerf threads(int t) {this.num_threads=t; return this;}
+
     public void start(String props, String name, boolean use_virtual_threads) throws Exception {
         StringBuilder sb=new StringBuilder();
         sb.append("\n\n----------------------- MPerf -----------------------\n");
@@ -749,6 +753,7 @@ public class MPerf implements Receiver {
         String props=null, name=null;
         boolean run_event_loop=true, use_virtual_threads=true;
         Path out_file_path=null;
+        int time=60, size=1000, threads=100;
 
         for(int i=0; i < args.length; i++) {
             if("-props".equals(args[i])) {
@@ -771,12 +776,25 @@ public class MPerf implements Receiver {
                 use_virtual_threads=Boolean.parseBoolean(args[++i]);
                 continue;
             }
+            if("-time".equals(args[i])) {
+                time=Integer.parseInt(args[++i]);
+                continue;
+            }
+            if("-size".equals(args[i])) {
+                size=Integer.parseInt(args[++i]);
+                continue;
+            }
+            if("-threads".equals(args[i])) {
+                threads=Integer.parseInt(args[++i]);
+                continue;
+            }
             System.out.println("MPerf [-props <stack config>] [-name <logical name>] [-nohup] " +
-                                 "[-use_virtual_threads true|false] [-file <file path>]");
+                                 "[-use_virtual_threads true|false] [-file <file path>] " +
+                                 "[-time <secs>] [-size <bytes>] [-threads <number of sender threads>]");
             return;
         }
 
-        final MPerf test=new MPerf(out_file_path);
+        final MPerf test=new MPerf(out_file_path).time(time).size(size).threads(threads);
         try {
             test.start(props, name, use_virtual_threads);
             if(run_event_loop)

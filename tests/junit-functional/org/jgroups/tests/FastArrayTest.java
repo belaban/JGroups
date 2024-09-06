@@ -25,6 +25,25 @@ public class FastArrayTest {
         assert fa.capacity() == 1;
     }
 
+    public void testCreationWithArray() {
+        Integer[] array={1,2,3,4,5};
+        FastArray<Integer> fa=new FastArray<>(array, array.length);
+        assert fa.size() == 5;
+        List<Integer> list=fa.stream().collect(Collectors.toList());
+        List<Integer> expected=IntStream.rangeClosed(1,5).boxed().collect(Collectors.toList());
+        assert list.equals(expected);
+    }
+
+    public void testCreationWithArray2() {
+        Integer[] array={1,2,3,null,5};
+        FastArray<Integer> fa=new FastArray<>(array, array.length);
+        assert fa.size() == 4;
+        List<Integer> list=fa.stream().collect(Collectors.toList());
+        List<Integer> expected=IntStream.rangeClosed(1,5).boxed().collect(Collectors.toList());
+        expected.remove((Integer)4);
+        assert list.equals(expected);
+    }
+
     public void testAdd() {
         FastArray<Integer> fa=new FastArray<>(5);
         int added=fa.add(1);

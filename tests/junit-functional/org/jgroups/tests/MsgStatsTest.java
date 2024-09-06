@@ -65,7 +65,7 @@ public class MsgStatsTest {
             Message msg=new BytesMessage(dest, payload);
             a.send(msg);
         }
-        Util.waitUntil(2000, 100, () -> Stream.of(rb).map(MyReceiver::ucasts).allMatch(n -> n >= NUM_MSGS));
+        Util.waitUntil(2000, 100, () -> rb.ucasts() >= NUM_MSGS);
         assertTrue(NUM_MSGS, TOTAL_BYTES, 0, 0, stats_a);
         assertTrue(0, 0, NUM_MSGS, TOTAL_BYTES, stats_b);
         assert stats_a.getNumUcastsSent() >= NUM_MSGS;

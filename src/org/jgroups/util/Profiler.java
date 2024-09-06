@@ -15,6 +15,7 @@ public class Profiler {
     protected final AverageMinMax    avg=new AverageMinMax().unit(NANOSECONDS);
     protected final Map<Thread,Long> threads=new ConcurrentHashMap<>();
     protected boolean                print_details=true;
+    protected boolean                enabled=true;
 
 
     public Profiler() {
@@ -22,6 +23,8 @@ public class Profiler {
 
     public boolean  details()          {return print_details;}
     public Profiler details(boolean d) {print_details=d; return this;}
+    public boolean  enabled()          {return enabled;}
+    public Profiler enable(boolean b)  {enabled=b; return this;}
 
     public void reset() {
         threads.clear();
@@ -31,11 +34,15 @@ public class Profiler {
     }
 
     public void start() {
+        if(!enabled)
+            return;
         Thread curr=Thread.currentThread();
         threads.put(curr, System.nanoTime());
     }
 
     public void stop() {
+        if(!enabled)
+            return;
         Thread curr_thread=Thread.currentThread();
         Long start=threads.remove(curr_thread);
         if(start != null) {

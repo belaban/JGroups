@@ -1,16 +1,19 @@
 package org.jgroups.tests;
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.BytesMessage;
+import org.jgroups.Global;
+import org.jgroups.JChannel;
 import org.jgroups.protocols.TP;
-import org.jgroups.util.MessageBatch;
-import org.jgroups.util.Promise;
+import org.jgroups.util.MyReceiver;
 import org.jgroups.util.Util;
-import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.util.concurrent.TimeoutException;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * Tests unicast and multicast messages to self (loopback of transport protocol)
@@ -49,18 +52,15 @@ public class LoopbackTest extends ChannelTestBase {
     }
 
     protected void sendMessagesWithLoopback(boolean unicast) throws Exception {
-        final long TIMEOUT = 60_0000;
         final int NUM=1000;
-        long num_msgs_sent_before = 0;
-        long num_msgs_sent_after = 0;
+        long num_msgs_sent_before=0, num_msgs_sent_after=0;
 
-        Promise<Boolean> promise = new Promise<>() ;
-        MyReceiver receiver = new MyReceiver(NUM, promise) ;
+        MyReceiver<Integer> receiver = new MyReceiver<>() ;
         channel.setReceiver(receiver) ;
         channel.connect("UnicastLoopbackTest") ;
 
         int largest_thread_pool_size=channel.getProtocolStack().getTransport().getThreadPool().getLargestSize();
-        num_msgs_sent_before = getNumMessagesSentViaNetwork(channel) ;
+        num_msgs_sent_before=getNumMessagesSentViaNetwork(channel) ;
 
         // send NUM messages to dest
         Address dest=unicast? channel.getAddress() : null;
@@ -70,26 +70,20 @@ public class LoopbackTest extends ChannelTestBase {
                 System.out.printf("-- [%s] sent %d\n", Thread.currentThread().getName(), i);
         }
 
-        num_msgs_sent_after = getNumMessagesSentViaNetwork(channel) ;
+        num_msgs_sent_after=getNumMessagesSentViaNetwork(channel) ;
 
         System.out.printf("\nlargest pool size before: %d after: %d\n", largest_thread_pool_size,
                           largest_thread_pool_size=channel.getProtocolStack().getTransport().getThreadPool().getLargestSize());
 
         // when sending msgs to self, messages should not touch the network
-        System.out.println("num msgs before: " + num_msgs_sent_before + ", num msgs after: " + num_msgs_sent_after);
+        System.out.println("num msgs sent before: " + num_msgs_sent_before + ", num msgs sent after: " + num_msgs_sent_after);
         assert num_msgs_sent_before <= num_msgs_sent_after;
-        if(unicast)
-            assert num_msgs_sent_after < NUM/10;
-        else
-            assert num_msgs_sent_after >= NUM; // max of NUM single messages; probably some batches were sent
-        try {
-            // wait for all messages to be received
-            promise.getResultWithTimeout(TIMEOUT) ;
-        }
-        catch(TimeoutException te) {
-            // timeout exception occurred
-            Assert.fail("Test timed out before all messages were received; received " + receiver.getNumMsgsReceived()) ;
-        }
+        assert num_msgs_sent_after >= NUM; // max of NUM single messages; probably some batches were sent
+
+        Util.waitUntil(5000, 100, () -> receiver.size() == NUM);
+        List<Integer> actual=receiver.list();
+        List<Integer> expected=IntStream.rangeClosed(1,1000).boxed().collect(Collectors.toList());
+        assert actual.equals(expected);
     }
 
 
@@ -105,54 +99,6 @@ public class LoopbackTest extends ChannelTestBase {
         if (transport == null)
             throw new Exception("transport layer is not present - check default stack configuration") ;
         return transport.getMessageStats().getNumMsgsSent();
-    }
-
-
-
-    /**
-     * A receiver which waits for all messages to be received and 
-     * then sets a promise.
-     */
-    private static class MyReceiver implements Receiver {
-        private final int numExpected ;
-        private int       numReceived;
-        private final Promise<Boolean> p ;
-
-        public MyReceiver(int numExpected, Promise<Boolean> p) {
-            this.numExpected = numExpected ;
-            this.numReceived = 0 ;
-            this.p = p ;
-        }
-
-        // when we receive a Message, we update the count of messages received
-        public void receive(Message msg) {
-            Integer num=msg.getObject();
-            numReceived++;
-            if(num != null && num % 100 == 0)
-                System.out.printf("-- [%s] received %d\n", Thread.currentThread().getName(), num);
-
-            // if we have received NUM messages, set the result
-            if (numReceived >= numExpected)
-                p.setResult(Boolean.TRUE) ;
-        }
-
-        public void receive(MessageBatch batch) {
-            int size=batch.size();
-            numReceived+=size;
-            // System.out.printf("received batch of %d msgs, total: %d\n", size, numReceived);
-            for(Message msg: batch) {
-                Integer num=msg != null? msg.getObject() : null;
-                if(num != null && num % 100 == 0)
-                    System.out.printf("-- [%s] received %d\n", Thread.currentThread().getName(), num);
-            }
-
-            if(numReceived >= numExpected)
-                p.setResult(Boolean.TRUE);
-        }
-
-        public int getNumMsgsReceived() {
-            return numReceived ;
-        }
     }
 
 

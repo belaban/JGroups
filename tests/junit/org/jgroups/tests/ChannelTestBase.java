@@ -35,7 +35,7 @@ public class ChannelTestBase {
     protected Log         log;
 
     @BeforeClass
-    @Parameters(value = { "channel.conf"})
+    @Parameters(value = {"channel.conf"})
     protected void initializeBase(@Optional("udp.xml") String chconf) throws Exception {
         log=LogFactory.getLog(this.getClass());
         Test annotation = this.getClass().getAnnotation(Test.class);

@@ -31,17 +31,26 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
         return tp.getThreadPool().execute(new SingleLoopbackHandler(msg));
     }
 
+    public boolean loopback(MessageBatch batch, boolean oob) {
+        if(oob) {
+            boolean removed=removeAndDispatchNonBundledMessages(batch, true);
+            if(removed && batch.isEmpty())
+                return true;
+        }
+        return tp.getThreadPool().execute(new BatchHandler(batch, true));
+    }
+
     public boolean process(Message msg, boolean oob) {
         return tp.getThreadPool().execute(new SingleMessageHandler(msg));
     }
 
     public boolean process(MessageBatch batch, boolean oob) {
         if(oob) {
-            boolean removed=removeAndDispatchNonBundledMessages(batch);
+            boolean removed=removeAndDispatchNonBundledMessages(batch, false);
             if(removed && batch.isEmpty())
                 return true;
         }
-        return tp.getThreadPool().execute(new BatchHandler(batch));
+        return tp.getThreadPool().execute(new BatchHandler(batch, false));
     }
 
 
@@ -49,7 +58,7 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
      * Removes messages with flags DONT_BUNDLE and OOB set and executes them in the oob or internal thread pool. JGRP-1737
      * Returns true if at least one message was removed
      */
-    protected boolean removeAndDispatchNonBundledMessages(MessageBatch oob_batch) {
+    protected boolean removeAndDispatchNonBundledMessages(MessageBatch oob_batch, boolean loopback) {
         if(oob_batch == null)
             return false;
         AsciiString tmp=oob_batch.clusterName();
@@ -59,7 +68,8 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
             Message msg=it.next();
             if(msg.isFlagSet(Message.Flag.DONT_BUNDLE) && msg.isFlagSet(Message.Flag.OOB)) {
                 it.remove();
-                tp.getThreadPool().execute(new SingleMessageHandlerWithClusterName(msg, cname));
+                Runnable handler=loopback? new SingleLoopbackHandler(msg) : new SingleMessageHandlerWithClusterName(msg, cname);
+                tp.getThreadPool().execute(handler);
                 removed=true;
             }
         }
@@ -120,9 +130,11 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
 
     public class BatchHandler implements Runnable {
         protected MessageBatch batch;
+        protected boolean      loopback;
 
-        public BatchHandler(final MessageBatch batch) {
+        public BatchHandler(final MessageBatch batch, boolean loopback) {
             this.batch=batch;
+            this.loopback=loopback;
         }
 
         public MessageBatch getBatch() {return batch;}
@@ -134,7 +146,7 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
         }
 
         protected void passBatchUp() {
-            tp.passBatchUp(batch, true, true);
+            tp.passBatchUp(batch, !loopback, !loopback);
         }
     }
 

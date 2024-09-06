@@ -2,24 +2,24 @@ package org.jgroups.protocols;
 
 import org.jgroups.Address;
 import org.jgroups.Message;
+import org.jgroups.PhysicalAddress;
 import org.jgroups.View;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.logging.Log;
-import org.jgroups.util.AverageMinMax;
-import org.jgroups.util.ByteArrayDataOutputStream;
-import org.jgroups.util.Util;
+import org.jgroups.stack.MessageProcessingPolicy;
+import org.jgroups.util.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
 import static org.jgroups.protocols.TP.MSG_OVERHEAD;
+import static org.jgroups.util.MessageBatch.Mode.OOB;
+import static org.jgroups.util.MessageBatch.Mode.REG;
 
 /**
  * Implements storing of messages in a hashmap and sending of single messages and message batches. Most bundler
@@ -31,9 +31,11 @@ public abstract class BaseBundler implements Bundler {
     /** Keys are destinations, values are lists of Messages */
     protected final Map<Address,List<Message>>  msgs=new HashMap<>(24);
     protected TP                                transport;
+    protected MessageProcessingPolicy           msg_processing_policy;
     protected final ReentrantLock               lock=new ReentrantLock();
     protected @GuardedBy("lock") long           count;    // current number of bytes accumulated
     protected ByteArrayDataOutputStream         output;
+    protected MsgStats                          msg_stats;
     protected Log                               log;
 
     /**
@@ -52,14 +54,15 @@ public abstract class BaseBundler implements Bundler {
     protected final AverageMinMax               avg_send_time=new AverageMinMax().unit(TimeUnit.NANOSECONDS);
 
 
-
-    public int     getCapacity()       {return capacity;}
-    public Bundler setCapacity(int c)  {this.capacity=c; return this;}
-    public int     getMaxSize()        {return max_size;}
-    public Bundler setMaxSize(int s)   {max_size=s; return this;}
+    public int     getCapacity()               {return capacity;}
+    public Bundler setCapacity(int c)          {this.capacity=c; return this;}
+    public int     getMaxSize()                {return max_size;}
+    public Bundler setMaxSize(int s)           {max_size=s; return this;}
 
     public void init(TP transport) {
         this.transport=transport;
+        msg_processing_policy=transport.msgProcessingPolicy();
+        msg_stats=transport.getMessageStats();
         log=transport.getLog();
         output=new ByteArrayDataOutputStream(max_size + MSG_OVERHEAD);
     }
@@ -104,13 +107,12 @@ public abstract class BaseBundler implements Bundler {
             List<Message> list=entry.getValue();
             if(list.isEmpty())
                 continue;
+            Address dst=entry.getKey();
             output.position(0);
             if(list.size() == 1)
-                sendSingleMessage(list.get(0));
-            else {
-                Address dst=entry.getKey();
-                sendMessageList(dst, list.get(0).getSrc(), list);
-            }
+                sendSingle(dst, list.get(0), output);
+            else
+                sendMultiple(dst, list.get(0).src(), list, output);
             list.clear();
         }
         count=0;
@@ -120,12 +122,96 @@ public abstract class BaseBundler implements Bundler {
         }
     }
 
+    protected void sendSingle(Address dst, Message msg, ByteArrayDataOutputStream out) {
+        if(dst == null) { // multicast
+            sendSingleMessage(msg, out);
+            loopbackUnlessDontLoopbackIsSet(msg);
+        }
+        else {            // unicast
+            boolean send_to_self=Objects.equals(transport.getAddress(), dst)
+              || dst instanceof PhysicalAddress && dst.equals(transport.localPhysicalAddress());
+            if(send_to_self)
+                loopbackUnlessDontLoopbackIsSet(msg);
+            else
+                sendSingleMessage(msg, out);
+        }
+    }
 
-    protected void sendSingleMessage(final Message msg) {
+    protected void sendMultiple(Address dst, Address sender, List<Message> list, ByteArrayDataOutputStream out) {
+        if(dst == null) { // multicast
+            sendMessageList(dst, sender, list, out);
+            loopback(dst, transport.getAddress(), list, list.size());
+        }
+        else {            // unicast
+            boolean loopback=Objects.equals(transport.getAddress(), dst)
+              || dst instanceof PhysicalAddress && dst.equals(transport.localPhysicalAddress());
+            if(loopback)
+                loopback(dst, transport.getAddress(), list, list.size());
+            else
+                sendMessageList(dst, sender, list, out);
+        }
+    }
+
+    protected void sendMultiple(Address dst, Address sender, Message[] list, int len, ByteArrayDataOutputStream out) {
+        if(dst == null) { // multicast
+            sendMessageList(dst, sender, list, len, out);
+            loopback(dst, transport.getAddress(), list, len);
+        }
+        else {            // unicast
+            boolean send_to_self=Objects.equals(transport.getAddress(), dst)
+              || dst instanceof PhysicalAddress && dst.equals(transport.localPhysicalAddress());
+            if(send_to_self)
+                loopback(dst, transport.getAddress(), list, len);
+            else
+                sendMessageList(dst, sender, list, len, out);
+        }
+    }
+
+    protected void loopbackUnlessDontLoopbackIsSet(Message msg) {
+        if(msg.isFlagSet(DONT_LOOPBACK))
+            return;
+        msg_stats.received(msg);
+        msg_processing_policy.loopback(msg, msg.isFlagSet(Message.Flag.OOB));
+    }
+
+    protected void loopback(Address dest, Address sender, Iterable<Message> list, int size) {
+        MessageBatch reg=null, oob=null;
+        for(Message msg: list) {
+            if(msg.isFlagSet(DONT_LOOPBACK))
+                continue;
+            if(msg.isFlagSet(Message.Flag.OOB)) {
+                // we cannot reuse message batches (like in ReliableMulticast.removeAndDeliver()), because batches are
+                // submitted to a thread pool and new calls of this method might change them while they're being passed up
+                if(oob == null)
+                    oob=new MessageBatch(dest, sender, transport.getClusterNameAscii(), dest == null, OOB, size);
+                oob.add(msg);
+            }
+            else {
+                if(reg == null)
+                    reg=new MessageBatch(dest, sender, transport.getClusterNameAscii(), dest == null, REG, size);
+                reg.add(msg);
+            }
+        }
+        if(reg != null) {
+            msg_stats.received(reg);
+            msg_processing_policy.loopback(reg, false);
+        }
+        if(oob != null) {
+            msg_stats.received(oob);
+            msg_processing_policy.loopback(oob, true);
+        }
+    }
+
+    protected void loopback(Address dest, Address sender, Message[] list, int len) {
+        FastArray<Message> fa=new FastArray<>(list, len);
+        loopback(dest, sender, fa, fa.size());
+    }
+
+    protected void sendSingleMessage(final Message msg, ByteArrayDataOutputStream out) {
         Address dest=msg.getDest();
         try {
-            Util.writeMessage(msg, output, dest == null);
-            transport.doSend(output.buffer(), 0, output.position(), dest);
+            Util.writeMessage(msg, out, dest == null);
+            transport.doSend(out.buffer(), 0, out.position(), dest);
             transport.getMessageStats().incrNumSingleMsgsSent();
         }
         catch(Throwable e) {
@@ -134,12 +220,21 @@ public abstract class BaseBundler implements Bundler {
         }
     }
 
-
-
-    protected void sendMessageList(final Address dest, final Address src, final List<Message> list) {
+    protected void sendMessageList(final Address dest, final Address src, final List<Message> list, ByteArrayDataOutputStream out) {
         try {
-            Util.writeMessageList(dest, src, transport.cluster_name.chars(), list, output, dest == null);
-            transport.doSend(output.buffer(), 0, output.position(), dest);
+            Util.writeMessageList(dest, src, transport.cluster_name.chars(), list, out, dest == null);
+            transport.doSend(out.buffer(), 0, out.position(), dest);
+            transport.getMessageStats().incrNumBatchesSent();
+        }
+        catch(Throwable e) {
+            log.trace(Util.getMessage("FailureSendingMsgBundle"), transport.getAddress(), e);
+        }
+    }
+
+    protected void sendMessageList(final Address dest, final Address src, Message[] list, int len, ByteArrayDataOutputStream out) {
+        try {
+            Util.writeMessageList(dest, src, transport.cluster_name.chars(), list, 0, len, out, dest == null);
+            transport.doSend(out.buffer(), 0, out.position(), dest);
             transport.getMessageStats().incrNumBatchesSent();
         }
         catch(Throwable e) {

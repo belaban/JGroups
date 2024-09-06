@@ -76,7 +76,7 @@ public class DAISYCHAIN extends Protocol {
                 msg.setSrc(local_addr);
             if(log.isTraceEnabled())
                 log.trace("%s: looping back message %s", local_addr, msg);
-            transport.loopback(msg, true);
+            transport.msgProcessingPolicy().loopback(msg, msg.isFlagSet(Message.Flag.OOB));
         }
 
         // we need to copy the message, as we cannot do a msg.setSrc(next): the next retransmission

@@ -15,6 +15,7 @@ import java.util.concurrent.locks.LockSupport;
 
 /**
  * Lockless bundler using a reader thread which is unparked by (exactly one) writer thread.
+ * TODO: needs to be changed to support loopback (https://issues.redhat.com/browse/JGRP-2831)
  * @author Bela Ban
  * @since 4.0
  */

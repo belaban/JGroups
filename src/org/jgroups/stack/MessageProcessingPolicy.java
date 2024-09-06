@@ -33,6 +33,8 @@ public interface MessageProcessingPolicy {
      */
     boolean loopback(Message msg, boolean oob);
 
+    boolean loopback(MessageBatch batch, boolean oob);
+
     /**
      * Process a message received from the transport
      * @param msg the message

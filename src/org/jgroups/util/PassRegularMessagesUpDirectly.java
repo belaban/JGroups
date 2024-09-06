@@ -31,7 +31,7 @@ public class PassRegularMessagesUpDirectly extends SubmitToThreadPool {
     public boolean process(MessageBatch batch, boolean oob) {
         if(oob)
             return super.process(batch, oob);
-        BatchHandler bh=new BatchHandler(batch);
+        BatchHandler bh=new BatchHandler(batch, false);
         bh.run();
         return true;
     }

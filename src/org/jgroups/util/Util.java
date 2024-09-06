@@ -1490,7 +1490,8 @@ public class Util {
             }
     }
 
-    public static void writeMessageListHeader(Address dest, Address src, byte[] cluster_name, int numMsgs, DataOutput dos, boolean multicast) throws IOException {
+    public static void writeMessageListHeader(Address dest, Address src, byte[] cluster_name, int numMsgs,
+                                              DataOutput dos, boolean multicast) throws IOException {
         dos.writeShort(Version.version);
 
         byte flags=LIST;

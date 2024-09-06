@@ -4,14 +4,19 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.Message;
+import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.Property;
-import org.jgroups.util.RingBuffer;
-import org.jgroups.util.Runner;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.BiConsumer;
+
+import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
+import static org.jgroups.util.MessageBatch.Mode.OOB;
+import static org.jgroups.util.MessageBatch.Mode.REG;
 
 /**
  * Bundler which uses {@link RingBuffer} to store messages. The difference to {@link TransferQueueBundler} is that
@@ -92,7 +97,6 @@ public class RingBufferBundler extends BaseBundler {
         rb.put(msg);
     }
 
-
     /** Read and send messages in range [read-index .. read-index+available_msgs-1] */
     public void sendBundledMessages(final Message[] buf, final int read_index, final int available_msgs) {
         byte[]    cluster_name=transport.cluster_name.chars();
@@ -107,42 +111,99 @@ public class RingBufferBundler extends BaseBundler {
                 start=advance(start);
                 continue;
             }
-
             Address dest=msg.getDest();
-            try {
-                output.position(0);
-                Util.writeMessageListHeader(dest, msg.getSrc(), cluster_name, 1, output, dest == null);
-
-                // remember the position at which the number of messages (an int) was written, so we can later set the
-                // correct value (when we know the correct number of messages)
-                int size_pos=output.position() - Global.INT_SIZE;
-                int num_msgs=marshalMessagesToSameDestination(dest, buf, start, end, max_size);
-                if(num_msgs > 1) {
-                    int current_pos=output.position();
-                    output.position(size_pos);
-                    output.writeInt(num_msgs);
-                    output.position(current_pos);
-                }
-                transport.doSend(output.buffer(), 0, output.position(), dest);
-                transport.getMessageStats().incrNumBatchesSent(num_msgs);
+            if(dest == null) { // multicast
+                List<Message> list=new ArrayList<>();
+                _send(dest, msg, cluster_name, buf, start, end, list);
+                loopback(dest, transport.getAddress(), list, list.size());
             }
-            catch(Exception ex) {
-                log.trace("failed to send message(s) to %s: %s", dest == null? "group" : dest, ex.getMessage());
+            else {            // unicast
+                boolean send_to_self=Objects.equals(transport.getAddress(), dest)
+                  || dest instanceof PhysicalAddress && dest.equals(transport.localPhysicalAddress());
+                if(send_to_self)
+                    _loopback(dest, transport.getAddress(), buf, start, end);
+                else
+                    _send(dest, msg, cluster_name, buf, start, end, null);
             }
-
             if(start == end)
                 break;
             start=advance(start);
         }
     }
 
+    protected void _loopback(Address dest, Address sender, Message[] buf, int start_index, final int end_index) {
+        MessageBatch reg=null, oob=null;
+        AsciiString cluster_name=transport.getClusterNameAscii();
+        for(;;) {
+            Message msg=buf[start_index];
+            if(msg != null && Objects.equals(dest, msg.getDest())) {
+                if(msg.isFlagSet(DONT_LOOPBACK))
+                    continue;
+                if(msg.isFlagSet(Message.Flag.OOB)) {
+                    // we cannot reuse message batches (like in ReliableMulticast.removeAndDeliver()), because batches are
+                    // submitted to a thread pool and new calls of this method might change them while they're being passed up
+                    if(oob == null)
+                        oob=new MessageBatch(dest, sender, cluster_name, dest == null, OOB, 128);
+                    oob.add(msg);
+                }
+                else {
+                    if(reg == null)
+                        reg=new MessageBatch(dest, sender, cluster_name, dest == null, REG, 128);
+                    reg.add(msg);
+                }
+                buf[start_index]=null;
+            }
+            if(start_index == end_index)
+                break;
+            start_index=advance(start_index);
+        }
+
+        if(reg != null) {
+            msg_stats.received(reg);
+            msg_processing_policy.loopback(reg, false);
+        }
+        if(oob != null) {
+            msg_stats.received(oob);
+            msg_processing_policy.loopback(oob, true);
+        }
+    }
+
+    protected void _send(Address dest, Message msg, byte[] cluster_name, Message[] buf, int start, int end,
+                         List<Message> list) {
+        try {
+            if(list != null)
+                list.add(msg);
+            output.position(0);
+            Util.writeMessageListHeader(dest, msg.getSrc(), cluster_name, 1, output, dest == null);
+
+            // remember the position at which the number of messages (an int) was written, so we can later set the
+            // correct value (when we know the correct number of messages)
+            int size_pos=output.position() - Global.INT_SIZE;
+            int num_msgs=marshalMessagesToSameDestination(dest, buf, start, end, max_size, list);
+            if(num_msgs > 1) {
+                int current_pos=output.position();
+                output.position(size_pos);
+                output.writeInt(num_msgs);
+                output.position(current_pos);
+            }
+            transport.doSend(output.buffer(), 0, output.position(), dest);
+            transport.getMessageStats().incrNumBatchesSent(num_msgs);
+        }
+        catch(Exception ex) {
+            log.trace("failed to send message(s) to %s: %s", dest == null? "group" : dest, ex.getMessage());
+        }
+    }
+
+
     // Iterate through the following messages and find messages to the same destination (dest) and write them to output
-    protected int marshalMessagesToSameDestination(Address dest, Message[] buf,
-                                                   int start_index, final int end_index, int max_bundle_size) throws Exception {
+    protected int marshalMessagesToSameDestination(Address dest, Message[] buf, int start_index, final int end_index,
+                                                   int max_bundle_size, List<Message> list) throws Exception {
         int num_msgs=0, bytes=0;
         for(;;) {
             Message msg=buf[start_index];
             if(msg != null && Objects.equals(dest, msg.getDest())) {
+                if(list != null)
+                    list.add(msg);
                 int size=msg.size() + Global.SHORT_SIZE;
                 if(bytes + size > max_bundle_size)
                     break;

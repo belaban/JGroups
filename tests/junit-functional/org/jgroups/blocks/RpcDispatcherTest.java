@@ -26,19 +26,16 @@ import static org.jgroups.blocks.ResponseMode.GET_ALL;
 
 /**
  * A collection of tests to test the RpcDispatcher.
- * 
- * NOTE on processing return values: 
- * 
+ * NOTE on processing return values:
  * The method RspDispatcher.callRemoteMethods(...) returns an RspList, containing one Rsp
  * object for each group member receiving the RPC call. Rsp.getValue() returns the 
  * value returned by the RPC call from the corresponding member. Rsp.getValue() may
  * contain several classes of values, depending on what happened during the call:
- * 
- * (i) a value of the expected return data type, if the RPC call completed successfully 
+ * (i) a value of the expected return data type, if the RPC call completed successfully
  * (ii) null, if the RPC call timed out before the value could be returned
  * (iii) an object of type java.lang.Throwable, if an exception (e.g. lava.lang.OutOfMemoryException) 
  * was raised during the processing of the call 
- * 
+ *
  * It is wise to check for such cases when processing RpcDispatcher calls.
  * 
  * This also applies to the return value of callRemoteMethod(...).
@@ -466,13 +463,12 @@ public class RpcDispatcherTest {
 
 
     /**
-     * Invoke a call which sleeps for 5s 5 times. Since the sleep should be done in parallel (OOB msgs), all 5 futures
-     * should be done in roughly 5s. JIRA: https://issues.redhat.com/browse/JGRP-2039
+     * Invoke a call which sleeps for 2s 5 times. Since the sleep should be done in parallel (OOB msgs), all 5 futures
+     * should be done in roughly 2s. JIRA: https://issues.redhat.com/browse/JGRP-2039
      */
     public void testMultipleFutures() throws Exception {
         _testMultipleUnicastFuturesToDest(null); // send to all
     }
-
 
     public void testMultipleUnicastFuturesToSelf() throws Exception {
         _testMultipleUnicastFuturesToDest(a.getAddress());
@@ -483,38 +479,38 @@ public class RpcDispatcherTest {
     }
 
     /**
-     * Invoke a call which sleeps for 5s 5 times. Since the sleep should be done in parallel (OOB msgs), all 5 futures
-     * should be done in roughly 5s. JIRA: https://issues.redhat.com/browse/JGRP-2039
+     * Invoke a call which sleeps for 2s 5 times. Since the sleep should be done in parallel (OOB msgs), all 5 futures
+     * should be done in roughly 2s. JIRA: https://issues.redhat.com/browse/JGRP-2039
      */
     protected void _testMultipleUnicastFuturesToDest(Address dest) throws Exception {
-        final int                   NUM_CALLS=5, MAX_SLEEP=8000; // should be done in ~5s, make it 8s to be safe
-        MethodCall                  sleep=new MethodCall("sleep", new Object[]{5000L}, new Class[]{long.class});
-        List<Future<RspList<Long>>> futures=new ArrayList<>();
-        long                        target=System.currentTimeMillis() + MAX_SLEEP;
-        RequestOptions              opts=new RequestOptions(GET_ALL, 30000L).flags(OOB, DONT_BUNDLE);
+        final int       NUM_CALLS=5, MAX_SLEEP=4000; // should be done in ~2s, make it 4s to be safe
+        List<Future<?>> futures=new ArrayList<>();
+        RequestOptions  opts=new RequestOptions(GET_ALL, 30000L).flags(OOB, DONT_BUNDLE);
 
         long start=System.currentTimeMillis();
         for(int i=0; i < NUM_CALLS; i++) {
-            Future<RspList<Long>> future=dest != null? da.callRemoteMethodWithFuture(dest, sleep, opts)
-              : da.callRemoteMethodsWithFuture(null, sleep, opts);
+            Future<?> future;
+            MethodCall sleep=new MethodCall("sleep", new Object[]{i+1,2000L}, new Class[]{int.class, long.class});
+            if(dest == null)
+                future=da.callRemoteMethodsWithFuture(null, sleep, opts);
+            else
+                future=da.callRemoteMethodWithFuture(dest, sleep, opts);
             futures.add(future);
         }
-
-        List<Future<RspList<Long>>> rsps=new ArrayList<>();
-        while(!futures.isEmpty() && System.currentTimeMillis() < target) {
-            for(Iterator<Future<RspList<Long>>> it=futures.iterator(); it.hasNext();) {
-                Future<RspList<Long>> future=it.next();
-                if(future.isDone()) {
-                    it.remove();
-                    rsps.add(future);
-                }
+        Util.waitUntilTrue(MAX_SLEEP, 50, () -> futures.stream().allMatch(Future::isDone));
+        long time=System.currentTimeMillis() - start;
+        System.out.printf("\n%d responses (in %d ms):\n", futures.size(), time);
+        futures.forEach(f -> {
+            Object ret=null;
+            try {
+                ret=f.get();
             }
-            Util.sleep(100);
-        }
-        long time=System.currentTimeMillis()-start;
-        System.out.printf("\n%d responses (in %d ms):\n", rsps.size(), time);
-        rsps.forEach(System.out::println);
-        assert rsps.size() == NUM_CALLS;
+            catch(Exception e) {
+                ret=e.toString();
+            }
+            System.out.printf("%s\n", ret);
+        });
+        assert futures.size() == NUM_CALLS;
         assert time < MAX_SLEEP;
     }
 
@@ -926,11 +922,22 @@ public class RpcDispatcherTest {
         public static void bar() {;}
         
         public long sleep(long timeout) {
-            System.out.printf("-- [%s] %s: sleeping for %d ms\n", new Date(), name, timeout);
+            @SuppressWarnings("deprecation") long id=Thread.currentThread().getId();
+            System.out.printf("-- [%d] [%s] %s: sleeping for %d ms\n", id, new Date(), name, timeout);
             long start=System.currentTimeMillis();
             Util.sleep(timeout);
             long retval=System.currentTimeMillis() - start;
-            System.out.printf("-- [%s] %s: slept for %d ms\n", new Date(), name, retval);
+            System.out.printf("-- [%d] [%s] %s: slept for %d ms\n", id, new Date(), name, retval);
+            return retval;
+        }
+
+        public long sleep(int invocation_id, long timeout) {
+            @SuppressWarnings("deprecation") long id=Thread.currentThread().getId();
+            System.out.printf("-- [%d] [%s] [#%d] %s: sleeping for %d ms\n", id, new Date(), invocation_id, name, timeout);
+            long start=System.currentTimeMillis();
+            Util.sleep(timeout);
+            long retval=System.currentTimeMillis() - start;
+            System.out.printf("-- [%d] [%s] [#%d] %s: slept for %d ms\n", id, new Date(), invocation_id, name, retval);
             return retval;
         }
 

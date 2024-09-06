@@ -6,6 +6,7 @@ import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.util.AverageMinMax;
+import org.jgroups.util.ByteArrayDataOutputStream;
 import org.jgroups.util.RingBuffer;
 import org.jgroups.util.Runner;
 
@@ -77,7 +78,7 @@ public class RemoveQueueBundler extends BaseBundler {
             int drained=rb.drainToBlocking(remove_queue);
             if(drained == 1) {
                 output.position(0);
-                sendSingleMessage(remove_queue[0]);
+                sendSingle(remove_queue[0].dest(), remove_queue[0], this.output);
                 return;
             }
 
@@ -102,8 +103,8 @@ public class RemoveQueueBundler extends BaseBundler {
         return rb.size();
     }
 
-    protected void sendMessageList(Address dest, Address src, List<Message> list) {
-        super.sendMessageList(dest, src, list);
+    protected void sendMessageList(Address dest, Address src, List<Message> list, ByteArrayDataOutputStream out) {
+        super.sendMessageList(dest, src, list, out);
         avg_batch_size.add(list.size());
     }
 

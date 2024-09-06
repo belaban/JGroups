@@ -94,7 +94,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     @Property(description="The max size of a message batch when delivering messages. 0 is unbounded")
     protected int     max_batch_size;
 
-    @Property(description="If true, a unicast message to self is looped back up on the same thread. Noter that this may " +
+    @Property(description="If true, a unicast message to self is looped back up on the same thread. Note that this may " +
       "cause problems (e.g. deadlocks) in some applications, so make sure that your code can handle this. " +
       "Issue: https://issues.redhat.com/browse/JGRP-2547")
     protected boolean loopback;

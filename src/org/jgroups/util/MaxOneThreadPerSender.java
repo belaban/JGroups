@@ -267,12 +267,11 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
     }
 
 
-    public class BatchHandlerLoop extends BatchHandler {
+    protected class BatchHandlerLoop extends BatchHandler {
         protected final Entry   entry;
-        protected final boolean loopback;
 
-        public BatchHandlerLoop(MessageBatch batch, Entry entry, boolean loopback) {
-            super(batch);
+        protected BatchHandlerLoop(MessageBatch batch, Entry entry, boolean loopback) {
+            super(batch, loopback);
             this.entry=entry;
             this.loopback=loopback;
         }
@@ -288,10 +287,6 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
             }
             while(entry.workAvailable(this.batch)); // transfers msgs from entry.batch --> this.batch
             // worker termination: workAvailable() already set running=false
-        }
-
-        @Override protected void passBatchUp() {
-            tp.passBatchUp(batch, !loopback, !loopback);
         }
     }
 }

@@ -17,6 +17,7 @@ import java.util.concurrent.locks.LockSupport;
 /**
  * Bundler which doesn't use locks but relies on CAS. There is 1 reader thread which gets unparked by (exactly one) writer
  * when the max size has been exceeded, or no other threads are sending messages.
+ * TODO: needs to be changed to support loopback (https://issues.redhat.com/browse/JGRP-2831)
  * @author Bela Ban
  * @since 4.0
  */

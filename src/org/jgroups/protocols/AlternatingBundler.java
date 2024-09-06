@@ -12,7 +12,7 @@ import java.util.List;
 
 /**
  * Bundler implementation which sends message batches (or single messages) as soon as the target destination changes
- * (or max_bundler_size would be exceeded).<br/>
+ * (or max_bundler_size is exceeded).<br/>
  * Messages are removed from the main queue one by one and processed as follows:<br/>
  * A B B C C A causes the following sends: A -> {CC} -> {BB} -> A<br/>
  * Note that <em>null</em> is also a valid destination (send-to-all).<br/>
@@ -70,10 +70,10 @@ public class AlternatingBundler extends TransferQueueBundler {
                 return;
             output.position(0);
             if(target_list.size() == 1)
-                sendSingleMessage(target_list.get(0));
+                sendSingle(target_list.get(0).dest(), target_list.get(0), output);
             else {
                 avg_batch_size.add(target_list.size());
-                sendMessageList(target_dest, target_list.get(0).getSrc(), target_list);
+                sendMultiple(target_dest, target_list.get(0).getSrc(), target_list, output);
             }
         }
         finally {

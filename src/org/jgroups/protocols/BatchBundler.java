@@ -35,15 +35,7 @@ import static org.jgroups.protocols.TP.MSG_OVERHEAD;
  * @since 5.2
  */
 @Experimental
-public class BatchBundler extends NoBundler {
-
-    /**
-     * Maximum number of bytes for messages to be queued until they are sent.
-     * This value needs to be smaller than the largest datagram packet size in case of UDP
-     */
-    @Property(name="max_size", type=AttributeType.BYTES,
-      description="Maximum number of bytes for messages to be queued until they are sent")
-    protected int                    max_size=64000;
+public class BatchBundler extends BaseBundler {
 
     @Property(description="Max interval (millis) at which the queued messages are sent")
     protected long                   flush_interval=100;
@@ -112,11 +104,6 @@ public class BatchBundler extends NoBundler {
     }
 
 
-    public void init(TP transport) {
-        super.init(transport);
-        // msgMap.putIfAbsent(nullAddress, new BatchBuffer(nullAddress));
-    }
-
     public void start() {
         timer=transport.getTimer();
         if(timer == null)
@@ -132,16 +119,11 @@ public class BatchBundler extends NoBundler {
     }
 
     public void send(Message msg) throws Exception {
-        if (msg.isFlagSet(Message.Flag.OOB)) {
-            super.send(msg);
-            return;
-        }
-
         if (msg.getSrc() == null)
             msg.setSrc(local_addr);
         // Ignore messages from other senders due to BatchMessage compression
         if (!Objects.equals(msg.getSrc(), local_addr)) {
-            super.send(msg);
+            _send(msg);
             return;
         }
 
@@ -152,14 +134,8 @@ public class BatchBundler extends NoBundler {
         boolean add_successful = ebbuffer.addMessage(msg);
 
         if (!add_successful) {
-            super.send(msg);
+            _send(msg);
         }
-    }
-
-
-
-    public int size() {
-        return 0;
     }
 
     public int getQueueSize() {
@@ -170,13 +146,9 @@ public class BatchBundler extends NoBundler {
         return max_batch_size;
     }
 
-    public int getMaxSize() {
-        return max_size;
-    }
-
-    public Bundler setMaxSize(int s) {
-        this.max_size=s;
-        return this;
+    protected void _send(Message msg) {
+        ByteArrayDataOutputStream buffer=new ByteArrayDataOutputStream(msg.size());
+        sendSingle(msg.dest(), msg, buffer);
     }
 
     protected void startFlushTask() {
@@ -188,15 +160,6 @@ public class BatchBundler extends NoBundler {
         if(flush_task != null) {
             flush_task.cancel(true);
             flush_task=null;
-        }
-    }
-
-    protected void _send(Message msg, ByteArrayDataOutputStream out) {
-        try {
-            sendSingleMessage(msg, out);
-        }
-        catch(Exception e) {
-            log.error("%s: failed sending message: %s", local_addr, e);
         }
     }
 
@@ -230,11 +193,10 @@ public class BatchBundler extends NoBundler {
         }
 
         protected synchronized boolean addMessage(Message msg) {
-            if (closed) {
+            if (closed)
                 return false;
-            }
 
-            int msg_bytes = msg.getLength();
+            int msg_bytes = msg.size();
             if(total_bytes + msg_bytes > max_size) {
                 num_ebs_sent_due_to_full_queue++;
                 sendBatch(false);
@@ -254,7 +216,8 @@ public class BatchBundler extends NoBundler {
                 return;
             }
             if (index == 1) {
-                _send(msgs[0], output);
+                output.position(0);
+                sendSingle(msgs[0].dest(), msgs[0], output);
                 msgs[0] = null;
                 index = 0;
                 total_bytes = 0;
@@ -263,26 +226,14 @@ public class BatchBundler extends NoBundler {
             }
 
             Address ebdest = dest instanceof NullAddress ? null : dest;
-            sendMessageList(ebdest, local_addr, msgs, index);
-           // msgs = new Message[max_batch_size];
+            output.position(0);
+            sendMultiple(ebdest, local_addr, msgs, index, output);
             num_msgs_sent+=index;
             num_ebs_sent++;
             if(due_to_timeout)
                 num_ebs_sent_due_to_timeout++;
             index=0;
             total_bytes = 0;
-        }
-
-        protected void sendMessageList(final Address dest, final Address src, final Message[] list, int length) {
-            try {
-                output.position(0);
-                Util.writeMessageList(dest, src, transport.cluster_name.chars(), list, 0,
-                                      length, output, dest == null);
-                transport.doSend(output.buffer(), 0, output.position(), dest);
-            }
-            catch(Throwable e) {
-                log.trace(Util.getMessage("FailureSendingMsgBundle"), transport.getAddress(), e);
-            }
         }
 
         protected synchronized void close() {

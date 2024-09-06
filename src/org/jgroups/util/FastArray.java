@@ -22,6 +22,12 @@ public class FastArray<T> implements Iterable<T> {
         elements=(T[])new Object[capacity];
     }
 
+    public FastArray(T[] elements, int index) {
+        this.elements=Objects.requireNonNull(elements);
+        this.index=index;
+        this.size=count();
+    }
+
     public int          capacity()        {return elements.length;}
     public int          index()           {return index;}
     public int          size()            {return size;}

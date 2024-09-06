@@ -120,14 +120,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
       "0 only binds to bind_port and fails if taken")
     protected int port_range=10; // 27-6-2003 bgooren, Only try one port by default
 
-    @Property(description="Whether or not to make a copy of a message before looping it back up. Don't use this; might " +
-      "get removed without warning")
-    protected boolean loopback_copy;
-
-    @Property(description="Loop back the message on a separate thread or use the current thread. Don't use this; " +
-      "might get removed without warning")
-    protected boolean loopback_separate_thread=true;
-
     @Property(description="The fully qualified name of a class implementing MessageProcessingPolicy")
     protected String  message_processing_policy;
 
@@ -211,12 +203,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     public long             getLogicalAddrCacheReaperInterval() {return logical_addr_cache_reaper_interval;}
     public <T extends TP> T setLogicalAddrCacheReaperInterval(long l) {this.logical_addr_cache_reaper_interval=l; return (T)this;}
-
-    public boolean          loopbackCopy() {return loopback_copy;}
-    public <T extends TP> T loopbackCopy(boolean l) {this.loopback_copy=l; return (T)this;}
-
-    public boolean          loopbackSeparateThread() {return loopback_separate_thread;}
-    public <T extends TP> T loopbackSeparateThread(boolean l) {this.loopback_separate_thread=l; return (T)this;}
 
     public long             getTimeServiceInterval() {return time_service_interval;}
     public <T extends TP> T setTimeServiceInterval(long t) {this.time_service_interval=t; return (T)this;}
@@ -456,8 +442,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected TP() {
     }
 
-    public MsgStats getMessageStats() {return msg_stats;}
-    public RTT      getRTT()          {return rtt;}
+    public MsgStats                getMessageStats()     {return msg_stats;}
+    public MessageProcessingPolicy msgProcessingPolicy() {return msg_processing_policy;}
+    public RTT                     getRTT()              {return rtt;}
 
     @Override
     public void enableStats(boolean flag) {
@@ -1066,34 +1053,25 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public Object down(Message msg) {
         if(header != null)
             msg.putHeaderIfAbsent(this.id, header); // added patch by Roland Kurmann (March 20, 2003)
-
         setSourceAddress(msg); // very important !! listToBuffer() will fail with a null src address !!
-
-        Address dest=msg.getDest(), sender=msg.getSrc();
+        Address dest=msg.getDest();
         if(is_trace)
-            log.trace("%s: sending msg to %s, src=%s, size=%d, headers are %s", local_addr, dest, sender, msg.size(), msg.printHeaders());
-
-        // Don't send if dest is local address. Instead, send it up the stack. If multicast message, loop back directly
-        // to us (but still multicast). Once we receive this, we discard our own multicast message
-        boolean multicast=dest == null, do_send=multicast || !dest.equals(sender),
-          loop_back=(multicast || dest.equals(sender)) && !msg.isFlagSet(Message.TransientFlag.DONT_LOOPBACK);
-
-        if(dest instanceof PhysicalAddress && dest.equals(local_physical_addr)) {
-            loop_back=true;
-            do_send=false;
+            log.trace("%s: sending msg to %s, src=%s, size=%d, hdrs: %s", local_addr, dest, msg.src(), msg.size(), msg.printHeaders());
+        try {
+            Bundler tmp_bundler=bundler;
+            if(tmp_bundler != null) {
+                tmp_bundler.send(msg);
+                msg_stats.sent(msg);
+            }
         }
-
-        if(loopback_separate_thread) {
-            if(loop_back)
-                loopback(msg, multicast);
-            if(do_send)
-                _send(msg, dest);
+        catch(InterruptedIOException ignored) {
         }
-        else {
-            if(do_send)
-                _send(msg, dest);
-            if(loop_back)
-                loopback(msg, multicast);
+        catch(InterruptedException interruptedEx) {
+            Thread.currentThread().interrupt(); // let someone else handle the interrupt
+        }
+        catch(Throwable e) {
+            log.trace(Util.getMessage("SendFailure"),
+                      local_addr, (dest == null? "cluster" : dest), msg.size(), e.toString(), msg.printHeaders());
         }
         return null;
     }
@@ -1118,9 +1096,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             case "transfer-queue":
             case "tq":
                 return new TransferQueueBundler();
-            case "simplified-transfer-queue":
-            case "stq":
-                return new SimplifiedTransferQueueBundler();
             case "sender-sends":
             case "ss":
                 return new SenderSendsBundler();
@@ -1137,8 +1112,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             case "nb":
                 return new NoBundler();
             case "async-no-bundler":
-            case "anb":
-                return new AsyncNoBundler();
             case "ab":
             case "alternating-bundler":
                 return new AlternatingBundler();
@@ -1149,42 +1122,13 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             case "pdb":
             case "per-destination":
                 return new PerDestinationBundler();
+            case "bb":
+                return new BatchBundler();
         }
         Class<Bundler> clazz=(Class<Bundler>)Util.loadClass(type, cl);
         return clazz.getDeclaredConstructor().newInstance();
     }
 
-    protected void loopback(Message msg, final boolean multicast) {
-        final Message copy=loopback_copy? msg.copy(true, true) : msg;
-        if(is_trace)
-            log.trace("%s: looping back message %s, headers are %s", local_addr, copy, copy.printHeaders());
-        msg_stats.received(msg);
-        if(!loopback_separate_thread) {
-            passMessageUp(copy, null, false, multicast, false);
-            return;
-        }
-        // changed to fix https://issues.redhat.com/browse/JGRP-506
-        msg_processing_policy.loopback(msg, msg.isFlagSet(Message.Flag.OOB));
-    }
-
-    protected void _send(Message msg, Address dest) {
-        try {
-            Bundler tmp_bundler=bundler;
-            if(tmp_bundler != null) {
-                tmp_bundler.send(msg);
-                msg_stats.sent(msg);
-            }
-        }
-        catch(InterruptedIOException ignored) {
-        }
-        catch(InterruptedException interruptedEx) {
-            Thread.currentThread().interrupt(); // let someone else handle the interrupt
-        }
-        catch(Throwable e) {
-            log.trace(Util.getMessage("SendFailure"),
-                      local_addr, (dest == null? "cluster" : dest), msg.size(), e.toString(), msg.printHeaders());
-        }
-    }
 
     /**
      * If the sender is null, set our own address. We cannot just go ahead and set the address anyway, as we might send
