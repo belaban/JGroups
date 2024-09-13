@@ -88,7 +88,12 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
         if(tmp != null) {
             tmp.interrupt();
             if(tmp.isAlive()) {
-                try {tmp.join(500);} catch(InterruptedException e) {}
+                try {
+                    tmp.join(500);
+                }
+                catch(InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
             }
         }
         drain();
@@ -110,7 +115,7 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
     }
 
     public void run() {
-        while(running) {
+        while(!Thread.currentThread().isInterrupted()) {
             Message msg=null;
             try {
                 if((msg=queue.take()) == null)
@@ -131,6 +136,9 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
                     avg_fill_count.add(count);
                     sendBundledMessages();
                 }
+            }
+            catch(InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
             catch(Throwable t) {
                 log.warn("%s: failed sending message: %s", transport.addr(), t);
