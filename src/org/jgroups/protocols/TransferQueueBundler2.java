@@ -136,7 +136,12 @@ public class TransferQueueBundler2 implements Bundler, Runnable {
         if(tmp != null) {
             tmp.interrupt();
             if(tmp.isAlive()) {
-                try {tmp.join(500);} catch(InterruptedException e) {}
+                try {
+                    tmp.join(500);
+                }
+                catch(InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
             }
         }
         drain();
@@ -156,7 +161,7 @@ public class TransferQueueBundler2 implements Bundler, Runnable {
     }
 
     public void run() {
-        while(running) {
+        while(!Thread.currentThread().isInterrupted()) {
             Message msg=null;
             try {
                 if((msg=queue.take()) == null)
@@ -181,7 +186,11 @@ public class TransferQueueBundler2 implements Bundler, Runnable {
                     sendBundledMessages();
                 }
             }
+            catch(InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
             catch(Throwable t) {
+                log.warn("%s: failed sending message: %s", transport.addr(), t);
             }
         }
     }
