@@ -25,30 +25,31 @@ import java.util.concurrent.atomic.LongAdder;
  * @since  5.3.3
  */
 public class TcpConnectionNonBlocking extends TcpConnection {
-    protected BlockingQueue<ByteArray> queue;
-    protected int                      max_size=128;
-    protected volatile Sender          sender;
-    protected final LongAdder          dropped_msgs=new LongAdder();
+    protected final BlockingQueue<ByteArray> queue;
+    protected int                            max_size=128;
+    protected volatile Sender                sender;
+    protected final LongAdder                dropped_msgs=new LongAdder();
 
 
-    public TcpConnectionNonBlocking(Address peer_addr, TcpBaseServer server) throws Exception {
+    public TcpConnectionNonBlocking(Address peer_addr, TcpBaseServer server, int max_size) throws Exception {
         super(peer_addr, server);
+        this.max_size=max_size;
+        queue=new ArrayBlockingQueue<>(max_size);
     }
 
-    public TcpConnectionNonBlocking(Socket s, TcpServer server) throws Exception {
+    public TcpConnectionNonBlocking(Socket s, TcpServer server, int max_size) throws Exception {
         super(s, server);
+        this.max_size=max_size;
+        queue=new ArrayBlockingQueue<>(max_size);
     }
-
 
     public int                      maxSize()         {return max_size;}
-    public TcpConnectionNonBlocking maxSize(int s)    {max_size=s; return this;}
     public long                     droppedMessages() {return dropped_msgs.sum();}
     public int                      queueSize()       {return queue != null? queue.size() : 0;}
 
 
     @Override public void start() {
         super.start();
-        queue=new ArrayBlockingQueue<>(max_size);
         if(sender != null)
             sender.stop();
         sender=new Sender(server.factory).start();
@@ -64,7 +65,6 @@ public class TcpConnectionNonBlocking extends TcpConnection {
 
     @Override
     public void send(byte[] data, int offset, int length) throws Exception {
-
         // to be on the safe side, we copy the data: some bundlers (e.g. TransferQueueBundler) reuse a buffer to
         // serialize messages to and - before the data is sent by the sender thread - the buffer might be changed!
         // This is similar to what NioConnection does on a partial write. If the send was synchronous (like in

@@ -22,7 +22,7 @@ public abstract class TcpBaseServer extends BaseServer {
 
     @Override
     protected TcpConnection createConnection(Address dest) throws Exception {
-        return non_blocking_sends? new TcpConnectionNonBlocking(dest, this).maxSize(max_send_queue)
+        return non_blocking_sends? new TcpConnectionNonBlocking(dest, this, max_send_queue)
           : new TcpConnection(dest, this);
     }
 
