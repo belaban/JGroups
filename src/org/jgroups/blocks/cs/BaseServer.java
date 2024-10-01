@@ -17,6 +17,7 @@ import java.io.Closeable;
 import java.io.DataInput;
 import java.io.IOException;
 import java.net.ConnectException;
+import java.net.SocketTimeoutException;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.util.*;
@@ -302,11 +303,12 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
             try {
                 conn=getConnection(dest);
             }
-            catch(ConnectException | SSLException ex) {
+            catch(ConnectException | SocketTimeoutException | SSLException ex) {
                 throw ex;
             }
             catch(Exception ise) {
                 Util.sleepRandom(1, 100);
+                log.trace("%s: retrying connection to %s", local_addr, dest);
             }
         }
         while(!connected(conn));
