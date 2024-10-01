@@ -109,6 +109,9 @@ public class UPerf implements Receiver {
         }
     }
 
+    public UPerf time(int t)    {this.time=t; return this;}
+    public UPerf size(int s)    {this.msg_size=s; return this;}
+    public UPerf threads(int t) {this.num_threads=t; return this;}
 
     public void init(String props, String name, AddressGenerator generator, int bind_port,
                      boolean use_virtual_threads, boolean async_rsp_handling) throws Throwable {
@@ -582,7 +585,7 @@ public class UPerf implements Receiver {
         boolean run_event_loop=true, use_virtual_threads=true,
           async_rsp_handling=!Util.virtualThreadsAvailable(); // good with convential threads, bad with vthreads!
         AddressGenerator addr_generator=null;
-        int port=0;
+        int port=0, time=60, size=1000, threads=100;
 
 
         for(int i=0; i < args.length; i++) {
@@ -614,13 +617,25 @@ public class UPerf implements Receiver {
                 async_rsp_handling=Boolean.parseBoolean(args[++i]);
                 continue;
             }
+            if("-time".equals(args[i])) {
+                time=Integer.parseInt(args[++i]);
+                continue;
+            }
+            if("-size".equals(args[i])) {
+                size=Integer.parseInt(args[++i]);
+                continue;
+            }
+            if("-threads".equals(args[i])) {
+                threads=Integer.parseInt(args[++i]);
+                continue;
+            }
             help();
             return;
         }
 
         UPerf test=null;
         try {
-            test=new UPerf();
+            test=new UPerf().time(time).size(size).threads(threads);
             test.init(props, name, addr_generator, port, use_virtual_threads, async_rsp_handling);
             if(run_event_loop)
                 test.eventLoop();
@@ -638,7 +653,8 @@ public class UPerf implements Receiver {
 
     static void help() {
         System.out.println("UPerf [-props <props>] [-name name] [-nohup] [-uuid <UUID>] [-port <bind port>] " +
-                             "[-use_virtual_threads <true|false>] [-async_rsp_handling <true|false>]");
+                             "[-use_virtual_threads <true|false>] [-async_rsp_handling <true|false>] " +
+                             "[-time <secs>] [-size <bytes>] [-threads <number of sender threads>]");
     }
 
 
