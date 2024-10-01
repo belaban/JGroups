@@ -115,7 +115,7 @@ public class TcpServer extends TcpBaseServer {
         protected void handleAccept(final Socket client_sock) throws Exception {
             TcpConnection conn=null;
             try {
-                conn=non_blocking_sends? new TcpConnectionNonBlocking(client_sock, TcpServer.this).maxSize(max_send_queue)
+                conn=non_blocking_sends? new TcpConnectionNonBlocking(client_sock, TcpServer.this, max_send_queue)
                   : new TcpConnection(client_sock, TcpServer.this);
 
                 Address peer_addr=conn.peerAddress();
