@@ -45,7 +45,7 @@ public abstract class BasicTCP extends TP implements Receiver {
       "thrown. 0 disables this", type=AttributeType.BYTES)
     protected int         max_length;
     
-    @Property(description="Should TCP no delay flag be turned on")
+    @Property(description="Should TCP no delay flag be turned on. True: nagling is OFF, false: nagling is ON")
     protected boolean     tcp_nodelay=true; // https://issues.redhat.com/browse/JGRP-2781
 
     @Property(description="SO_LINGER in seconds. Default of -1 disables it")
