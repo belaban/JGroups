@@ -74,7 +74,6 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     protected int                             linger=-1;
     protected TimeService                     time_service;
     public static final byte[]                OK={1,2,3,4};   // ack (srv->client) on successful connection establishment
-    public static final byte[]                FAIL={4,3,2,1}; // ack (srv->client) on failed connection establishment
 
 
 

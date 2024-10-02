@@ -106,8 +106,6 @@ public class TcpConnection extends Connection {
                 in.readFully(ack, 0, ack.length);
                 if(Arrays.equals(BaseServer.OK, ack))
                     ;
-                else if(Arrays.equals(BaseServer.FAIL, ack))
-                    throw new IllegalStateException("received FAIL from peer");
                 else
                     server.log().error("%s: received invalid ACK: %s", localAddress(), Arrays.toString(ack));
             }

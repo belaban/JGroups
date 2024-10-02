@@ -131,10 +131,7 @@ public class TcpServer extends TcpBaseServer {
                 }
                 else {
                     log.trace("%s: rejected connection from %s %s", local_addr, peer_addr, explanation(conn_exists, replace));
-                    if(use_acks)
-                        conn.send(FAIL, 0, FAIL.length);
-                    conn.flush();
-                    Util.close(conn); // keep our existing conn, reject accept() and close client_sock
+                    Util.close(conn); // keep our existing conn and close client_sock
                 }
             }
             catch(Exception ex) {
