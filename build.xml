@@ -531,6 +531,27 @@
         </sequential>
     </target>
 
+    <target name="all-tests-parallel" depends="delete-reports" description="Runs all tests">
+        <parallel>
+            <antcall target="functional"/>
+            <sequential>
+                <antcall target="udp"/>
+                <antcall target="udp-nak"/>
+            </sequential>
+            <sequential>
+                <antcall target="tcp"/>
+                <antcall target="tcp-nak"/>
+                <antcall target="tcp-nio"/>
+                <antcall target="tcp-nio-nak"/>
+            </sequential>
+            <sequential>
+                <antcall target="time-sensitive"/>
+                <antcall target="byteman"/>
+            </sequential>
+            <antcall target="stack-independent"/>
+        </parallel>
+    </target>
+
     <target name="smoke-tests" depends="delete-reports" description="Runs all tests">
         <sequential>
             <antcall target="functional"/>
