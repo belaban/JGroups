@@ -553,14 +553,16 @@
     </target>
 
     <target name="smoke-tests" depends="delete-reports" description="Runs all tests">
-        <sequential>
+        <parallel>
             <antcall target="functional"/>
-            <antcall target="udp"/>
-            <antcall target="tcp"/>
-            <antcall target="stack-independent"/>
-            <antcall target="time-sensitive"/>
-            <antcall target="byteman"/>
-        </sequential>
+            <sequential>
+                <antcall target="udp"/>
+                <antcall target="tcp"/>
+                <antcall target="stack-independent"/>
+                <antcall target="time-sensitive"/>
+                <antcall target="byteman"/>
+            </sequential>
+        </parallel>
     </target>
 
     <target name="functional" depends="postcompile,define-testng-task" description="Runs functional tests">
