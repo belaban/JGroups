@@ -547,9 +547,8 @@
         <runtest suitename="functional"
                  groups="functional"
                  parallel="${parallel.classes}"
-                 threadcount="5" />
+                 threadcount="50" />
     </target>
-
 
     <target name="byteman" depends="postcompile,define-testng-task" description="Runs the byteman tests">
         <mkdir dir="${tmp.dir}/test-results/xml/byteman"/>
@@ -580,7 +579,7 @@
                  groups="base,stack-dependent"
                  excludedgroups="stack-independent,broken"
                  parallel="${parallel.classes}"
-                 threadcount="5"
+                 threadcount="20"
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
                  initial.mcast.port="25000"
                  initial.tcp.port="25000"
@@ -594,7 +593,7 @@
                  groups="base,stack-dependent"
                  excludedgroups="stack-independent,broken"
                  parallel="${parallel.classes}"
-                 threadcount="5"
+                 threadcount="20"
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
                  initial.mcast.port="26000"
                  initial.tcp.port="26000"
@@ -613,7 +612,7 @@
                  groups="base,stack-dependent"
                  excludedgroups="stack-independent,broken"
                  parallel="${parallel.classes}"
-                 threadcount="5"
+                 threadcount="20"
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
                  initial.mcast.port="27000"
                  initial.tcp.port="27000"
@@ -631,7 +630,7 @@
                  groups="base,stack-dependent"
                  excludedgroups="stack-independent,broken"
                  parallel="${parallel.classes}"
-                 threadcount="5"
+                 threadcount="20"
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
                  initial.mcast.port="28000"
                  initial.tcp.port="28000"
@@ -650,7 +649,7 @@
                  groups="base,stack-dependent"
                  excludedgroups="stack-independent,broken"
                  parallel="${parallel.classes}"
-                 threadcount="5"
+                 threadcount="20"
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
                  initial.mcast.port="29000"
                  initial.tcp.port="30000"
@@ -668,7 +667,7 @@
                  groups="base,stack-dependent"
                  excludedgroups="stack-independent,broken"
                  parallel="${parallel.classes}"
-                 threadcount="5"
+                 threadcount="20"
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
                  initial.mcast.port="31000"
                  initial.tcp.port="32000"
