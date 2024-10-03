@@ -504,10 +504,41 @@
             <antcall target="tcp"/>
             <antcall target="tcp-nio"/>
             <antcall target="stack-independent"/>
-            <antcall target="flush"/>
             <antcall target="time-sensitive"/>
             <antcall target="byteman"/>
         </sequential>
+    </target>
+
+    <target name="all-tests-parallel" depends="delete-reports" description="Runs all tests">
+        <parallel>
+            <antcall target="functional"/>
+            <sequential>
+                <antcall target="udp"/>
+            </sequential>
+            <sequential>
+                <antcall target="tcp"/>
+                <antcall target="tcp-nio"/>
+            </sequential>
+            <sequential>
+                <antcall target="time-sensitive"/>
+                <antcall target="byteman"/>
+            </sequential>
+            <antcall target="stack-independent"/>
+        </parallel>
+    </target>
+
+    <target name="smoke-tests" depends="delete-reports" description="Runs all tests">
+        <parallel>
+            <antcall target="functional"/>
+            <sequential>
+                <antcall target="udp"/>
+                <antcall target="tcp"/>
+                <antcall target="stack-independent"/>
+                <antcall target="flush"/>
+                <antcall target="time-sensitive"/>
+                <antcall target="byteman"/>
+            </sequential>
+        </parallel>
     </target>
 
     <target name="functional" depends="postcompile,define-testng-task" description="Runs functional tests">
