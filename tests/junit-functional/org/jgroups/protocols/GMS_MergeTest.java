@@ -191,6 +191,7 @@ public class GMS_MergeTest {
         JChannel[] channels=null;
         try {
             channels=create(true, cluster_name, "A", "B", "C", "D", "E", "F", "G", "H");
+            Util.waitUntilAllChannelsHaveSameView(5000, 500, channels);
             print(channels);
             View view=channels[channels.length -1].getView();
             assert view.size() == channels.length : "view is " + view;
@@ -482,7 +483,7 @@ public class GMS_MergeTest {
             retval[i]=ch;
             ch.connect(cluster_name);
             if(i == 0)
-                Util.sleep(3000);
+                Util.sleep(500);
         }
         return retval;
     }
