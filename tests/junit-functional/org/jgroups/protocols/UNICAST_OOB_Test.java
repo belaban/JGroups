@@ -101,7 +101,8 @@ public class UNICAST_OOB_Test {
         Util.waitUntil(10000, 10, () -> r.size() == 5);
         long time=System.currentTimeMillis() - start;
         System.out.printf("===== list: %s (in %d ms)\n", r.getSeqnos(), time);
-        assert time < XMIT_INTERVAL *2;
+        long expected_time=XMIT_INTERVAL * 10; // increased because times might increase with the increase in parallel tests
+        assert time < XMIT_INTERVAL *2 : String.format("expected a time < %d ms, but got %d ms", expected_time, time);
     }
 
     /**

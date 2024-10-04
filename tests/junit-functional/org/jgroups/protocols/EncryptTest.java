@@ -235,17 +235,15 @@ public abstract class EncryptTest {
         a.send(null, "Hello world from A");
 
         // everybody in {A,B,C} should receive this message, but NOT the rogue's resent message
-        for(int i=0; i < 10; i++) {
-            if(ra.size() > 1 || rb.size() > 1 || rc.size() > 1)
-                break; // this should NOT happen
-            Util.sleep(500);
-        }
+        Util.waitUntilTrue(5000, 500, () -> ra.size() > 1 || rb.size() > 1 || rc.size() > 1);
+        // note: this should not happen
 
-        Stream.of(ra, rb, rc).map(MyReceiver::list).map(l -> l.stream().map(msg -> (String)msg.getObject())
+        List<Message> la=ra.list(), lb=rb.list(), lc=rc.list();
+        Stream.of(la, lb, lc).map(l -> l.stream().map(msg -> (String)msg.getObject())
           .collect(Collectors.toList())).forEach(System.out::println);
-        assert ra.size() == 1 : String.format("received msgs from non-member: '%s'; this should not be the case", print(ra.list()));
-        assert rb.size() == 1 : String.format("received msgs from non-member: '%s'; this should not be the case", print(rb.list()));
-        assert rc.size() == 1 : String.format("received msgs from non-member: '%s'; this should not be the case", print(rc.list()));
+        assert la.size() == 1 : String.format("received msgs from non-member: '%s'; this should not be the case", print(la));
+        assert lb.size() == 1 : String.format("received msgs from non-member: '%s'; this should not be the case", print(lb));
+        assert lc.size() == 1 : String.format("received msgs from non-member: '%s'; this should not be the case", print(lc));
     }
 
 
