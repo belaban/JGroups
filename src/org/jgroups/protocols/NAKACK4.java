@@ -57,6 +57,16 @@ public class NAKACK4 extends ReliableMulticast {
         return buf != null? buf.numBlockings() : -1;
     }
 
+    @ManagedAttribute(description="The number of received messages dropped due to full capacity of the buffer")
+    public long getNumDroppedMessages() {
+        long retval=0;
+        for(Entry e: xmit_table.values()) {
+            if(e.buf() instanceof FixedBuffer)
+                retval+=((FixedBuffer<?>)e.buf()).numDroppedMessages();
+        }
+        return retval;
+    }
+
     @ManagedAttribute(description="Average time blocked")
     public AverageMinMax getAvgTimeBlocked() {
         FixedBuffer<Message> buf=(FixedBuffer<Message>)sendBuf();

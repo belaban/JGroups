@@ -46,13 +46,13 @@ public class MessageBatch implements Iterable<Message> {
 
     public MessageBatch(Collection<Message> msgs) {
         messages=new FastArray<>(msgs.size());
-        messages.add(msgs); // todo: check that no resize occurs!
+        messages.addAll(msgs); // todo: check that no resize occurs!
         determineMode();
     }
 
     public MessageBatch(Address dest, Address sender, AsciiString cluster_name, boolean multicast, Collection<Message> msgs) {
         messages=new FastArray<>(msgs.size());
-        messages.add(msgs);
+        messages.addAll(msgs);
         this.dest=dest;
         this.sender=sender;
         this.cluster_name=cluster_name;
@@ -121,26 +121,26 @@ public class MessageBatch implements Iterable<Message> {
 
     /** Adds a message to the table
      * @param msg the message
-     * @param resize whether or not to resize the table. If true, the method will always return 1
-     * @return always 1 if resize==true, else 1 if the message was added or 0 if not
+     * @param resize whether or not to resize the table
+     * @return always true if resize==true, else true if the message was added or false if not
      */
-    public int add(final Message msg, boolean resize) {
+    public MessageBatch add(final Message msg, boolean resize) {
         return add(msg, resize, true);
     }
 
     /** Adds a message to the table
      * @param msg the message
-     * @param resize whether or not to resize the table. If true, the method will always return 1
-     * @return always 1 if resize==true, else 1 if the message was added or 0 if not
+     * @param resize whether or not to resize the table
+     * @return always true if resize==true, else true if the message was added or false if not
      */
-    public int add(final Message msg, boolean resize, boolean determine_mode) {
-        int added=messages.add(msg, resize);
-        if(added > 0 && determine_mode)
+    public MessageBatch add(final Message msg, boolean resize, boolean determine_mode) {
+        boolean added=messages.add(msg, resize);
+        if(added && determine_mode)
             determineMode();
-        return added;
+        return this;
     }
 
-    public int add(final MessageBatch batch) {
+    public MessageBatch add(final MessageBatch batch) {
         return add(batch, true);
     }
 
@@ -151,37 +151,34 @@ public class MessageBatch implements Iterable<Message> {
      * @return the number of messages from the other batch that were added successfully. Will always be batch.size()
      * unless resize is false: in this case, the number of messages that were added successfully is returned
      */
-    public int add(final MessageBatch batch, boolean resize) {
-        if(batch == null) return 0;
+    public MessageBatch add(final MessageBatch batch, boolean resize) {
+        if(batch == null) return this;
         if(this == batch)
             throw new IllegalArgumentException("cannot add batch to itself");
-        int added=messages.add(batch.array(), resize);
-        if(added > 0)
+        boolean added=messages.addAll(batch.array(), resize);
+        if(added)
             determineMode();
-        return added;
+        return this;
     }
 
     /**
      * Adds message to this batch from a message array
      * @param msgs  the message array
      * @param num_msgs the number of messages to add, should be <= msgs.length
-     * @return the number of messages added to this batch
      */
-    public int add(Message[] msgs, int num_msgs) {
-        int added=messages.add(msgs, num_msgs);
-        if(added > 0)
+    public MessageBatch add(Message[] msgs, int num_msgs) {
+        boolean added=messages.addAll(msgs, num_msgs);
+        if(added)
             determineMode();
-        return added;
+        return this;
     }
 
-    public int add(Collection<Message> msgs) {
-        int added=messages.add(msgs);
-        if(added > 0)
+    public MessageBatch add(Collection<Message> msgs) {
+        boolean added=messages.addAll(msgs);
+        if(added)
             determineMode();
-        return added;
+        return this;
     }
-
-
 
     public MessageBatch set(Address dest, Address sender, Message[] msgs) {
         this.messages.set(msgs);
@@ -191,12 +188,10 @@ public class MessageBatch implements Iterable<Message> {
         return this;
     }
 
-
     public MessageBatch removeIf(Predicate<Message> filter, boolean match_all) {
         messages.removeIf(filter, match_all);
         return this;
     }
-
 
     /**
      * Transfers messages from other to this batch. Optionally clears the other batch after the transfer
@@ -213,12 +208,10 @@ public class MessageBatch implements Iterable<Message> {
         return num;
     }
 
-
     public MessageBatch clear() {
         messages.clear(true);
         return this;
     }
-
 
     public MessageBatch reset() {
         messages.clear(false);

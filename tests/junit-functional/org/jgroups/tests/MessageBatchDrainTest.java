@@ -97,7 +97,9 @@ public class MessageBatchDrainTest {
     protected int _add(Message msg) {
         lock.lock();
         try {
-            return this.batch.add(msg, RESIZE);
+            int old_size=this.batch.size();
+            this.batch.add(msg, RESIZE);
+            return this.batch.size() - old_size;
         }
         finally {
             lock.unlock();
@@ -107,7 +109,9 @@ public class MessageBatchDrainTest {
     protected int _add(MessageBatch b) {
         lock.lock();
         try {
-            return this.batch.add(b, RESIZE);
+            int old_size=this.batch.size();
+            this.batch.add(b, RESIZE);
+            return this.batch.size() - old_size;
         }
         finally {
             lock.unlock();

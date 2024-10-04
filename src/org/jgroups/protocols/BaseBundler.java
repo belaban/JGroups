@@ -244,7 +244,7 @@ public abstract class BaseBundler implements Bundler {
 
     @GuardedBy("lock") protected void addMessage(Message msg, int size) {
         Address dest=msg.getDest();
-        List<Message> tmp=msgs.computeIfAbsent(dest, k -> new ArrayList<>(16));
+        List<Message> tmp=msgs.computeIfAbsent(dest, k -> new FastArray<>(16));
         tmp.add(msg);
         count+=size;
     }

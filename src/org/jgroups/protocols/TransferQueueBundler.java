@@ -4,9 +4,9 @@ import org.jgroups.Message;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.util.AverageMinMax;
+import org.jgroups.util.FastArray;
 import org.jgroups.util.Util;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -19,7 +19,7 @@ import static org.jgroups.conf.AttributeType.SCALAR;
  */
 public class TransferQueueBundler extends BaseBundler implements Runnable {
     protected BlockingQueue<Message> queue;
-    protected final List<Message>    remove_queue=new ArrayList<>(16);
+    protected final List<Message>    remove_queue=new FastArray<>(16);
     protected volatile     Thread    bundler_thread;
 
     @Property(description="When the queue is full, senders will drop a message rather than wait until space " +

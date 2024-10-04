@@ -5,10 +5,7 @@ import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.NakAckHeader2;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.AsciiString;
-import org.jgroups.util.MessageBatch;
-import org.jgroups.util.MutableDigest;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -47,7 +44,7 @@ public class NAKACK_StressTest {
     }
 
     public void testStressNak4() {
-        start(new NAKACK4().capacity(100000), false);
+        start(new NAKACK4().capacity(100_000), false);
     }
 
     public void testStressOOBNak4() {
@@ -104,8 +101,10 @@ public class NAKACK_StressTest {
         latch.countDown(); // starts all adders
 
         for(int i=0; i < 30; i++) {
-            System.out.printf("-- seqno: %d | received %d\n", seqno.get(), received.get());
-            if(received.get() >= NUM_MSGS)
+            int received_msgs=received.get();
+            long dropped_msgs=getDroppedMessages(prot);
+            System.out.printf("-- seqno: %d | received: %d dropped: %d \n", seqno.get(), received_msgs, dropped_msgs);
+            if(received_msgs + dropped_msgs >= NUM_MSGS)
                 break;
             Util.sleep(1000);
         }
@@ -117,10 +116,15 @@ public class NAKACK_StressTest {
         if(delivered_msg_list.size() < 100)
             System.out.println("Elements: " + delivered_msg_list);
 
+        long dropped=getDroppedMessages(prot);
         prot.stop();
 
-        List<Long> results=new ArrayList<>(delivered_msg_list);
+        if(dropped > 0) {
+            System.out.printf("%d msgs were dropped; skipping ordering check\n", dropped);
+            return;
+        }
 
+        List<Long> results=new ArrayList<>(delivered_msg_list);
         if(oob)
             Collections.sort(results);
 
@@ -136,6 +140,10 @@ public class NAKACK_StressTest {
             i++;
         }
         System.out.println("OK");
+    }
+
+    protected static long getDroppedMessages(Protocol p) {
+        return p instanceof NAKACK4? ((NAKACK4)p).getNumDroppedMessages() : 0;
     }
 
     protected static long getSeqno(Message msg) {

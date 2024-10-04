@@ -33,6 +33,8 @@ public class FixedBuffer<T> extends Buffer<T> implements Closeable {
 
     protected final LongAdder     num_blockings=new LongAdder();
     protected final AverageMinMax avg_time_blocked=new AverageMinMax().unit(TimeUnit.NANOSECONDS);
+    /** Number of received messages dropped due to full buffer */
+    protected final LongAdder     num_dropped_msgs=new LongAdder();
 
 
     public FixedBuffer() {
@@ -56,9 +58,10 @@ public class FixedBuffer<T> extends Buffer<T> implements Closeable {
         this.low=this.hd=this.high=this.offset=offset;
     }
 
-    @Override public int capacity()       {return buf.length;}
-    public long          numBlockings()   {return num_blockings.sum();}
-    public AverageMinMax avgTimeBlocked() {return avg_time_blocked;}
+    @Override public int capacity()           {return buf.length;}
+    public long          numBlockings()       {return num_blockings.sum();}
+    public AverageMinMax avgTimeBlocked()     {return avg_time_blocked;}
+    public long          numDroppedMessages() {return num_dropped_msgs.sum();}
 
     /**
      * Adds a new element to the buffer
@@ -77,8 +80,10 @@ public class FixedBuffer<T> extends Buffer<T> implements Closeable {
             if(dist <= 0)
                 return false;
 
-            if(dist > capacity() && (!block || !block(seqno)))  // seqno too big
+            if(dist > capacity() && (!block || !block(seqno))) { // seqno too big
+                num_dropped_msgs.increment();
                 return false;
+            }
 
             int index=index(seqno);
             if(buf[index] != null)
@@ -299,6 +304,7 @@ public class FixedBuffer<T> extends Buffer<T> implements Closeable {
     public void resetStats() {
         super.resetStats();
         num_blockings.reset();
+        num_dropped_msgs.reset();
         avg_time_blocked.clear();
     }
 

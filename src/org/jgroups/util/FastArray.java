@@ -11,7 +11,7 @@ import java.util.stream.StreamSupport;
  * @author Bela Ban
  * @since  5.2
  */
-public class FastArray<T> implements Iterable<T> {
+public class FastArray<T> implements Iterable<T>, List<T> {
     protected T[] elements;
     protected int index; // position at which the next element is inserted; only increments, never decrements
     protected int size;  // size: basically index - null elements
@@ -37,22 +37,37 @@ public class FastArray<T> implements Iterable<T> {
     public int          printLimit()      {return print_limit;}
     public FastArray<T> printLimit(int l) {this.print_limit=l; return this;}
 
-
-    public int add(T el) {
+    @Override
+    public boolean add(T el) {
         return add(el, true);
     }
 
-    public int add(T el, boolean resize) {
+    public boolean add(T el, boolean resize) {
         if(el == null)
-            return 0;
+            return false;
         if(index == elements.length) {
             if(!resize)
-                return 0;
+                return false;
             resize(index + increment);
         }
         elements[index++]=el;
         size++;
-        return 1;
+        return true;
+    }
+
+    @Override
+    public void add(int idx, T el) {
+        checkIndex(idx);
+        if(index+1 > elements.length)
+            resize(index + 1 + increment);
+
+        System.arraycopy(elements, idx,
+                         elements, idx+1,
+                         index - idx);
+        elements[idx]=el;
+        if(el != null)
+            size++;
+        index++;
     }
 
     /**
@@ -61,9 +76,9 @@ public class FastArray<T> implements Iterable<T> {
      * @param length The number of elements to add. must be <= els.length
      * @return The number of elements added
      */
-    public int add(T[] els, int length) {
+    public boolean addAll(T[] els, int length) {
         if(els == null)
-            return 0;
+            return false;
         if(length > els.length)
             length=els.length;
         if(index + length > elements.length)
@@ -75,17 +90,18 @@ public class FastArray<T> implements Iterable<T> {
                 added++;
         }
         size+=added;
-        return added;
+        return true;
     }
 
     @SafeVarargs
-    public final int add(T... els) {
-        return els == null? 0 : add(els, els.length);
+    public final boolean addAll(T... els) {
+        return els != null && addAll(els, els.length);
     }
 
-    public int add(Collection<T> list) {
+    @Override
+    public boolean addAll(Collection<? extends T> list) {
         if(list == null)
-            return 0;
+            return false;
         int list_size=list.size();
         if(index + list_size > elements.length)
             resize(index + list_size + increment);
@@ -96,16 +112,16 @@ public class FastArray<T> implements Iterable<T> {
                 size++;
             }
         }
-        return size - old_size;
+        return size > old_size;
     }
 
-    public int add(FastArray<T> fa) {
-        return add(fa, true);
+    public boolean addAll(FastArray<T> fa) {
+        return addAll(fa, true);
     }
 
-    public int add(FastArray<T> fa, boolean resize) {
+    public boolean addAll(FastArray<T> fa, boolean resize) {
         if(fa == null)
-            return 0;
+            return false;
         if(this == fa)
             throw new IllegalArgumentException("cannot add FastArray to itself");
         int fa_size=fa.size();
@@ -114,17 +130,45 @@ public class FastArray<T> implements Iterable<T> {
         int old_size=size;
         for(T el: fa) {
             if(index >= elements.length)
-                return size-old_size;
+                return size > old_size;
             elements[index++]=el; // no need to handle null elements; the iterator skips null elements
             size++;
         }
-        return size-old_size;
+        return size > old_size;
     }
+
+    @Override
+    public boolean addAll(int idx, Collection<? extends T> c) {
+        checkIndex(idx);
+        if(c == null || c.isEmpty())
+            return false;
+        int old_size=size;
+        int new_elements=c.size();
+        if(index + new_elements > elements.length)
+            resize(index + new_elements); // no increment here
+
+        int elements_to_move=index - idx;
+        if(elements_to_move > 0)
+            System.arraycopy(elements, idx,
+                             elements, idx + new_elements,
+                             elements_to_move);
+
+        Iterator<? extends T> it=c.iterator();
+        for(int i=0; i < new_elements; i++) {
+            T el=it.next();
+            elements[idx+i]=el;
+            if(el != null)
+                size++;
+        }
+        index+=new_elements;
+        return size != old_size;
+    }
+
 
     /**
      * Copies the messages from the other array into this one, <pre>including</pre> null elements
-     * (using {@link System#arraycopy(Object, int, Object, int, int)}. This is the same as calling {@link #clear(boolean)}
-     * followed by {@link #add(FastArray, boolean)}, but supposedly faster.
+     * (using {@link System#arraycopy(Object, int, Object, int, int)}. This is the same as calling
+     * {@link #clear(boolean)} followed by {@link #addAll(FastArray, boolean)}, but faster.
      * @param other The other array
      * @param clear Clears the other array after the transfer when true
      * @return The number of non-null elements transferred from other
@@ -149,15 +193,69 @@ public class FastArray<T> implements Iterable<T> {
         return other_size;
     }
 
+    @Override
+    public boolean contains(Object o) {
+        return indexOf(o) >= 0;
+    }
+
+    @Override
+    public boolean containsAll(Collection<?> c) {
+        for(Object e : c)
+            if(!contains(e))
+                return false;
+        return true;
+    }
+
+    @Override
+    public int indexOf(Object o) {
+        for(int i=0; i < index; i++) {
+            T el=elements[i];
+            if(el != null) {
+                if(Objects.equals(el, o))
+                    return i;
+            }
+            else if(o == null)
+                return i;
+        }
+        return -1;
+    }
+
+    @Override
+    public int lastIndexOf(Object o) {
+        for(int i=index-1; i >= 0; i--) {
+            T el=elements[i];
+            if(el != null) {
+                if(Objects.equals(el, o))
+                    return i;
+            }
+            else if(o == null)
+                return i;
+        }
+        return -1;
+    }
+
+    public boolean anyMatch(Predicate<T> pred) {
+        if(pred == null)
+            return false;
+        for(int i=0; i < index; i++) {
+            T el=elements[i];
+            if(el != null && pred.test(el))
+                return true;
+        }
+        return false;
+    }
+
+    @Override
     public T get(int idx) {
         if(idx < 0 || idx >= this.index)
             return null;
         return elements[idx];
     }
 
-    public FastArray<T> set(int idx, T el) {
+    @Override
+    public T set(int idx, T el) {
         if(idx < 0 || idx >= this.index)
-            return this;
+            return null;
         T old_el=elements[idx];
         if(old_el == null) {
             if(el != null)
@@ -168,7 +266,7 @@ public class FastArray<T> implements Iterable<T> {
                 size--;
         }
         elements[idx]=el;
-        return this;
+        return old_el;
     }
 
     public FastArray<T> set(T[] elements) {
@@ -178,20 +276,30 @@ public class FastArray<T> implements Iterable<T> {
         return this;
     }
 
-    public boolean anyMatch(Predicate<T> pred) {
-        if(pred == null)
-            return false;
-        for(Iterator<T> it=iterator(); it.hasNext();) {
-            T el=it.next();
-            if(el != null && pred.test(el))
-                return true;
+    @Override
+    public T remove(int idx) {
+        return set(idx, null);
+    }
+
+    @Override
+    public boolean remove(Object o) {
+        int idx=indexOf(o);
+        if(idx >= 0) {
+            remove(idx);
+            return true;
         }
         return false;
     }
 
-
-    public FastArray<T> remove(int idx) {
-        return set(idx, null);
+    @Override
+    public boolean removeAll(Collection<?> c) {
+        if(c == null || c.isEmpty())
+            return false;
+        boolean removed=false;
+        for(Object obj: c)
+            if(remove(obj))
+                removed=true;
+        return removed;
     }
 
     public FastArray<T> removeIf(Predicate<T> filter, boolean replace_all) {
@@ -210,11 +318,28 @@ public class FastArray<T> implements Iterable<T> {
             return this;
         for(FastIterator it=iterator(filter); it.hasNext();) {
             it.next();
+            int saved_cursor=it.cursor, saved_last_idx=it.last_idx;
             it.replace(new_el);
             if(!replace_all)
                 break;
+            it.cursor=saved_cursor;
+            it.last_idx=saved_last_idx;
         }
         return this;
+    }
+
+    @Override
+    public boolean retainAll(Collection<?> c) {
+        int old_size=size;
+        if(c == null || c.isEmpty())
+            return false;
+        replaceIf(el -> !c.contains(el), null, true);
+        return size != old_size;
+    }
+
+    @Override
+    public void clear() {
+        clear(false);
     }
 
     public FastArray<T> clear(boolean null_elements) {
@@ -224,7 +349,6 @@ public class FastArray<T> implements Iterable<T> {
         index=size=0;
         return this;
     }
-
 
     /** Iterator which iterates only over non-null elements, skipping null elements */
     public FastIterator iterator() {
@@ -241,7 +365,30 @@ public class FastArray<T> implements Iterable<T> {
         return StreamSupport.stream(sp, false);
     }
 
+    @Override
+    public ListIterator<T> listIterator() {
+        return new FastListIterator(null);
+    }
 
+    @Override
+    public ListIterator<T> listIterator(int index) {
+        return new FastListIterator(index);
+    }
+
+    @Override
+    public List<T> subList(int fromIndex, int toIndex) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Object[] toArray() {
+        return Arrays.copyOf(elements, index);
+    }
+
+    @Override
+    public <T1> T1[] toArray(T1[] a) {
+        return (T1[])Arrays.copyOf(elements, index, a.getClass());
+    }
 
     /** Returns the number of non-null elements, should have the same result as size(). Only used for testing! */
     public int count() {
@@ -260,8 +407,6 @@ public class FastArray<T> implements Iterable<T> {
     public String print() {
         return print(print_limit);
     }
-
-
 
     public FastArray<T> resize(int new_capacity) {
         if(new_capacity <= elements.length)
@@ -294,11 +439,19 @@ public class FastArray<T> implements Iterable<T> {
         return i;
     }
 
+    protected int checkIndex(int idx) {
+        if(idx > index || idx < 0)
+            throw new IndexOutOfBoundsException(String.format("0 >= idx (%d) < index (%d)", idx, index));
+        return idx;
+    }
 
+
+    // FastIterator is public in order to be used by unit tests (e.g. hitCount() or currentIndex())
     public class FastIterator implements Iterator<T> {
-        protected int                current_index=-1;
+        protected int                cursor;
+        protected int                last_idx=-1; // index of last element returned; -1 if no such
         protected final Predicate<T> filter;
-        protected int                hit_count; // number of non-null elements
+        protected int                hit_count;   // number of non-null elements
 
         public FastIterator(Predicate<T> filter) {
             this.filter=filter;
@@ -306,48 +459,110 @@ public class FastArray<T> implements Iterable<T> {
 
         public boolean hasNext() {
             // skip null msgs or msgs that don't match the filter (if set)
-            while(current_index +1 < index && hit_count < size && nullOrNoFilterMatch(current_index+1))
-                current_index++;
-            return current_index +1 < index && hit_count < size;
+            while(cursor < index && hit_count < size && nullOrNoFilterMatch(cursor))
+                cursor++;
+            return cursor < index && hit_count < size;
         }
 
         public T next() {
-            if(current_index +1 >= index)
+            int i=cursor;
+            if(i >= index)
                 throw new NoSuchElementException();
+            if(i >= elements.length)
+                throw new ConcurrentModificationException();
+            cursor=i+1;
             hit_count++;
-            return elements[++current_index];
+            return elements[last_idx=i];
         }
 
         public void remove() {
+            if(last_idx < 0)
+                throw new IllegalStateException();
             replace(null);
         }
 
         public void replace(T el) {
-            if(current_index >= 0) {
-                int old_size=size;
-                set(current_index, el);
-                if(size < old_size)
-                    hit_count=Math.max(hit_count-1, 0);
-            }
+            if(last_idx < 0)
+                throw new IllegalStateException();
+            int old_size=size;
+            set(last_idx, el);
+            if(size < old_size)
+                hit_count=Math.max(hit_count-1, 0);
         }
 
-        public int currentIndex() {return current_index;}
+        public int cursor() {return cursor;}
         public int hitCount()     {return hit_count;}
 
-        protected boolean nullOrNoFilterMatch(int index) {
-            if(elements[index] == null)
+        protected boolean nullOrNoFilterMatch(int idx) {
+            if(elements[idx] == null)
                 return true;
-            boolean result=filter != null && filter.test(elements[index]) == false;
+            boolean result=filter != null && filter.test(elements[idx]) == false;
             if(result)
                 hit_count++;
             return result;
         }
 
         public String toString() {
-            return String.format("curr-index=%d hit-count=%d", current_index, hit_count);
+            return String.format("cursor=%d hit-count=%d", cursor, hit_count);
         }
     }
 
+    public class FastListIterator extends FastIterator implements ListIterator<T> {
+
+        public FastListIterator(int idx) {
+            this(null, idx);
+        }
+
+        public FastListIterator(Predicate<T> filter) {
+            this(filter, 0);
+        }
+
+        public FastListIterator(Predicate<T> filter, int idx) {
+            super(filter);
+            cursor=checkIndex(idx);
+        }
+
+        @Override
+        public boolean hasPrevious() {
+            return cursor != 0;
+        }
+
+        @Override
+        public T previous() {
+            int i=cursor-1;
+            if(i < 0)
+                throw new NoSuchElementException();
+            if(i >= elements.length)
+                throw new ConcurrentModificationException();
+            cursor=i;
+            return elements[last_idx=i];
+        }
+
+        @Override
+        public int nextIndex() {
+            return cursor;
+        }
+
+        @Override
+        public int previousIndex() {
+            return cursor-1;
+        }
+
+        @Override
+        public void set(T el) {
+            if(last_idx < 0)
+                throw new IllegalStateException();
+            FastArray.this.set(last_idx, el);
+        }
+
+        @Override
+        public void add(T el) {
+            int i=cursor;
+            FastArray.this.add(i, el);
+            cursor=i+1;
+            last_idx=-1;
+        }
+    }
 
 
 }

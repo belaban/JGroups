@@ -251,8 +251,8 @@ public class MessageBatchTest {
             batch.add(msgs.get(i));
         assert batch.size() == 3;
         assert batch.capacity() == 3;
-        int added=batch.add(msgs.get(3), false);
-        assert added == 0 && batch.size() == 3 && batch.capacity() == 3;
+        batch.add(msgs.get(3), false);
+        assert batch.size() == 3 && batch.capacity() == 3;
     }
 
 
@@ -264,8 +264,8 @@ public class MessageBatchTest {
         assert other.size() == msgs.size();
         assert batch.isEmpty();
 
-        int added=batch.add(other, false);
-        assert added == other.size();
+        batch.add(other, false);
+        assert batch.size() == other.size();
         assert batch.size() == msgs.size() && batch.capacity() == 16;
         assert other.size() == msgs.size();
     }
@@ -278,8 +278,7 @@ public class MessageBatchTest {
         assert other.size() == msgs.size();
         assert batch.isEmpty();
 
-        int  added=batch.add(other, false);
-        assert added == batch.size();
+        batch.add(other, false);
         assert batch.size() == 3 && batch.capacity() == 3;
         assert other.size() == msgs.size();
     }
@@ -314,26 +313,24 @@ public class MessageBatchTest {
     public void testAddArray() {
         Message[] msgs=createMessages().toArray(new Message[0]);
         MessageBatch mb=new MessageBatch(3);
-        int added=mb.add(msgs, msgs.length);
-        assert added == msgs.length;
+        mb.add(msgs, msgs.length);
+        assert mb.size() == msgs.length;
         assert mb.size() == msgs.length;
         assert mb.capacity() >= msgs.length;
 
         mb=new MessageBatch(3);
-        added=mb.add(msgs, 0);
-        assert added == 0;
+        mb.add(msgs, 0);
+        assert mb.isEmpty();
         assert mb.isEmpty();
 
         mb=new MessageBatch(3);
-        added=mb.add(msgs, 5);
-        assert added == 5;
+        mb.add(msgs, 5);
         assert mb.size() == 5;
         assert mb.capacity() >= 5;
 
         mb=new MessageBatch(msgs.length * 3 +1);
-        added=0;
         for(int i=0; i < 3; i++)
-            added+=mb.add(msgs, msgs.length);
+            mb.add(msgs, msgs.length);
         assert mb.capacity() == msgs.length *3 +1;
         assert mb.size() == msgs.length * 3;
     }
@@ -488,7 +485,13 @@ public class MessageBatchTest {
         MessageBatch batch=new MessageBatch(msgs);
 
         Iterator<Message> itr=batch.iterator();
-        itr.remove();
+        try {
+            itr.remove();
+            assert false : "Iterator.remove() without previous next() must throw an exception";
+        }
+        catch(IllegalStateException ex) {
+            System.out.printf("caught exception as expected: %s\n", ex);
+        }
         assert batch.size() == msgs.size(); // didn't remove anything
 
         for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
@@ -528,23 +531,23 @@ public class MessageBatchTest {
 
 
     public void testIterator8() {
-         List<Message> msgs=createMessages();
-         MessageBatch batch=new MessageBatch(msgs);
-         int index=0;
-         final Message MSG=new EmptyMessage();
+        List<Message> msgs=createMessages();
+        MessageBatch batch=new MessageBatch(msgs);
+        int index=0;
+        final Message MSG=new EmptyMessage();
         FastArray<Message>.FastIterator it=(FastArray<Message>.FastIterator)batch.iterator();
-         while(it.hasNext()) {
-             it.next();
-             if(index % 2 == 0)
-                 it.replace(MSG);
-             index++;
-         }
-         index=0;
-         for(Message msg: batch) {
-             assert index % 2 != 0 || msg == MSG; // every even index has MSG
-             index++;
-         }
-     }
+        while(it.hasNext()) {
+            it.next();
+            if(index % 2 == 0)
+                it.replace(MSG);
+            index++;
+        }
+        index=0;
+        for(Message msg: batch) {
+            assert index % 2 != 0 || msg == MSG; // every even index has MSG
+            index++;
+        }
+    }
 
     public void testIterator9() {
         List<Message> msgs=createMessages();
