@@ -21,6 +21,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -683,23 +684,14 @@ public class MPerf implements Receiver {
 
     protected static class MessageCounter {
         protected ConcurrentHashMap<Address,LongAdder> countMap;
+        protected static final Function<Address,LongAdder> FUNC=k -> new LongAdder();
 
         public MessageCounter() {
             this.countMap = new ConcurrentHashMap<>();
         }
 
         public void addMessage(Address source) {
-            LongAdder adder = countMap.get(source);
-            if (adder == null) {
-                adder = new LongAdder();
-                countMap.put(source, adder);
-            }
-            adder.increment();
-            //countMap.computeIfAbsent(source, k -> new LongAdder()).increment();
-        }
-
-        public void addMessage(Address source, long count) {
-            countMap.computeIfAbsent(source, k -> new LongAdder()).add(count);
+            countMap.computeIfAbsent(source, FUNC).increment();
         }
 
         public void reset() {
