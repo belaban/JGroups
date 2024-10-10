@@ -12,10 +12,14 @@ import org.jgroups.logging.Log;
 import org.jgroups.stack.MessageProcessingPolicy;
 import org.jgroups.util.*;
 
-import java.util.*;
-import java.util.concurrent.TimeUnit;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
 import static org.jgroups.protocols.TP.MSG_OVERHEAD;
 import static org.jgroups.util.MessageBatch.Mode.OOB;
@@ -29,14 +33,15 @@ import static org.jgroups.util.MessageBatch.Mode.REG;
  */
 public abstract class BaseBundler implements Bundler {
     /** Keys are destinations, values are lists of Messages */
-    protected final Map<Address,List<Message>>  msgs=new HashMap<>(24);
-    protected TP                                transport;
-    protected MessageProcessingPolicy           msg_processing_policy;
-    protected final ReentrantLock               lock=new ReentrantLock();
-    protected @GuardedBy("lock") long           count;    // current number of bytes accumulated
-    protected ByteArrayDataOutputStream         output;
-    protected MsgStats                          msg_stats;
-    protected Log                               log;
+    protected final Map<Address,List<Message>>      msgs=new HashMap<>(24);
+    protected final Function<Address,List<Message>> FUNC=k -> new FastArray<>(16);
+    protected TP                                    transport;
+    protected MessageProcessingPolicy               msg_processing_policy;
+    protected final ReentrantLock                   lock=new ReentrantLock();
+    protected @GuardedBy("lock") long               count;    // current number of bytes accumulated
+    protected ByteArrayDataOutputStream             output;
+    protected MsgStats                              msg_stats;
+    protected Log                                   log;
 
     /**
      * Maximum number of bytes for messages to be queued until they are sent.
@@ -44,14 +49,14 @@ public abstract class BaseBundler implements Bundler {
      */
     @Property(name="max_size", type=AttributeType.BYTES,
       description="Maximum number of bytes for messages to be queued until they are sent")
-    protected int                               max_size=64000;
+    protected int                                   max_size=64000;
 
     @Property(description="The max number of elements in a bundler if the bundler supports size limitations",
       type=AttributeType.SCALAR)
-    protected int                               capacity=16384;
+    protected int                                   capacity=16384;
 
     @ManagedAttribute(description="Time (us) to send the bundled messages")
-    protected final AverageMinMax               avg_send_time=new AverageMinMax().unit(TimeUnit.NANOSECONDS);
+    protected final AverageMinMax                   avg_send_time=new AverageMinMax().unit(NANOSECONDS);
 
 
     public int     getCapacity()               {return capacity;}
@@ -244,7 +249,7 @@ public abstract class BaseBundler implements Bundler {
 
     @GuardedBy("lock") protected void addMessage(Message msg, int size) {
         Address dest=msg.getDest();
-        List<Message> tmp=msgs.computeIfAbsent(dest, k -> new FastArray<>(16));
+        List<Message> tmp=msgs.computeIfAbsent(dest, FUNC);
         tmp.add(msg);
         count+=size;
     }
