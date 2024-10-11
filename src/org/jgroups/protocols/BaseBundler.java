@@ -6,6 +6,7 @@ import org.jgroups.PhysicalAddress;
 import org.jgroups.View;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.logging.Log;
@@ -18,6 +19,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
@@ -34,7 +36,7 @@ import static org.jgroups.util.MessageBatch.Mode.REG;
 public abstract class BaseBundler implements Bundler {
     /** Keys are destinations, values are lists of Messages */
     protected final Map<Address,List<Message>>      msgs=new HashMap<>(24);
-    protected final Function<Address,List<Message>> FUNC=k -> new FastArray<>(16);
+    protected final Function<Address,List<Message>> FUNC=k -> new FastArray<Message>(32).increment(64);
     protected TP                                    transport;
     protected MessageProcessingPolicy               msg_processing_policy;
     protected final ReentrantLock                   lock=new ReentrantLock();
@@ -58,6 +60,12 @@ public abstract class BaseBundler implements Bundler {
     @ManagedAttribute(description="Time (us) to send the bundled messages")
     protected final AverageMinMax                   avg_send_time=new AverageMinMax().unit(NANOSECONDS);
 
+    @ManagedOperation(description="Prints the capacity of the buffers")
+    public String printBuffers() {
+        return msgs.entrySet().stream()
+          .map(e -> String.format("%s: %d", e.getKey(), ((FastArray<Message>)e.getValue()).capacity()))
+          .collect(Collectors.joining("\n"));
+    }
 
     public int     getCapacity()               {return capacity;}
     public Bundler setCapacity(int c)          {this.capacity=c; return this;}
@@ -225,7 +233,7 @@ public abstract class BaseBundler implements Bundler {
         }
     }
 
-    protected void sendMessageList(final Address dest, final Address src, final List<Message> list, ByteArrayDataOutputStream out) {
+    protected void sendMessageList(Address dest, Address src, List<Message> list, ByteArrayDataOutputStream out) {
         try {
             Util.writeMessageList(dest, src, transport.cluster_name.chars(), list, out, dest == null);
             transport.doSend(out.buffer(), 0, out.position(), dest);

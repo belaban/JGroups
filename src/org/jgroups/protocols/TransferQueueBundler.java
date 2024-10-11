@@ -19,7 +19,7 @@ import static org.jgroups.conf.AttributeType.SCALAR;
  */
 public class TransferQueueBundler extends BaseBundler implements Runnable {
     protected BlockingQueue<Message> queue;
-    protected final List<Message>    remove_queue=new FastArray<>(16);
+    protected final List<Message>    remove_queue=new FastArray<Message>(128).increment(128);
     protected volatile     Thread    bundler_thread;
 
     @Property(description="When the queue is full, senders will drop a message rather than wait until space " +
@@ -48,6 +48,9 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
 
     @ManagedAttribute(description="Size of the remove-queue")
     public int                   removeQueueSize()       {return remove_queue.size();}
+
+    @ManagedAttribute(description="Capacity of the remove-queue")
+    public int                   removeQueueCapacity()   {return ((FastArray<Message>)remove_queue).capacity();}
 
     public boolean               dropWhenFull()          {return drop_when_full;}
     public <T extends Bundler> T dropWhenFull(boolean d) {this.drop_when_full=d; return (T)this;}

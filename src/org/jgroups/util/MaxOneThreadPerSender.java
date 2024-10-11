@@ -134,9 +134,9 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
             this.mcast=mcast;
             this.sender=sender;
             this.cluster_name=cluster_name;
-            int cap=max_buffer_size > 0? max_buffer_size : 512; // initial capacity
+            int cap=max_buffer_size > 0? max_buffer_size : 128; // initial capacity
             batch=new MessageBatch(cap).dest(tp.getAddress()).sender(sender).clusterName(cluster_name).multicast(mcast);
-            batch.array().increment(512);
+            batch.array().increment(128);
         }
 
 
