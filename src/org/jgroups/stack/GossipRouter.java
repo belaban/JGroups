@@ -237,7 +237,8 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
             return;
 
         try {
-            JmxConfigurator.unregister(this, Util.getMBeanServer(), "jgroups:name=GossipRouter");
+            if(jmx)
+                JmxConfigurator.unregister(this, Util.getMBeanServer(), "jgroups:name=GossipRouter");
         }
         catch(Exception ex) {
             log.error(Util.getMessage("MBeanDeRegistrationFailed"), ex);
