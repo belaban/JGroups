@@ -33,7 +33,9 @@ if [ -f $HOME/logging.properties ]; then
 fi;
 
 #JG_FLAGS="-Djgroups.bind_addr=match-address:192.168.1.*"
-FLAGS="-server -Xmx1G -Xms500M -XX:+HeapDumpOnOutOfMemoryError -Djava.net.preferIPv4Stack=true"
+FLAGS="-server -Xmx1G -Xms500m -XX:+HeapDumpOnOutOfMemoryError -Djava.net.preferIPv4Stack=true"
+
+#GC="-Xlog:gc:gc-$PPID.log"
 
 #FLAGS="$FLAGS -Duser.language=de"
 
@@ -53,5 +55,5 @@ FLAGS="-server -Xmx1G -Xms500M -XX:+HeapDumpOnOutOfMemoryError -Djava.net.prefer
 # Dump with jcmd <pid> Thread.dump_to_file <filename>
 # DUMP_VTHREADS=-Djdk.trackAllThreads=true
 
-java $DUMP_VTHREADS $Z1 -cp $CP $SSL_FLAGS $DEBUG $LOG $JG_FLAGS $FLAGS $JMX $JMC $*
+java $GC $DUMP_VTHREADS $Z1 -cp $CP $SSL_FLAGS $DEBUG $LOG $JG_FLAGS $FLAGS $JMX $JMC $*
 
