@@ -293,6 +293,37 @@ public class FastArrayTest {
         assert fa.capacity() == 10;
     }
 
+    public void testTransfer5() {
+        FastArray<Integer> other=new FastArray<>(30);
+        other.addAll(List.of(1,2,3,4,5)); // size if 5 but capacity is 30
+        FastArray<Integer> fa=create(10);
+        int old_capacity=fa.capacity();
+        int num=fa.transferFrom(other, true);
+        assert num == 5;
+        assert fa.capacity() == old_capacity;
+    }
+
+    public void testTransfer6() {
+        FastArray<Integer> other=create(3);
+        FastArray<Integer> fa=new FastArray<>(3);
+        int num=fa.transferFrom(other, false);
+        assert num == 3;
+        other.add(3);
+        num=fa.transferFrom(other, false);
+        assert num == 4;
+        assert fa.size() == 4 && fa.capacity() == 4;
+        other.add(4); other.add(5);
+        num=fa.transferFrom(other, false);
+        assert num == 6;
+        assert fa.size() == 6;
+        other.clear();
+        other.addAll(0,1,2);
+        num=fa.transferFrom(other, false);
+        assert num == 3 && fa.size() == 3;
+        Integer[] actual=fa.toArray(new Integer[0]), expected=other.toArray(new Integer[0]);
+        assert Arrays.equals(actual, expected);
+    }
+
     public void testContains() {
         FastArray<Integer> fa=create(10);
         assert fa.contains(5);
