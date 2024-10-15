@@ -133,7 +133,7 @@ public class PerDestinationBundler implements Bundler {
 
     protected class SendBuffer implements Runnable {
         private final Address                   dest;
-        protected final FastArray<Message>      msgs=new FastArray<Message>(16).increment(10);
+        protected final FastArray<Message>      msgs=new FastArray<>(16);
         private final Lock                      lock=new ReentrantLock(false);
         private final BlockingQueue<Message>    queue=new ArrayBlockingQueue<>(8192);
         private final List<Message>             remove_queue=new ArrayList<>(1024);
