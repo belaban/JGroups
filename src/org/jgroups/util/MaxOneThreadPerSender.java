@@ -57,6 +57,13 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
         return table.process(msg, true);
     }
 
+    public boolean loopback(MessageBatch batch, boolean oob) {
+        if(oob)
+            return super.loopback(batch, oob);
+        MessageTable table=batch.dest() == null? mcasts : ucasts;
+        return table.process(batch, true);
+    }
+
     public boolean process(Message msg, boolean oob) {
         if(oob)
             return super.process(msg, oob);
@@ -68,7 +75,7 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
         if(oob)
             return super.process(batch, oob);
         MessageTable table=batch.dest() == null? mcasts : ucasts;
-        return table.process(batch);
+        return table.process(batch, false);
     }
 
     public void viewChange(List<Address> members) {
@@ -100,9 +107,9 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
             return sender != null && get(sender, dest == null).process(msg, loopback);
         }
 
-        protected boolean process(MessageBatch batch) {
+        protected boolean process(MessageBatch batch, boolean loopback) {
             Address dest=batch.dest(), sender=batch.sender();
-            return get(sender, dest == null).process(batch);
+            return get(sender, dest == null).process(batch, loopback);
         }
 
         protected void viewChange(List<Address> mbrs) {
@@ -153,11 +160,11 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
             return submit(msg, loopback);
         }
 
-        protected boolean process(MessageBatch batch) {
+        protected boolean process(MessageBatch batch, boolean loopback) {
             if(!allowedToSubmitToThreadPool(batch))
                 return false;
             // running is true, we didn't queue msg and need to submit a task to the thread pool
-            return submit(batch);
+            return submit(batch, loopback);
         }
 
         protected boolean submit(Message msg, boolean loopback) {
@@ -179,10 +186,10 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
             }
         }
 
-        protected boolean submit(MessageBatch batch) {
+        protected boolean submit(MessageBatch batch, boolean loopback) {
             try {
                 submitted_batches++;
-                BatchHandlerLoop handler=new BatchHandlerLoop(batch, this, false);
+                BatchHandlerLoop handler=new BatchHandlerLoop(batch, this, loopback);
                 if(!tp.getThreadPool().execute(handler)) {
                     setRunning(false);
                     return false;
