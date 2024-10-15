@@ -18,6 +18,10 @@ public class FastArray<T> implements Iterable<T>, List<T> {
     protected int increment; // if 0, use the built-in resize (new capacity: old capacity * 1.5)
     protected int print_limit=20; // max numnber of elements to be printed in toString
 
+    public FastArray() {
+        this(16);
+    }
+
     public FastArray(int capacity) {
         elements=(T[])new Object[capacity];
     }
