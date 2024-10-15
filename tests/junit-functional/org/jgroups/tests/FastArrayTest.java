@@ -137,7 +137,7 @@ public class FastArrayTest {
     }
 
     public void testAddList() {
-        FastArray<Integer> fa=create(3);
+        FastArray<Integer> fa=create(3).increment(5);
         List<Integer> list=Arrays.asList(3, 4, 5, 6, 7, 8, 9);
         assert fa.size() == 3;
         boolean added=fa.addAll(list);
@@ -145,7 +145,7 @@ public class FastArrayTest {
         assert fa.size() == 10;
         assert fa.capacity() == 10 + fa.increment();
 
-        fa=new FastArray<>(10);
+        fa=new FastArray<Integer>(10).increment(2);
         added=fa.addAll(Arrays.asList(0, 1, 2));
         assert added;
         added=fa.addAll(list);
@@ -156,13 +156,13 @@ public class FastArrayTest {
         added=fa.add(11);
         assert added;
         assert fa.size() == 11;
-        assert fa.capacity() == 10 + fa.increment();
+        assert fa.capacity() == 11 + fa.increment();
 
         list=new ArrayList<>();
         added=fa.addAll(list);
         assert !added;
         assert fa.size() == 11;
-        assert fa.capacity() == 10 + fa.increment();
+        assert fa.capacity() == 11 + fa.increment();
     }
 
     public void testAddFastArray() {
@@ -537,12 +537,26 @@ public class FastArrayTest {
     }
 
     public void testResize() {
-        FastArray<Integer> fa=create(2);
+        FastArray<Integer> fa=create(2).increment(4);
         int old_cap=fa.capacity();
-        assert fa.capacity() == old_cap;
         fa.add(3);
-        assert fa.capacity() == old_cap + fa.increment();
+        assert fa.capacity() == old_cap + 1 + fa.increment();
     }
+
+    public void testResize2() {
+        FastArray<Integer> fa=create(128);
+        assert fa.capacity() == 128;
+        fa.add(128);
+        int new_capacity=fa.capacity() + fa.capacity() >> 1;
+        assert fa.capacity() == new_capacity;
+        IntStream.rangeClosed(128,192).forEach(fa::add);
+        new_capacity=fa.capacity() + fa.capacity() >> 1;
+        assert fa.capacity() == new_capacity;
+        IntStream.rangeClosed(129,288).forEach(fa::add);
+        new_capacity=fa.capacity() + fa.capacity() >> 1;
+        assert fa.capacity() == new_capacity;
+    }
+
 
     public void testSimpleIteration() {
         FastArray<Integer> fa=create(10);

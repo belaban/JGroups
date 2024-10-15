@@ -15,7 +15,7 @@ public class FastArray<T> implements Iterable<T>, List<T> {
     protected T[] elements;
     protected int index; // position at which the next element is inserted; only increments, never decrements
     protected int size;  // size: basically index - null elements
-    protected int increment=5;
+    protected int increment; // if 0, use the built-in resize (new capacity: old capacity * 1.5)
     protected int print_limit=20; // max numnber of elements to be printed in toString
 
     public FastArray(int capacity) {
@@ -33,7 +33,7 @@ public class FastArray<T> implements Iterable<T>, List<T> {
     public int          size()            {return size;}
     public boolean      isEmpty()         {return size == 0;}
     public int          increment()       {return increment;}
-    public FastArray<T> increment(int i)  {this.increment=ensurePositive(i); return this;}
+    public FastArray<T> increment(int i)  {this.increment=i; return this;}
     public int          printLimit()      {return print_limit;}
     public FastArray<T> printLimit(int l) {this.print_limit=l; return this;}
 
@@ -48,7 +48,7 @@ public class FastArray<T> implements Iterable<T>, List<T> {
         if(index == elements.length) {
             if(!resize)
                 return false;
-            resize(index + increment);
+            resize(index +1);
         }
         elements[index++]=el;
         size++;
@@ -59,7 +59,7 @@ public class FastArray<T> implements Iterable<T>, List<T> {
     public void add(int idx, T el) {
         checkIndex(idx);
         if(index+1 > elements.length)
-            resize(index + 1 + increment);
+            resize(index +1);
 
         System.arraycopy(elements, idx,
                          elements, idx+1,
@@ -82,7 +82,7 @@ public class FastArray<T> implements Iterable<T>, List<T> {
         if(length > els.length)
             length=els.length;
         if(index + length > elements.length)
-            resize(index + length + increment);
+            resize(index + length);
         System.arraycopy(els, 0, elements, index, length);
         int added=0, end_index=index+length;
         while(index < end_index) {
@@ -104,7 +104,7 @@ public class FastArray<T> implements Iterable<T>, List<T> {
             return false;
         int list_size=list.size();
         if(index + list_size > elements.length)
-            resize(index + list_size + increment);
+            resize(index + list_size);
         int old_size=size;
         for(T el: list) {
             if(el != null) {  // null elements need to be handled
@@ -126,7 +126,7 @@ public class FastArray<T> implements Iterable<T>, List<T> {
             throw new IllegalArgumentException("cannot add FastArray to itself");
         int fa_size=fa.size();
         if(index+fa_size > elements.length && resize)
-            resize(index + fa_size + increment);
+            resize(index + fa_size);
         int old_size=size;
         for(T el: fa) {
             if(index >= elements.length)
@@ -174,15 +174,13 @@ public class FastArray<T> implements Iterable<T>, List<T> {
      * @return The number of non-null elements transferred from other
      */
     public int transferFrom(FastArray<T> other, boolean clear) {
-        if(other == null || this == other)
+        if(other == null || this == other || other.isEmpty())
             return 0;
-        int capacity=elements.length, other_size=other.size(), other_capacity=other.capacity();
-        if(other_size == 0)
-            return 0;
-        if(capacity < other_capacity)
-            elements=Arrays.copyOf(other.elements, other_capacity);
+        int capacity=elements.length, other_index=other.index(), other_size=other.size();
+        if(capacity < other_index)
+            elements=Arrays.copyOf(other.elements, other_index);
         else
-            System.arraycopy(other.elements, 0, this.elements, 0, other_capacity);
+            System.arraycopy(other.elements, 0, this.elements, 0, other_index);
         if(this.index > other.index)
             for(int i=other.index; i < this.index; i++)
                 elements[i]=null;
@@ -339,7 +337,7 @@ public class FastArray<T> implements Iterable<T>, List<T> {
 
     @Override
     public void clear() {
-        clear(false);
+        clear(true);
     }
 
     public FastArray<T> clear(boolean null_elements) {
@@ -411,10 +409,18 @@ public class FastArray<T> implements Iterable<T>, List<T> {
     public FastArray<T> resize(int new_capacity) {
         if(new_capacity <= elements.length)
             return this;
-        elements=Arrays.copyOf(elements, new_capacity);
+        int new_cap;
+        if(increment > 0)
+            new_cap=new_capacity+increment;
+        else {
+            int old_capacity=elements.length;
+            int min_growth=new_capacity - old_capacity;
+            int preferred_growth=old_capacity >> 1; // 50% of the old capacity
+            new_cap=old_capacity + Math.max(min_growth, preferred_growth);
+        }
+        elements=Arrays.copyOf(elements, new_cap);
         return this;
     }
-
 
     protected String print(int limit) {
         boolean first=true;
@@ -431,12 +437,6 @@ public class FastArray<T> implements Iterable<T>, List<T> {
                 return sb.append(" ...").toString();
         }
         return sb.toString();
-    }
-
-    protected static int ensurePositive(int i) {
-        if(i < 1)
-            throw new IllegalArgumentException("value needs to be >= 1");
-        return i;
     }
 
     protected int checkIndex(int idx) {
