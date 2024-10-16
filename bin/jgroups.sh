@@ -33,7 +33,7 @@ if [ -f $HOME/logging.properties ]; then
 fi;
 
 #JG_FLAGS="-Djgroups.bind_addr=match-address:192.168.1.*"
-FLAGS="-server -Xmx1G -Xms500M -XX:+HeapDumpOnOutOfMemoryError"
+FLAGS="-server -Xmx1G -Xms500M -XX:+HeapDumpOnOutOfMemoryError -Djava.net.preferIPv4Stack=true"
 
 #FLAGS="$FLAGS -Duser.language=de"
 
