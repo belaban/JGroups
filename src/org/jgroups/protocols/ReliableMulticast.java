@@ -914,7 +914,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
             if(needToSendAck(entry, batch.size()))
                 sendAck(batch.sender(), entry.buf());
             up_prot.up(batch);
-            batch.clear();
+            batch.reset(); // doesn't null messages in the batch
         }
         catch(Throwable t) {
             log.error(Util.getMessage("FailedToDeliverMsg"), local_addr, "batch", batch, t);

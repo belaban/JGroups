@@ -617,7 +617,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 }
                 deliverBatch(oob_batch);
             }
-            removeAndDeliver(win, batch.sender());
+            removeAndDeliver(win, batch.sender(), batch.capacity());
         }
         if(!batch.isEmpty())
             up_prot.up(batch);
@@ -860,7 +860,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 addQueuedMessages(sender, entry, queued_msgs);
         }
         addMessage(entry, sender, seqno, msg);
-        removeAndDeliver(entry.msgs, sender);
+        removeAndDeliver(entry.msgs, sender, 1);
     }
 
     protected void addMessage(ReceiverEntry entry, Address sender, long seqno, Message msg) {
@@ -911,7 +911,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             if(msg != null && msg.isFlagSet(OOB) && msg.setFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED))
                 deliverMessage(msg, sender, seqno);
         }
-        removeAndDeliver(win, sender); // there might be more messages to deliver
+        removeAndDeliver(win, sender, 1); // there might be more messages to deliver
     }
 
 
@@ -940,7 +940,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
             deliverBatch(oob_batch);
         }
-        removeAndDeliver(win, sender);
+        removeAndDeliver(win, sender, msgs.size());
     }
 
 
@@ -953,12 +953,13 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
      * delivery of P1, Q1, Q2, P2: FIFO (implemented by UNICAST) says messages need to be delivered in the
      * order in which they were sent
      */
-    protected void removeAndDeliver(Table<Message> win, Address sender) {
+    protected void removeAndDeliver(Table<Message> win, Address sender, int min_size) {
         AtomicInteger adders=win.getAdders();
         if(adders.getAndIncrement() != 0)
             return;
 
-        MessageBatch batch=new MessageBatch(win.getNumDeliverable()).dest(local_addr).sender(sender).multicast(false);
+        int cap=Math.max(Math.max(Math.max(win.size(), max_batch_size), min_size), 2048);
+        MessageBatch batch=new MessageBatch(cap).dest(local_addr).sender(sender).multicast(false);
         Supplier<MessageBatch> batch_creator=() -> batch;
         MessageBatch mb=null;
         do {

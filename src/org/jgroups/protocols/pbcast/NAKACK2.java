@@ -843,7 +843,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             else // sent by someone else
                 deliver(msg, sender, hdr.seqno, "OOB message");
         }
-        removeAndDeliver(buf, sender, loopback, null); // at most 1 thread will execute this at any given time
+        removeAndDeliver(buf, sender, loopback, null, 1); // at most 1 thread will execute this at any given time
     }
 
 
@@ -874,7 +874,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             }
             deliverBatch(oob_batch);
         }
-        removeAndDeliver(buf, sender, loopback, mb.clusterName()); // at most 1 thread will execute this at any given time
+        removeAndDeliver(buf, sender, loopback, mb.clusterName(), mb.capacity()); // at most 1 thread will execute this at any given time
         if(oob || loopback)
             mb.removeIf(HAS_HEADER, true);
     }
@@ -884,12 +884,14 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
      *  we return immediately and let the existing thread process our message (https://issues.redhat.com/browse/JGRP-829).
      *  Benefit: fewer threads blocked on the same lock, these threads can be returned to the thread pool
      */
-    protected void removeAndDeliver(Table<Message> buf, Address sender, boolean loopback, AsciiString cluster_name) {
+    protected void removeAndDeliver(Table<Message> buf, Address sender, boolean loopback, AsciiString cluster_name,
+                                    int min_size) {
         AtomicInteger adders=buf.getAdders();
         if(adders.getAndIncrement() != 0)
             return;
         boolean remove_msgs=discard_delivered_msgs && !loopback;
-        MessageBatch batch=new MessageBatch(buf.size()).dest(null).sender(sender).clusterName(cluster_name).multicast(true);
+        int cap=Math.max(Math.max(Math.max(buf.size(), max_batch_size), min_size), 2048);
+        MessageBatch batch=new MessageBatch(cap).dest(null).sender(sender).clusterName(cluster_name).multicast(true);
         batch.array().increment(1024);
         Supplier<MessageBatch> batch_creator=() -> batch;
         MessageBatch mb=null;
@@ -975,7 +977,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 log.trace(sb);
             }
             up_prot.up(batch);
-            batch.clear();
+            batch.reset(); // doesn't null the messages in the batch
         }
         catch(Throwable t) {
             log.error(Util.getMessage("FailedToDeliverMsg"), local_addr, "batch", batch, t);
