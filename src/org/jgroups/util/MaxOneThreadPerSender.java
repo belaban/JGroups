@@ -268,8 +268,8 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
 
         // unsynchronized on batch but who cares
         public String toString() {
-            return String.format("batch size=%d queued msgs=%d queued batches=%d submitted msgs=%d submitted batches=%d",
-                                 batch.size(), queued_msgs, queued_batches, submitted_msgs, submitted_batches);
+            return String.format("batch size=%,d cap=%,d queued msgs=%,d queued batches=%,d submitted msgs=%,d submitted batches=%,d",
+                                 batch.size(), batch.capacity(), queued_msgs, queued_batches, submitted_msgs, submitted_batches);
         }
     }
 

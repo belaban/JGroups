@@ -1,7 +1,10 @@
 package org.jgroups.protocols.pbcast;
 
 import org.jgroups.*;
-import org.jgroups.annotations.*;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.protocols.RED;
 import org.jgroups.protocols.TCP;
@@ -20,6 +23,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static org.jgroups.Message.Flag.NO_FC;
 import static org.jgroups.Message.Flag.OOB;
@@ -112,6 +116,10 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     @Property(description="The max size of a message batch when delivering messages. 0 is unbounded")
     protected int     max_batch_size;
 
+    @Property(description="Reuses the same message batch for delivery of regular messages (only done by a single " +
+      "thread anyway). Not advisable for buffers that can grow infinitely (NAKACK3)")
+    protected boolean reuse_message_batches=true;
+
     @Property(description="If enabled, multicasts the highest sent seqno every xmit_interval ms. This is skipped if " +
       "a regular message has been multicast, and the task aquiesces if the highest sent seqno hasn't changed for " +
       "resend_last_seqno_max_times times. Used to speed up retransmission of dropped last messages (JGRP-1904)")
@@ -123,6 +131,8 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     @ManagedAttribute(description="True if sending a message can block at the transport level")
     protected boolean sends_can_block=true;
 
+    /** To cache batches for sending messages up the stack (https://issues.redhat.com/browse/JGRP-2841) */
+    protected final Map<Address,MessageBatch> cached_batches=Util.createConcurrentMap();
     /* -------------------------------------------------- JMX ---------------------------------------------------------- */
 
 
@@ -286,6 +296,9 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     public int getMaxXmitReqSize() {return max_xmit_req_size;}
     public NAKACK2 setMaxXmitReqSize(int m) {this.max_xmit_req_size=m; return this;}
 
+    public boolean reuseMessageBatches()          {return reuse_message_batches;}
+    public NAKACK2 reuseMessageBatches(boolean b) {this.reuse_message_batches=b; return this;}
+
     public boolean sendsCanBlock() {return sends_can_block;}
     public NAKACK2 sendsCanBlock(boolean s) {this.sends_can_block=s; return this;}
 
@@ -400,6 +413,18 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             ret.append(addr).append(": ").append(buf.toString()).append('\n');
         }
         return ret.toString();
+    }
+
+    @ManagedOperation(description="Prints the cached batches (if reuse_message_batches is true)")
+    public String printCachedBatches() {
+        return "\n" + cached_batches.entrySet().stream().map(e -> String.format("%s: %s", e.getKey(), e.getValue()))
+          .collect(Collectors.joining("\n"));
+    }
+
+    @ManagedOperation(description="Prints the cached batches (if reuse_message_batches is true)")
+    public NAKACK2 clearCachedBatches() {
+        cached_batches.clear();
+        return this;
     }
 
     @ManagedAttribute public long getCurrentSeqno() {return seqno.get();}
@@ -884,14 +909,17 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
      *  we return immediately and let the existing thread process our message (https://issues.redhat.com/browse/JGRP-829).
      *  Benefit: fewer threads blocked on the same lock, these threads can be returned to the thread pool
      */
-    protected void removeAndDeliver(Table<Message> buf, Address sender, boolean loopback, AsciiString cluster_name,
+    protected void removeAndDeliver(Table<Message> buf, Address sender, boolean loopback, AsciiString cluster,
                                     int min_size) {
         AtomicInteger adders=buf.getAdders();
         if(adders.getAndIncrement() != 0)
             return;
         boolean remove_msgs=discard_delivered_msgs && !loopback;
+        AsciiString cl=cluster != null? cluster : getTransport().getClusterNameAscii();
         int cap=Math.max(Math.max(Math.max(buf.size(), max_batch_size), min_size), 2048);
-        MessageBatch batch=new MessageBatch(cap).dest(null).sender(sender).clusterName(cluster_name).multicast(true);
+        MessageBatch batch=reuse_message_batches && cl != null?
+          cached_batches.computeIfAbsent(sender, __ -> new MessageBatch(cap).dest(null).sender(sender).cluster(cl).mcast(true))
+          : new MessageBatch(cap).dest(null).sender(sender).cluster(cl).multicast(true);
         batch.array().increment(1024);
         Supplier<MessageBatch> batch_creator=() -> batch;
         MessageBatch mb=null;

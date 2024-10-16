@@ -22,6 +22,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.jgroups.Message.Flag.*;
@@ -94,6 +95,10 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     @Property(description="The max size of a message batch when delivering messages. 0 is unbounded")
     protected int     max_batch_size;
 
+    @Property(description="Reuses the same message batch for delivery of regular messages (only done by a single " +
+      "thread anyway). Not advisable for buffers that can grow infinitely (NAKACK3)")
+    protected boolean reuse_message_batches=true;
+
     @Property(description="If true, a unicast message to self is looped back up on the same thread. Note that this may " +
       "cause problems (e.g. deadlocks) in some applications, so make sure that your code can handle this. " +
       "Issue: https://issues.redhat.com/browse/JGRP-2547")
@@ -138,6 +143,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     protected final Map<Address,SenderEntry>   send_table=Util.createConcurrentMap();
     protected final Map<Address,ReceiverEntry> recv_table=Util.createConcurrentMap();
+    /** To cache batches for sending messages up the stack (https://issues.redhat.com/browse/JGRP-2841) */
+    protected final Map<Address,MessageBatch>  cached_batches=Util.createConcurrentMap();
 
     protected final ReentrantLock          recv_table_lock=new ReentrantLock();
 
@@ -242,6 +249,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     public UNICAST3 setSyncMinInterval(long s)            {this.sync_min_interval=s; return this;}
     public int      getMaxXmitReqSize()                   {return max_xmit_req_size;}
     public UNICAST3 setMaxXmitReqSize(int m)              {this.max_xmit_req_size=m; return this;}
+    public boolean  reuseMessageBatches()                 {return reuse_message_batches;}
+    public UNICAST3 reuseMessageBatches(boolean b)        {this.reuse_message_batches=b; return this;}
     public boolean  sendsCanBlock()                       {return sends_can_block;}
     public UNICAST3 sendsCanBlock(boolean s)              {this.sends_can_block=s; return this;}
     public boolean  loopback()                            {return loopback;}
@@ -265,6 +274,18 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             }
         }
         return sb.toString();
+    }
+
+    @ManagedOperation(description="Prints the cached batches (if reuse_message_batches is true)")
+    public String printCachedBatches() {
+        return "\n" + cached_batches.entrySet().stream().map(e -> String.format("%s: %s", e.getKey(), e.getValue()))
+          .collect(Collectors.joining("\n"));
+    }
+
+    @ManagedOperation(description="Prints the cached batches (if reuse_message_batches is true)")
+    public UNICAST3 clearCachedBatches() {
+        cached_batches.clear();
+        return this;
     }
 
     /** Don't remove! https://issues.redhat.com/browse/JGRP-2814 */
@@ -617,7 +638,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 }
                 deliverBatch(oob_batch);
             }
-            removeAndDeliver(win, batch.sender(), batch.capacity());
+            removeAndDeliver(win, batch.sender(), batch.clusterName(), batch.capacity());
         }
         if(!batch.isEmpty())
             up_prot.up(batch);
@@ -860,7 +881,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 addQueuedMessages(sender, entry, queued_msgs);
         }
         addMessage(entry, sender, seqno, msg);
-        removeAndDeliver(entry.msgs, sender, 1);
+        removeAndDeliver(entry.msgs, sender, null, 1);
     }
 
     protected void addMessage(ReceiverEntry entry, Address sender, long seqno, Message msg) {
@@ -911,7 +932,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             if(msg != null && msg.isFlagSet(OOB) && msg.setFlagIfAbsent(Message.TransientFlag.OOB_DELIVERED))
                 deliverMessage(msg, sender, seqno);
         }
-        removeAndDeliver(win, sender, 1); // there might be more messages to deliver
+        removeAndDeliver(win, sender, null, 1); // there might be more messages to deliver
     }
 
 
@@ -940,7 +961,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
             deliverBatch(oob_batch);
         }
-        removeAndDeliver(win, sender, msgs.size());
+        removeAndDeliver(win, sender, null, msgs.size());
     }
 
 
@@ -953,13 +974,17 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
      * delivery of P1, Q1, Q2, P2: FIFO (implemented by UNICAST) says messages need to be delivered in the
      * order in which they were sent
      */
-    protected void removeAndDeliver(Table<Message> win, Address sender, int min_size) {
+    protected void removeAndDeliver(Table<Message> win, Address sender, AsciiString cluster, int min_size) {
         AtomicInteger adders=win.getAdders();
         if(adders.getAndIncrement() != 0)
             return;
 
+        AsciiString cl=cluster != null? cluster : getTransport().getClusterNameAscii();
         int cap=Math.max(Math.max(Math.max(win.size(), max_batch_size), min_size), 2048);
-        MessageBatch batch=new MessageBatch(cap).dest(local_addr).sender(sender).multicast(false);
+        MessageBatch batch=reuse_message_batches && cl != null?
+          cached_batches.computeIfAbsent(sender, __ -> new MessageBatch(cap).dest(local_addr).sender(sender).cluster(cl).mcast(true))
+          : new MessageBatch(cap).dest(local_addr).sender(sender).cluster(cl).multicast(true);
+        batch.array().increment(1024);
         Supplier<MessageBatch> batch_creator=() -> batch;
         MessageBatch mb=null;
         do {
