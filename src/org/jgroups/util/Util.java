@@ -4742,6 +4742,14 @@ public class Util {
             CACHED_ADDRESSES=null;
     }
 
+    /** This is a workaround for use within android. Sometimes the standard java methods do not return all the addresses. 
+     * This will allow for setting in android via the conectivity manager without needing to pass in the context.
+     * Also will allow android to update as connectivity changes.
+     */
+    public static void setCacheAddresses(List<NetworkInterface> interfaces, List<InetAddress> addresses) {
+        CACHED_INTERFACES=interfaces;
+        CACHED_ADDRESSES=addresses;
+    }
     /** Returns all addresses of all interfaces (that are up) that satisfy a given filter (ignored if null) */
     public static Collection<InetAddress> getAllAvailableAddresses(Predicate<InetAddress> filter) {
         Collection<InetAddress> cached_addresses=getAllAvailableAddresses();
