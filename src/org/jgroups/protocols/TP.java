@@ -228,6 +228,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public String           getBundlerType()         {return bundler_type;}
     public <T extends TP> T setBundlerType(String b) {this.bundler_type=b; return (T)this;}
 
+    @Property
+    public <T extends TP> T useVirtualThreads(boolean f) {use_vthreads=f; return (T)this;}
 
     @ManagedAttribute
     public String getMessageFactoryClass() {
@@ -249,9 +251,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     @ManagedOperation(description="Changes the message processing policy. The fully qualified name of a class " +
       "implementing MessageProcessingPolicy needs to be given")
-    public void setMessageProcessingPolicy(String policy) {
+    public <T extends TP> T setMessageProcessingPolicy(String policy) {
         if(policy == null)
-            return;
+            return (T)this;
 
         if(policy.startsWith("submit"))
             msg_processing_policy=new SubmitToThreadPool();
@@ -272,6 +274,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         catch(Exception e) {
             log.error("failed setting message_processing_policy", e);
         }
+        return (T)this;
     }
 
     public MessageProcessingPolicy getMessageProcessingPolicy() {return msg_processing_policy;}
@@ -444,6 +447,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     public MsgStats                getMessageStats()     {return msg_stats;}
     public MessageProcessingPolicy msgProcessingPolicy() {return msg_processing_policy;}
+    public <T extends TP> T        msgProcessingPolicy(MessageProcessingPolicy p) {this.msg_processing_policy=p; return (T)this;}
     public RTT                     getRTT()              {return rtt;}
 
     @Override
