@@ -96,7 +96,7 @@ public class PerDestinationBundler implements Bundler {
 
     public void init(TP transport) {
         this.transport=Objects.requireNonNull(transport);
-        msg_processing_policy=transport.msgProcessingPolicy();
+        msg_processing_policy=transport.getMsgProcessingPolicy();
         msg_stats=transport.getMessageStats();
         this.log=transport.getLog();
     }

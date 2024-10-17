@@ -74,7 +74,7 @@ public abstract class BaseBundler implements Bundler {
 
     public void init(TP transport) {
         this.transport=transport;
-        msg_processing_policy=transport.msgProcessingPolicy();
+        msg_processing_policy=transport.getMsgProcessingPolicy();
         msg_stats=transport.getMessageStats();
         log=transport.getLog();
         output=new ByteArrayDataOutputStream(max_size + MSG_OVERHEAD);

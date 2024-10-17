@@ -207,6 +207,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public long             getTimeServiceInterval() {return time_service_interval;}
     public <T extends TP> T setTimeServiceInterval(long t) {this.time_service_interval=t; return (T)this;}
 
+    public boolean          isUseVirtualThreads()        {return use_vthreads;}
+    public <T extends TP> T useVirtualThreads(boolean b) {use_vthreads=b; return (T)this;}
+
     public boolean          logDiscardMsgs() {return log_discard_msgs;}
     public <T extends TP> T logDiscardMsgs(boolean l) {this.log_discard_msgs=l; return (T)this;}
 
@@ -249,10 +252,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     @ManagedOperation(description="Changes the message processing policy. The fully qualified name of a class " +
       "implementing MessageProcessingPolicy needs to be given")
-    public void setMessageProcessingPolicy(String policy) {
+    public <T extends TP> T setMessageProcessingPolicy(String policy) {
         if(policy == null)
-            return;
-
+            return (T)this;
         if(policy.startsWith("submit"))
             msg_processing_policy=new SubmitToThreadPool();
         else if(policy.startsWith("max"))
@@ -272,6 +274,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         catch(Exception e) {
             log.error("failed setting message_processing_policy", e);
         }
+        return (T)this;
     }
 
     public MessageProcessingPolicy getMessageProcessingPolicy() {return msg_processing_policy;}
@@ -443,7 +446,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
     public MsgStats                getMessageStats()     {return msg_stats;}
-    public MessageProcessingPolicy msgProcessingPolicy() {return msg_processing_policy;}
+
+    public MessageProcessingPolicy getMsgProcessingPolicy()                       {return msg_processing_policy;}
+    public <T extends TP> T        msgProcessingPolicy(MessageProcessingPolicy p) {this.msg_processing_policy=p; return (T)this;}
+
     public RTT                     getRTT()              {return rtt;}
 
     @Override
