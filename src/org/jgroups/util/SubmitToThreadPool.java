@@ -137,10 +137,8 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
             this.loopback=loopback;
         }
 
-        public MessageBatch getBatch() {return batch;}
-
         public void run() {
-            if(batch == null || (!batch.multicast() && tp.unicastDestMismatch(batch.dest())))
+            if(batch == null || batch.isEmpty() || (!batch.multicast() && tp.unicastDestMismatch(batch.dest())))
                 return;
             passBatchUp();
         }
