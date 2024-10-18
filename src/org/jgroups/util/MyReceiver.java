@@ -8,7 +8,8 @@ import java.io.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -18,7 +19,8 @@ import java.util.stream.Collectors;
  * @since  3.3
  */
 public class MyReceiver<T> implements Receiver, Closeable {
-    protected final List<T>            list=new CopyOnWriteArrayList<>();
+    protected final Lock               lock=new ReentrantLock();
+    protected final List<T>            list=new FastArray<>(128);
     protected String                   name;
     protected boolean                  verbose;
     protected boolean                  raw_msgs;
@@ -26,7 +28,13 @@ public class MyReceiver<T> implements Receiver, Closeable {
 
     @Override public void receive(Message msg) {
         T obj=raw_msgs? (T)msg : (T)msg.getObject();
-        list.add(obj);
+        lock.lock();
+        try {
+            list.add(obj);
+        }
+        finally {
+            lock.unlock();
+        }
         if(verbose)
             System.out.println((name() != null? name() + ":" : "") + " received message from " + msg.getSrc() + ": " + obj);
     }
