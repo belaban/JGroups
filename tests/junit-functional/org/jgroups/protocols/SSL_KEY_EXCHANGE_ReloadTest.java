@@ -98,7 +98,7 @@ public class SSL_KEY_EXCHANGE_ReloadTest {
    }
 
    @AfterClass
-   public void deinit() throws Exception {
+   protected void deinit() throws Exception {
       removeTempDirectory();
    }
 
