@@ -580,7 +580,7 @@
         <runtest suitename="encrypt"
                  groups="encrypt"
                  parallel="${parallel.classes}"
-                 threadcount="5" />
+                 threadcount="10" />
     </target>
 
     <target name="byteman" depends="postcompile,define-testng-task" description="Runs the byteman tests">
@@ -713,15 +713,6 @@
         <mkdir dir="${tmp.dir}/test-results/xml/time-sensitive"/>
         <runtest suitename="time-sensitive"
                  groups="time-sensitive"
-                 parallel="${parallel.classes}"
-                 threadcount="10" />
-    </target>
-
-
-    <target name="encrypt" depends="postcompile,define-testng-task" description="Runs encryption tests">
-        <mkdir dir="${tmp.dir}/test-results/xml/encrypt"/>
-        <runtest suitename="encrypt"
-                 groups="encrypt"
                  parallel="${parallel.classes}"
                  threadcount="10" />
     </target>
