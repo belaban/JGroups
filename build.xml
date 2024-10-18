@@ -519,6 +519,7 @@
     <target name="all-tests" depends="delete-reports" description="Runs all tests">
         <sequential>
         	<antcall target="functional"/>
+            <antcall target="encrypt"/>
             <antcall target="udp"/>
             <antcall target="udp-nak"/>
             <antcall target="tcp"/>
@@ -545,6 +546,7 @@
                 <antcall target="tcp-nio-nak"/>
             </sequential>
             <sequential>
+                <antcall target="encrypt"/>
                 <antcall target="time-sensitive"/>
                 <antcall target="byteman"/>
             </sequential>
@@ -571,6 +573,14 @@
                  groups="functional"
                  parallel="${parallel.classes}"
                  threadcount="50" />
+    </target>
+
+    <target name="encrypt" depends="postcompile,define-testng-task" description="Runs encryption-related tests">
+        <mkdir dir="${tmp.dir}/test-results/xml/encrypt"/>
+        <runtest suitename="encrypt"
+                 groups="encrypt"
+                 parallel="${parallel.classes}"
+                 threadcount="5" />
     </target>
 
     <target name="byteman" depends="postcompile,define-testng-task" description="Runs the byteman tests">
@@ -795,7 +805,7 @@
                 <sysproperty key="tcp.recv_buf_size"  value="@{tcp.recv.buf.size}"/>
                 <sysproperty key="tcp.send_buf_size"  value="@{tcp.send.buf.size}"/>
 
-
+                <jvmarg value="-XX:+HeapDumpOnOutOfMemoryError"/>
                 <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
                 <jvmarg value="-Djgroups.udp.ip_ttl=0"/>
                 <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
