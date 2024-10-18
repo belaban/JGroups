@@ -23,7 +23,7 @@ import static org.jgroups.util.Util.shutdown;
  * @author Bela Ban
  * @since  4.0
  */
-@Test(groups={Global.FUNCTIONAL,Global.ENCRYPT},singleThreaded=true)
+@Test(groups=Global.ENCRYPT,singleThreaded=true)
 public class ASYM_ENCRYPT_Test extends EncryptTest {
     protected static final String KEYSTORE="keystore.jks";
     protected static final String KEYSTORE_PWD="password";

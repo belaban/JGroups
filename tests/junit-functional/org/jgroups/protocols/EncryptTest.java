@@ -30,7 +30,7 @@ import java.util.stream.Stream;
  * @author Bela Ban
  * @since  4.0
  */
-@Test(groups={Global.FUNCTIONAL,Global.ENCRYPT},singleThreaded=true)
+@Test(groups=Global.ENCRYPT,singleThreaded=true)
 public abstract class EncryptTest {
     protected JChannel                a,b,c,d,rogue;
     protected MyReceiver<Message>     ra, rb, rc, r_rogue;

@@ -16,7 +16,7 @@ import org.testng.annotations.Test;
  * @author Bela Ban
  * @since  4.0.12
  */
-@Test(groups={Global.FUNCTIONAL,Global.ENCRYPT},singleThreaded=true)
+@Test(groups=Global.ENCRYPT,singleThreaded=true)
 public class ASYM_ENCRYPT_LeaveTest extends BaseLeaveTest {
     protected static final String      KEYSTORE="keystore.jks";
     protected static final String      KEYSTORE_PWD="password";

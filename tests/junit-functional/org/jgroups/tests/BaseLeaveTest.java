@@ -27,7 +27,7 @@ import java.util.stream.Stream;
  * @author Radoslav Husar
  * @author Bela Ban
  */
-@Test(groups={Global.FUNCTIONAL,Global.ENCRYPT},singleThreaded=true)
+@Test(groups=Global.ENCRYPT,singleThreaded=true)
 public abstract class BaseLeaveTest {
     protected final String      cluster_name=getClass().getSimpleName();
     protected static final int  NUM=10;

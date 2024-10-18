@@ -20,7 +20,7 @@ import java.util.function.Consumer;
  * @author Bela Ban
  * @since  4.0
  */
-@Test(groups={Global.FUNCTIONAL,Global.ENCRYPT},singleThreaded=true)
+@Test(groups=Global.ENCRYPT,singleThreaded=true)
 public class SYM_ENCRYPT_Test extends EncryptTest {
     protected static final String DEF_PWD="changeit";
 

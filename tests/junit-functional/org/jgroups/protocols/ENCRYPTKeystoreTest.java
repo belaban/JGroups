@@ -21,7 +21,7 @@ import java.util.Map;
  * @author xenephon
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL)
+@Test(groups=Global.ENCRYPT)
 public class ENCRYPTKeystoreTest {
 
     static final short ENCRYPT_ID=ClassConfigurator.getProtocolId(SYM_ENCRYPT.class);

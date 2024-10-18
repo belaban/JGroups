@@ -15,7 +15,7 @@ import org.testng.annotations.Test;
  * @author Bela Ban
  * @since  4.0.19
  */
-@Test(groups={Global.FUNCTIONAL,Global.ENCRYPT},singleThreaded=true)
+@Test(groups=Global.ENCRYPT,singleThreaded=true)
 public class LeaveTest extends BaseLeaveTest  {
 
     @AfterMethod protected void destroy() {

@@ -32,7 +32,7 @@ import java.util.Collections;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
-@Test(groups = {Global.FUNCTIONAL, Global.ENCRYPT}, singleThreaded = true)
+@Test(groups = Global.ENCRYPT, singleThreaded = true)
 public class SSL_KEY_EXCHANGE_ReloadTest {
    public static final String PROTOCOL = "TLSv1.2";
    public static final String BASE_DN = "CN=%s,OU=JGroups,O=JBoss,L=Red Hat";

@@ -28,7 +28,7 @@ import java.util.Map;
 import static org.testng.AssertJUnit.assertEquals;
 import static org.testng.AssertJUnit.assertTrue;
 
-@Test(groups = {Global.FUNCTIONAL, Global.ENCRYPT}, singleThreaded = true)
+@Test(groups=Global.ENCRYPT, singleThreaded = true)
 public class TLSTest {
    public static final String PROTOCOL = "TLSv1.2";
    public static final String BASE_DN = "CN=%s,OU=JGroups,O=JBoss,L=Red Hat";
