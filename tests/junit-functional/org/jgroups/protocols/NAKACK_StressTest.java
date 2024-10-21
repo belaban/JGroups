@@ -140,6 +140,7 @@ public class NAKACK_StressTest {
             i++;
         }
         System.out.println("OK");
+        delivered_msg_list.clear();
     }
 
     protected static long getDroppedMessages(Protocol p) {
