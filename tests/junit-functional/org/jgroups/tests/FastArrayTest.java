@@ -351,6 +351,23 @@ public class FastArrayTest {
         success=fa.containsAll(list);
     }
 
+    public void testEquals() {
+        List<Integer> expected=IntStream.rangeClosed(1,5).boxed().collect(Collectors.toList());
+        List<Integer> fa=new FastArray<>();
+        for(int i=1; i <=5; i++)
+            fa.add(i);
+        assert fa.equals(expected);
+        assert expected.equals(fa);
+        List<Integer> fa2=new FastArray<>();
+        fa2.addAll(expected);
+        assert fa.equals(fa2);
+        expected.add(6);
+        fa2.add(6);
+        assert !fa.equals(expected);
+        assert !expected.equals(fa);
+        assert !fa.equals(fa2);
+    }
+
     @SuppressWarnings("ListIndexOfReplaceableByContains")
     public void testIndexOf() {
         FastArray<Integer> fa=create(10);
@@ -457,6 +474,24 @@ public class FastArrayTest {
         assert removed;
         removed=fa.remove((Object)11);
         assert !removed;
+    }
+
+    public void testRemoveFirst() {
+        FastArray<Integer> fa=create(10);
+        for(int i=0; i < 10; i++) {
+            Integer el=fa.removeFirst();
+            assert i == el;
+        }
+        assert fa.isEmpty();
+    }
+
+    public void testRemoveLast() {
+        FastArray<Integer> fa=create(10);
+        for(int i=9; i >= 0; i--) {
+            Integer el=fa.removeLast();
+            assert i == el;
+        }
+        assert fa.isEmpty();
     }
 
     public void testRemoveAll() {

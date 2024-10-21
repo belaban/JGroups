@@ -209,6 +209,19 @@ public class FastArray<T> implements Iterable<T>, List<T> {
     }
 
     @Override
+    public boolean equals(Object obj) {
+        if(obj == this)
+            return true;
+
+        if(!(obj instanceof List))
+            return false;
+
+        return (obj.getClass() == FastArray.class)?
+          equalsArrayList((FastArray<?>)obj)
+          : equalsRange((List<?>)obj, 0, size);
+    }
+
+    @Override
     public int indexOf(Object o) {
         for(int i=0; i < index; i++) {
             T el=elements[i];
@@ -291,6 +304,38 @@ public class FastArray<T> implements Iterable<T>, List<T> {
             return true;
         }
         return false;
+    }
+
+    /** Removes the first non-null element starting at index 0 */
+    //@Override // uncomment when Java 21 is baseline
+    public T removeFirst() {
+        if(this.isEmpty())
+            throw new NoSuchElementException();
+        for(int i=0; i < index; i++) {
+            if(elements[i] != null) {
+                T el=elements[i];
+                elements[i]=null;
+                size--;
+                return el;
+            }
+        }
+        return null;
+    }
+
+    //@Override // uncomment when Java 21 is baseline
+    public T removeLast() {
+        if(this.isEmpty())
+            throw new NoSuchElementException();
+        for(int i=index-1; i >= 0; i--) {
+            if(elements[i] != null) {
+                T el=elements[i];
+                elements[i]=null;
+                size--;
+                index=i;
+                return el;
+            }
+        }
+        return null;
     }
 
     @Override
@@ -439,6 +484,27 @@ public class FastArray<T> implements Iterable<T>, List<T> {
         }
         elements=Arrays.copyOf(elements, new_cap);
         return this;
+    }
+
+    protected boolean equalsArrayList(FastArray<?> other) {
+        if(size != other.size())
+            return false;
+        final Object[] other_elements=other.elements;
+        final Object[] es=this.elements;
+        for(int i=0; i < size; i++)
+            if(!Objects.equals(es[i], other_elements[i]))
+                return false;
+        return true;
+    }
+
+    protected boolean equalsRange(List<?> other, int from, int to) {
+        final Object[] es=elements;
+        var oit=other.iterator();
+        for(; from < to; from++) {
+            if(!oit.hasNext() || !Objects.equals(es[from], oit.next()))
+                return false;
+        }
+        return !oit.hasNext();
     }
 
     protected String print(int limit) {
