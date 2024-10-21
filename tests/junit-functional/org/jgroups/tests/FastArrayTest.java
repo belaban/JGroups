@@ -557,6 +557,19 @@ public class FastArrayTest {
         assert fa.capacity() == new_capacity;
     }
 
+    public void testTrimTo() {
+        FastArray<Integer> fa=create(16).increment(10);
+        fa.trimTo(10); // no-op
+        assert fa.capacity() == 16;
+        fa.trimTo(16); // no-op
+        assert fa.capacity() == 16;
+        fa.trimTo(32); // no-op
+        assert fa.capacity() == 16;
+        fa.add(16);
+        assert fa.capacity() >= 26;
+        fa.trimTo(20);
+        assert fa.capacity() == 20;
+    }
 
     public void testSimpleIteration() {
         FastArray<Integer> fa=create(10);

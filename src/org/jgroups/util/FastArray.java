@@ -352,6 +352,21 @@ public class FastArray<T> implements Iterable<T>, List<T> {
         return this;
     }
 
+    /**
+     * Attempts to reduce the current capacity to new_capacity
+     * @param new_capacity The new capacity. If greater than the current capacity, this will be a no-op. If smaller
+     *                     than the current size, the current size will be taken instead as new capacity.
+     * @return
+     */
+    public FastArray<T> trimTo(int new_capacity) {
+        if(new_capacity >= elements.length)
+            return this;
+        if(new_capacity <= index)
+            return this;
+        this.elements=Arrays.copyOf(elements, new_capacity);
+        return this;
+    }
+
     /** Iterator which iterates only over non-null elements, skipping null elements */
     public FastIterator iterator() {
         return new FastIterator(null);
