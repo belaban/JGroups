@@ -106,13 +106,16 @@ public class ConnectTest extends ChannelTestBase {
         Util.waitUntilAllChannelsHaveSameView(10000, 500, a, b);
 
         for(int i=1; i <= 50; i++) {
+            long start=System.currentTimeMillis();
             b.disconnect();
             Util.waitUntil(5000, 500, () -> a.getView().size() == 1);
+            System.out.printf("#%d: %s\n", i, a.getView());
             assert a.getView().size() == 1 : String.format("coord's view is %s\n", a.getView());
             assert b.isConnected() == false;
             b.connect("testMultipleConnectsAndDisconnects");
-            Util.waitUntilAllChannelsHaveSameView(5000, 500, a, b);
-            System.out.printf("#%d: %s\n", i, a.getView());
+            Util.waitUntilAllChannelsHaveSameView(5000, 10, a, b);
+            long time=System.currentTimeMillis()-start;
+            System.out.printf("#%d: %s (%d ms)\n", i, a.getView(), time);
         }
     }
 
