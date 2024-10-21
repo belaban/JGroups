@@ -615,7 +615,6 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 xmit_task_map.keySet().retainAll(mbrs);
                 stable_xmit_map.keySet().retainAll(mbrs);
                 cached_batches.keySet().retainAll(mbrs);
-                trimCachedBatches();
                 break;
 
             case Event.BECOME_SERVER:

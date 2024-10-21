@@ -686,7 +686,6 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 xmit_task_map.keySet().retainAll(new_members);
                 last_sync_sent.removeExpiredElements();
                 cached_batches.keySet().retainAll(new_members);
-                trimCachedBatches();
                 break;
         }
 
