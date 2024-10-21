@@ -158,6 +158,18 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
             suppress_log_non_member.getCache().clear();
     }
 
+    @ManagedOperation(description="Prints the cached batches (if reuse_message_batches is true)")
+    public String printCachedBatches() {
+        return "\n" + cached_batches.entrySet().stream().map(e -> String.format("%s: %s", e.getKey(), e.getValue()))
+          .collect(Collectors.joining("\n"));
+    }
+
+    @ManagedOperation(description="Prints the cached batches (if reuse_message_batches is true)")
+    public ReliableMulticast clearCachedBatches() {
+        cached_batches.clear();
+        return this;
+    }
+
     @ManagedAttribute(description="tracing is enabled or disabled for the given log",writable=true)
     protected boolean                            is_trace=log.isTraceEnabled();
 
@@ -180,7 +192,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
     protected final Map<Address,Long>            xmit_task_map=new ConcurrentHashMap<>();
     //* Used by stable to reduce the number of retransmissions (https://issues.redhat.com/browse/JGRP-2678) */
     protected final Map<Address,Long>            stable_xmit_map=Util.createConcurrentMap();
-    protected final Map<Address,MessageBatch>    batches=Util.createConcurrentMap();
+    protected final Map<Address,MessageBatch>    cached_batches=Util.createConcurrentMap();
 
     protected volatile boolean                   leaving;
     protected volatile boolean                   running;
@@ -310,7 +322,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
 
     @ManagedOperation(description="Prints the cached batches (if reuse_message_batches is true)")
     public String printBatches() {
-        return "\n" + batches.entrySet().stream().map(e -> String.format("%s: %s", e.getKey(), e.getValue()))
+        return "\n" + cached_batches.entrySet().stream().map(e -> String.format("%s: %s", e.getKey(), e.getValue()))
           .collect(Collectors.joining("\n"));
     }
 
@@ -483,7 +495,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
                     suppress_log_non_member.removeExpired(suppress_time_non_member_warnings);
                 xmit_task_map.keySet().retainAll(mbrs);
                 stable_xmit_map.keySet().retainAll(mbrs);
-                batches.keySet().retainAll(mbrs);
+                cached_batches.keySet().retainAll(mbrs);
                 break;
 
             case Event.BECOME_SERVER:
@@ -820,7 +832,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
         AsciiString cl=cluster != null? cluster : getTransport().getClusterNameAscii();
 
         MessageBatch batch=reuse_message_batches && cl != null?
-          batches.computeIfAbsent(sender, __ -> new MessageBatch(cap).dest(null).sender(sender).cluster(cl).mcast(true))
+          cached_batches.computeIfAbsent(sender, __ -> new MessageBatch(cap).dest(null).sender(sender).cluster(cl).mcast(true))
           : new MessageBatch(cap).dest(null).sender(sender).cluster(cl).multicast(true);
 
         Supplier<MessageBatch> batch_creator=() -> batch;

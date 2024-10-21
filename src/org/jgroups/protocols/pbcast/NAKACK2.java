@@ -133,6 +133,9 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
     /** To cache batches for sending messages up the stack (https://issues.redhat.com/browse/JGRP-2841) */
     protected final Map<Address,MessageBatch> cached_batches=Util.createConcurrentMap();
+
+    protected static final int DEFAULT_INITIAL_CAPACITY=2048;
+    protected static final int DEFAULT_INCREMENT=1024;
     /* -------------------------------------------------- JMX ---------------------------------------------------------- */
 
 
@@ -427,6 +430,12 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         return this;
     }
 
+    @ManagedOperation(description="Adjust the capacity of cached batches")
+    public NAKACK2 trimCachedBatches() {
+        cached_batches.values().forEach(mb -> mb.array().trimTo(DEFAULT_INITIAL_CAPACITY));
+        return this;
+    }
+
     @ManagedAttribute public long getCurrentSeqno() {return seqno.get();}
 
     @ManagedOperation(description="Prints the stability messages received")
@@ -605,6 +614,8 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                     suppress_log_non_member.removeExpired(suppress_time_non_member_warnings);
                 xmit_task_map.keySet().retainAll(mbrs);
                 stable_xmit_map.keySet().retainAll(mbrs);
+                cached_batches.keySet().retainAll(mbrs);
+                trimCachedBatches();
                 break;
 
             case Event.BECOME_SERVER:
@@ -617,7 +628,6 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 reset();
                 break;
         }
-
         return down_prot.down(evt);
     }
 
@@ -904,7 +914,6 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             mb.removeIf(HAS_HEADER, true);
     }
 
-
     /** Efficient way of checking whether another thread is already processing messages from sender. If that's the case,
      *  we return immediately and let the existing thread process our message (https://issues.redhat.com/browse/JGRP-829).
      *  Benefit: fewer threads blocked on the same lock, these threads can be returned to the thread pool
@@ -916,11 +925,11 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             return;
         boolean remove_msgs=discard_delivered_msgs && !loopback;
         AsciiString cl=cluster != null? cluster : getTransport().getClusterNameAscii();
-        int cap=Math.max(Math.max(Math.max(buf.size(), max_batch_size), min_size), 2048);
+        int cap=Math.max(Math.max(Math.max(buf.size(), max_batch_size), min_size), DEFAULT_INITIAL_CAPACITY);
         MessageBatch batch=reuse_message_batches && cl != null?
           cached_batches.computeIfAbsent(sender, __ -> new MessageBatch(cap).dest(null).sender(sender).cluster(cl).mcast(true))
           : new MessageBatch(cap).dest(null).sender(sender).cluster(cl).multicast(true);
-        batch.array().increment(1024);
+        batch.array().increment(DEFAULT_INCREMENT);
         Supplier<MessageBatch> batch_creator=() -> batch;
         MessageBatch mb=null;
         do {
@@ -942,8 +951,6 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         }
         while(mb != null || adders.decrementAndGet() != 0);
     }
-
-
 
     /**
      * Retransmits messsages first_seqno to last_seqno from original_sender from xmit_table to xmit_requester,

@@ -104,6 +104,9 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
       "Issue: https://issues.redhat.com/browse/JGRP-2547")
     protected boolean loopback;
 
+    protected static final int DEFAULT_INITIAL_CAPACITY=128;
+    protected static final int DEFAULT_INCREMENT=512;
+
     /* --------------------------------------------- JMX  ---------------------------------------------- */
 
     @ManagedAttribute(description="Number of message sent",type=SCALAR)
@@ -285,6 +288,12 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     @ManagedOperation(description="Prints the cached batches (if reuse_message_batches is true)")
     public UNICAST3 clearCachedBatches() {
         cached_batches.clear();
+        return this;
+    }
+
+    @ManagedOperation(description="Adjust the capacity of cached batches")
+    public UNICAST3 trimCachedBatches() {
+        cached_batches.values().forEach(mb -> mb.array().trimTo(DEFAULT_INITIAL_CAPACITY));
         return this;
     }
 
@@ -676,6 +685,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 }
                 xmit_task_map.keySet().retainAll(new_members);
                 last_sync_sent.removeExpiredElements();
+                cached_batches.keySet().retainAll(new_members);
+                trimCachedBatches();
                 break;
         }
 
@@ -980,11 +991,11 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             return;
 
         AsciiString cl=cluster != null? cluster : getTransport().getClusterNameAscii();
-        int cap=Math.max(Math.max(Math.max(win.size(), max_batch_size), min_size), 2048);
+        int cap=Math.max(Math.max(Math.max(win.size(), max_batch_size), min_size), DEFAULT_INITIAL_CAPACITY);
         MessageBatch batch=reuse_message_batches && cl != null?
           cached_batches.computeIfAbsent(sender, __ -> new MessageBatch(cap).dest(local_addr).sender(sender).cluster(cl).mcast(true))
           : new MessageBatch(cap).dest(local_addr).sender(sender).cluster(cl).multicast(true);
-        batch.array().increment(1024);
+        batch.array().increment(DEFAULT_INCREMENT);
         Supplier<MessageBatch> batch_creator=() -> batch;
         MessageBatch mb=null;
         do {
