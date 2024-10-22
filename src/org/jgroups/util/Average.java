@@ -45,6 +45,10 @@ public class Average implements Streamable {
         return (T)this;
     }
 
+    public <T extends Average> T add(long num) {
+        return add((double)num);
+    }
+
     /** Merges this average with another one */
     public <T extends Average> T merge(T other) {
         if(other == null)

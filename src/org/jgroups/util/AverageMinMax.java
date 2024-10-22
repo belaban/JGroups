@@ -44,6 +44,10 @@ public class AverageMinMax extends Average {
         return (T)this;
     }
 
+    public <T extends Average> T add(long num) {
+        return add((double)num);
+    }
+
     public <T extends Average> T merge(T other) {
         if(other.count() == 0)
             return (T)this;
