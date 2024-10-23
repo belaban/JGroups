@@ -49,6 +49,12 @@ public @interface Property {
     
     String dependsUpon() default "";
 
+    /**
+     * If the value is not explicitly specified, attempt to fetch the value first from the System property using
+     * {@link java.lang.System#getProperty(java.lang.String)}, secondly from the environment variable
+     * {@link java.lang.System#getenv(java.lang.String)} of the given names.
+     * If all lookups fail, the field will be null.
+     */
     String[] systemProperty() default {};
 
     /**
@@ -61,10 +67,19 @@ public @interface Property {
      */
     String defaultValueIPv6() default "" ;
 
-    /** Expose this property also as a managed attribute */
+    /**
+     * Configures whether to expose this property as a managed attribute.
+     * This is typically used to disable exposing objects that are not well represented as Strings or other primitives
+     * and security-sensitive configuration.
+     * Write-only managed attributes are not supported.
+     */
     boolean exposeAsManagedAttribute() default true;
 
-    /* Should this managed attribute be writeable ? If set to true, automatically sets exposeAsManagedAttribute to true */
+    /**
+     * Configures whether this managed attribute is writeable at runtime.
+     * Protocols exposing writeable attributes must ensure that the implementation uses the updated value.
+     * If set to true, automatically sets exposeAsManagedAttribute to true.
+     */
     boolean writable() default true;
 
     /** Defines the type, used for pretty printing */
