@@ -93,6 +93,7 @@ public class MessageBatch implements Iterable<Message> {
     public int          capacity()                       {return messages.capacity();}
     public long         timestamp()                      {return timestamp;}
     public MessageBatch timestamp(long ts)               {timestamp=ts; return this;}
+    public MessageBatch increment(int i)                 {messages.increment(i); return this;}
 
 
     /** Returns the underlying message array. This is only intended for testing ! */
@@ -294,7 +295,6 @@ public class MessageBatch implements Iterable<Message> {
         if(sb.length() > 0)
             sb.append(", ");
         sb.append(size() + " messages [capacity=" + messages.capacity() + "]");
-
         return sb.toString();
     }
 

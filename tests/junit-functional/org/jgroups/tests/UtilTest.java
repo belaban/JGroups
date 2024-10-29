@@ -700,16 +700,25 @@ public class UtilTest {
         assert receiver.name.equals(hello);
     }
 
+    public void testIsAssignable() {
+        assert !Util.isAssignableFrom(null, Long.class);
+        assert !Util.isAssignableFrom(long.class, null);
+        assert Util.isAssignableFrom(Long.class, null);
+        assert Util.isAssignableFrom(Long.class, Integer.class);
+        assert Util.isAssignableFrom(Long.class, Long.class);
+        assert Util.isAssignableFrom(double.class, Integer.class);
+        assert Util.isAssignableFrom(Long.class, long.class);
+        assert Util.isAssignableFrom(long.class, Long.class);
+    }
+
     private static void marshalString(int size) throws Exception {
         byte[] tmp=new byte[size];
-        String str=new String(tmp, 0, tmp.length);
+        String str=new String(tmp);
         byte[] retval=Util.objectToByteBuffer(str);
         System.out.println("length=" + retval.length + " bytes");
         String obj=Util.objectFromByteBuffer(retval);
         System.out.println("read " + obj.length() + " string");
     }
-
-
 
     static void objectToByteBuffer(Object obj) throws Exception {
         byte[] buf=Util.objectToByteBuffer(obj);

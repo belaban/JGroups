@@ -53,8 +53,11 @@ public class Average implements Streamable {
     public <T extends Average> T merge(T other) {
         if(other == null)
             return (T)this;
-        for(int i=0; i < other.samples.length(); i++)
-            add(other.samples.get(i));
+        for(int i=0; i < other.samples.length(); i++) {
+            Double el=other.samples.get(i);
+            if(el != null)
+                add(el);
+        }
         return (T)this;
     }
 
@@ -91,18 +94,29 @@ public class Average implements Streamable {
     @Override
     public void writeTo(DataOutput out) throws IOException {
         Bits.writeIntCompressed(samples.length(), out);
-        for(int i=0; i < samples.length(); i++)
-            Bits.writeDouble(samples.get(i), out);
+        for(int i=0; i < samples.length(); i++) {
+            Double sample=samples.get(i);
+            boolean not_null=sample != null;
+            out.writeBoolean(not_null);
+            if(not_null)
+                Bits.writeDouble(sample, out);
+        }
+        out.writeInt(index);
         Bits.writeDouble(total.sum(), out);
+        Bits.writeLongCompressed(count.sum(), out);
     }
 
     @Override
     public void readFrom(DataInput in) throws IOException {
         int len=Bits.readIntCompressed(in);
         samples=new AtomicReferenceArray<>(len);
-        for(int i=0; i < samples.length(); i++)
-            samples.set(i, Bits.readDouble(in));
+        for(int i=0; i < samples.length(); i++) {
+            if(in.readBoolean())
+                samples.set(i, Bits.readDouble(in));
+        }
+        index=in.readInt();
         total.add(Bits.readDouble(in));
+        count.add(Bits.readLongCompressed(in));
     }
 
     protected int nextIndex() {

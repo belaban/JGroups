@@ -3,9 +3,11 @@ package org.jgroups.tests;
 import org.jgroups.Global;
 import org.jgroups.util.Average;
 import org.jgroups.util.AverageMinMax;
+import org.jgroups.util.ByteArray;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
 import java.util.stream.IntStream;
 
 /**
@@ -81,7 +83,7 @@ public class AverageTest {
         assert avg1.max() == 2;
     }
 
-    public void testMerger2() {
+    public void testMerge2() {
         AverageMinMax avg1=new AverageMinMax(10000), avg2=new AverageMinMax(10000);
         IntStream.rangeClosed(1, 10000).forEach(i -> avg2.add(2));
         System.out.printf("avg1: %s, avg2: %s\n", avg1, avg2);
@@ -93,10 +95,34 @@ public class AverageTest {
         assert avg1.max() == 2;
     }
 
+    public void testMerge3() {
+        AverageMinMax avg1=new AverageMinMax(100), avg2=new AverageMinMax(200);
+        IntStream.rangeClosed(1, 100).forEach(i -> avg1.add(1));
+        IntStream.rangeClosed(1, 200).forEach(i -> avg2.add(2));
+        System.out.printf("avg1: %s, avg2: %s\n", avg1, avg2);
+        avg1.merge(avg2);
+        System.out.printf("merged avg1: %s\n", avg1);
+        assert avg1.count() == 300;
+        assert avg1.average() == 2.0;
+        assert avg1.min() == 1;
+        assert avg1.max() == 2;
+    }
+
     public void testAverageWithNoElements() {
         Average avg=new AverageMinMax();
         double av=avg.average();
         assert av == 0.0;
+    }
+
+    public void testSerialization() throws IOException, ClassNotFoundException {
+        Average avg=new Average(128);
+        for(int i=0; i < 100; i++)
+            avg.add(Util.random(128));
+        ByteArray buf=Util.objectToBuffer(avg);
+        Average avg2=Util.objectFromBuffer(buf, null);
+        assert avg2 != null;
+        assert avg.count() == avg2.count();
+        assert avg.average() == avg2.average();
     }
 
 }

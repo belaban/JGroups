@@ -226,7 +226,7 @@ public class BufferTest {
         assertIndices(buf, 100, 100, 129);
     }
 
-    public void testAddListWithResizing(Buffer<Message> type) {
+    public void testAddBatchWithResizing(Buffer<Message> type) {
         if(type instanceof FixedBuffer)
             return;
         DynamicBuffer<Message> buf=new DynamicBuffer<>(3, 5, 0);
@@ -252,7 +252,7 @@ public class BufferTest {
     }
 
 
-    public void testAddListWithResizingNegativeSeqnos(Buffer<Message> type) {
+    public void testAddBatchWithResizingNegativeSeqnos(Buffer<Message> type) {
         if(type instanceof FixedBuffer)
             return;
         long seqno=Long.MAX_VALUE-50;
@@ -265,7 +265,7 @@ public class BufferTest {
         assert num_resizes == 1 : "number of resizings=" + num_resizes + " (expected 1)";
     }
 
-    public void testAddListWithResizing2(Buffer<Message> type) {
+    public void testAddBatchWithResizing2(Buffer<Message> type) {
         if(type instanceof FixedBuffer)
             return;
         DynamicBuffer<Message> buf=new DynamicBuffer<>(3, 500, 0);
@@ -410,7 +410,6 @@ public class BufferTest {
         assert num == null;
     }
 
-
     public void testDuplicateAddition(Buffer<Integer> buf) {
         addAndGet(buf, 1, 5, 9, 10);
         assert !buf.add(5,5);
@@ -517,6 +516,92 @@ public class BufferTest {
         assert buf.highestDelivered() == 4;
     }
 
+    public void testAddListWithConstValue(Buffer<Integer> buf) {
+        List<LongTuple<Integer>> msgs=createList(1,2,3,4,5,6,7,8,9,10);
+        final int DUMMY=0;
+        boolean rc=buf.add(msgs, false, DUMMY);
+        System.out.println("buf = " + buf);
+        assert rc;
+        assert buf.size() == 10;
+        List<Integer> list=buf.removeMany(true, 0, element -> element.hashCode() == Integer.hashCode(DUMMY));
+        System.out.println("list = " + list);
+        assert list.size() == 10;
+        assert buf.isEmpty();
+        for(int num: list)
+            assert num == DUMMY;
+    }
+
+    public void testAddListWithResizingNegativeSeqnos(Buffer<Integer> type) {
+        long seqno=Long.MAX_VALUE-50;
+        Buffer<Integer> buf=type instanceof DynamicBuffer? new DynamicBuffer<>(3,5,seqno) : new FixedBuffer<>(100, seqno);
+        List<LongTuple<Integer>> msgs=new ArrayList<>();
+        for(int i=1; i < 100; i++)
+            msgs.add(new LongTuple<>((long)i+seqno,i));
+        buf.add(msgs, false, null);
+        System.out.println("buf = " + buf);
+        if(type instanceof DynamicBuffer) {
+            int num_resizes=((DynamicBuffer<?>)buf).getNumResizes();
+            System.out.println("num_resizes = " + num_resizes);
+            assert num_resizes == 1 : "number of resizings=" + num_resizes + " (expected 1)";
+        }
+    }
+
+    public void testAddListWithRemoval2(Buffer<Integer> buf) {
+        List<LongTuple<Integer>> msgs=createList(1,2,3,4,5,6,7,8,9,10);
+        int size=msgs.size();
+        boolean added=buf.add(msgs, false, null);
+        System.out.println("buf = " + buf);
+        assert added;
+        assert msgs.size() == size;
+
+        added=buf.add(msgs, true, null);
+        System.out.println("buf = " + buf);
+        assert !added;
+        assert msgs.isEmpty();
+
+        msgs=createList(1,3,5,7);
+        size=msgs.size();
+        added=buf.add(msgs, true, null);
+        System.out.println("buf = " + buf);
+        assert !added;
+        assert msgs.isEmpty();
+
+        msgs=createList(1,3,5,7,9,10,11,12,13,14,15);
+        size=msgs.size();
+        added=buf.add(msgs, true, null);
+        System.out.println("buf = " + buf);
+        assert added;
+        assert msgs.size() == 5;
+    }
+
+    public void testAddListWithResizing2(Buffer<Integer> type) {
+        Buffer<Integer> buf=type instanceof DynamicBuffer? new DynamicBuffer<>() : new FixedBuffer<>(100, 0);
+        List<LongTuple<Integer>> msgs=new ArrayList<>();
+        for(int i=1; i < 100; i++)
+            msgs.add(new LongTuple<>(i, i));
+        buf.add(msgs, false, null);
+        System.out.println("buf = " + buf);
+        if(buf instanceof DynamicBuffer) {
+            int num_resizes=((DynamicBuffer<?>)buf).getNumResizes();
+            System.out.println("num_resizes = " + num_resizes);
+            assert num_resizes == 0 : "number of resizings=" + num_resizes + " (expected 0)";
+        }
+    }
+
+
+    public void testAddListWithResizing(Buffer<Message> type) {
+        Buffer<Integer> buf=type instanceof DynamicBuffer? new DynamicBuffer<>(3,5,0) : new FixedBuffer<>(100, 0);
+        List<LongTuple<Integer>> msgs=new ArrayList<>();
+        for(int i=1; i < 100; i++)
+            msgs.add(new LongTuple<>(i, i));
+        buf.add(msgs, false, null);
+        System.out.println("buf = " + buf);
+        if(buf instanceof DynamicBuffer) {
+            int num_resizes=((DynamicBuffer<?>)buf).getNumResizes();
+            System.out.println("num_resizes = " + num_resizes);
+            assert num_resizes == 1 : "number of resizings=" + num_resizes + " (expected 1)";
+        }
+    }
 
     public void testIndex(Buffer<Integer> type) {
         Buffer<Integer> buf=type instanceof DynamicBuffer? new DynamicBuffer<>(3, 10, 5)

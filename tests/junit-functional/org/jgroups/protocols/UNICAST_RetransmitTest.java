@@ -1,14 +1,17 @@
 package org.jgroups.protocols;
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.Global;
+import org.jgroups.JChannel;
+import org.jgroups.Message;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.MyReceiver;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -16,14 +19,21 @@ import java.util.List;
  * @author Bela Ban
  * @since  3.6
  */
-@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true,dataProvider="createUnicast")
 public class UNICAST_RetransmitTest {
     protected JChannel a, b;
     protected static final int MAX_BUNDLE_SIZE=10000;
     protected static final int NUM_MSGS=50000;
 
-    @BeforeMethod
-    protected void setup() throws Exception {
+    @DataProvider
+    static Object[][] createUnicast() {
+        return new Object[][]{
+          {UNICAST3.class},
+          {UNICAST4.class}
+        };
+    }
+
+    protected void setup(Class<? extends Protocol> unicast_class) throws Exception {
         a=new JChannel(Util.getTestStack()).name("A");
         b=new JChannel(Util.getTestStack()).name("B");
         change(a, b);
@@ -37,17 +47,18 @@ public class UNICAST_RetransmitTest {
 
 
     /**
-     * Sends a number of messages, but discards every other message. The retransmission task in UNICAST3 is initially
+     * Sends a number of messages, but discards every other message. The retransmission task in UNICAST3/4 is initially
      * disabled. Then starts the retransmission task, which should generate an XMIT-REQ which is larger than
      * TP.max_bundle_size, leading to endless retransmissions. With JGRP-1868 resolved, the receiver should get
      * all messages.
      * <p/>
      * https://issues.redhat.com/browse/JGRP-1868
      */
-    public void testLargeRetransmission() throws Exception {
-        MyReceiver receiver=new MyReceiver();
+    public void testLargeRetransmission(Class<? extends Protocol> unicast_class) throws Exception {
+        setup(unicast_class);
+        MyReceiver<Integer> receiver=new MyReceiver<>();
         b.setReceiver(receiver);
-        List<Integer> list=receiver.getList();
+        List<Integer> list=receiver.list();
 
         stopRetransmission(a, b);
 
@@ -72,43 +83,28 @@ public class UNICAST_RetransmitTest {
         setLevel("warn", a,b);
     }
 
-
-
-    protected static void change(JChannel ... channels) {
+    protected static void change(JChannel ... channels) throws Exception {
         for(JChannel ch: channels) {
             TP transport=ch.getProtocolStack().getTransport();
             transport.getBundler().setMaxSize(MAX_BUNDLE_SIZE);
-            UNICAST3 ucast=ch.getProtocolStack().findProtocol(UNICAST3.class);
+            Protocol ucast=ch.getProtocolStack().findProtocol(UNICAST3.class,UNICAST4.class);
             if(ucast == null)
-                throw new IllegalStateException("UNICAST3 not present in the stack");
-            ucast.setMaxXmitReqSize(5000);
+                throw new IllegalStateException("UNICAST prototocol not found in the stack");
+            Util.invoke(ucast, "setMaxXmitReqSize", 5000);
         }
     }
 
-
-    protected static class MyReceiver implements Receiver {
-        protected final List<Integer> list=new ArrayList<>();
-
-        public void receive(Message msg) {
-            Integer num=msg.getObject();
-            list.add(num);
-        }
-
-        public List<Integer> getList() {return list;}
-    }
-
-
-    protected static void stopRetransmission(JChannel... channels) {
+    protected static void stopRetransmission(JChannel... channels) throws Exception {
         for(JChannel ch: channels) {
-            UNICAST3 ucast=ch.getProtocolStack().findProtocol(UNICAST3.class);
-            ucast.stopRetransmitTask();
+            UNICAST3 ucast=ch.getProtocolStack().findProtocol(UNICAST3.class, UNICAST4.class);
+            Util.invoke(ucast, "stopRetransmitTask");
         }
     }
 
-    protected static void startRetransmission(JChannel... channels) {
+    protected static void startRetransmission(JChannel... channels) throws Exception {
         for(JChannel ch: channels) {
-            UNICAST3 ucast=ch.getProtocolStack().findProtocol(UNICAST3.class);
-            ucast.startRetransmitTask();
+            Protocol ucast=ch.getProtocolStack().findProtocol(UNICAST3.class, UNICAST4.class);
+            Util.invoke(ucast, "startRetransmitTask");
         }
     }
 
@@ -123,7 +119,7 @@ public class UNICAST_RetransmitTest {
 
     protected static void setLevel(String level, JChannel ... channels) {
         for(JChannel ch: channels) {
-            Protocol prot=ch.getProtocolStack().findProtocol(UNICAST3.class);
+            Protocol prot=ch.getProtocolStack().findProtocol(UNICAST3.class,UNICAST4.class);
             prot.level(level);
         }
     }

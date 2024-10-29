@@ -19,7 +19,7 @@ import static org.jgroups.Message.Flag.OOB;
 import static org.jgroups.conf.AttributeType.SCALAR;
 
 /**
- * New multicast protocols based on fixed-size xmit windows and message ACKs<rb/>
+ * New multicast protocol based on fixed-size xmit windows and message ACKs<br/>
  * Details: https://issues.redhat.com/browse/JGRP-2780
  * @author Bela Ban
  * @since  5.4

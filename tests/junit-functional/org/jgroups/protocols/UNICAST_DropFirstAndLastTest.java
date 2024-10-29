@@ -14,7 +14,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Tests UNICAST2. Created to test the last-message-dropped problem, see https://issues.redhat.com/browse/JGRP-1548.
+ * Tests UNICAST{3,4}. Created to test the last-message-dropped problem, see https://issues.redhat.com/browse/JGRP-1548.
  * @author Bela Ban
  * @since  3.3
  */
@@ -24,7 +24,7 @@ public class UNICAST_DropFirstAndLastTest {
     protected MyReceiver<Integer> rb;
     protected DISCARD             discard; // on A
 
-    protected void setup(Class<? extends UNICAST3> unicast_class) throws Exception {
+    protected void setup(Class<? extends Protocol> unicast_class) throws Exception {
         a=createChannel(unicast_class, "A");
         discard=a.getProtocolStack().findProtocol(DISCARD.class);
         assert discard != null;
@@ -39,9 +39,10 @@ public class UNICAST_DropFirstAndLastTest {
 
 
     @DataProvider
-    static Object[][] configProvider() {
+    static Object[][] createUnicast() {
         return new Object[][]{
-          {UNICAST3.class}
+          {UNICAST3.class},
+          {UNICAST4.class}
         };
     }
 
@@ -50,13 +51,13 @@ public class UNICAST_DropFirstAndLastTest {
      * https://issues.redhat.com/browse/JGRP-1548 now needs to make sure message 5 is retransmitted to B
      * within a short time period, and we don't have to rely on the stable task to kick in.
      */
-    @Test(dataProvider="configProvider")
-    public void testLastMessageDropped(Class<? extends UNICAST3> unicast_class) throws Exception {
+    @Test(dataProvider="createUnicast")
+    public void testLastMessageDropped(Class<? extends Protocol> unicast_class) throws Exception {
         setup(unicast_class);
         setLevel("trace", a, b);
         Address dest=b.getAddress();
         for(int i=1; i <= 5; i++) {
-            Message msg=new BytesMessage(dest, i);
+            Message msg=new ObjectMessage(dest, i);
             if(i == 5)
                 discard.dropDownUnicasts(1); // drops the next unicast
             a.send(msg);
@@ -72,22 +73,21 @@ public class UNICAST_DropFirstAndLastTest {
      * https://issues.redhat.com/browse/JGRP-1563 now needs to make sure message 1 is retransmitted to B
      * within a short time period, and we don't have to rely on the stable task to kick in.
      */
-    @Test(dataProvider="configProvider")
-    public void testFirstMessageDropped(Class<? extends UNICAST3> unicast_class) throws Exception {
+    @Test(dataProvider="createUnicast")
+    public void testFirstMessageDropped(Class<? extends Protocol> unicast_class) throws Exception {
         setup(unicast_class);
-
         System.out.println("**** closing all connections ****");
         // close all connections, so we can start from scratch and send message A1 to B
         for(JChannel ch: Arrays.asList(a,b)) {
             Protocol unicast=ch.getProtocolStack().findProtocol(Util.getUnicastProtocols());
-            removeAllConnections(unicast);
+            Util.invoke(unicast, "removeAllConnections");
         }
 
         setLevel("trace", a, b);
 
         System.out.println("--> A sending first message to B (dropped before it reaches B)");
         discard.dropDownUnicasts(1); // drops the next unicast
-        a.send(new BytesMessage(b.getAddress(), 1));
+        a.send(new ObjectMessage(b.getAddress(), 1));
 
         List<Integer> msgs=rb.list();
         try {
@@ -104,45 +104,29 @@ public class UNICAST_DropFirstAndLastTest {
     }
 
 
-    protected static JChannel createChannel(Class<? extends UNICAST3> unicast_class, String name) throws Exception {
-        UNICAST3 unicast=unicast_class.getDeclaredConstructor().newInstance();
+    protected static JChannel createChannel(Class<? extends Protocol> unicast_class, String name) throws Exception {
+        Protocol unicast=unicast_class.getDeclaredConstructor().newInstance();
+        Util.invoke(unicast, "setXmitInterval", 500L);
         return new JChannel(new SHARED_LOOPBACK(),
                             new SHARED_LOOPBACK_PING(),
                             new NAKACK2().useMcastXmit(false),
                             new DISCARD(),
-                            unicast.setXmitInterval(500),
+                            unicast,
                             new GMS().printLocalAddress(false))
           .name(name);
     }
 
-    protected void printConnectionTables(JChannel ... channels) {
+    protected static void printConnectionTables(JChannel... channels) throws Exception {
         System.out.println("**** CONNECTIONS:");
         for(JChannel ch: channels) {
-            Protocol ucast=ch.getProtocolStack().findProtocol(Util.getUnicastProtocols());
-            System.out.println(ch.getName() + ":\n" + printConnections(ucast) + "\n");
+            Protocol p=ch.stack().findProtocol(Util.getUnicastProtocols());
+            System.out.printf("%s:\n%s\n", ch.name(), Util.invoke(p, "printConnections"));
         }
     }
 
     protected static void setLevel(String level, JChannel... channels) {
         for(JChannel ch: channels)
             ch.getProtocolStack().findProtocol(Util.getUnicastProtocols()).level(level);
-    }
-
-    protected String printConnections(Protocol prot) {
-        if(prot instanceof UNICAST3) {
-            UNICAST3 unicast=(UNICAST3)prot;
-            return unicast.printConnections();
-        }
-        throw new IllegalArgumentException("prot (" + prot + ") needs to be UNICAST3");
-    }
-
-    protected static void removeAllConnections(Protocol prot) {
-        if(prot instanceof UNICAST3) {
-            UNICAST3 unicast=(UNICAST3)prot;
-            unicast.removeAllConnections();
-        }
-        else
-            throw new IllegalArgumentException("prot (" + prot + ") needs to be UNICAST3");
     }
 
 

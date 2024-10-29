@@ -7,6 +7,7 @@ import org.jgroups.annotations.Property;
 import org.jgroups.blocks.cs.Connection;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.jmx.JmxConfigurator;
+import org.jgroups.jmx.ResourceDMBean;
 import org.jgroups.logging.Log;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
@@ -107,7 +108,9 @@ public class Util {
     private static final byte[]  TYPE_BOOLEAN_TRUE={TYPE_BOOLEAN, 1};
     private static final byte[]  TYPE_BOOLEAN_FALSE={TYPE_BOOLEAN, 0};
 
-    public static final Class<? extends Protocol>[] getUnicastProtocols() {return new Class[]{UNICAST3.class};}
+    public static final Class<? extends Protocol>[] getUnicastProtocols() {
+        return new Class[]{UNICAST3.class,UNICAST4.class};
+    }
 
     public enum AddressScope {GLOBAL,SITE_LOCAL,LINK_LOCAL,LOOPBACK,NON_LOOPBACK}
 
@@ -380,7 +383,13 @@ public class Util {
         return sb.toString();
     }
 
-
+    public static String print(MessageBatch batch, boolean print_headers) {
+        int count=1;
+        StringBuilder sb=new StringBuilder(String.format("%s:\n", batch.toString()));
+        for(Message msg: batch)
+            sb.append(String.format("  %d: %s%s\n", count++, msg, print_headers? String.format(", hdrs: %s", msg.printHeaders()) : ""));
+        return sb.toString();
+    }
 
     /**
      * Waits until a list has the expected number of elements. Throws an exception if not met
@@ -1237,7 +1246,7 @@ public class Util {
     public static <T extends Streamable> T streamableFromByteBuffer(Class<? extends Streamable> cl, ByteBuffer buffer) throws Exception {
         if(buffer == null) return null;
         DataInput in=new ByteBufferInputStream(buffer);
-        T retval=(T)cl.newInstance();
+        T retval=(T)cl.getConstructor().newInstance();
         retval.readFrom(in);
         return retval;
     }
@@ -3009,7 +3018,7 @@ public class Util {
             View view=map.get(coord);
             Collection<Address> mbrs=view != null? view.getMembers() : null;
             if(mbrs != null)
-                all_addrs.removeAll(mbrs);
+                mbrs.forEach(all_addrs::remove);
         }
         coords.addAll(all_addrs);
         return coords;
@@ -3519,6 +3528,51 @@ public class Util {
             }
         }
         return retval;
+    }
+
+    public static Method findMethod2(Class<?> target_class, String method_name, Object[] args) throws Exception {
+        int len=args != null? args.length : 0;
+        Method retval=null;
+        Method[] methods=getAllMethods(target_class);
+        for(int i=0; i < methods.length; i++) {
+            Method m=methods[i];
+            if(m.getName().equals(method_name)) {
+                Class<?>[] parameter_types=m.getParameterTypes();
+                if(parameter_types.length == len) {
+                    boolean all_args_match=true;
+                    // now check if actual and parameter types match:
+                    for(int j=0; j < parameter_types.length; j++) {
+                        Class<?> parameter=parameter_types[j];
+                        Class<?> actual=args[j] != null? args[j].getClass() : null;
+                        if(actual != null && !isAssignableFrom(parameter, actual)) {
+                            all_args_match=false;
+                            break;
+                        }
+                    }
+                    if(all_args_match)
+                        return m;
+                }
+            }
+        }
+        return retval;
+    }
+
+    public static boolean isAssignableFrom(Class<?> left, Class<?> right) {
+        if(left == null)
+            return false;
+        if(right == null)
+            return left == null || !left.isPrimitive();
+        if(left == right)
+            return true;
+        // at this point, left and right are not null
+        if(left.isAssignableFrom(right))
+            return true;
+        return ResourceDMBean.isNumber(left) && ResourceDMBean.isNumber(right);
+    }
+
+    public static Object invoke(Object target, String method_name, Object... args) throws Exception {
+        Method method=Util.findMethod2(target.getClass(), method_name, args);
+        return method.invoke(target, args);
     }
 
     /**
@@ -4955,10 +5009,7 @@ public class Util {
                         sb.append(ch);
                     break;
                 default:
-                    if(cache != null)
-                        cache.append(ch);
-                    else
-                        sb.append(ch);
+                    Objects.requireNonNullElse(cache, sb).append(ch);
                     break;
             }
         }

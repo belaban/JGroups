@@ -62,6 +62,7 @@
     <class id="97"  name="org.jgroups.protocols.RTTHeader"/>
     <class id="98"  name="org.jgroups.protocols.ProtPerfHeader"/>
     <class id="99"  name="org.jgroups.protocols.NakAckHeader"/>
+    <class id="100" name="org.jgroups.protocols.UnicastHeader"/>
 
 </magic-number-class-mapping>
 

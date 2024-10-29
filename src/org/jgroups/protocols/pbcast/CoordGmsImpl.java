@@ -93,8 +93,6 @@ public class CoordGmsImpl extends ServerGmsImpl {
         for(Request req: requests) {
             switch(req.type) {
                 case Request.JOIN:
-                    new_mbrs.add(req.mbr);
-                    break;
                 case Request.JOIN_WITH_STATE_TRANSFER:
                     new_mbrs.add(req.mbr);
                     break;

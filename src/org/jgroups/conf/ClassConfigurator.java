@@ -30,7 +30,7 @@ public class ClassConfigurator {
     protected static final String ID                = "id";
     protected static final String NAME              = "name";
     protected static final String EXTERNAL          = "external";
-    private static final int      MAX_MAGIC_VALUE=100;
+    private static final int      MAX_MAGIC_VALUE=124;
     private static final int      MAX_PROT_ID_VALUE=256;
     private static final short    MIN_CUSTOM_MAGIC_NUMBER=1024;
     private static final short    MIN_CUSTOM_PROTOCOL_ID=512;
@@ -292,7 +292,7 @@ public class ClassConfigurator {
      * try to read the magic number configuration file as a Resource form the classpath using getResourceAsStream
      * if this fails this method tries to read the configuration file from mMagicNumberFile using a FileInputStream (not in classpath but somewhere else in the disk)
      *
-     * @return an array of ClassMap objects that where parsed from the file (if found) or an empty array if file not found or had en exception
+     * @return a list of ClassMap objects that where parsed from the file (if found) or an empty array if file not found or had en exception
      */
     protected static List<Triple<Short,String,Boolean>> readMappings(String name) throws Exception {
         InputStream stream=Util.getResourceAsStream(name, ClassConfigurator.class);

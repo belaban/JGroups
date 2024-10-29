@@ -73,7 +73,7 @@ public class ObjectMessage extends BaseMessage {
     public ObjectMessage     setArray(ByteArray buf)              {throw new UnsupportedOperationException();}
     public boolean           isWrapped()                          {return isFlagSet(Flag.SERIALIZED);}
 
-    // reusing SERIALIZABLE
+    // reusing SERIALIZED
     public ObjectMessage setWrapped(boolean b) {
         if(b) setFlag(Flag.SERIALIZED);
         else  clearFlag(Flag.SERIALIZED);
@@ -145,8 +145,11 @@ public class ObjectMessage extends BaseMessage {
     }
 
     @Override protected Message copyPayload(Message copy) {
-        if(obj != null)
+        if(obj != null) {
             ((ObjectMessage)copy).setObject(obj);
+            if(isFlagSet(Flag.SERIALIZED))
+                copy.setFlag(Flag.SERIALIZED);
+        }
         return copy;
     }
 

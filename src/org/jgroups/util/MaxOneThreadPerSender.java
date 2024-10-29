@@ -7,7 +7,8 @@ import org.jgroups.annotations.Property;
 import org.jgroups.protocols.TP;
 
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Lock;
@@ -148,7 +149,8 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
             this.sender=sender;
             this.cluster_name=cluster_name;
             int cap=max_buffer_size > 0? max_buffer_size : DEFAULT_INITIAL_CAPACITY; // initial capacity
-            batch=new MessageBatch(cap).dest(tp.getAddress()).sender(sender).clusterName(cluster_name).multicast(mcast);
+            batch=new MessageBatch(cap).dest(tp.getAddress()).sender(sender).clusterName(cluster_name)
+              .multicast(mcast).mode(MessageBatch.Mode.REG); // only regular messages are queued
             batch.array().increment(DEFAULT_INCREMENT);
             msg_queue=max_buffer_size > 0? new FastArray<>(max_buffer_size) : new FastArray<>(DEFAULT_INITIAL_CAPACITY);
             msg_queue.increment(DEFAULT_INCREMENT);
@@ -228,7 +230,6 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
             }
         }
 
-
         // unsynchronized on batch but who cares
         public String toString() {
             return String.format("msg_queue.size=%,d msg_queue.cap: %,d batch.cap=%,d queued msgs=%,d submitted batches=%,d",
@@ -251,8 +252,17 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
             while(entry.workAvailable() || entry.adders.decrementAndGet() != 0) {
                 try {
                     MessageBatch mb=entry.batch;
-                    if(mb == null || mb.isEmpty() || (!mb.multicast() && tp.unicastDestMismatch(mb.dest())))
+                    if(mb.isEmpty())
                         continue;
+                    if(!mb.multicast()) {
+                        // due to an incorrect (e.g. late) view change, the cached batch's destination might be
+                        // different from our local address. If this is the case, change the cached batch's dest address
+                        if(tp.unicastDestMismatch(mb.dest())) {
+                            Address dest=tp.addr();
+                            if(dest != null)
+                                mb.dest(dest);
+                        }
+                    }
                     tp.passBatchUp(mb, !loopback, !loopback);
                 }
                 catch(Throwable t) {

@@ -87,6 +87,18 @@ public abstract class Buffer<T> implements Iterable<T> {
     // used: MessageBatch received
     public abstract boolean add(MessageBatch batch, Function<T,Long> seqno_getter, boolean remove_from_batch, T const_value);
 
+    /**
+     * Adds elements from the list
+     * @param list The list of tuples of seqnos and elements. If remove_added_elements is true, if elements could
+     *             not be added (e.g. because they were already present or the seqno was < HD), those
+     *             elements will be removed from list
+     * @param remove_added_elements If true, elements that could not be added to the table are removed from list
+     * @param const_value If non-null, this value should be used rather than the values of the list tuples
+     * @return True if at least 1 element was added successfully, false otherwise.
+     */
+    // used: MessageBatch received by UNICAST3/4
+    public abstract boolean add(final List<LongTuple<T>> list, boolean remove_added_elements, T const_value);
+
     // used: retransmision etc
     public abstract T get(long seqno);
 
@@ -250,7 +262,7 @@ public abstract class Buffer<T> implements Iterable<T> {
 
     @Override
     public String toString() {
-        return String.format("[%,d | %,d | %,d] (%,d elements, %,d missing)", low, hd, high, size, numMissing());
+        return String.format("[%,d | %,d | %,d] (size: %,d, missing: %,d)", low, hd, high, size, numMissing());
     }
 
     public static class Options {

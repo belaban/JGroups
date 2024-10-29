@@ -3,7 +3,6 @@ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.blocks.LazyRemovalCache;
-import org.jgroups.protocols.UNICAST3;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
@@ -30,7 +29,7 @@ public class UUIDCacheClearTest extends ChannelTestBase {
             b=createChannel().name("B");
             b.setReceiver(r2);
             boolean unicast_absent=Stream.of(a, b).map(JChannel::getProtocolStack)
-              .anyMatch(st -> st.findProtocol(UNICAST3.class) == null);
+              .anyMatch(st -> st.findProtocol(Util.getUnicastProtocols()) == null);
             makeUnique(a,b);
 
             a.connect("UUIDCacheClearTest");
@@ -64,10 +63,10 @@ public class UUIDCacheClearTest extends ChannelTestBase {
             a.send(b.getAddress(), "one");
             b.send(a.getAddress(), "two");
 
-            // With UNICAST3 present, the above 2 messages will get dropped, as the cache doesn't have the dest addrs and
-            // discovery is *async*. However, retransmission ensures that they're retransmitted. With UNICAST3 *absent*,
-            // this won't happen, so we're waiting for async discovery to complete and then resend the messages. Kind of
-            // a kludge to make this test pass.
+            // With UNICAST{3,4} present, the above 2 messages will get dropped, as the cache doesn't have the dest
+            // addrs and discovery is *async*. However, retransmission ensures that they're retransmitted. With
+            // UNICAST{3,4} *absent*, this won't happen, so we're waiting for async discovery to complete and then
+            // resend the messages. Kind of a kludge to make this test pass.
             if(unicast_absent) {
                 LazyRemovalCache<Address,PhysicalAddress> cache_a, cache_b;
                 cache_a=a.getProtocolStack().getTransport().getLogicalAddressCache();

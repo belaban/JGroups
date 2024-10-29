@@ -30,14 +30,15 @@ public class UNICAST_ContentionTest {
     @DataProvider
     static Object[][] provider() {
         return new Object[][] {
-          {UNICAST3.class}
+          {UNICAST3.class},
+          {UNICAST4.class}
         };
     }
 
 
 
     @Test(dataProvider="provider")
-    public void testSimpleMessageReception(Class<? extends UNICAST3> unicast_class) throws Exception {
+    public void testSimpleMessageReception(Class<? extends Protocol> unicast_class) throws Exception {
         a=create(unicast_class, "A");
         b=create(unicast_class, "B");
         MyReceiver r1=new MyReceiver("A"), r2=new MyReceiver("B");
@@ -56,25 +57,24 @@ public class UNICAST_ContentionTest {
         }
 
         for(int i=0; i < 10; i++) {
-            if(r1.getNum() == NUM * 2 && r2.getNum() == NUM * 2)
+            if(r1.num() == NUM * 2 && r2.num() == NUM * 2)
                 break;
             Util.sleep(500);
         }
 
-        System.out.println("c1 received " + r1.getNum() + " msgs, " + getNumberOfRetransmissions(a) + " retransmissions");
-        System.out.println("c2 received " + r2.getNum() + " msgs, " + getNumberOfRetransmissions(b) + " retransmissions");
+        System.out.printf("%s: %,d msgs, %s xmits\n", "c1",  r1.num(),
+                          Util.invoke(a.stack().findProtocol(Util.getUnicastProtocols()), "getNumXmits"));
+        System.out.printf("%s: %,d msgs, %s xmits\n", "c2",  r2.num(),
+                          Util.invoke(b.stack().findProtocol(Util.getUnicastProtocols()), "getNumXmits"));
 
-        assert r1.getNum() == NUM * 2: "expected " + NUM *2 + ", but got " + r1.getNum();
-        assert r2.getNum() == NUM * 2: "expected " + NUM *2 + ", but got " + r2.getNum();
+        assert r1.num() == NUM * 2: "expected " + NUM *2 + ", but got " + r1.num();
+        assert r2.num() == NUM * 2: "expected " + NUM *2 + ", but got " + r2.num();
     }
 
 
-    /**
-     * Multiple threads (NUM_THREADS) send messages (NUM_MSGS)
-     * @throws Exception
-     */
+    /** Multiple threads (NUM_THREADS) send messages (NUM_MSGS) */
     @Test(dataProvider="provider")
-    public void testMessageReceptionUnderHighLoad(Class<? extends UNICAST3> unicast_class) throws Exception {
+    public void testMessageReceptionUnderHighLoad(Class<? extends Protocol> unicast_class) throws Exception {
         CountDownLatch latch=new CountDownLatch(1);
         a=create(unicast_class, "A");
         b=create(unicast_class, "B");
@@ -107,30 +107,25 @@ public class UNICAST_ContentionTest {
         long NUM_EXPECTED_MSGS=NUM_THREADS * NUM_MSGS;
 
         for(int i=0; i < 20; i++) {
-            if(r1.getNum() == NUM_EXPECTED_MSGS && r2.getNum() == NUM_EXPECTED_MSGS)
+            if(r1.num() == NUM_EXPECTED_MSGS && r2.num() == NUM_EXPECTED_MSGS)
                 break;
             Util.sleep(2000);
         }
 
-        System.out.println("c1 received " + r1.getNum() + " msgs, " + getNumberOfRetransmissions(a) + " retransmissions");
-        System.out.println("c2 received " + r2.getNum() + " msgs, " + getNumberOfRetransmissions(b) + " retransmissions");
+        System.out.printf("%s: %,d msgs, %s xmits\n", "c1",  r1.num(),
+                          Util.invoke(a.stack().findProtocol(Util.getUnicastProtocols()), "getNumXmits"));
+        System.out.printf("%s: %,d msgs, %s xmits\n", "c2",  r2.num(),
+                          Util.invoke(b.stack().findProtocol(Util.getUnicastProtocols()), "getNumXmits"));
 
-        assert r1.getNum() == NUM_EXPECTED_MSGS : "expected " + NUM_EXPECTED_MSGS + ", but got " + r1.getNum();
-        assert r2.getNum() == NUM_EXPECTED_MSGS : "expected " + NUM_EXPECTED_MSGS + ", but got " + r2.getNum();
+        assert r1.num() == NUM_EXPECTED_MSGS : "expected " + NUM_EXPECTED_MSGS + ", but got " + r1.num();
+        assert r2.num() == NUM_EXPECTED_MSGS : "expected " + NUM_EXPECTED_MSGS + ", but got " + r2.num();
     }
 
-    protected static JChannel create(Class<? extends UNICAST3> unicast_class, String name) throws Exception {
-        return new JChannel(new SHARED_LOOPBACK(),
-                            unicast_class.getDeclaredConstructor().newInstance().setXmitInterval(500)).name(name);
+    protected static JChannel create(Class<? extends Protocol> unicast_class, String name) throws Exception {
+        Protocol p=unicast_class.getDeclaredConstructor().newInstance();
+        Util.invoke(p, "setXmitInterval", 500L);
+        return new JChannel(new SHARED_LOOPBACK(), p).name(name);
     }
-
-    private static long getNumberOfRetransmissions(JChannel ch) {
-        Protocol prot=ch.getProtocolStack().findProtocol(Util.getUnicastProtocols());
-        if(prot instanceof UNICAST3)
-            return ((UNICAST3)prot).getNumXmits();
-        return 0;
-    }
-
 
 
     private static class MySender extends Thread {
@@ -178,11 +173,11 @@ public class UNICAST_ContentionTest {
 
         public void receive(Message msg) {
             if(num.incrementAndGet() % MOD == 0) {
-                System.out.println("[" + name + "] received " + getNum() + " msgs");
+                System.out.println("[" + name + "] received " + num() + " msgs");
             }
         }
 
-        public int getNum() {
+        public int num() {
             return num.get();
         }
     }

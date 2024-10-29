@@ -18,28 +18,26 @@ import java.util.List;
 
 
 /**
- * Tests the UNICAST{2,3} protocols with messages sent by member A to itself
+ * Tests the UNICAST{3,4} protocols with messages sent by member A to itself
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true,dataProvider="createUnicast")
 public class UNICAST_MessagesToSelfTest {
     protected JChannel ch;
     protected Address  a1;
-
-    static final int SIZE=1000; // bytes
-    static final int NUM_MSGS=10000;
-
+    static final int   SIZE=1000; // bytes
+    static final int   NUM_MSGS=10_000;
 
     @AfterMethod void tearDown() throws Exception {Util.close(ch);}
 
     @DataProvider
-    static Object[][] configProvider() {
+    static Object[][] createUnicast() {
         return new Object[][] {
-          {new UNICAST3()}
+          {new UNICAST3()},
+          {new UNICAST4()}
         };
     }
 
-    @Test(dataProvider="configProvider")
     public void testReceptionOfAllMessages(Protocol prot) throws Throwable {
         System.out.println("prot=" + prot.getClass().getSimpleName());
         ch=createChannel(prot, null).name("A");
@@ -49,8 +47,6 @@ public class UNICAST_MessagesToSelfTest {
         _testReceptionOfAllMessages();
     }
 
-
-    @Test(dataProvider="configProvider")
     public void testReceptionOfAllMessagesWithDISCARD(Protocol prot) throws Throwable {
         System.out.println("prot=" + prot.getClass().getSimpleName());
         DISCARD discard=new DISCARD();
@@ -61,8 +57,6 @@ public class UNICAST_MessagesToSelfTest {
         assert a1 != null;
         _testReceptionOfAllMessages();
     }
-
-
 
     private static byte[] createPayload(int size, int seqno) {
         return ByteBuffer.allocate(size).putInt(seqno).array();

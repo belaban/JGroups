@@ -7,15 +7,18 @@ import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.MyReceiver;
 import org.jgroups.util.ResourceManager;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -23,50 +26,55 @@ import java.util.stream.Stream;
  * Tests unicast functionality
  * @author Bela Ban
  */
-@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true,dataProvider="create")
 public class UnicastUnitTest {
     protected JChannel a, b, c, d;
+
+    @DataProvider
+    static Object[][] create() {
+        return new Object[][]{
+          {UNICAST3.class},
+          {UNICAST4.class}
+        };
+    }
 
     @AfterMethod  protected void tearDown() throws Exception {Util.closeReverse(a,b,c,d);}
 
 
-    public void testUnicastMessageInCallbackExistingMember() throws Throwable {
+    public void testUnicastMessageInCallbackExistingMember(Class<? extends Protocol> cl) throws Throwable {
         String mcast_addr=ResourceManager.getNextMulticastAddress();
-        a=create("A", false, mcast_addr);
-        b=create("B", false, mcast_addr);
+        a=create(cl, "A", false, mcast_addr);
+        b=create(cl, "B", false, mcast_addr);
         a.connect("UnicastUnitTest");
-        MyReceiver receiver=new MyReceiver(a);
+        MyReceiver<?> receiver=new MyReceiver<>();
         a.setReceiver(receiver);
         b.connect("UnicastUnitTest");
         a.setReceiver(null); // so the receiver doesn't get a view change
-        Throwable ex=receiver.getEx();
-        if(ex != null)
-            throw ex;
     }
 
     /** Tests sending msgs from A to B */
     // @Test(invocationCount=10)
-    public void testMessagesToOther() throws Exception {
+    public void testMessagesToOther(Class<? extends Protocol> cl) throws Exception {
         String mcast_addr=ResourceManager.getNextMulticastAddress();
-        a=create("A", false, mcast_addr);
-        b=create("B", false, mcast_addr);
+        a=create(cl, "A", false, mcast_addr);
+        b=create(cl, "B", false, mcast_addr);
         _testMessagesToOther();
     }
 
-    public void testMessagesToOtherBatching() throws Exception {
+    public void testMessagesToOtherBatching(Class<? extends Protocol> cl) throws Exception {
         String mcast_addr=ResourceManager.getNextMulticastAddress();
-        a=create("A", true, mcast_addr);
-        b=create("B", true, mcast_addr);
+        a=create(cl, "A", true, mcast_addr);
+        b=create(cl, "B", true, mcast_addr);
         _testMessagesToOther();
     }
 
-    public void testMessagesToEverybodyElse() throws Exception {
-        MyReceiver<String> r1=new MyReceiver(), r2=new MyReceiver(), r3=new MyReceiver(), r4=new MyReceiver();
+    public void testMessagesToEverybodyElse(Class<? extends Protocol> cl) throws Exception {
+        MyReceiver<String> r1=new MyReceiver<>(), r2=new MyReceiver<>(), r3=new MyReceiver<>(), r4=new MyReceiver<>();
         String mcast_addr=ResourceManager.getNextMulticastAddress();
-        a=create("A", false, mcast_addr);
-        b=create("B", false, mcast_addr);
-        c=create("C", false, mcast_addr);
-        d=create("D", false, mcast_addr);
+        a=create(cl, "A", false, mcast_addr);
+        b=create(cl, "B", false, mcast_addr);
+        c=create(cl, "C", false, mcast_addr);
+        d=create(cl, "D", false, mcast_addr);
         connect(a,b,c,d);
 
         a.setReceiver(r1);
@@ -89,8 +97,7 @@ public class UnicastUnitTest {
             Util.sleep(500);
         }
 
-        Stream.of(r1,r2,r3,r4).forEach(r -> System.out.printf("%s\n", r.list));
-
+        Stream.of(r1,r2,r3,r4).forEach(r -> System.out.printf("%s\n", r.list()));
         List<Integer> expected_list=Arrays.asList(1,2,3,4,5);
         System.out.print("Checking (per-sender) FIFO ordering of messages: ");
         Stream.of(r1,r2,r3,r4).forEach(r -> Stream.of(a, b, c, d).forEach(ch -> {
@@ -103,10 +110,10 @@ public class UnicastUnitTest {
         System.out.println("OK");
     }
 
-    public void testPartition() throws Exception {
+    public void testPartition(Class<? extends Protocol> cl) throws Exception {
         String mcast_addr=ResourceManager.getNextMulticastAddress();
-        a=create("A", false, mcast_addr);
-        b=create("B", false, mcast_addr);
+        a=create(cl, "A", false, mcast_addr);
+        b=create(cl, "B", false, mcast_addr);
         connect(a,b);
         System.out.println("-- Creating network partition");
         Stream.of(a,b).forEach(ch -> {
@@ -152,26 +159,28 @@ public class UnicastUnitTest {
         b.setReceiver(receiver);
         send(a, msgs);
         checkReception(receiver, false, 1,2,3,4,5);
+        checkUnackedMessages(0, a);
     }
 
 
     // @Test(invocationCount=10)
-    public void testMessagesToSelf() throws Exception {
+    public void testMessagesToSelf(Class<? extends Protocol> cl) throws Exception {
         String mcast_addr=ResourceManager.getNextMulticastAddress();
-        a=create("A", false, mcast_addr);
-        b=create("B", false, mcast_addr);
+        a=create(cl, "A", false, mcast_addr);
+        b=create(cl, "B", false, mcast_addr);
         _testMessagesToSelf();
     }
 
-    public void testMessagesToSelfBatching() throws Exception {
+    public void testMessagesToSelfBatching(Class<? extends Protocol> cl) throws Exception {
         String mcast_addr=ResourceManager.getNextMulticastAddress();
-        a=create("A", true, mcast_addr);
-        b=create("B", true, mcast_addr);
+        a=create(cl, "A", true, mcast_addr);
+        b=create(cl, "B", true, mcast_addr);
         _testMessagesToSelf();
     }
 
     protected void _testMessagesToSelf() throws Exception {
         connect(a,b);
+        Util.waitUntilAllChannelsHaveSameView(3000, 100, a,b);
         Address dest=a.getAddress();
         Message[] msgs={
           msg(dest),
@@ -189,24 +198,26 @@ public class UnicastUnitTest {
         a.setReceiver(receiver);
         send(a, msgs);
         checkReception(receiver, false, 1,2,3,5,8,9);
+        checkUnackedMessages(0, a);
     }
 
-    public void testMessagesToSelf2() throws Exception {
+    public void testMessagesToSelf2(Class<? extends Protocol> cl) throws Exception {
         String mcast_addr=ResourceManager.getNextMulticastAddress();
-        a=create("A", false, mcast_addr);
-        b=create("B", false, mcast_addr);
+        a=create(cl, "A", false, mcast_addr);
+        b=create(cl, "B", false, mcast_addr);
         _testMessagesToSelf2();
     }
 
-    public void testMessagesToSelf2Batching() throws Exception {
+    public void testMessagesToSelf2Batching(Class<? extends Protocol> cl) throws Exception {
         String mcast_addr=ResourceManager.getNextMulticastAddress();
-        a=create("A", true, mcast_addr);
-        b=create("B", true, mcast_addr);
+        a=create(cl, "A", true, mcast_addr);
+        b=create(cl, "B", true, mcast_addr);
         _testMessagesToSelf2();
     }
 
     protected void _testMessagesToSelf2() throws Exception {
         connect(a,b);
+        Util.waitUntilAllChannelsHaveSameView(3000, 100, a,b);
         Address dest=a.getAddress();
         Message[] msgs={
           msg(dest).setFlag(Message.Flag.OOB).setFlag(Message.TransientFlag.DONT_LOOPBACK),
@@ -226,8 +237,8 @@ public class UnicastUnitTest {
         a.setReceiver(receiver);
         send(a, msgs);
         checkReception(receiver, false, 2,5,6,10);
+        checkUnackedMessages(0, a);
     }
-
 
     protected static void send(JChannel ch, Message... msgs) throws Exception {
         int cnt=1;
@@ -240,11 +251,7 @@ public class UnicastUnitTest {
 
     protected static void checkReception(MyReceiver<Integer> r, boolean check_order, int... num) {
         List<Integer> received=r.list();
-        for(int i=0; i < 10; i++) {
-            if(received.size() == num.length)
-                break;
-            Util.sleep(500);
-        }
+        Util.waitUntilTrue(3000, 500, () -> received.size() == num.length);
         List<Integer> expected=new ArrayList<>(num.length);
         for(int n: num) expected.add(n);
         System.out.println("received=" + received + ", expected=" + expected);
@@ -255,9 +262,17 @@ public class UnicastUnitTest {
                 assert num[i] == received.get(i);
     }
 
-    protected static Message msg(Address dest) {return new BytesMessage(dest);}
+    protected static void checkUnackedMessages(int expected, JChannel ... channels) throws TimeoutException {
+        Util.waitUntil(3000, 100,
+                       () -> Stream.of(channels).map(ch -> ch.stack().findProtocol(UNICAST3.class, UNICAST4.class))
+                         .map(rp -> rp instanceof UNICAST4? ((UNICAST4)rp).getNumUnackedMessages()
+                           : ((UNICAST3)rp).getNumUnackedMessages())
+                         .allMatch(num -> num == expected));
+    }
 
-    protected static JChannel create(String name, boolean use_batching, String mcast_addr) throws Exception {
+    protected static Message msg(Address dest) {return new ObjectMessage(dest);}
+
+    protected static JChannel create(Class<? extends Protocol> cl, String name, boolean use_batching, String mcast_addr) throws Exception {
         Protocol[] protocols={
           new UDP().setMcastGroupAddr(InetAddress.getByName(mcast_addr)).setBindAddress(Util.getLoopback()),
           new LOCAL_PING(),
@@ -265,7 +280,8 @@ public class UnicastUnitTest {
           new FD_ALL3().setTimeout(2000).setInterval(500),
           new NAKACK2(),
           new MAKE_BATCH().sleepTime(100).unicasts(use_batching),
-          new UNICAST3(),
+          //new UNBATCH(),
+          cl.getConstructor().newInstance(),
           new STABLE(),
           new GMS().setJoinTimeout(1000),
           new FRAG2().setFragSize(8000),
@@ -279,41 +295,4 @@ public class UnicastUnitTest {
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, channels);
     }
 
-
-    protected static class MyReceiver<T> implements Receiver {
-        protected JChannel      channel;
-        protected Throwable     ex;
-        protected final List<T> list=new ArrayList<>();
-
-        public           MyReceiver()            {this(null);}
-        public           MyReceiver(JChannel ch) {this.channel=ch;}
-        public Throwable getEx()                 {return ex;}
-        public List<T>   list()                  {return list;}
-        public void      clear()                 {list.clear();}
-
-        public void receive(Message msg) {
-            T obj=msg.getObject();
-            synchronized(list) {
-                list.add(obj);
-            }
-        }
-
-      /*  public void viewAccepted(View new_view) {
-            if(channel == null) return;
-            Address local_addr=channel.getAddress();
-            assert local_addr != null;
-            System.out.println("[" + local_addr + "]: " + new_view);
-            List<Address> members=new LinkedList<>(new_view.getMembers());
-            assert 2 == members.size() : "members=" + members + ", local_addr=" + local_addr + ", view=" + new_view;
-            Address dest=members.get(0);
-            Message unicast_msg=new EmptyMessage(dest);
-            try {
-                channel.send(unicast_msg);
-            }
-            catch(Throwable e) {
-                ex=e;
-                throw new RuntimeException(e);
-            }
-        }*/
-    }
 }

@@ -64,6 +64,7 @@
     <class id="75" name="org.jgroups.protocols.JDBC_PING2"/>
     <class id="76" name="org.jgroups.protocols.NAKACK3"/>
     <class id="77" name="org.jgroups.protocols.NAKACK4"/>
+    <class id="78" name="org.jgroups.protocols.UNICAST4"/>
 
     <!-- IDs reserved for building blocks -->
     <class id="200" name="org.jgroups.blocks.RequestCorrelator"/> <!-- ID should be the same as Global.BLOCKS_START_ID -->

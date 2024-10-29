@@ -105,7 +105,7 @@ public class Table<T> implements Iterable<T> {
      * @param num_rows the number of rows in the matrix
      * @param elements_per_row the number of elements per row
      * @param offset the seqno before the first seqno to be inserted. E.g. if 0 then the first seqno will be 1
-     * @param resize_factor teh factor with which to increase the number of rows
+     * @param resize_factor the factor with which to increase the number of rows
      * @param max_compaction_time the max time in milliseconds after we attempt a compaction
      */
     public Table(int num_rows, int elements_per_row, long offset, double resize_factor, long max_compaction_time) {

@@ -197,6 +197,32 @@ public class DynamicBuffer<T> extends Buffer<T> {
         }
     }
 
+    public boolean add(final List<LongTuple<T>> list, boolean remove_added_elements, T const_value) {
+        if(list == null || list.isEmpty())
+            return false;
+        boolean added=false;
+        // find the highest seqno (unfortunately, the list is not ordered by seqno)
+        long highest_seqno=findHighestSeqno(list);
+        lock.lock();
+        try {
+            if(highest_seqno != -1 && computeRow(highest_seqno) >= matrix.length)
+                resize(highest_seqno);
+
+            for(Iterator<LongTuple<T>> it=list.iterator(); it.hasNext();) {
+                LongTuple<T> tuple=it.next();
+                long seqno=tuple.getVal1();
+                T element=const_value != null? const_value : tuple.getVal2();
+                if(add(seqno, element, null, null))
+                    added=true;
+                else if(remove_added_elements)
+                    it.remove();
+            }
+            return added;
+        }
+        finally {
+            lock.unlock();
+        }
+    }
 
     /**
      * Returns an element at seqno

@@ -140,6 +140,27 @@ public class FixedBuffer<T> extends Buffer<T> implements Closeable {
         }
     }
 
+    public boolean add(final List<LongTuple<T>> list, boolean remove_added_elements, T const_value) {
+        if(list == null || list.isEmpty())
+            return false;
+        boolean added=false;
+        lock.lock();
+        try {
+            for(Iterator<LongTuple<T>> it=list.iterator(); it.hasNext();) {
+                LongTuple<T> tuple=it.next();
+                long seqno=tuple.getVal1();
+                T element=const_value != null? const_value : tuple.getVal2();
+                if(add(seqno, element, null, null))
+                    added=true;
+                else if(remove_added_elements)
+                    it.remove();
+            }
+            return added;
+        }
+        finally {
+            lock.unlock();
+        }
+    }
 
     /**
      * Removes the next non-null element and advances hd
@@ -354,13 +375,6 @@ public class FixedBuffer<T> extends Buffer<T> implements Closeable {
         // not true: JMH showed about the same perf (~25ns/op):
         // https://github.com/belaban/JmhTests/blob/master/src/main/java/org/jgroups/MyBenchmark.java
         //return (int)((seqno - offset - 1) & (capacity() - 1));
-    }
-
-    protected int index(long seqno, int capacity) {
-        // return (int)((seqno-1) % capacity); // apparently slower than the computation below
-
-        // apparently this is faster than mod for n^2 capacity
-        return (int)((seqno - offset - 1) & (capacity - 1));
     }
 
     @GuardedBy("lock")

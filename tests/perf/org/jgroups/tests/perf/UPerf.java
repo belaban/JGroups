@@ -471,6 +471,8 @@ public class UPerf implements Receiver {
     }
 
     protected static String print(AverageMinMax avg, boolean details) {
+        if(avg == null)
+            return "n/a";
         return details? String.format("min/avg/max = %,.2f/%,.2f/%,.2f us",
                                       avg.min() / 1000.0, avg.average() / 1000.0, avg.max() / 1000.0) :
           String.format("avg = %,.2f us", avg.average() / 1000.0);

@@ -184,6 +184,20 @@ public class SHARED_LOOPBACK extends TP {
         unregister(cluster_name, local_addr);
     }
 
+    public static void clear(AsciiString cluster) {
+        if(cluster == null) {
+            synchronized(routing_table) {
+                routing_table.clear();
+            }
+            return;
+        }
+        Map<Address,SHARED_LOOPBACK> map=routing_table.get(cluster);
+        if(map != null) {
+            map.clear();
+            routing_table.remove(cluster);
+        }
+    }
+
     protected void handleViewChange(View v) {
         curr_view=v;
         is_coord=Objects.equals(local_addr, v.getCoord());
