@@ -493,8 +493,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         msg_processing_policy.reset();
         if(local_transport != null)
             local_transport.resetStats();
-        if(thread_pool != null)
-            thread_pool.resetStats();
+        thread_pool.resetStats();
         async_executor.resetStats();
     }
 
@@ -569,9 +568,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
     public <T extends TP> T setThreadPool(Executor thread_pool) {
-        if(this.thread_pool != null)
-            this.thread_pool.destroy();
+        this.thread_pool.destroy();
         this.thread_pool.setThreadPool(thread_pool);
+        if(timer instanceof TimeScheduler3)
+            ((TimeScheduler3)timer).setThreadPool(thread_pool);
         return (T)this;
     }
 
@@ -601,8 +601,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     public <T extends TP> T setThreadFactory(ThreadFactory factory) {
         thread_factory=factory;
-        if(thread_pool != null)
-            thread_pool.setThreadFactory(factory);
+        thread_pool.setThreadFactory(factory);
         return (T)this;
     }
 
@@ -839,8 +838,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             logical_addr_cache_reaper.cancel(false);
             logical_addr_cache_reaper=null;
         }
-        if(thread_pool != null)
-            thread_pool.destroy();
+        thread_pool.destroy();
     }
 
 
