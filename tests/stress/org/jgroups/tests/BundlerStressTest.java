@@ -35,7 +35,7 @@ public class BundlerStressTest {
     protected int                           num_sender_threads=1;
     protected boolean                       details;
 
-    protected String                        cfg="tcp.xml";
+    protected String                        cfg="udp.xml";
     protected JChannel[]                    channels;
     protected final Map<Long,Promise<Long>> sender_threads=new ConcurrentHashMap<>();
 
@@ -62,16 +62,16 @@ public class BundlerStressTest {
             String name=String.valueOf(ch);
             channels[i]=new JChannel(cfg).name(name);
             GMS gms=channels[i].getProtocolStack().findProtocol(GMS.class);
-            if(gms != null)
-                gms.printLocalAddress(false);
+           // if(gms != null)
+             //   gms.printLocalAddress(false);
 
             channels[i].connect("bst");
             System.out.print(".");
-            if(i == 0) {
-                TP transport=channels[0].getProtocolStack().getTransport();
-                transport.bundler(bundler);
-            }
-            else
+            //if(i == 0) {
+              //  TP transport=channels[0].getProtocolStack().getTransport();
+               // transport.bundler(bundler);
+            //}
+            //else
                 channels[i].setReceiver(new BundlerTestReceiver());
         }
         Util.waitUntilAllChannelsHaveSameView(10000, 500, channels);
@@ -259,7 +259,7 @@ public class BundlerStressTest {
 
 
     public static void main(String[] args) throws Exception {
-        String bundler="transfer-queue", props="tcp.xml";
+        String bundler="transfer-queue", props="udp.xml";
         int time=60, warmup=time/2, nodes=4, num_sender_threads=1, msg_size=1000;
         boolean interactive=true;
         for(int i=0; i < args.length; i++) {
