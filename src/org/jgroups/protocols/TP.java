@@ -531,12 +531,18 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public Bundler           getBundler()             {return bundler;}
 
     /** Installs a bundler */
-    public <T extends TP> T setBundler(Bundler bundler) {
-        if(this.bundler != null)
-            this.bundler.stop();
-        bundler.init(this);
-        bundler.start();
-        this.bundler=bundler;
+    public <T extends TP> T setBundler(Bundler new_bundler) {
+        String old_bundler_class=null;
+        if(bundler != null) {
+            bundler.stop();
+            old_bundler_class=bundler.getClass().getName();
+            new_bundler.init(this);
+            new_bundler.start();
+        }
+        bundler=new_bundler;
+        bundler_type=bundler.getClass().getName();
+        if(old_bundler_class != null)
+            log.debug("%s: replaced bundler %s with %s", local_addr, old_bundler_class, bundler.getClass().getName());
         return (T)this;
     }
 
@@ -766,10 +772,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         else
             msg_processing_policy.init(this);
 
-        if(bundler == null) {
+        if(bundler == null)
             bundler=createBundler(bundler_type, getClass());
-            bundler.init(this);
-        }
+        bundler.init(this);
         rtt.init(this);
         // When stats is false, we'll set msg_stats.enabled to false, too. However, msg_stats.enabled=false can be
         // set to false even if stats is true
@@ -819,19 +824,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @ManagedOperation(description="Creates and sets a new bundler. Type has to be either a bundler_type or the fully " +
       "qualified classname of a Bundler impl. Stops the current bundler (if running)")
     public <T extends TP> T bundler(String type) throws Exception {
-        Bundler new_bundler=createBundler(type, getClass());
-        String old_bundler_class=null;
-        if(bundler != null) {
-            bundler.stop();
-            old_bundler_class=bundler.getClass().getName();
-        }
-        new_bundler.init(this);
-        new_bundler.start();
-        bundler=new_bundler;
-        bundler_type=type;
-        if(old_bundler_class != null)
-            log.debug("%s: replaced bundler %s with %s", local_addr, old_bundler_class, bundler.getClass().getName());
-        return (T)this;
+        return setBundler(createBundler(type, getClass()));
     }
 
 
