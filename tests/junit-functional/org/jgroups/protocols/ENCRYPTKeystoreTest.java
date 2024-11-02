@@ -5,7 +5,6 @@ package org.jgroups.protocols;
 
 
 import org.jgroups.BytesMessage;
-import org.jgroups.DefaultMessageFactory;
 import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.conf.ClassConfigurator;
@@ -33,7 +32,6 @@ public class ENCRYPTKeystoreTest {
         SYM_ENCRYPT encrypt=new SYM_ENCRYPT().keystoreName("unkownKeystore.keystore");
         try {
             encrypt.init();
-            encrypt.msgFactory(new DefaultMessageFactory());
         }
         catch(Exception e) {
             System.out.println("didn't find incorrect keystore (as expected): " + e.getMessage());
@@ -43,7 +41,6 @@ public class ENCRYPTKeystoreTest {
     public void testInitKeystoreProperties() throws Exception {
         SYM_ENCRYPT encrypt=new SYM_ENCRYPT().keystoreName("defaultStore.keystore");
         encrypt.init();
-        encrypt.msgFactory(new DefaultMessageFactory());
     }
 
     public void testMessageDownEncode() throws Exception {
@@ -157,7 +154,6 @@ public class ENCRYPTKeystoreTest {
     protected SYM_ENCRYPT create(String keystore) throws Exception {
         SYM_ENCRYPT encrypt=new SYM_ENCRYPT().keystoreName(keystore).symAlgorithm(symAlgorithm()).symIvLength(symIvLength());
         encrypt.init();
-        encrypt.msgFactory(new DefaultMessageFactory());
         return encrypt;
     }
 

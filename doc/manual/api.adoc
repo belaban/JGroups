@@ -269,47 +269,21 @@ to better performance.
 
 JGroups 5.0 comes with a number of message types (see the next sections). If none of them are a fit for the application's
 requirements, new message types can be defined and registered. To do this, the new message type needs to implement
-`Message` (typically by subclassing `BaseMessage`) and registering it with the `MessageFactory` in the transport:
+`Message` (typically by subclassing `BaseMessage`) and registering it with the `MessageFactory`:
 
 [source,java]
 ----
 CustomMessage msg=new CustomMessage(...);
-JChannel ch;
-TP transport=ch.getProtocolStack().getTransport();
-MessageFactory mf=transport.getMessageFactory();
-mf.register((short)12345, CustomMessage::new)
+MessageFactory.register((short)12345, CustomMessage::new)
 ----
 
 A (unique) ID has to be assigned with the message type, and then it has to be registered with the message factory
 in the transport. This has to be done before sending an instance of the new message type.
 If the ID has already been registered before, or is taken, an exception will be thrown.
-Note that the default implementation of `MessageFactory` requires all IDs to be greater than 32, so that there's room
-for adding built-in message types.
+`MessageFactory` requires all IDs to be greater than 32, so that there's room for adding built-in message types.
 
 NOTE: It is recommended to register all custom message types _before_ connecting the channel, so that potential errors
 are detected early.
-
-[[CustomMessageFactory]]
-==== Custom `MessageFactory`
-`MessageFactory` is a simple interface:
-
-[source,java]
-----
-public interface MessageFactory {
-    <T extends Message> T create(short id);
-    void register(short type, Supplier<? extends Message> generator);
-}
-----
-We saw the that the `register()` method is used to associate new message types with IDs <<MessageFactory,above>>.
-
-There is a `DefaultMessageFactory` which is set in the transport (`TP`). If more control over the creation of custom
-messages is desired, a custom implementation of `MessageFactory` can be written and registered in the transport, using
-`TP.setMessageFactory(MessageFactory mf)`.
-
-An example for why we might want to provide our own `MessageFactory` is that we have control over the creation of
-messages; e.g. to create an `NioMessage` with a *direct* `ByteBuffer`, we may want to use a _pool_ of off-heap memory
-rather than calling `ByteBuffer.allocateDirect()` for each message, which is slow.
-
 
 [[BytesMessage]]
 ==== BytesMessage
@@ -365,8 +339,7 @@ The methods of `NioMessage` are:
 |==========================
 
 NOTE: The envisioned use case for `useDirectMemory()` is when we send an `NioMessage` with a direct `ByteBuffer`, but
-      don't need the `ByteBuffer` to be created in off-heap memory at the receiver, when on-heap will do. +
-      The alternative is to provide a custom <<MessageFactory,`MessageFactory`>>.
+      don't need the `ByteBuffer` to be created in off-heap memory at the receiver, when on-heap will do.
 
 
 

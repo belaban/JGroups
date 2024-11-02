@@ -1288,10 +1288,10 @@ public class Util {
     }
 
 
-    public static Message messageFromBuffer(byte[] buf, int offset, int length, MessageFactory mf) throws Exception {
+    public static Message messageFromBuffer(byte[] buf, int offset, int length) throws Exception {
         ByteArrayDataInputStream in=new ByteArrayDataInputStream(buf, offset, length);
         short type=in.readShort();
-        Message msg=mf.create(type);
+        Message msg=MessageFactory.create(type);
         msg.readFrom(in);
         return msg;
     }
@@ -1307,12 +1307,12 @@ public class Util {
     }
 
 
-    public static Message messageFromByteBuffer(byte[] buffer, int offset, int length, MessageFactory mf) throws Exception {
+    public static Message messageFromByteBuffer(byte[] buffer, int offset, int length) throws Exception {
         DataInput in=new ByteArrayDataInputStream(buffer,offset,length);
         if(!in.readBoolean())
             return null;
         short type=in.readShort();
-        Message msg=mf.create(type);
+        Message msg=MessageFactory.create(type);
         msg.readFrom(in);
         return msg;
     }
@@ -1444,9 +1444,9 @@ public class Util {
         msg.writeTo(dos);
     }
 
-    public static Message readMessage(DataInput in, MessageFactory mf) throws IOException, ClassNotFoundException {
+    public static Message readMessage(DataInput in) throws IOException, ClassNotFoundException {
         short type=in.readShort();
-        Message msg=mf.create(type);
+        Message msg=MessageFactory.create(type);
         msg.readFrom(in);
         return msg;
     }
@@ -1521,7 +1521,7 @@ public class Util {
     }
 
 
-    public static List<Message> readMessageList(DataInput in, short transport_id, MessageFactory mf)
+    public static List<Message> readMessageList(DataInput in, short transport_id)
       throws IOException, ClassNotFoundException {
         List<Message> list=new LinkedList<>();
         Address dest=Util.readAddress(in);
@@ -1536,7 +1536,7 @@ public class Util {
 
         for(int i=0; i < len; i++) {
             short type=in.readShort(); // skip the
-            Message msg=mf.create(type);
+            Message msg=MessageFactory.create(type);
             msg.readFrom(in);
             msg.setDest(dest);
             if(msg.getSrc() == null)
@@ -1558,7 +1558,7 @@ public class Util {
      * </ol>
      * @return an array of 2 MessageBatches in the order above, the first batch is at index 0
      */
-    public static MessageBatch[] readMessageBatch(DataInput in, boolean multicast, MessageFactory factory)
+    public static MessageBatch[] readMessageBatch(DataInput in, boolean multicast)
       throws IOException, ClassNotFoundException {
         MessageBatch[] batches=new MessageBatch[2]; // [0]: reg, [1]: OOB
         Address dest=Util.readAddress(in);
@@ -1571,7 +1571,7 @@ public class Util {
         int len=in.readInt();
         for(int i=0; i < len; i++) {
             short type=in.readShort();
-            Message msg=factory.create(type).setDest(dest).setSrc(src);
+            Message msg=MessageFactory.create(type).setDest(dest).setSrc(src);
             msg.readFrom(in);
             boolean oob=msg.isFlagSet(Message.Flag.OOB);
             int index=0;
@@ -1599,7 +1599,6 @@ public class Util {
         if(msg_consumer == null && batch_consumer == null)
             return;
         byte[] tmp=new byte[Global.INT_SIZE];
-        MessageFactory mf=new DefaultMessageFactory();
         try(DataInputStream dis=new DataInputStream(input)) {
             for(;;) {
                 // for TCP, we send the length first; this needs to be skipped as it is not part of the JGroups payload
@@ -1632,7 +1631,7 @@ public class Util {
                 boolean is_message_list=(flags & LIST) == LIST;
                 boolean multicast=(flags & MULTICAST) == MULTICAST;
                 if(is_message_list) { // used if message bundling is enabled
-                    final MessageBatch[] batches=Util.readMessageBatch(dis,multicast, mf);
+                    final MessageBatch[] batches=Util.readMessageBatch(dis,multicast);
                     for(MessageBatch batch: batches) {
                         if(batch == null)
                             continue;
@@ -1645,7 +1644,7 @@ public class Util {
                     }
                 }
                 else {
-                    Message msg=Util.readMessage(dis, mf);
+                    Message msg=Util.readMessage(dis);
                     if(msg_consumer != null)
                         msg_consumer.accept(version, msg);
                 }

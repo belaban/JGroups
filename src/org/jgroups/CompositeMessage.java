@@ -31,8 +31,6 @@ public class CompositeMessage extends BaseMessage implements Iterable<Message> {
     protected boolean   collapse; // send as a BytesMessage when true
 
 
-    protected static final MessageFactory mf=new DefaultMessageFactory();
-
     public CompositeMessage() {
     }
 
@@ -147,7 +145,7 @@ public class CompositeMessage extends BaseMessage implements Iterable<Message> {
             msgs=new Message[index]; // a bit of additional space should we add byte arrays
             for(int i=0; i < index; i++) {
                 short type=in.readShort();
-                msgs[i]=mf.create(type);
+                msgs[i]=MessageFactory.create(type);
                 msgs[i].readFrom(in);
             }
         }

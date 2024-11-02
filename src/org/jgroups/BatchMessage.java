@@ -1,4 +1,3 @@
-
 package org.jgroups;
 
 
@@ -31,8 +30,6 @@ public class BatchMessage extends BaseMessage implements Iterable<Message> {
     protected int       index;    // index of the next message to be added
     protected Address   orig_src;
 
-
-    protected static final MessageFactory mf=new DefaultMessageFactory();
 
     public BatchMessage() {
     }
@@ -155,7 +152,7 @@ public class BatchMessage extends BaseMessage implements Iterable<Message> {
             msgs=new Message[index]; // a bit of additional space should we add byte arrays
             for(int i=0; i < index; i++) {
                 short type=in.readShort();
-                msgs[i]=mf.create(type).setDest(dest()).setSrc(orig_src);
+                msgs[i]=MessageFactory.create(type).setDest(dest()).setSrc(orig_src);
                 msgs[i].readFrom(in);
             }
         }

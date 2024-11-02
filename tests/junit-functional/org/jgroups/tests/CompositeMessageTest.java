@@ -21,8 +21,6 @@ public class CompositeMessageTest extends MessageTestBase {
     protected static final Message M2=create(DEST, 1000, true, true);
     protected static final Message M3=new EmptyMessage(DEST);
 
-    protected static final MessageFactory MF=new DefaultMessageFactory();
-
     public void testCreation() {
         CompositeMessage msg=new CompositeMessage(DEST, M1, M2);
         assert msg.getNumberOfMessages() == 2;
@@ -62,7 +60,7 @@ public class CompositeMessageTest extends MessageTestBase {
         CompositeMessage msg=new CompositeMessage(DEST, M1, M2, M3).collapse(true);
         int length=msg.getLength();
         ByteArray buf=Util.messageToBuffer(msg);
-        Message msg2=Util.messageFromBuffer(buf.getArray(), buf.getOffset(), buf.getLength(), MF);
+        Message msg2=Util.messageFromBuffer(buf.getArray(), buf.getOffset(), buf.getLength());
         assert msg2 instanceof BytesMessage;
         assert msg2.getLength() == length;
     }
@@ -75,7 +73,7 @@ public class CompositeMessageTest extends MessageTestBase {
           .collapse(true);
         int length=msg.getLength();
         ByteArray buf=Util.messageToBuffer(msg);
-        Message msg2=Util.messageFromBuffer(buf.getArray(), buf.getOffset(), buf.getLength(), MF);
+        Message msg2=Util.messageFromBuffer(buf.getArray(), buf.getOffset(), buf.getLength());
         assert msg2 instanceof BytesMessage;
         assert msg2.getLength() == length;
 

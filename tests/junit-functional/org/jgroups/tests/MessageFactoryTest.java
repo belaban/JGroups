@@ -15,21 +15,20 @@ import java.util.function.Supplier;
  */
 @Test(groups=Global.FUNCTIONAL)
 public class MessageFactoryTest {
-    protected final MessageFactory mf=new DefaultMessageFactory();
 
     public void testRegistration() {
         for(int i=0; i < 32; i++) {
             try {
-                mf.register((short)i, MyMessageFactory::new);
+                MessageFactory.register((short)i, MyMessageFactory::new);
             }
             catch(IllegalArgumentException ex) {
                 System.out.printf("received exception (as expected): %s\n", ex);
             }
         }
-        mf.register((short)32, MyMessageFactory::new);
+        MessageFactory.register((short)32, MyMessageFactory::new);
 
         try {
-            mf.register((short)32, MyMessageFactory::new);
+            MessageFactory.register((short)32, MyMessageFactory::new);
         }
         catch(IllegalArgumentException ex) {
             System.out.printf("received exception (as expected): %s\n", ex);

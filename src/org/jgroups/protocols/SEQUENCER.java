@@ -66,8 +66,6 @@ public class SEQUENCER extends Protocol {
     /** Used for each resent message to wait until the message has been received */
     protected final Promise<Long>               ack_promise=new Promise<>();
 
-    protected MessageFactory                    msg_factory;
-
 
 
     @Property(description="Size of the set to store received seqnos (for duplicate checking)")
@@ -106,7 +104,6 @@ public class SEQUENCER extends Protocol {
 
     public void init() throws Exception {
         super.init();
-        msg_factory=getTransport().getMessageFactory();
     }
 
     public void start() throws Exception {
@@ -457,7 +454,7 @@ public class SEQUENCER extends Protocol {
     protected void unwrapAndDeliver(final Message msg, boolean flush_ack) {
         try {
             // Message msg_to_deliver=Util.streamableFromBuffer(BytesMessage::new, msg.getArray(), msg.getOffset(), msg.getLength());
-            Message msg_to_deliver=Util.messageFromBuffer(msg.getArray(), msg.getOffset(), msg.getLength(), msg_factory);
+            Message msg_to_deliver=Util.messageFromBuffer(msg.getArray(), msg.getOffset(), msg.getLength());
             SequencerHeader hdr=msg_to_deliver.getHeader(this.id);
             if(flush_ack)
                 hdr.flush_ack=true;
