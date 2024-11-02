@@ -42,7 +42,6 @@ public class FRAG extends Fragmentation {
     protected final FragmentationList  fragment_list=new FragmentationList();
     protected final AtomicInteger      curr_id=new AtomicInteger(1);
     protected final List<Address>      members=new ArrayList<>(11);
-    protected MessageFactory           msg_factory;
     protected final Predicate<Message> HAS_FRAG_HEADER=msg -> msg.getHeader(id) != null;
  
 
@@ -58,7 +57,6 @@ public class FRAG extends Fragmentation {
 
     public void init() throws Exception {
         super.init();
-        msg_factory=getTransport().getMessageFactory();
         Map<String,Object> info=new HashMap<>(1);
         info.put("frag_size", frag_size);
         down_prot.down(new Event(Event.CONFIG, info));
@@ -229,7 +227,7 @@ public class FRAG extends Fragmentation {
             return null;
 
         try {
-            Message assembled_msg=Util.messageFromBuffer(buf, 0, buf.length, msg_factory);
+            Message assembled_msg=Util.messageFromBuffer(buf, 0, buf.length);
             assembled_msg.setSrc(sender); // needed ? YES, because fragments have a null src !!
             if(log.isTraceEnabled()) log.trace("assembled_msg is " + assembled_msg);
             num_received_msgs++;

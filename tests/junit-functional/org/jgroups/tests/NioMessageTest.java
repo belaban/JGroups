@@ -1,6 +1,5 @@
 package org.jgroups.tests;
 
-import org.jgroups.DefaultMessageFactory;
 import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.NioMessage;
@@ -236,7 +235,7 @@ public class NioMessageTest extends MessageTestBase {
         ByteBuffer payload=ByteBuffer.allocate(4).putInt(322649).flip().asReadOnlyBuffer();
         Message msg=new NioMessage(null, payload);
         ByteArray buf=Util.messageToBuffer(msg);
-        NioMessage msg2=(NioMessage)Util.messageFromBuffer(buf.getArray(), buf.getOffset(), buf.getLength(), new DefaultMessageFactory());
+        NioMessage msg2=(NioMessage)Util.messageFromBuffer(buf.getArray(), buf.getOffset(), buf.getLength());
         ByteBuffer buf2=msg2.getBuf();
         assert payload.equals(buf2);
 

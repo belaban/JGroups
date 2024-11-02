@@ -22,8 +22,6 @@ public class BatchMessageTest extends MessageTestBase {
     protected static final Message M2=create(DEST, 1000, true, true);
     protected static final Message M3=new EmptyMessage(DEST);
 
-    protected static final MessageFactory MF=new DefaultMessageFactory();
-
     public void testCreation() {
         BatchMessage msg=new BatchMessage(DEST, SRC, new Message[]{M1,M2,M3}, 3);
         assert msg.getNumberOfMessages() == 3;

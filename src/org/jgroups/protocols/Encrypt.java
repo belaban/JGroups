@@ -70,8 +70,6 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
     // SecureRandom instance for generating IV's
     protected SecureRandom                  secure_random = new SecureRandom();
 
-    protected MessageFactory                msg_factory;
-
 
     /**
      * Sets the key store entry used to configure this protocol.
@@ -96,7 +94,6 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
     public SecureRandom             secureRandom()                  {return this.secure_random;}
     /** Allows callers to replace secure_random with impl of their choice, e.g. for performance reasons. */
     public <T extends Encrypt<E>> T secureRandom(SecureRandom sr)   {this.secure_random = sr; return (T)this;}
-    public <T extends Encrypt<E>> T msgFactory(MessageFactory f)    {this.msg_factory=f; return (T)this;}
     @ManagedAttribute public String version()                       {return Util.byteArrayToHexString(sym_version);}
 
 
@@ -116,8 +113,6 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
         key_map=new BoundedHashMap<>(key_map_max_size);
         initSymCiphers(sym_algorithm, secret_key);
         TP transport=getTransport();
-        if(transport != null)
-            msg_factory=transport.getMessageFactory();
     }
 
 
@@ -322,7 +317,7 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
             decrypted_msg=cipher.doFinal(msg.getArray(), msg.getOffset(), msg.getLength());
         }
         if(hdr.needsDeserialization())
-            return Util.messageFromBuffer(decrypted_msg, 0, decrypted_msg.length, msg_factory);
+            return Util.messageFromBuffer(decrypted_msg, 0, decrypted_msg.length);
         else
             return msg.setArray(decrypted_msg, 0, decrypted_msg.length);
     }

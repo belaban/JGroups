@@ -4,6 +4,7 @@ import org.jgroups.Address;
 import org.jgroups.BytesMessage;
 import org.jgroups.FragmentedMessage;
 import org.jgroups.Message;
+import org.jgroups.MessageFactory;
 import org.jgroups.util.ByteArrayDataInputStream;
 import org.jgroups.util.Range;
 import org.jgroups.util.Util;
@@ -81,7 +82,7 @@ public class FRAG4 extends FRAG2 {
                                                                                                      m.getOffset(),
                                                                                                      m.getLength())));
             DataInput in=new DataInputStream(seq);
-            Message retval=msg_factory.create(hdr.getOriginalType());
+            Message retval=MessageFactory.create(hdr.getOriginalType());
             retval.readFrom(in);
             return retval;
         }

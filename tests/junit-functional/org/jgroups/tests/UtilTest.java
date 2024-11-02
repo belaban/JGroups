@@ -505,17 +505,16 @@ public class UtilTest {
     }
 
     public void testMessageToByteBuffer() throws Exception {
-        MessageFactory mf=new DefaultMessageFactory();
-        _testMessage(new EmptyMessage(), mf);
-        _testMessage(new BytesMessage(null, "hello world"), mf);
-        _testMessage(new EmptyMessage(null).setSrc(Util.createRandomAddress()), mf);
-        _testMessage(new EmptyMessage(null).setSrc(Util.createRandomAddress()), mf);
-        _testMessage(new BytesMessage(null, "bela").setSrc(Util.createRandomAddress()), mf);
+        _testMessage(new EmptyMessage());
+        _testMessage(new BytesMessage(null, "hello world"));
+        _testMessage(new EmptyMessage(null).setSrc(Util.createRandomAddress()));
+        _testMessage(new EmptyMessage(null).setSrc(Util.createRandomAddress()));
+        _testMessage(new BytesMessage(null, "bela").setSrc(Util.createRandomAddress()));
     }
 
-    private static void _testMessage(Message msg, final MessageFactory mf) throws Exception {
+    private static void _testMessage(Message msg) throws Exception {
         ByteArray buf=Util.messageToByteBuffer(msg);
-        Message msg2=Util.messageFromByteBuffer(buf.getArray(), buf.getOffset(), buf.getLength(), mf);
+        Message msg2=Util.messageFromByteBuffer(buf.getArray(), buf.getOffset(), buf.getLength());
         Assert.assertEquals(msg.getSrc(), msg2.getSrc());
         Assert.assertEquals(msg.getDest(), msg2.getDest());
         Assert.assertEquals(msg.getLength(), msg2.getLength());

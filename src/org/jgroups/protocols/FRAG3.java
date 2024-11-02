@@ -45,8 +45,6 @@ public class FRAG3 extends Fragmentation {
 
     protected final List<Address> members=new ArrayList<>(11);
 
-    protected MessageFactory      msg_factory;
-
     protected final AverageMinMax avg_size_down=new AverageMinMax();
     protected final AverageMinMax avg_size_up=new AverageMinMax();
 
@@ -70,7 +68,6 @@ public class FRAG3 extends Fragmentation {
         if(frag_size >= max_bundle_size)
             throw new IllegalArgumentException("frag_size (" + frag_size + ") has to be < TP.max_bundle_size (" +
                                                  max_bundle_size + ")");
-        msg_factory=transport.getMessageFactory();
         Map<String,Object> info=new HashMap<>(1);
         info.put("frag_size", frag_size);
         down_prot.down(new Event(Event.CONFIG, info));
@@ -351,7 +348,7 @@ public class FRAG3 extends Fragmentation {
          * @return the complete message in one buffer
          */
         protected Message assembleMessage() throws Exception {
-            return needs_deserialization? Util.messageFromBuffer(buffer, 0, buffer.length, msg_factory)
+            return needs_deserialization? Util.messageFromBuffer(buffer, 0, buffer.length)
               : msg.setArray(buffer, 0, buffer.length);
         }
 

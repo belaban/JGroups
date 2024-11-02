@@ -163,11 +163,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
       "disables this.",type=AttributeType.TIME)
     protected long suppress_time_different_cluster_warnings=60000;
 
-    @Property(description="The fully qualified name of a MessageFactory implementation",exposeAsManagedAttribute=false)
-    protected String msg_factory_class;
-
-    protected MessageFactory msg_factory=new DefaultMessageFactory();
-
     @Property(description="The type of bundler used (\"ring-buffer\", \"transfer-queue\" (default), \"sender-sends\" or " +
       "\"no-bundler\") or the fully qualified classname of a Bundler implementation")
     protected String bundler_type="transfer-queue";
@@ -176,9 +171,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public String getBundlerClass() {
         return bundler != null? bundler.getClass().getName() : "null";
     }
-
-    public MessageFactory   getMessageFactory()                 {return msg_factory;}
-    public <T extends TP> T setMessageFactory(MessageFactory m) {msg_factory=m; return (T)this;}
 
     public InetAddress      getBindAddr() {return bind_addr;}
     public <T extends TP> T setBindAddr(InetAddress b) {this.bind_addr=b; return (T)this;}
@@ -222,19 +214,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     public long             getSuppressTimeDifferentClusterWarnings() {return suppress_time_different_cluster_warnings;}
     public <T extends TP> T setSuppressTimeDifferentClusterWarnings(long s) {this.suppress_time_different_cluster_warnings=s; return (T)this;}
 
-    public String           getMsgFactoryClass()         {return msg_factory_class;}
-    public <T extends TP> T setMsgFactoryClass(String m) {this.msg_factory_class=m; return (T)this;}
-
     public String           getBundlerType()         {return bundler_type;}
     public <T extends TP> T setBundlerType(String b) {this.bundler_type=b; return (T)this;}
 
     @Property
     public <T extends TP> T useVirtualThreads(boolean f) {use_vthreads=f; return (T)this;}
-
-    @ManagedAttribute
-    public String getMessageFactoryClass() {
-        return msg_factory != null? msg_factory.getClass().getName() : "n/a";
-    }
 
     @ManagedAttribute(description="Is the logical_addr_cache reaper task running")
     public boolean isLogicalAddressCacheReaperRunning() {
@@ -782,11 +766,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         else
             msg_processing_policy.init(this);
 
-        if(msg_factory_class != null) {
-            Class<MessageFactory> clazz=(Class<MessageFactory>)Util.loadClass(msg_factory_class, getClass());
-            msg_factory=clazz.getDeclaredConstructor().newInstance();
-        }
-
         if(bundler == null) {
             bundler=createBundler(bundler_type, getClass());
             bundler.init(this);
@@ -1245,7 +1224,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         boolean is_message_list=(flags & LIST) == LIST, multicast=(flags & MULTICAST) == MULTICAST;
         ByteArrayDataInputStream in=new ByteArrayDataInputStream(data, offset, length);
         if(is_message_list) // used if message bundling is enabled
-            handleMessageBatch(in, multicast, msg_factory);
+            handleMessageBatch(in, multicast);
         else
             handleSingleMessage(in, multicast);
     }
@@ -1264,15 +1243,15 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
         boolean is_message_list=(flags & LIST) == LIST, multicast=(flags & MULTICAST) == MULTICAST;
         if(is_message_list) // used if message bundling is enabled
-            handleMessageBatch(in, multicast, msg_factory);
+            handleMessageBatch(in, multicast);
         else
             handleSingleMessage(in, multicast);
     }
 
 
-    protected void handleMessageBatch(DataInput in, boolean multicast, MessageFactory factory) {
+    protected void handleMessageBatch(DataInput in, boolean multicast) {
         try {
-            final MessageBatch[] batches=Util.readMessageBatch(in, multicast, factory);
+            final MessageBatch[] batches=Util.readMessageBatch(in, multicast);
             final MessageBatch regular=batches[0], oob=batches[1];
 
             // we need to update the stats *before* processing the batches: protocols can remove msgs from the batch
@@ -1290,7 +1269,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected void handleSingleMessage(DataInput in, boolean multicast) {
         try {
             short type=in.readShort();
-            Message msg=msg_factory.create(type); // don't create headers, readFrom() will do this
+            Message msg=MessageFactory.create(type); // don't create headers, readFrom() will do this
             msg.readFrom(in);
 
             if(!multicast && unicastDestMismatch(msg.getDest()))

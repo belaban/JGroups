@@ -46,7 +46,6 @@ public class FRAG2 extends Fragmentation {
     protected final AtomicLong    curr_id=new AtomicLong(1);
 
     protected final List<Address> members=new ArrayList<>(11);
-    protected MessageFactory      msg_factory;
 
     protected final AverageMinMax avg_size_down=new AverageMinMax();
     protected final AverageMinMax avg_size_up=new AverageMinMax();
@@ -75,7 +74,6 @@ public class FRAG2 extends Fragmentation {
                 throw new IllegalArgumentException("frag_size (" + frag_size + ") has to be < TP.max_bundle_size (" +
                                                      max_bundle_size + ")");
         }
-        msg_factory=transport.getMessageFactory();
         Map<String,Object> info=new HashMap<>(1);
         info.put("frag_size", frag_size);
         down_prot.down(new Event(Event.CONFIG, info));
@@ -261,7 +259,7 @@ public class FRAG2 extends Fragmentation {
 
         FragEntry entry=frag_table.get(hdr.id);
         if(entry == null) {
-            entry=new FragEntry(hdr.num_frags, hdr.needs_deserialization, msg_factory);
+            entry=new FragEntry(hdr.num_frags, hdr.needs_deserialization);
             FragEntry tmp=frag_table.putIfAbsent(hdr.id, entry);
             if(tmp != null)
                 entry=tmp;
@@ -314,7 +312,7 @@ public class FRAG2 extends Fragmentation {
             index+=length;
         }
         if(needs_deserialization)
-            retval=Util.messageFromBuffer(combined_buffer, 0, combined_buffer.length, msg_factory);
+            retval=Util.messageFromBuffer(combined_buffer, 0, combined_buffer.length);
         else
             retval.setArray(combined_buffer, 0, combined_buffer.length);
         return retval;
@@ -332,7 +330,6 @@ public class FRAG2 extends Fragmentation {
         protected final Message[]      fragments;
         protected int                  number_of_frags_recvd;
         protected final boolean        needs_deserialization;
-        protected final MessageFactory msg_factory;
         protected final Lock           lock=new ReentrantLock();
 
 
@@ -340,10 +337,9 @@ public class FRAG2 extends Fragmentation {
          * Creates a new entry
          * @param tot_frags the number of fragments to expect for this message
          */
-        protected FragEntry(int tot_frags, boolean needs_deserialization, MessageFactory mf) {
+        protected FragEntry(int tot_frags, boolean needs_deserialization) {
             fragments=new Message[tot_frags];
             this.needs_deserialization=needs_deserialization;
-            this.msg_factory=mf;
         }
 
 

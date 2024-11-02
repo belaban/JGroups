@@ -378,7 +378,6 @@ public class MessageBatchTest {
 
 
     public void testSize() throws Exception {
-        MessageFactory mf=new DefaultMessageFactory();
         List<Message> msgs=createMessages();
         ByteArrayOutputStream output=new ByteArrayOutputStream();
         DataOutputStream out=new DataOutputStream(output);
@@ -391,7 +390,7 @@ public class MessageBatchTest {
         DataInputStream in=new DataInputStream(new ByteArrayInputStream(buf));
         in.readShort(); // version
         in.readByte(); // flags
-        List<Message> list=Util.readMessageList(in, UDP_ID, mf);
+        List<Message> list=Util.readMessageList(in, UDP_ID);
         assert msgs.size() == list.size();
     }
 
