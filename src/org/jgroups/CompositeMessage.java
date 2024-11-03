@@ -1,4 +1,3 @@
-
 package org.jgroups;
 
 
@@ -8,6 +7,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -42,6 +42,11 @@ public class CompositeMessage extends BaseMessage implements Iterable<Message> {
     }
 
     public CompositeMessage(Address dest, Message ... messages) {
+        super(dest);
+        add(messages);
+    }
+
+    public CompositeMessage(Address dest, Collection<Message> messages) {
         super(dest);
         add(messages);
     }
@@ -81,6 +86,13 @@ public class CompositeMessage extends BaseMessage implements Iterable<Message> {
 
     public CompositeMessage add(Message ... messages) {
         ensureCapacity(index + messages.length);
+        for(Message msg: messages)
+            msgs[index++]=Objects.requireNonNull(ensureSameDest(msg));
+        return this;
+    }
+
+    public CompositeMessage add(Collection<Message> messages) {
+        ensureCapacity(index + messages.size());
         for(Message msg: messages)
             msgs[index++]=Objects.requireNonNull(ensureSameDest(msg));
         return this;
@@ -136,7 +148,7 @@ public class CompositeMessage extends BaseMessage implements Iterable<Message> {
             for(int i=0; i < index; i++) {
                 Message msg=msgs[i];
                 out.writeShort(msg.getType());
-                msg.writeTo(out);
+                msg.writeToNoAddrs(src(), out);
             }
         }
     }
@@ -147,8 +159,11 @@ public class CompositeMessage extends BaseMessage implements Iterable<Message> {
             msgs=new Message[index]; // a bit of additional space should we add byte arrays
             for(int i=0; i < index; i++) {
                 short type=in.readShort();
-                msgs[i]=mf.create(type);
-                msgs[i].readFrom(in);
+                Message msg=mf.create(type).setDest(getDest());
+                if (msg.getSrc() == null)
+                    msg.setSrc(getSrc());
+                msg.readFrom(in);
+                msgs[i]=msg;
             }
         }
     }
