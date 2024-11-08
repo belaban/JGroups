@@ -25,7 +25,7 @@ import static org.jgroups.util.SuppressLog.Level.warn;
  * @since  5.2
  */
 public class ThreadPool implements Lifecycle {
-    private static final MethodHandle EXECUTORS_NEW_VIRTUAL_THREAD_FACTORY=getNewVirtualThreadFactoryHandle();
+    private static final MethodHandle EXECUTORS_NEW_THREAD_PER_TASK_EXECUTOR=getNewThreadPerTaskExecutorHandle();
     protected Executor            thread_pool;
     protected Log                 log;
     protected ThreadFactory       thread_factory;
@@ -261,7 +261,7 @@ public class ThreadPool implements Lifecycle {
                                                       String rejection_policy,
                                                       BlockingQueue<Runnable> queue, final ThreadFactory factory,
                                                       Log log) {
-        if(!factory.useVirtualThreads() || EXECUTORS_NEW_VIRTUAL_THREAD_FACTORY == null) {
+        if(!factory.useVirtualThreads() || EXECUTORS_NEW_THREAD_PER_TASK_EXECUTOR == null) {
             ThreadPoolExecutor pool=new ThreadPoolExecutor(min_threads, max_threads, keep_alive_time,
                                                            TimeUnit.MILLISECONDS, queue, factory);
             RejectedExecutionHandler handler=Util.parseRejectionPolicy(rejection_policy);
@@ -272,19 +272,18 @@ public class ThreadPool implements Lifecycle {
         }
 
         try {
-            return (ExecutorService)EXECUTORS_NEW_VIRTUAL_THREAD_FACTORY.invokeExact();
+            return (ExecutorService)EXECUTORS_NEW_THREAD_PER_TASK_EXECUTOR.invokeExact((java.util.concurrent.ThreadFactory)factory);
         }
         catch(Throwable t) {
             throw new IllegalStateException(String.format("failed to create virtual thread pool: %s", t));
         }
     }
 
-    protected static MethodHandle getNewVirtualThreadFactoryHandle() {
-        MethodType type=MethodType.methodType(ExecutorService.class);
+    protected static MethodHandle getNewThreadPerTaskExecutorHandle() {
+        MethodType type=MethodType.methodType(ExecutorService.class, java.util.concurrent.ThreadFactory.class);
         String[] names={
-          "newVirtualThreadPerTaskExecutor",  // jdk 18-21
-          "newVirtualThreadExecutor",         // jdk 17
-          "newUnboundedVirtualThreadExecutor" // jdk 15 & 16
+          "newThreadPerTaskExecutor", // jdk 17+
+          "newUnboundedExecutor"      // jdk 15 & 16
         };
 
         MethodHandles.Lookup LOOKUP=MethodHandles.publicLookup();
