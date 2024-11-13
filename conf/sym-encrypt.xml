@@ -23,9 +23,5 @@
     <UNICAST3/>
     <pbcast.STABLE/>
     <FRAG2/>
-    <!-- AUTH below is optional -->
-    <AUTH auth_class="org.jgroups.auth.MD5Token"
-          auth_value="chris"
-          token_hash="MD5"/>
     <pbcast.GMS join_timeout="2s" />
 </config>
