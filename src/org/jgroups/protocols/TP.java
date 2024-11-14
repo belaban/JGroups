@@ -1381,6 +1381,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             }
         }
 
+        List<PhysicalAddress> dests=new ArrayList<>(mbrs.size());
         for(Address mbr: mbrs) {
             if(local_send_successful && local_transport != null && local_transport.isLocalMember(mbr))
                 continue; // skip if local transport sent the message successfully
@@ -1392,21 +1393,28 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                 missing.add(mbr);
                 continue;
             }
-            try {
-                if(!Objects.equals(local_physical_addr, target))
-                    sendUnicast(target, buf, offset, length);
-            }
-            catch(SocketException | SocketTimeoutException sock_ex) {
-                log.debug(Util.getMessage("FailureSendingToPhysAddr"), local_addr, mbr, sock_ex);
-            }
-            catch(Throwable t) {
-                log.error(Util.getMessage("FailureSendingToPhysAddr"), local_addr, mbr, t);
-            }
+            if(!Objects.equals(local_physical_addr, target))
+                dests.add(target);
         }
+        if(!dests.isEmpty())
+            sendUnicasts(dests, buf, offset, length);
         if(missing != null)
             fetchPhysicalAddrs(missing);
     }
 
+    protected void sendUnicasts(List<PhysicalAddress> dests, byte[] data, int offset, int length) throws Exception {
+        for(PhysicalAddress dest: dests) {
+            try {
+                sendUnicast(dest, data, offset, length);
+            }
+            catch(SocketException | SocketTimeoutException sock_ex) {
+                log.debug(Util.getMessage("FailureSendingToPhysAddr"), local_addr, dest, sock_ex);
+            }
+            catch(Throwable t) {
+                log.error(Util.getMessage("FailureSendingToPhysAddr"), local_addr, dest, t);
+            }
+        }
+    }
 
     protected void fetchPhysicalAddrs(List<Address> missing) {
         long current_time=0;
@@ -1430,7 +1438,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected Responses fetchResponsesFromDiscoveryProtocol(List<Address> missing) {
         return (Responses)up_prot.up(new Event(Event.FIND_MBRS, missing));
     }
-
 
     protected long timestamp() {return time_service != null? time_service.timestamp() : System.nanoTime();}
 
