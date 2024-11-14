@@ -142,7 +142,8 @@ public class CompositeMessage extends BaseMessage implements Iterable<Message> {
             for(int i=0; i < index; i++) {
                 Message msg=msgs[i];
                 out.writeShort(msg.getType());
-                msg.writeToNoAddrs(src(), out);
+                // msg.writeToNoAddrs(src(), out);
+                msg.writeTo(out);
             }
         }
     }
@@ -153,8 +154,6 @@ public class CompositeMessage extends BaseMessage implements Iterable<Message> {
             msgs=new Message[index]; // a bit of additional space should we add byte arrays
             for(int i=0; i < index; i++) {
                 short type=in.readShort();
-                msgs[i]=MessageFactory.create(type);
-                msgs[i].readFrom(in);
                 Message msg=MessageFactory.create(type).setDest(getDest());
                 if(msg.getSrc() == null)
                     msg.setSrc(src());
