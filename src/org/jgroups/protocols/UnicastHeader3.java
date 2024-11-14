@@ -76,12 +76,13 @@ public class UnicastHeader3 extends Header {
     public UnicastHeader3 timestamp(int ts) {timestamp=ts; return this;}
 
     public String toString() {
-        StringBuilder sb=new StringBuilder();
+        StringBuilder sb=new StringBuilder("[");
         sb.append(type2Str(type)).append(", seqno=").append(seqno);
         if(conn_id != 0) sb.append(", conn_id=").append(conn_id);
         if(first) sb.append(", first");
         if(timestamp != 0)
             sb.append(", ts=").append(timestamp);
+        sb.append("]");
         return sb.toString();
     }
 
