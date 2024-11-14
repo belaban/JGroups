@@ -8,8 +8,6 @@ import javax.net.ssl.SNIMatcher;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLServerSocket;
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -119,11 +117,6 @@ public class TLS implements Lifecycle {
             truststore_path=keystore_path;
             truststore_type=keystore_type;
             truststore_password=keystore_password;
-        }
-        if(keystore_path != null) {
-            File tmp=new File(keystore_path);
-            if(!tmp.exists())
-                throw new FileNotFoundException(keystore_path);
         }
     }
 
