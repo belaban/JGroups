@@ -60,10 +60,10 @@ public class OrderingTest {
                             new SHUFFLE().setUp(false).setDown(false).setMaxSize(200), // reorders messages
                             new NAKACK2().useMcastXmit(false).setDiscardDeliveredMsgs(true).setXmitInterval(200),
                             new UNICAST3(),
-                            new STABLE().setMaxBytes(50000).setDesiredAverageGossip(1000),
+                            new STABLE().setMaxBytes(50_000).setDesiredAverageGossip(1000),
                             new GMS().setJoinTimeout(500).printLocalAddress(false),
-                            new UFC().setMaxCredits(2000000),
-                            new MFC().setMaxCredits(2000000),
+                            new UFC().setMaxCredits(2_000_000),
+                            new MFC().setMaxCredits(2_000_000),
                             new FRAG2())
           .name(String.valueOf((char)('A' +index)));
     }
@@ -114,20 +114,9 @@ public class OrderingTest {
         }
 
         System.out.println("\n-- waiting for message reception by all receivers:");
-        for(int i=0; i < 20; i++) {
-            boolean done=true;
-            for(JChannel ch: channels) {
-                MyReceiver receiver=(MyReceiver)ch.getReceiver();
-                int received=receiver.getReceived();
-                if(received != expected_msgs) {
-                    done=false;
-                    break;
-                }
-            }
-            if(done)
-                break;
-            Util.sleep(500);
-        }
+        Util.waitUntilTrue(10000, 500,
+                           () -> Stream.of(channels).map(JChannel::getReceiver)
+                             .allMatch(r -> ((MyReceiver)r).getReceived() == expected_msgs));
 
         Stream.of(channels).forEach(ch -> System.out.printf("%s: %d\n", ch.getAddress(),
                                                             ((MyReceiver)ch.getReceiver()).getReceived()));
