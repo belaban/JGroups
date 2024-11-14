@@ -144,7 +144,7 @@ public class NakAckHeader extends Header {
 
     public String toString() {
         StringBuilder ret=new StringBuilder();
-        ret.append("[").append(type2Str(type));
+        ret.append(type2Str(type));
         switch(type) {
             case MSG:
             case XMIT_RSP: // seqno and sender
@@ -157,7 +157,6 @@ public class NakAckHeader extends Header {
         }
 
         if(sender != null) ret.append(", sender=").append(sender);
-        ret.append(']');
         return ret.toString();
     }
 

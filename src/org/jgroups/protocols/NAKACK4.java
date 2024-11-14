@@ -92,7 +92,7 @@ public class NAKACK4 extends ReliableMulticast {
         super.init();
         if(ack_threshold <= 0) {
             ack_threshold=capacity / 4;
-            log.info("defaulted ack_threshold to %d", ack_threshold);
+            log.debug("defaulted ack_threshold to %d", ack_threshold);
         }
     }
 
