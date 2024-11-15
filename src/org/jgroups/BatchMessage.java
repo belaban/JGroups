@@ -118,12 +118,12 @@ public class BatchMessage extends BaseMessage implements Iterable<Message> {
         return String.format("%s, %d message(s)", super.toString(), getNumberOfMessages());
     }
 
-    public int size() {
-        int retval=super.size() + Global.INT_SIZE;
+    @Override protected int payloadSize() {
+        int retval=Global.INT_SIZE; // count
         retval+=Util.size(orig_src);
         if(msgs != null) {
             for(int i=0; i < index; i++)
-                retval+=msgs[i].size() + Global.SHORT_SIZE; // type
+                retval+=msgs[i].sizeNoAddrs(getSrc()) + Global.SHORT_SIZE; // type
         }
         return retval;
     }
@@ -140,7 +140,7 @@ public class BatchMessage extends BaseMessage implements Iterable<Message> {
             for(int i=0; i < index; i++) {
                 Message msg=msgs[i];
                 out.writeShort(msg.getType());
-                msg.writeToNoAddrs(this.src(), out);
+                msg.writeToNoAddrs(getSrc(), out);
             }
         }
     }

@@ -179,8 +179,6 @@ public class NioMessage extends BaseMessage {
 
     /* ----------------------------------- Interface Streamable  ------------------------------- */
 
-    public int size() {return super.size() +sizeOfPayload();}
-
     public String toString() {
         return String.format("%s %s", super.toString(), use_direct_memory_for_allocations? "(direct)" : "");
     }
@@ -191,7 +189,7 @@ public class NioMessage extends BaseMessage {
         return copy;
     }
 
-    protected int sizeOfPayload() {
+    @Override protected int payloadSize() {
         return Global.INT_SIZE + getLength() + Global.BYTE_SIZE; // for use_direct_memory_for_allocations
     }
 

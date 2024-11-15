@@ -207,7 +207,7 @@ public class RingBufferBundlerLockless2 extends BaseBundler {
         for(int i=start_index; i != end_index; i=increment(i)) {
             Message msg=buf[i];
             if(msg != null && msg != NULL_MSG && Objects.equals(dest, msg.getDest())) {
-                int msg_size=msg.size() + Global.SHORT_SIZE;
+                int msg_size=msg.sizeNoAddrs(msg.getSrc()) + Global.SHORT_SIZE;
                 if(bytes + msg_size > max_bundle_size)
                     break;
                 bytes+=msg_size;
