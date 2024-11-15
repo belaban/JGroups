@@ -87,5 +87,9 @@ public class MessageFactoryTest {
 
         public void readPayload(DataInput in) throws IOException, ClassNotFoundException {
         }
+
+        protected int payloadSize() {
+            return 0;
+        }
     }
 }

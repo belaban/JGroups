@@ -227,11 +227,6 @@ public class BytesMessage extends BaseMessage {
     }
 
 
-    public int size() {
-        return super.size() +sizeOfPayload();
-    }
-
-
     /**
      * Copies the byte array. If offset and length are used (to refer to another array), the copy will contain only
      * the subset that offset and length point to, copying the subset into the new copy.<p/>
@@ -245,7 +240,7 @@ public class BytesMessage extends BaseMessage {
         return copy;
     }
 
-    protected int sizeOfPayload() {
+    @Override protected int payloadSize() {
         int retval=Global.INT_SIZE; // length
         if(array != null)
             retval+=length;         // number of bytes in the array

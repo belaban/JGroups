@@ -60,8 +60,8 @@ public class LongMessage extends BaseMessage {
         value=Bits.readLongCompressed(in);
     }
 
-    public int size() {
-        return super.size() + Bits.size(value);
+    @Override protected int payloadSize() {
+        return Bits.size(value);
     }
 
     public String toString() {

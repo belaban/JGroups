@@ -67,7 +67,7 @@ public class ObjectMessage extends BaseMessage {
     public boolean           hasPayload()                         {return obj != null;}
     public boolean           hasArray()                           {return false;}
     public int               getOffset()                          {return 0;}
-    public int               getLength()                          {return obj != null? objSize() : 0;}
+    public int               getLength()                          {return obj != null? payloadSize() : 0;}
     public byte[]            getArray()                           {throw new UnsupportedOperationException();}
     public ObjectMessage     setArray(byte[] b, int off, int len) {throw new UnsupportedOperationException();}
     public ObjectMessage     setArray(ByteArray buf)              {throw new UnsupportedOperationException();}
@@ -132,10 +132,6 @@ public class ObjectMessage extends BaseMessage {
         return isWrapped() || obj instanceof ObjectWrapperPrimitive? ((ObjectWrapperPrimitive)obj).getObject() : (T)obj;
     }
 
-    public int size() {
-        return super.size() + objSize();
-    }
-
     public void writePayload(DataOutput out) throws IOException {
         Util.writeGenericStreamable(obj, out);
     }
@@ -157,7 +153,7 @@ public class ObjectMessage extends BaseMessage {
         return super.toString() + String.format(", obj: %s", obj);
     }
 
-    protected int objSize() {
+    @Override protected int payloadSize() {
         return Util.size(obj);
     }
 }

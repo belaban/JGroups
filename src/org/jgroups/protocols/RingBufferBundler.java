@@ -204,7 +204,7 @@ public class RingBufferBundler extends BaseBundler {
             if(msg != null && Objects.equals(dest, msg.getDest())) {
                 if(list != null)
                     list.add(msg);
-                int size=msg.size() + Global.SHORT_SIZE;
+                int size=msg.sizeNoAddrs(msg.getSrc()) + Global.SHORT_SIZE;
                 if(bytes + size > max_bundle_size)
                     break;
                 bytes+=size;

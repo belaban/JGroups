@@ -3,7 +3,6 @@ package org.jgroups;
 
 
 import org.jgroups.util.ByteArray;
-
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
@@ -118,11 +117,11 @@ public class CompositeMessage extends BaseMessage implements Iterable<Message> {
         return String.format("%s, %d message(s)", super.toString(), getNumberOfMessages());
     }
 
-    public int size() {
-        int retval=super.size() + Global.INT_SIZE; // length
+    @Override protected int payloadSize() {
+        int retval=Global.INT_SIZE; // count
         if(msgs != null) {
             for(int i=0; i < index; i++)
-                retval+=msgs[i].size() + Global.SHORT_SIZE; // type
+                retval+=msgs[i].sizeNoAddrs(getSrc()) + Global.SHORT_SIZE; // type
         }
         return retval;
     }
@@ -142,8 +141,7 @@ public class CompositeMessage extends BaseMessage implements Iterable<Message> {
             for(int i=0; i < index; i++) {
                 Message msg=msgs[i];
                 out.writeShort(msg.getType());
-                // msg.writeToNoAddrs(src(), out);
-                msg.writeTo(out);
+                msg.writeToNoAddrs(getSrc(), out);
             }
         }
     }
@@ -156,7 +154,7 @@ public class CompositeMessage extends BaseMessage implements Iterable<Message> {
                 short type=in.readShort();
                 Message msg=MessageFactory.create(type).setDest(getDest());
                 if(msg.getSrc() == null)
-                    msg.setSrc(src());
+                    msg.setSrc(getSrc());
                 msg.readFrom(in);
                 msgs[i]=msg;
             }

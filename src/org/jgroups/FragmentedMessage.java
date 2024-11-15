@@ -35,7 +35,7 @@ public class FragmentedMessage extends BytesMessage { // we need the superclass'
     public boolean           hasArray()           {return false;}
     public boolean           hasPayload()         {return true;}
     public Supplier<Message> create()             {return FragmentedMessage::new;}
-    protected int            sizeOfPayload()      {return Global.INT_SIZE + length;}
+    protected int            payloadSize()        {return Global.INT_SIZE + length;}
 
     @Override
     protected Message copyPayload(Message copy) {

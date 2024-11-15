@@ -40,4 +40,6 @@ public class EmptyMessage extends BaseMessage {
     public void                  readPayload(DataInput in) throws IOException, ClassNotFoundException {
         // no payload to read
     }
+
+    protected int                payloadSize() { return 0; }
 }

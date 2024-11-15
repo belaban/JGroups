@@ -204,6 +204,9 @@ public interface Message extends SizeStreamable, Constructable<Message> {
      */
     int                  size();
 
+    /** Returns the exact size of the marshalled message without destination (and possibly source) address */
+    int                  sizeNoAddrs(Address src);
+
     /** Writes the message to an output stream excluding the destination (and possibly source) address */
     void                 writeToNoAddrs(Address src, DataOutput out) throws IOException;
 

@@ -238,6 +238,19 @@ public abstract class BaseMessage implements Message {
 
         retval+=Global.SHORT_SIZE;  // number of headers
         retval+=Headers.marshalledSize(this.headers);
+        retval+=payloadSize();
+        return retval;
+    }
+
+    public int sizeNoAddrs(Address src) {
+        int retval=Global.BYTE_SIZE // leading byte
+          + Global.SHORT_SIZE;      // flags
+        if(sender != null && !sender.equals(src))
+            retval+=Util.size(sender);
+
+        retval+=Global.SHORT_SIZE;  // number of headers
+        retval+=Headers.marshalledSize(this.headers);
+        retval+=payloadSize();
         return retval;
     }
 
@@ -274,7 +287,7 @@ public abstract class BaseMessage implements Message {
     public void writeToNoAddrs(Address src, DataOutput out) throws IOException {
         byte leading=0;
 
-        boolean write_src_addr=src == null || sender != null && !sender.equals(src);
+        boolean write_src_addr=sender != null && !sender.equals(src);
 
         if(write_src_addr)
             leading=Util.setFlag(leading, SRC_SET);
@@ -341,5 +354,5 @@ public abstract class BaseMessage implements Message {
         return size > 0? new Header[size] : new Header[Util.DEFAULT_HEADERS];
     }
 
-
+    protected abstract int payloadSize();
 }
