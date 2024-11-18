@@ -45,7 +45,7 @@ public class PingHeader extends Header {
     }
 
     public String toString() {
-        return String.format("[%s cluster=%s initial_discovery=%b]", type2Str(type), cluster_name, initial_discovery);
+        return String.format("%s cluster=%s initial_discovery=%b", type2Str(type), cluster_name, initial_discovery);
     }
 
     static String type2Str(byte t) {

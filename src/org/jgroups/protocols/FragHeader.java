@@ -42,7 +42,7 @@ public class FragHeader extends Header {
 
 
     public String toString() {
-        return "[id=" + id + ", frag_id=" + frag_id + ", num_frags=" + num_frags + ']';
+        return "id=" + id + ", frag_id=" + frag_id + ", num_frags=" + num_frags;
     }
 
     @Override
