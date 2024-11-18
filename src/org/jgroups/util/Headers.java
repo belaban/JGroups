@@ -29,10 +29,16 @@ import java.util.Map;
  */
 public final class Headers {
     private static final int RESIZE_INCR=3;
+    private static String BEGIN_DELIM=null, END_DELIM=null;
 
 	private Headers() {
 		throw new InstantiationError( "Must not instantiate this class" );
 	}
+
+    public static void delimiters(String begin, String end) {
+        BEGIN_DELIM=begin;
+        END_DELIM=end;
+    }
 
     /**
      * Returns the header associated with an ID
@@ -71,7 +77,6 @@ public final class Headers {
         return null;
     }
 
-
     public static Map<Short,Header> getHeaders(final Header[] hdrs) {
         if(hdrs == null)
             return new HashMap<>();
@@ -99,11 +104,15 @@ public final class Headers {
                 sb.append(", ");
             Class<?> clazz=ClassConfigurator.getProtocol(id);
             String name=clazz != null? clazz.getSimpleName() : Short.toString(id);
-            sb.append(name).append(": ").append(hdr);
+            sb.append(name).append(": ");
+            if(BEGIN_DELIM != null)
+                sb.append(BEGIN_DELIM);
+            sb.append(hdr);
+            if(END_DELIM != null)
+                sb.append(END_DELIM);
         }
         return sb.toString();
     }
-
 
     /**
      * Adds hdr at the next available slot. If none is available, the headers array passed in will be copied and the copy
@@ -152,7 +161,6 @@ public final class Headers {
         }
     }
 
-
     public static Header[] readHeaders(DataInput in) throws IOException, ClassNotFoundException {
         int len=in.readShort();
         if(len == 0)
@@ -166,10 +174,7 @@ public final class Headers {
         return headers;
     }
 
-
-    /**
-     * Increases the capacity of the array and copies the contents of the old into the new array
-     */
+    /** Increases the capacity of the array and copies the contents of the old into the new array */
     public static Header[] resize(final Header[] headers) {
         int new_capacity=headers.length + RESIZE_INCR;
         Header[] new_hdrs=new Header[new_capacity];
