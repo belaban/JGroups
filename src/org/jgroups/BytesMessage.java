@@ -165,6 +165,15 @@ public class BytesMessage extends BaseMessage {
         return this;
     }
 
+    public byte[] getBytes() {
+        if(array == null) return null;
+        if(offset == 0 && length == array.length)
+            return array;
+        byte[] tmp=new byte[length];
+        System.arraycopy(array, offset, tmp, 0, length);
+        return tmp;
+    }
+
 
 
     /**
@@ -219,7 +228,7 @@ public class BytesMessage extends BaseMessage {
         if(array == null)
             return null;
         try {
-            return isFlagSet(Flag.SERIALIZED)? Util.objectFromByteBuffer(array, offset, length, loader) : (T)getArray();
+            return isFlagSet(Flag.SERIALIZED)? Util.objectFromByteBuffer(array, offset, length, loader) : (T)getBytes();
         }
         catch(Exception ex) {
             throw new IllegalArgumentException(ex);
