@@ -174,8 +174,6 @@ public class BytesMessage extends BaseMessage {
         return tmp;
     }
 
-
-
     /**
      * Takes an object and uses Java serialization to generate the byte array which is set in the
      * message. Parameter 'obj' has to be serializable (e.g. implementing Serializable,
