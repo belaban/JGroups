@@ -25,7 +25,7 @@ import static org.jgroups.util.SuppressLog.Level.warn;
  * @since  5.2
  */
 public class ThreadPool implements Lifecycle {
-    private static final MethodHandle EXECUTORS_NEW_VIRTUAL_THREAD_FACTORY=getNewVirtualThreadFactoryHandle();
+    private static final MethodHandle EXECUTORS_NEW_THREAD_PER_TASK_EXECUTOR=getNewThreadPerTaskExecutorHandle();
     protected Executor            thread_pool;
     protected Log                 log;
     protected ThreadFactory       thread_factory;
@@ -261,41 +261,38 @@ public class ThreadPool implements Lifecycle {
                                                       String rejection_policy,
                                                       BlockingQueue<Runnable> queue, final ThreadFactory factory,
                                                       Log log) {
-        if(!factory.useVirtualThreads() || EXECUTORS_NEW_VIRTUAL_THREAD_FACTORY == null) {
-            ThreadPoolExecutor pool=new ThreadPoolExecutor(min_threads, max_threads, keep_alive_time,
-                                                           TimeUnit.MILLISECONDS, queue, factory);
+        ExecutorService pool = null;
+        if(factory.useVirtualThreads())
+            pool = newVirtualThreadPool(factory); 
+        if(pool == null) {
             RejectedExecutionHandler handler=Util.parseRejectionPolicy(rejection_policy);
-            pool.setRejectedExecutionHandler(new ShutdownRejectedExecutionHandler(handler));
+            pool=new ThreadPoolExecutor(min_threads, max_threads, keep_alive_time,
+                                                           TimeUnit.MILLISECONDS, queue, factory, handler);
             if(log != null)
                 log.debug("thread pool min/max/keep-alive (ms): %d/%d/%d", min_threads, max_threads, keep_alive_time);
-            return pool;
         }
-
-        try {
-            return (ExecutorService)EXECUTORS_NEW_VIRTUAL_THREAD_FACTORY.invokeExact();
-        }
-        catch(Throwable t) {
-            throw new IllegalStateException(String.format("failed to create virtual thread pool: %s", t));
-        }
+        return pool;
     }
-
-    protected static MethodHandle getNewVirtualThreadFactoryHandle() {
-        MethodType type=MethodType.methodType(ExecutorService.class);
-        String[] names={
-          "newVirtualThreadPerTaskExecutor",  // jdk 18-21
-          "newVirtualThreadExecutor",         // jdk 17
-          "newUnboundedVirtualThreadExecutor" // jdk 15 & 16
-        };
-
-        MethodHandles.Lookup LOOKUP=MethodHandles.publicLookup();
-        for(int i=0; i < names.length; i++) {
+    
+    protected static ExecutorService newVirtualThreadPool(final ThreadFactory factory) {
+        if(EXECUTORS_NEW_THREAD_PER_TASK_EXECUTOR != null) {
             try {
-                return LOOKUP.findStatic(Executors.class, names[i], type);
+                return (ExecutorService)EXECUTORS_NEW_THREAD_PER_TASK_EXECUTOR.invokeExact((java.util.concurrent.ThreadFactory)factory);
             }
-            catch(Exception e) {
+            catch(Throwable t) {
             }
         }
         return null;
     }
 
+    protected static MethodHandle getNewThreadPerTaskExecutorHandle() {
+        MethodHandles.Lookup LOOKUP=MethodHandles.publicLookup();
+        MethodType type=MethodType.methodType(ExecutorService.class, java.util.concurrent.ThreadFactory.class);
+        try {
+            return LOOKUP.findStatic(Executors.class, "newThreadPerTaskExecutor", type);
+        }
+        catch(Exception t) {
+        }
+        return null;
+    }
 }

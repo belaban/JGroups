@@ -31,31 +31,29 @@ public class ThreadCreator {
     }
 
     public static Thread createThread(Runnable r, String name, boolean daemon, boolean virtual) {
-        if(!virtual || CREATE_VTHREAD == null) {
-            Thread t=new Thread(r, name);
+        Thread t = null;
+        if(virtual)
+            t = newVirtualThread(r);
+        if (t == null) {            
+            t=new Thread(r);
             t.setDaemon(daemon);
-            return t;
         }
-
-        // Thread.ofVirtual().unstarted()
-        try {
-            Object of=OF_VIRTUAL.invoke();
-            Thread t=(Thread)CREATE_VTHREAD.invokeWithArguments(of, r);
-            t.setName(name);
-            return t;
-        }
-        catch(Throwable t) {
-        }
-
-        // Thread.newThread(String name, int characteristics, Runnable task)  in JDKs 15 & 16
-        try {
-            return (Thread)CREATE_VTHREAD.invokeExact(name, 1, r);
-        }
-        catch(Throwable ex) {
-        }
-        return new Thread(r, name);
+        t.setName(name);
+        return t;
     }
 
+    protected static Thread newVirtualThread(Runnable r) {
+        if(CREATE_VTHREAD != null) {
+            // Thread.ofVirtual().unstarted()
+            try {
+                Object of=OF_VIRTUAL.invoke();
+                return (Thread)CREATE_VTHREAD.invokeWithArguments(of, r);
+            }
+            catch(Throwable t) {
+            }
+        }
+        return null;
+    }
 
     protected static MethodHandle getCreateVThreadHandle() {
         MethodType type=MethodType.methodType(Thread.class, Runnable.class);
@@ -63,16 +61,7 @@ public class ThreadCreator {
             return LOOKUP.findVirtual(OF_VIRTUAL_CLASS, "unstarted", type);
         }
         catch(Exception ex) {
-            LOG.debug("%s.unstarted() not found, trying Thread.newThread() (jdk 15/16)", OF_VIRTUAL_NAME);
-        }
-
-        // try Thread.newThread(String name, int characteristics, Runnable task)  in JDKs 15 & 16
-        type=MethodType.methodType(Thread.class, String.class, int.class, Runnable.class);
-        try {
-            return LOOKUP.findStatic(Thread.class, "newThread", type);
-        }
-        catch(Exception ex) {
-            LOG.debug("Thread.newThread() not found, falling back to regular threads");
+            LOG.debug("%s.unstarted() not found, falling back to regular threads", OF_VIRTUAL_NAME);
         }
         return null;
     }
@@ -96,5 +85,4 @@ public class ThreadCreator {
             return null;
         }
     }
-
 }
