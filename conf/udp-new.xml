@@ -1,6 +1,6 @@
 
 <!--
-  Default stack using IP multicasting (UDP) +NAKACK4 -STABLE -MFC
+  Default stack using IP multicasting (UDP) +NAKACK4 +UNICAST4 -STABLE -MFC - UFC
   author: Bela Ban
 -->
 <config xmlns="urn:org:jgroups"
@@ -21,11 +21,9 @@
     <FD_ALL3/>
     <VERIFY_SUSPECT2 timeout="1.5s"  />
     <BARRIER />
-    <NAKACK4 xmit_interval="0.5s" capacity="6000"/>
-    <UNICAST3 xmit_interval="0.5s" />
+    <NAKACK4  xmit_interval="0.5s" capacity="6000"/>
+    <UNICAST4 xmit_interval="0.5s" capacity="2048"/>
     <pbcast.GMS print_local_addr="true" join_timeout="1s"/>
-    <UFC max_credits="4M"
-             min_threshold="0.4"/>
     <FRAG2 frag_size="60K"  />
     <pbcast.STATE_TRANSFER />
 </config>

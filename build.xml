@@ -521,7 +521,7 @@
         	<antcall target="functional"/>
             <antcall target="encrypt"/>
             <antcall target="udp"/>
-            <antcall target="udp-nak"/>
+            <antcall target="udp-new"/>
             <antcall target="tcp"/>
             <antcall target="tcp-nak"/>
             <antcall target="tcp-nio"/>
@@ -537,7 +537,7 @@
             <antcall target="functional"/>
             <sequential>
                 <antcall target="udp"/>
-                <antcall target="udp-nak"/>
+                <antcall target="udp-new"/>
             </sequential>
             <sequential>
                 <antcall target="tcp"/>
@@ -620,9 +620,9 @@
                 />
     </target>
 
-    <target name="udp-nak" depends="postcompile,define-testng-task" description="Runs UDP tests">
-        <mkdir dir="${tmp.dir}/test-results/xml/udp-nak"/>
-        <runtest suitename="udp-nak"
+    <target name="udp-new" depends="postcompile,define-testng-task" description="Runs UDP tests">
+        <mkdir dir="${tmp.dir}/test-results/xml/udp-new"/>
+        <runtest suitename="udp-new"
                  groups="base,stack-dependent"
                  excludedgroups="stack-independent,broken"
                  parallel="${parallel.classes}"
@@ -630,7 +630,7 @@
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
                  initial.mcast.port="26000"
                  initial.tcp.port="26000"
-                 jvmarg1="-Dchannel.conf=udp-nak.xml"
+                 jvmarg1="-Dchannel.conf=udp-new.xml"
         />
     </target>
 
