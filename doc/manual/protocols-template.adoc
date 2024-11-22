@@ -1423,6 +1423,28 @@ FIFO order means that all messages from a given sender are received in exactly t
 
 ${NAKACK2}
 
+[[NAKACK4]]
+==== NAKACK4
+NAKACK4 is copy of NAKACK2, but uses fixed buffers and positive acks.
+
+* Positive acks: when `ack_threshold` messages from P have been received, an ack is sent back to P. Alternatively, if
+no message has been received from P for `xmit_interval` ms, an ack is sent. Note that although NAKACK4 switched to the
+use of positive acks, the name (NAK = negative acks) was not changed, so the name is kind of a misnomer.
+* Fixed size buffers: messages are stored in a buffer until they're removed. In NAKACK2, this buffer was unbounded,
+and this could in theory lead to memory exhaustion. Flow control (`MFC`) prevented this, but a retransmission storms
+could still make these buffers very large, consuming a lot of memory. `NAKACK4` has fixed buffers, counded by `capacity`.
+This ensures that no more than `capacity` messages can be in the buffer. There's also no dynamic increasing and
+shrinking of the buffer, so memory pressure has been greatly reduced with fixed buffers.
+
+Because of positive acks (when a sender received acks from all members, it can purge its sender table up to the
+highest ack received), `STABLE` is not needed anymore. Also, because a sender blocks when the fixed buffer is full,
+flow control protocol `MFC` is also not needed anymore.
+
+Details: https://issues.redhat.com/browse/JGRP-2780
+Design: https://github.com/belaban/JGroups/blob/master/doc/design/NAKACK4.txt
+
+
+${NAKACK4}
 
 
 [[UNICAST3]]
@@ -1450,6 +1472,14 @@ link:$$https://github.com/belaban/JGroups/blob/master/doc/design/UNICAST3.txt$$[
 ${UNICAST3}
 
 
+[[UNICAST4]]
+==== UNICAST4
+Similar in concept to <<NAKACK4>>, but for unicast messages. The main difference is that fixed buffers are used instead
+of dynamic ones.
+
+Details: https://issues.redhat.com/browse/JGRP-2843
+
+${UNICAST4}
 
 
 [[RSVP]]
