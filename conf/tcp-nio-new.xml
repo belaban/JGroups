@@ -24,10 +24,8 @@
     <VERIFY_SUSPECT2 timeout="1.5s"  />
     <BARRIER />
     <NAKACK4 use_mcast_xmit="false" capacity="8192"/>
-    <UNICAST3 />
+    <UNICAST4 />
     <pbcast.GMS print_local_addr="true" join_timeout="2s"/>
-    <UFC max_credits="2M"
-             min_threshold="0.4"/>
     <FRAG2 frag_size="60K"  />
     <pbcast.STATE_TRANSFER/>
 </config>

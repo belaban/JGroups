@@ -525,7 +525,7 @@
             <antcall target="tcp"/>
             <antcall target="tcp-new"/>
             <antcall target="tcp-nio"/>
-            <antcall target="tcp-nio-nak"/>
+            <antcall target="tcp-nio-new"/>
             <antcall target="stack-independent"/>
             <antcall target="time-sensitive"/>
             <antcall target="byteman"/>
@@ -543,7 +543,7 @@
                 <antcall target="tcp"/>
                 <antcall target="tcp-new"/>
                 <antcall target="tcp-nio"/>
-                <antcall target="tcp-nio-nak"/>
+                <antcall target="tcp-nio-new"/>
             </sequential>
             <sequential>
                 <antcall target="encrypt"/>
@@ -690,13 +690,13 @@
                 />
     </target>
 
-    <target name="tcp-nio-nak" depends="postcompile,define-testng-task" description="Runs TCP-NIO tests">
+    <target name="tcp-nio-new" depends="postcompile,define-testng-task" description="Runs TCP-NIO tests">
         <!-- Needed to force reading of properties. Otherwise tcp-nio tests will fail -->
         <property name="build.properties.file" value="build.properties"/>
         <property file="${build.properties.file}"/>
 
-        <mkdir dir="${tmp.dir}/test-results/xml/tcp-nio-nak"/>
-        <runtest suitename="tcp-nio-nak"
+        <mkdir dir="${tmp.dir}/test-results/xml/tcp-nio-new"/>
+        <runtest suitename="tcp-nio-new"
                  groups="base,stack-dependent"
                  excludedgroups="stack-independent,broken"
                  parallel="${parallel.classes}"
@@ -704,7 +704,7 @@
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
                  initial.mcast.port="31000"
                  initial.tcp.port="32000"
-                 jvmarg1="-Dchannel.conf=tcp-nio-nak.xml"
+                 jvmarg1="-Dchannel.conf=tcp-nio-new.xml"
         />
     </target>
 
