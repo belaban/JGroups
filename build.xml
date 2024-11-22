@@ -523,7 +523,7 @@
             <antcall target="udp"/>
             <antcall target="udp-new"/>
             <antcall target="tcp"/>
-            <antcall target="tcp-nak"/>
+            <antcall target="tcp-new"/>
             <antcall target="tcp-nio"/>
             <antcall target="tcp-nio-nak"/>
             <antcall target="stack-independent"/>
@@ -541,7 +541,7 @@
             </sequential>
             <sequential>
                 <antcall target="tcp"/>
-                <antcall target="tcp-nak"/>
+                <antcall target="tcp-new"/>
                 <antcall target="tcp-nio"/>
                 <antcall target="tcp-nio-nak"/>
             </sequential>
@@ -653,13 +653,13 @@
                 />
     </target>
 
-    <target name="tcp-nak" depends="postcompile,define-testng-task" description="Runs TCP tests">
+    <target name="tcp-new" depends="postcompile,define-testng-task" description="Runs TCP tests">
         <!-- Needed to force reading of properties. Otherwise tcp tests will fail -->
         <property name="build.properties.file" value="build.properties"/>
         <property file="${build.properties.file}"/>
 
-        <mkdir dir="${tmp.dir}/test-results/xml/tcp-nak"/>
-        <runtest suitename="tcp-nak"
+        <mkdir dir="${tmp.dir}/test-results/xml/tcp-new"/>
+        <runtest suitename="tcp-new"
                  groups="base,stack-dependent"
                  excludedgroups="stack-independent,broken"
                  parallel="${parallel.classes}"
@@ -667,7 +667,7 @@
                  initial.mcast.addr="${jgroups.udp.mcast_addr}"
                  initial.mcast.port="28000"
                  initial.tcp.port="28000"
-                 jvmarg1="-Dchannel.conf=tcp-nak.xml"
+                 jvmarg1="-Dchannel.conf=tcp-new.xml"
         />
     </target>
 

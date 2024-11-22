@@ -1,5 +1,5 @@
 <!--
-    TCP based stack, with flow control and message bundling. This is usually used when IP
+    TCP based stack, with NAKACK4 and UNICAST4 -STABLE - flow control protocols. This is usually used when IP
     multicasting cannot be used in a network, e.g. because it is disabled (routers discard multicast).
     Note that TCP.bind_addr and TCPPING.initial_hosts should be set, possibly via system properties, e.g.
     -Djgroups.bind_addr=192.168.5.2 and -Djgroups.tcpping.initial_hosts=192.168.5.2[7800]
@@ -28,10 +28,8 @@
     <VERIFY_SUSPECT2 timeout="1.5s"  />
     <BARRIER />
     <NAKACK4 use_mcast_xmit="false" capacity="8192" />
-    <UNICAST3 />
+    <UNICAST4 />
     <pbcast.GMS print_local_addr="true" join_timeout="1s"/>
-    <UFC max_credits="10M"
-             min_threshold="0.4"/>
     <FRAG2 frag_size="60K"  />
     <!--RSVP resend_interval="2s" timeout="10s"/-->
     <pbcast.STATE_TRANSFER/>
