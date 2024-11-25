@@ -463,7 +463,7 @@ public class FastArray<T> implements Iterable<T>, List<T> {
     }
 
     public String toString() {
-        return String.format("%d elements (cap=%d): [%s]", size, capacity(), print());
+        return String.format("%d elements: [%s]", size, print());
     }
 
     public String print() {
