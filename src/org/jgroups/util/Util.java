@@ -257,6 +257,23 @@ public class Util {
         return tmp;
     }
 
+    public static Protocol[] getTestStackNew(Protocol... additional_protocols) {
+        Protocol[] protocols={
+          new SHARED_LOOPBACK(),
+          new SHARED_LOOPBACK_PING(),
+          new NAKACK4(),
+          new UNICAST4(),
+          new STABLE(),
+          new GMS().setJoinTimeout(500),
+          new FRAG2().setFragSize(8000)
+        };
+
+        if(additional_protocols == null)
+            return protocols;
+        Protocol[] tmp=Arrays.copyOf(protocols,protocols.length + additional_protocols.length);
+        System.arraycopy(additional_protocols, 0, tmp, protocols.length, additional_protocols.length);
+        return tmp;
+    }
 
     /**
      * Blocks until all channels have the same view
