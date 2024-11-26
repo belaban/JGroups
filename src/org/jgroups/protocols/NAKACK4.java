@@ -132,7 +132,23 @@ public class NAKACK4 extends ReliableMulticast {
     @Override
     protected void adjustReceivers(List<Address> members) {
         super.adjustReceivers(members);
+        long old_min=ack_table.min();
         ack_table.adjust(members);
+        long new_min=ack_table.min();
+        if(new_min > old_min) {
+            Buffer<Message> buf=sendBuf();
+            if(buf == null)
+                log.warn("%s: local send buffer is null", local_addr);
+            else
+                buf.purge(new_min); // unblocks senders waiting for space to become available
+        }
+    }
+
+    @Override
+    protected void reset() {
+        FixedBuffer<Message> buf=(FixedBuffer<Message>)sendBuf();
+        Util.close(buf);
+        super.reset();
     }
 
     @Override

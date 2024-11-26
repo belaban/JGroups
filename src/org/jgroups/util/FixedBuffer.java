@@ -80,7 +80,7 @@ public class FixedBuffer<T> extends Buffer<T> implements Closeable {
             if(dist <= 0)
                 return false;
 
-            if(dist > capacity() && (!block || !block(seqno))) { // seqno too big
+            if(dist > capacity() && (!block || !block(seqno))) { // no space for message
                 num_dropped_msgs.increment();
                 return false;
             }
