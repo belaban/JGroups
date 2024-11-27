@@ -3,6 +3,7 @@ package org.jgroups.util;
 import org.jgroups.Message;
 import org.jgroups.annotations.GuardedBy;
 
+import java.io.Closeable;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -22,7 +23,7 @@ import java.util.stream.Stream;
  * @author Bela Ban
  * @since  5.4
  */
-public abstract class Buffer<T> implements Iterable<T> {
+public abstract class Buffer<T> implements Iterable<T>, Closeable {
     protected final Lock          lock=new ReentrantLock();
     protected final AtomicInteger adders=new AtomicInteger(0);
     protected long                offset;
@@ -54,8 +55,11 @@ public abstract class Buffer<T> implements Iterable<T> {
 
     /** Returns the current capacity in the buffer. This value is fixed in a fixed-size buffer
      * (e.g. {@link FixedBuffer}), but can change in a dynamic buffer ({@link DynamicBuffer}) */
-    public abstract int capacity();
-    public void         resetStats() {}
+    public abstract int  capacity();
+    public void          resetStats() {}
+    public void          open(boolean b) {}
+    @Override
+    public void          close() {open(false);}
 
     /**
      * Adds an element if the element at the given index is null. Returns true if no element existed at the given index,
@@ -66,23 +70,25 @@ public abstract class Buffer<T> implements Iterable<T> {
      */
     // used: single message received
     public boolean add(long seqno, T element) {
-        return add(seqno, element, null, Options.DEFAULT());
+        return add(seqno, element, null, Options.DEFAULT(), false);
     }
 
     /**
      * Adds an element if the element at the given index is null. Returns true if no element existed at the given index,
      * else returns false and doesn't set the element.
      *
-     * @param seqno
-     * @param element
+     * @param seqno         The seqno of the element
+     * @param element       The element to be added
      * @param remove_filter A filter used to remove all consecutive messages passing the filter (and non-null). This
      *                      doesn't necessarily null a removed message, but may simply advance an index
      *                      (e.g. highest delivered). Ignored if null.
-     * @param options
+     * @param options       The options passed to the call
+     * @param dont_block    If true, don't block when no space is available, but instead drop the element. This
+     *                      parameter is set by calling Message.isFlagSet(DONT_BLOCK)
      * @return True if the element at the computed index was null, else false
      */
     // used: send message
-    public abstract boolean add(long seqno, T element, Predicate<T> remove_filter, Options options);
+    public abstract boolean add(long seqno, T element, Predicate<T> remove_filter, Options options, boolean dont_block);
 
     // used: MessageBatch received
     public abstract boolean add(MessageBatch batch, Function<T,Long> seqno_getter, boolean remove_from_batch, T const_value);

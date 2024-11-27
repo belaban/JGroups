@@ -191,7 +191,7 @@ public class NAKACK4 extends ReliableMulticast {
     }
 
     @Override
-    protected void addToSendWindow(Buffer<Message> win, long seq, Message msg, Predicate<Message> filter) {
-        win.add(seq, msg, filter, sendOptions());
+    protected boolean addToSendBuffer(Buffer<Message> win, long seq, Message msg, Predicate<Message> filter, boolean dont_block) {
+        return win.add(seq, msg, filter, sendOptions(), dont_block);
     }
 }

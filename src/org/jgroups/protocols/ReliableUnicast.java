@@ -689,9 +689,10 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
         }
 
         SenderEntry entry=getSenderEntry(dst);
-        boolean dont_loopback_set=msg.isFlagSet(DONT_LOOPBACK) && dst.equals(local_addr);
-        send(msg, entry, dont_loopback_set);
-        num_msgs_sent.increment();
+        boolean dont_loopback_set=msg.isFlagSet(DONT_LOOPBACK) && dst.equals(local_addr),
+          dont_block=msg.isFlagSet(DONT_BLOCK);
+        if(send(msg, entry, dont_loopback_set, dont_block))
+            num_msgs_sent.increment();
         return null; // the message was already sent down the stack in send()
     }
 
@@ -745,17 +746,6 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
         }
     }
 
-    public void removeSendConnection(Predicate<Address> pred) {
-        for(Iterator<Map.Entry<Address,SenderEntry>> it=send_table.entrySet().iterator(); it.hasNext();) {
-            Map.Entry<Address,SenderEntry> e=it.next();
-            Address addr=e.getKey();
-            if(pred.test(addr)) {
-                e.getValue().state(State.CLOSED);
-                it.remove();
-            }
-        }
-    }
-
     public void removeReceiveConnection(Address mbr) {
         sendPendingAcks();
         ReceiverEntry entry=recv_table.remove(mbr);
@@ -768,6 +758,8 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
      */
     @ManagedOperation(description="Trashes all connections to other nodes. This is only used for testing")
     public void removeAllConnections() {
+        for(SenderEntry se: send_table.values())
+            se.state(State.CLOSED);
         send_table.clear();
         recv_table.clear();
     }
@@ -1014,8 +1006,6 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
             if(cache != null && !members.contains(dst))
                 cache.add(dst);
         }
-        if(entry.state() == State.CLOSING)
-            entry.state(State.OPEN);
         return entry;
     }
 
@@ -1092,7 +1082,7 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
         }
     }
 
-    protected void send(Message msg, SenderEntry entry, boolean dont_loopback_set) {
+    protected boolean send(Message msg, SenderEntry entry, boolean dont_loopback_set, boolean dont_block) {
         Buffer<Message> buf=entry.buf;
         long seqno=entry.seqno.getAndIncrement();
         short send_conn_id=entry.connId();
@@ -1107,8 +1097,12 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
             lock.lock();
         }
         try {
-            addToSendWindow(buf, seqno, msg, dont_loopback_set? remove_filter : null);
+            boolean added=addToSendBuffer(buf, seqno, msg, dont_loopback_set? remove_filter : null, dont_block);
+            if(!added) // e.g. message already present in send buffer, or no space and dont_block set
+                return false;
             down_prot.down(msg); // if this fails, since msg is in sent_msgs, it can be retransmitted
+            if(entry.state() == State.CLOSING)
+                entry.state(State.OPEN);
             if(conn_expiry_timeout > 0)
                 entry.update();
             if(dont_loopback_set)
@@ -1126,16 +1120,21 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
             sb.append(')');
             log.trace(sb);
         }
+        return true;
     }
 
     /**
-     * Adds the message to the send window. The loop tries to handle temporary OOMEs by retrying if add() failed.
+     * Adds the message to the send buffer. The loop tries to handle temporary OOMEs by retrying if add() failed.
+     * @return True if added successfully. False if not, e.g. no space in buffer and DONT_BLOCK set, or message
+     * already present, or seqno lower than buffer.low
      */
-    protected void addToSendWindow(Buffer<Message> win, long seq, Message msg, Predicate<Message> filter) {
+    protected boolean addToSendBuffer(Buffer<Message> win, long seq, Message msg,
+                                      Predicate<Message> filter, boolean dont_block) {
         long sleep=10;
+        boolean rc=false;
         do {
             try {
-                win.add(seq, msg, filter, sendOptions());
+                rc=win.add(seq, msg, filter, sendOptions(), dont_block);
                 break;
             }
             catch(Throwable t) {
@@ -1146,6 +1145,7 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
             }
         }
         while(running);
+        return rc;
     }
 
 
@@ -1504,11 +1504,29 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
         public    Buffer<Message> buf()           {return buf;}
         public    short           connId()        {return conn_id;}
         protected void            update()        {timestamp.set(getTimestamp());}
-        protected State           state()         {return state;}
-        protected Entry           state(State s)  {if(this.state != s) {this.state=s; update();} return this;}
         protected long            age()           {return MILLISECONDS.convert(getTimestamp() - timestamp.longValue(), NANOSECONDS);}
         protected boolean         needToSendAck() {return send_ack.compareAndSet(true, false);}
         protected Entry           sendAck()       {send_ack.compareAndSet(false, true); return this;}
+        protected State           state()         {return state;}
+
+        protected Entry state(State s) {
+            if(state != s) {
+                switch(state) {
+                    case OPEN:
+                        if(s == State.CLOSED)
+                            buf.open(false); // unblocks blocked senders
+                        break;
+                    case CLOSING:
+                        buf.open(s != State.CLOSED);
+                        break;
+                    case CLOSED:
+                        break;
+                }
+                state=s;
+                update();
+            }
+            return this;
+        }
 
         /** Returns true if a real ACK should be sent. This is based on num_acks_sent being > ack_threshold */
         public boolean update(int num_acks, final IntBinaryOperator op) {

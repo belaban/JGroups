@@ -718,8 +718,8 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
             lock.lock();
         }
         try {
-            addToSendWindow(win, msg_id, msg, dont_loopback_set? remove_filter : null);
-            down_prot.down(msg); // if this fails, since msg is in sent_msgs, it can be retransmitted
+            if(addToSendBuffer(win, msg_id, msg, dont_loopback_set? remove_filter : null, msg.isFlagSet(DONT_BLOCK)))
+                down_prot.down(msg); // if this fails, since msg is in sent_msgs, it can be retransmitted
         }
         finally {
             if(lock != null)
@@ -727,14 +727,13 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
         }
     }
 
-    /**
-     * Adds the message to the send window. The loop tries to handle temporary OOMEs by retrying if add() failed.
-     */
-    protected void addToSendWindow(Buffer<Message> win, long seq, Message msg, Predicate<Message> filter) {
+    /** Adds the message to the send buffer. The loop tries to handle temporary OOMEs by retrying if add() failed */
+    protected boolean addToSendBuffer(Buffer<Message> win, long seq, Message msg, Predicate<Message> filter, boolean dont_block) {
         long sleep=10;
+        boolean rc=false;
         do {
             try {
-                win.add(seq, msg, filter, sendOptions());
+                rc=win.add(seq, msg, filter, sendOptions(), dont_block);
                 break;
             }
             catch(Throwable t) {
@@ -745,6 +744,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
             }
         }
         while(running);
+        return rc;
     }
 
     protected void resend(Message msg) { // needed for byteman ProtPerf script - don't remove!

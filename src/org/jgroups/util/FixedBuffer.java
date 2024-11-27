@@ -2,7 +2,6 @@ package org.jgroups.util;
 
 import org.jgroups.annotations.GuardedBy;
 
-import java.io.Closeable;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
@@ -23,12 +22,12 @@ import java.util.stream.StreamSupport;
  * @author Bela Ban
  * @since  5.4
  */
-public class FixedBuffer<T> extends Buffer<T> implements Closeable {
+public class FixedBuffer<T> extends Buffer<T> {
     /** Holds the elements */
     protected T[]                 buf;
     protected final Condition     buffer_full=lock.newCondition();
 
-    /** Used to unblock blocked senders on close() */
+    /** Used to unblock blocked senders on close(). When false, senders don't block when full but discard element */
     protected boolean             open=true;
 
     protected final LongAdder     num_blockings=new LongAdder();
@@ -63,16 +62,8 @@ public class FixedBuffer<T> extends Buffer<T> implements Closeable {
     public AverageMinMax avgTimeBlocked()     {return avg_time_blocked;}
     public long          numDroppedMessages() {return num_dropped_msgs.sum();}
 
-    /**
-     * Adds a new element to the buffer
-     * @param seqno         The seqno of the element
-     * @param element       The element
-     * @param remove_filter
-     * @param opts          The options carried with this methods, e.g. whether to block when not enough space is available.
-     * @return True if the element was added, false otherwise.
-     */
     @Override
-    public boolean add(long seqno, T element, Predicate<T> remove_filter, Options opts) {
+    public boolean add(long seqno, T element, Predicate<T> remove_filter, Options opts, boolean dont_block) {
         boolean block=opts != null && opts.block();
         lock.lock();
         try {
@@ -80,7 +71,7 @@ public class FixedBuffer<T> extends Buffer<T> implements Closeable {
             if(dist <= 0)
                 return false;
 
-            if(dist > capacity() && (!block || !block(seqno))) { // no space for message
+            if(dist > capacity() && (!block || dont_block || !block(seqno))) { // no space for message
                 num_dropped_msgs.increment();
                 return false;
             }
@@ -91,7 +82,7 @@ public class FixedBuffer<T> extends Buffer<T> implements Closeable {
             buf[index]=element;
             size++;
 
-            // see if high needs to moved forward
+            // see if high needs to be moved forward
             if(seqno - high > 0)
                 high=seqno;
 
@@ -128,7 +119,7 @@ public class FixedBuffer<T> extends Buffer<T> implements Closeable {
                 if(seqno < 0)
                     continue;
                 T element=const_value != null? const_value : msg;
-                boolean added=add(seqno, element, null, Options.DEFAULT());
+                boolean added=add(seqno, element, null, Options.DEFAULT(), false);
                 retval=retval || added;
                 if(!added || remove_from_batch)
                     it.remove();
@@ -150,7 +141,7 @@ public class FixedBuffer<T> extends Buffer<T> implements Closeable {
                 LongTuple<T> tuple=it.next();
                 long seqno=tuple.getVal1();
                 T element=const_value != null? const_value : tuple.getVal2();
-                if(add(seqno, element, null, null))
+                if(add(seqno, element, null, null, false))
                     added=true;
                 else if(remove_added_elements)
                     it.remove();
@@ -329,11 +320,10 @@ public class FixedBuffer<T> extends Buffer<T> implements Closeable {
         avg_time_blocked.clear();
     }
 
-    @Override
-    public void close() {
+    public void open(boolean b) {
         lock.lock();
         try {
-            open=false;
+            open=b;
             buffer_full.signalAll();
         }
         finally {

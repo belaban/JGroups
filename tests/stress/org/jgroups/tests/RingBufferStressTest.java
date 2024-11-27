@@ -93,7 +93,7 @@ public class RingBufferStressTest {
                     num.decrementAndGet();
                     break;
                 }
-                buf.add(seqno, MSG, null, OPTS);
+                buf.add(seqno, MSG, null, OPTS, false);
             }
         }
     }

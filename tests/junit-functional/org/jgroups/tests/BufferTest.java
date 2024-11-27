@@ -466,14 +466,14 @@ public class BufferTest {
         buf.add(3, msg(3));
         assert buf.high() == 3;
 
-        buf.add(4, msg(4, true), dont_loopback_filter, Options.DEFAULT());
+        buf.add(4, msg(4, true), dont_loopback_filter, Options.DEFAULT(), false);
         assert buf.highestDelivered() == 2;
         assert buf.getHighestDeliverable() == 4;
         buf.removeMany(false, 10);
         assert buf.highestDelivered() == 4;
 
-        buf.add(5, msg(5, true), dont_loopback_filter, Options.DEFAULT());
-        buf.add(6, msg(6, true), dont_loopback_filter, Options.DEFAULT());
+        buf.add(5, msg(5, true), dont_loopback_filter, Options.DEFAULT(), false);
+        buf.add(6, msg(6, true), dont_loopback_filter, Options.DEFAULT(), false);
         assert buf.highestDelivered() == 6;
         assert IntStream.rangeClosed(1,2).allMatch(n -> buf._get(n) == null);
         assert IntStream.rangeClosed(3,6).allMatch(n -> buf._get(n) != null);
@@ -481,7 +481,7 @@ public class BufferTest {
 
     public void testAddAndRemove2(Buffer<Message> buf) {
         for(int i=1; i <=10; i++)
-            buf.add(i, msg(i, true), dont_loopback_filter, Options.DEFAULT());
+            buf.add(i, msg(i, true), dont_loopback_filter, Options.DEFAULT(), false);
         assert buf.highestDelivered() == 10;
         assert buf.high() == 10;
         assert buf.getHighestDeliverable() == 10;
@@ -496,9 +496,9 @@ public class BufferTest {
     public void testAddAndRemove3(Buffer<Message> type) {
         Buffer<Message> buf=type instanceof DynamicBuffer? new DynamicBuffer<>(3, 10, 3)
           : new FixedBuffer<>(3);
-        buf.add(5, msg(5, true), dont_loopback_filter, Options.DEFAULT());
-        buf.add(6, msg(6, true), dont_loopback_filter, Options.DEFAULT());
-        buf.add(4, msg(4, true), dont_loopback_filter, Options.DEFAULT());
+        buf.add(5, msg(5, true), dont_loopback_filter, Options.DEFAULT(), false);
+        buf.add(6, msg(6, true), dont_loopback_filter, Options.DEFAULT(), false);
+        buf.add(4, msg(4, true), dont_loopback_filter, Options.DEFAULT(), false);
         assert buf.high() == 6;
         assert buf.getHighestDeliverable() == 6;
         assert buf.highestDelivered() == 6;
@@ -508,9 +508,9 @@ public class BufferTest {
     public void testAddAndRemove4(Buffer<Message> type) {
         Buffer<Message> buf=type instanceof DynamicBuffer? new DynamicBuffer<>(3, 10, 3)
           : new FixedBuffer<>(3);
-        buf.add(7, msg(7, true), dont_loopback_filter, Options.DEFAULT());
-        buf.add(6, msg(6, true), dont_loopback_filter, Options.DEFAULT());
-        buf.add(4, msg(4, true), dont_loopback_filter, Options.DEFAULT());
+        buf.add(7, msg(7, true), dont_loopback_filter, Options.DEFAULT(), false);
+        buf.add(6, msg(6, true), dont_loopback_filter, Options.DEFAULT(), false);
+        buf.add(4, msg(4, true), dont_loopback_filter, Options.DEFAULT(), false);
         assert buf.high() == 7;
         assert buf.getHighestDeliverable() == 4;
         assert buf.highestDelivered() == 4;
@@ -1787,18 +1787,41 @@ public class BufferTest {
             return;
         FixedBuffer<Integer> buf=new FixedBuffer<>(10, 0);
         for(int i=0; i <= 10; i++)
-            buf.add(i, i, null, OPTS);
+            buf.add(i, i, null, OPTS, false);
         System.out.println("buf = " + buf);
         new Thread(() -> {
             Util.sleep(1000);
             buf.close();
         }).start();
         int seqno=buf.capacity() +1;
-        boolean success=buf.add(seqno, seqno, null, OPTS);
+        boolean success=buf.add(seqno, seqno, null, OPTS, false);
         System.out.println("buf=" + buf);
         assert !success;
         assert buf.size() == 10;
         assert buf.numMissing() == 0;
+
+        List<Integer> list=buf.removeMany(true, 5);
+        assert list.size() == 5;
+        List<Integer> expected=IntStream.rangeClosed(1, 5).boxed().collect(Collectors.toList());
+        assert expected.equals(list);
+
+        boolean added=buf.add(11, 11);
+        assert added && buf.size() == 6;
+
+        for(int i=12; i <= 20; i++) // 16-20 will be dropped as open==false
+            buf.add(i,i);
+        assert buf.size() == 10;
+        expected=IntStream.rangeClosed(6,15).boxed().collect(Collectors.toList());
+        List<Integer> actual=buf.removeMany(true, 20);
+        assert actual.equals(expected);
+        assert buf.isEmpty();
+        buf.open(true);
+        for(int i=16; i <= 25; i++)
+            buf.add(i,i);
+        assert buf.size() == 10;
+        expected=IntStream.rangeClosed(16,25).boxed().collect(Collectors.toList());
+        actual=buf.removeMany(true, 20);
+        assert actual.equals(expected);
     }
 
     public void testBlockingAddAndPurge(Buffer<Integer> type) throws InterruptedException {
@@ -1806,7 +1829,7 @@ public class BufferTest {
             return;
         final FixedBuffer<Integer> buf=new FixedBuffer<>(10, 0);
         for(int i=0; i <= 10; i++)
-            buf.add(i, i, null, OPTS);
+            buf.add(i, i, null, OPTS, false);
         System.out.println("buf = " + buf);
         Thread thread=new Thread(() -> {
             Util.sleep(1000);
@@ -1815,7 +1838,7 @@ public class BufferTest {
             buf.purge(3);
         });
         thread.start();
-        boolean success=buf.add(11, 11, null, OPTS);
+        boolean success=buf.add(11, 11, null, OPTS, false);
         System.out.println("buf=" + buf);
         assert success;
         thread.join(10000);
@@ -1827,7 +1850,7 @@ public class BufferTest {
         if(type instanceof DynamicBuffer)
             return;
         final FixedBuffer<Integer> buf=new FixedBuffer<>(10, 0);
-        IntStream.rangeClosed(1, buf.capacity()).boxed().forEach(n -> buf.add(n, n, null, OPTS));
+        IntStream.rangeClosed(1, buf.capacity()).boxed().forEach(n -> buf.add(n, n, null, OPTS, false));
         System.out.println("buf = " + buf);
         BlockingAdder adder=new BlockingAdder(buf, 11, 14);
         adder.start();
@@ -2021,7 +2044,7 @@ public class BufferTest {
         public void run() {
             try {
                 latch.await();
-                success=buf.add(seqno, seqno, null, new Options().block(true));
+                success=buf.add(seqno, seqno, null, new Options().block(true), false);
             }
             catch(InterruptedException e) {
                 e.printStackTrace();
@@ -2046,7 +2069,7 @@ public class BufferTest {
         @Override
         public void run() {
             for(int i=from; i <= to; i++) {
-                boolean rc=buf.add(i, i, null, opts);
+                boolean rc=buf.add(i, i, null, opts, false);
                 if(rc) {
                     added++;
                     System.out.printf("-- added %d\n", i);

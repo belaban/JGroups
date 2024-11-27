@@ -557,12 +557,8 @@ public class Util {
      * the view until failure detection has kicked in and the new coord installed the new view
      */
     public static void shutdown(JChannel ch) throws Exception {
-        DISCARD discard=new DISCARD();
-        discard.setAddress(ch.getAddress());
-        discard.discardAll(true);
-        ProtocolStack stack=ch.getProtocolStack();
-        TP transport=stack.getTransport();
-        stack.insertProtocol(discard,ProtocolStack.Position.ABOVE,transport.getClass());
+        DISCARD discard=new DISCARD().setAddress(ch.getAddress()).discardAll(true);
+        ch.stack().insertProtocol(discard,ProtocolStack.Position.ABOVE,TP.class);
 
         //abruptly shutdown FD_SOCK just as in real life when member gets killed non gracefully
         FD_SOCK fd=ch.getProtocolStack().findProtocol(FD_SOCK.class);
@@ -578,7 +574,7 @@ public class Util {
             View new_view=new View(new_vid,members);
 
             // inject view in which the shut-down member is the only element
-            GMS gms=stack.findProtocol(GMS.class);
+            GMS gms=ch.stack().findProtocol(GMS.class);
             gms.installView(new_view);
         }
         Util.close(ch);
