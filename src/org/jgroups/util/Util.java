@@ -263,7 +263,6 @@ public class Util {
           new SHARED_LOOPBACK_PING(),
           new NAKACK4(),
           new UNICAST4(),
-          new STABLE(),
           new GMS().setJoinTimeout(500),
           new FRAG2().setFragSize(8000)
         };
