@@ -4,7 +4,7 @@
     <artifactId>jgroups</artifactId>
     <packaging>jar</packaging>
     <name>JGroups</name>
-    <version>5.4.0.Final-SNAPSHOT</version>
+    <version>5.4.0.Final</version>
     <description>Reliable cluster communication toolkit</description>
     <url>http://www.jgroups.org</url>
 
@@ -46,7 +46,7 @@
         <connection>scm:git:git://github.com/belaban/JGroups.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/belaban/JGroups.git</developerConnection>
         <url>https://github.com/belaban/JGroups</url>
-        <tag>HEAD</tag>
+        <tag>jgroups-5.4.0.Final</tag>
     </scm>
 
     <issueManagement>
@@ -512,7 +512,7 @@
                             <executable>java</executable>
                             <arguments>
                                 <argument>-classpath</argument>
-                                <classpath/>
+                                <classpath />
                                 <argument>org.jgroups.util.PropertiesToAsciidoc</argument>
                                 <argument>${basedir}/doc/manual/protocols-template.adoc</argument>
                                 <argument>${basedir}/doc/manual/installation-template.adoc</argument>
