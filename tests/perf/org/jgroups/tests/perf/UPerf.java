@@ -502,7 +502,7 @@ public class UPerf implements Receiver {
         private final List<Address>  dests=new ArrayList<>();
         private final CountDownLatch latch;
         private final AverageMinMax  avg_gets=new AverageMinMax(), avg_puts=new AverageMinMax(); // in ns
-        private final List<Address>  targets=new ArrayList<>(anycast_count);
+        private final List<Address>  targets=new FastArray<>(anycast_count);
         private volatile boolean     running=true;
 
 

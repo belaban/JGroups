@@ -11,7 +11,10 @@ import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.*;
 
 import java.io.*;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
@@ -259,11 +262,12 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
 
         List<Address> real_dests;
         // we need to clone because we don't want to modify the original
-        if(dests != null)
-            real_dests=dests.stream().filter(dest -> dest instanceof SiteAddress || this.members.contains(dest))
-              .collect(ArrayList::new, (list,dest) -> {if(!list.contains(dest)) list.add(dest);}, (l,r) -> {});
+        if(dests != null) {
+            real_dests=new FastArray<>(dests);
+            real_dests.removeIf(addr -> !this.members.contains(addr) && !(addr instanceof SiteAddress));
+        }
         else
-            real_dests=new ArrayList<>(members);
+            real_dests=new FastArray<>(members);
 
         // Remove the local member from the target destination set if we should not deliver our own message
         JChannel tmp=channel;
@@ -290,7 +294,6 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
         req.execute(msg, block_for_results);
         return req;
     }
-
 
 
     /**

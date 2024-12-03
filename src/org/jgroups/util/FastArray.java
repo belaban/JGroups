@@ -32,6 +32,11 @@ public class FastArray<T> implements Iterable<T>, List<T> {
         this.size=count();
     }
 
+    public FastArray(Collection<? extends T> c) {
+        this(c != null? c.size() : 16);
+        addAll(c);
+    }
+
     public int          capacity()        {return elements.length;}
     public int          index()           {return index;}
     public int          size()            {return size;}
