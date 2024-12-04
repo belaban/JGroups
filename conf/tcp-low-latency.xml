@@ -24,7 +24,7 @@
 
          thread_pool.max_threads="200"
 
-         thread_pool.use_virtual_threads="true"
+         use_virtual_threads="true"
          bundler_type="no-bundler" />
 
     <MPING mcast_addr="224.0.0.5" />
