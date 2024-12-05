@@ -340,6 +340,9 @@
                             <!-- classpathPrefix>libs/</classpathPrefix-->
                             <mainClass>org.jgroups.Version</mainClass>
                         </manifest>
+                        <manifestEntries>
+                            <Automatic-Module-Name>org.jgroups</Automatic-Module-Name>
+                        </manifestEntries>
                     </archive>
                 </configuration>
             </plugin>
