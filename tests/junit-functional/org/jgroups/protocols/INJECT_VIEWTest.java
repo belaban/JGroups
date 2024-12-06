@@ -19,13 +19,6 @@ import java.util.*;
  */
 @Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class INJECT_VIEWTest {
-    protected static final String A, B, C;
-
-    static {
-        A=INJECT_VIEWTest.class.getSimpleName() + "-A";
-        B=INJECT_VIEWTest.class.getSimpleName() + "-B";
-        C=INJECT_VIEWTest.class.getSimpleName() + "-C";
-    }
 
     protected static Protocol[] getProps() {
         return modify(Util.getTestStack());
@@ -47,15 +40,15 @@ public class INJECT_VIEWTest {
     public void testInjectView() throws Exception {
         JChannel[] channels=null;
         try {
-            channels=create( "testInjectView", A, B, C);
+            channels=create( "testInjectView", "A", "B", "C");
             print(channels);
             View view=channels[channels.length -1].getView();
             assert view.size() == channels.length : "view is " + view;
 
             String injectionViewString = String.format("%s=%s/%s;%s=%s/%s;%s=%s",
-                                                       A,A,B,
-                                                       B,B,C,
-                                                       C,C);
+                                                       "A","A","B",
+                                                       "B","B","C",
+                                                       "C","C");
             System.out.println("\ninjecting views: "+injectionViewString);
             for (JChannel channel : channels) {
                 channel.getProtocolStack().addProtocol( new INJECT_VIEW());
@@ -68,21 +61,21 @@ public class INJECT_VIEWTest {
             System.out.println("\nInjected views: "+injectionViewString);
             print(channels);
             System.out.println("\nchecking views: ");
-            checkViews(channels, A, A, B);
+            checkViews(channels, "A", "A", "B");
             System.out.println("\nA is OK");
-            checkViews(channels, B, B, C);
+            checkViews(channels, "B", "B", "C");
             System.out.println("\nB is OK");
-            checkViews(channels, C, C);
+            checkViews(channels, "C", "C");
             System.out.println("\nC is OK");
 
             System.out.println("\ndigests:");
             printDigests(channels);
 
-            Address leader=determineLeader(channels, A, B, C);
+            Address leader=determineLeader(channels, "A", "B", "C");
             long end_time=System.currentTimeMillis() + 30000;
             do {
                 System.out.println("\n==== injecting merge events into " + leader + " ====");
-                injectMergeEvent(channels, leader, A, B, C);
+                injectMergeEvent(channels, leader, "A", "B", "C");
                 Util.sleep(1000);
                 if(allChannelsHaveViewOf(channels, channels.length))
                     break;
