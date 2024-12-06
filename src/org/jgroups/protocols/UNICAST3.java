@@ -992,7 +992,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         AsciiString cl=cluster != null? cluster : getTransport().getClusterNameAscii();
         int cap=Math.max(Math.max(Math.max(win.size(), max_batch_size), min_size), DEFAULT_INITIAL_CAPACITY);
         MessageBatch batch=reuse_message_batches && cl != null?
-          cached_batches.computeIfAbsent(sender, __ -> new MessageBatch(cap).dest(local_addr).sender(sender).cluster(cl).mcast(true))
+          cached_batches.computeIfAbsent(sender, __ -> new MessageBatch(cap).dest(local_addr).sender(sender).cluster(cl))
           : new MessageBatch(cap).dest(local_addr).sender(sender).cluster(cl).multicast(true);
         batch.array().increment(DEFAULT_INCREMENT);
         Supplier<MessageBatch> batch_creator=() -> batch;

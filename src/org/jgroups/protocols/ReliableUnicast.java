@@ -135,7 +135,9 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
 
     protected final Map<Address,SenderEntry>   send_table=Util.createConcurrentMap();
     protected final Map<Address,ReceiverEntry> recv_table=Util.createConcurrentMap();
-    /** To cache batches for sending messages up the stack (https://issues.redhat.com/browse/JGRP-2841) */
+    /** To cache batches for sending messages up the stack (https://issues.redhat.com/browse/JGRP-2841).
+     * Note: values are all _regular_ batches; OOB batches/messages have been passed up, or were removed when
+     * draining the table in removeAndDeliver() */
     protected final Map<Address,MessageBatch>  cached_batches=Util.createConcurrentMap();
 
     protected final ReentrantLock          recv_table_lock=new ReentrantLock();
