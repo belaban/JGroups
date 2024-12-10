@@ -361,9 +361,7 @@ public class RequestCorrelator {
                 long start=System.nanoTime();
                 handleRequest(msg, hdr);
                 long time=(long)((System.nanoTime() - start) / 1000.0);
-                synchronized(avg_req_delivery) {
-                    avg_req_delivery.add(time);
-                }
+                avg_req_delivery.add(time);
                 break;
 
             case Header.RSP:
@@ -371,9 +369,7 @@ public class RequestCorrelator {
                 start=System.nanoTime();
                 handleResponse(msg, hdr);
                 time=(long)((System.nanoTime() - start) / 1000.0);
-                synchronized(avg_rsp_delivery) {
-                    avg_rsp_delivery.add(time);
-                }
+                avg_rsp_delivery.add(time);
                 break;
 
             default:

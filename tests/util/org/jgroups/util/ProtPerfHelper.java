@@ -277,25 +277,15 @@ public class ProtPerfHelper extends Helper {
         protected final AverageMinMax avg_up=new AverageMinMax().unit(NANOSECONDS);
 
         protected void add(long value, boolean down) {
-            if(down) {
-                synchronized(avg_down) {
-                    avg_down.add(value);
-                }
-            }
-            else {
-                synchronized(avg_up) {
-                    avg_up.add(value);
-                }
-            }
+            if(down)
+                avg_down.add(value);
+            else
+                avg_up.add(value);
         }
 
         protected void clear() {
-            synchronized(avg_down) {
-                avg_down.clear();
-            }
-            synchronized(avg_up) {
-                avg_up.clear();
-            }
+            avg_down.clear();
+            avg_up.clear();
         }
 
         public String toString() {

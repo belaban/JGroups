@@ -39,9 +39,7 @@ public class THREAD_COUNT extends Protocol {
             return down_prot.down(msg);
         try {
             int cnt=down_count.incrementAndGet();
-            synchronized(avg_down) {
-                avg_down.add(cnt);
-            }
+            avg_down.add(cnt);
             return down_prot.down(msg);
         }
         finally {
@@ -55,9 +53,7 @@ public class THREAD_COUNT extends Protocol {
             return up_prot.up(msg);
         try {
             int cnt=up_count.incrementAndGet();
-            synchronized(avg_up) {
-                avg_up.add(cnt);
-            }
+            avg_up.add(cnt);
             return up_prot.up(msg);
         }
         finally {
@@ -73,9 +69,7 @@ public class THREAD_COUNT extends Protocol {
         }
         try {
             int cnt=up_count.incrementAndGet();
-            synchronized(avg_up) {
-                avg_up.add(cnt);
-            }
+            avg_up.add(cnt);
             up_prot.up(batch);
         }
         finally {

@@ -103,9 +103,7 @@ public class CounterTest {
               .thenAccept(v -> {
                   values[(int)v.longValue()]=v;
                   long time=Util.micros()-start;
-                  synchronized(avg) {
-                      avg.add(time);
-                  }
+                  avg.add(time);
               });
         }
         Util.waitUntil(50000, 1, () -> IntStream.rangeClosed(1, 999).allMatch(i -> values[i] > 0));
