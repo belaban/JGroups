@@ -65,11 +65,13 @@ public class RequestCorrelator {
 
     protected final ForkJoinPool         common_pool=ForkJoinPool.commonPool();
 
+    protected volatile boolean           rpcstats; // enables/disables the 3 RPC metrics below
+
     protected final RpcStats             rpc_stats=new RpcStats(false);
 
-    protected final AverageMinMax        avg_req_delivery=new AverageMinMax().unit(TimeUnit.MICROSECONDS);
+    protected final AverageMinMax        avg_req_delivery=new AverageMinMax(1024).unit(TimeUnit.NANOSECONDS);
 
-    protected final AverageMinMax        avg_rsp_delivery=new AverageMinMax().unit(TimeUnit.MICROSECONDS);
+    protected final AverageMinMax        avg_rsp_delivery=new AverageMinMax(1024).unit(TimeUnit.NANOSECONDS);
 
     protected static final Log           log=LogFactory.getLog(RequestCorrelator.class);
 
@@ -103,6 +105,9 @@ public class RequestCorrelator {
     public RequestCorrelator      asyncRspHandling(boolean f)    {async_rsp_handling=f; return this;}
     public boolean                wrapExceptions()               {return wrap_exceptions;}
     public RequestCorrelator      wrapExceptions(boolean flag)   {wrap_exceptions=flag; return this;}
+    public boolean                rpcStats()                     {return rpcstats;}
+    public RequestCorrelator      rpcStats(boolean b)            {
+        rpcstats=b; return this;}
 
 
     /**
@@ -126,10 +131,12 @@ public class RequestCorrelator {
         if(req != null) // sync
             addEntry(req, hdr, false);
         else {  // async
-            if(opts.anycasting())
-                rpc_stats.addAnycast(false, 0, dest_mbrs);
-            else
-                rpc_stats.add(RpcStats.Type.MULTICAST, null, false, 0);
+            if(rpcstats) {
+                if(opts.anycasting())
+                    rpc_stats.addAnycast(false, 0, dest_mbrs);
+                else
+                    rpc_stats.add(RpcStats.Type.MULTICAST, null, false, 0);
+            }
         }
         if(opts.anycasting())
             sendAnycastRequest(msg, dest_mbrs);
@@ -147,8 +154,10 @@ public class RequestCorrelator {
 
         if(req != null) // sync RPC
             addEntry(req, hdr, true);
-        else // async RPC
-            rpc_stats.add(RpcStats.Type.UNICAST, dest, false, 0);
+        else {// async RPC
+            if(rpcstats)
+                rpc_stats.add(RpcStats.Type.UNICAST, dest, false, 0);
+        }
         down_prot.down(msg);
     }
 
@@ -338,13 +347,17 @@ public class RequestCorrelator {
         Request<?> req=requests.remove(req_id);
         if(req != null) {
             long time_ns=req.start_time > 0? System.nanoTime() - req.start_time : 0;
-            if(req instanceof UnicastRequest)
-                rpc_stats.add(RpcStats.Type.UNICAST, ((UnicastRequest<?>)req).target, true, time_ns);
+            if(req instanceof UnicastRequest) {
+                if(rpcstats)
+                    rpc_stats.add(RpcStats.Type.UNICAST, ((UnicastRequest<?>)req).target, true, time_ns);
+            }
             else if(req instanceof GroupRequest) {
-                if(req.options != null && req.options.anycasting())
-                    rpc_stats.addAnycast(true, time_ns, ((GroupRequest<?>)req).rsps.keySet());
-                else
-                    rpc_stats.add(RpcStats.Type.MULTICAST, null, true, time_ns);
+                if(rpcstats) {
+                    if(req.options != null && req.options.anycasting())
+                        rpc_stats.addAnycast(true, time_ns, ((GroupRequest<?>)req).rsps.keySet());
+                    else
+                        rpc_stats.add(RpcStats.Type.MULTICAST, null, true, time_ns);
+                }
             }
             else
                 log.error("request type %s not known", req != null? req.getClass().getSimpleName() : req);
@@ -358,18 +371,22 @@ public class RequestCorrelator {
     protected void dispatch(final Message msg, final Header hdr) {
         switch(hdr.type) {
             case Header.REQ:
-                long start=System.nanoTime();
+                long start=rpcstats? System.nanoTime() : 0;
                 handleRequest(msg, hdr);
-                long time=(long)((System.nanoTime() - start) / 1000.0);
-                avg_req_delivery.add(time);
+                if(start > 0) {
+                    long time=System.nanoTime() - start;
+                    avg_req_delivery.add(time);
+                }
                 break;
 
             case Header.RSP:
             case Header.EXC_RSP:
-                start=System.nanoTime();
+                start=rpcstats? System.nanoTime() : 0;
                 handleResponse(msg, hdr);
-                time=(long)((System.nanoTime() - start) / 1000.0);
-                avg_rsp_delivery.add(time);
+                if(start > 0) {
+                    long time=System.nanoTime() - start;
+                    avg_rsp_delivery.add(time);
+                }
                 break;
 
             default:
@@ -380,8 +397,8 @@ public class RequestCorrelator {
 
     /** Handle a request msg for this correlator */
     protected void handleRequest(Message req, Header hdr) {
-        Object        retval;
-        boolean       threw_exception=false;
+        Object  retval;
+        boolean threw_exception=false;
 
         if(log.isTraceEnabled())
             log.trace("calling (%s) with request %d",
@@ -610,6 +627,10 @@ public class RequestCorrelator {
                         retval.put(key, String.format("size=%d, next-id=%d", requests.size(), REQUEST_ID.get()));
                         break;
                     case "rpcs":
+                        if(!rpcstats) {
+                            retval.put(key, String.format("%s not enabled; use enable-rpcstats to enable it", key));
+                            break;
+                        }
                         retval.put("sync  unicast   RPCs", String.valueOf(rpc_stats.unicasts(true)));
                         retval.put("sync  multicast RPCs", String.valueOf(rpc_stats.multicasts(true)));
                         retval.put("async unicast   RPCs", String.valueOf(rpc_stats.unicasts(false)));
@@ -623,6 +644,7 @@ public class RequestCorrelator {
                         break;
                     case "rpcs-enable-details":
                         rpc_stats.extendedStats(true);
+                        rpcstats=true;
                         break;
                     case "rpcs-disable-details":
                         rpc_stats.extendedStats(false);
@@ -637,19 +659,36 @@ public class RequestCorrelator {
                         retval.put(key + " (min/avg/max)", rpc_stats.printRTTStatsByDest());
                         break;
                     case "avg-req-delivery":
-                        retval.put(key, avg_req_delivery.toString());
+                        if(!rpcstats)
+                            retval.put(key, String.format("%s not enabled; use enable-rpcstats to enable it", key));
+                        else
+                            retval.put(key, avg_req_delivery.toString());
                         break;
                     case "avg-req-delivery-reset":
                         avg_req_delivery.clear();
                         break;
                     case "avg-rsp-delivery":
-                        retval.put(key, avg_rsp_delivery.toString());
+                        if(!rpcstats)
+                            retval.put(key, String.format("%s not enabled; use enable-rpcstats to enable it", key));
+                        else
+                            retval.put(key, avg_rsp_delivery.toString());
                         break;
                     case "avg-rsp-delivery-reset":
                         avg_rsp_delivery.clear();
                         break;
                     case "fjp":
                         retval.put(key, common_pool.toString());
+                        break;
+                    case "enable-rpcstats":
+                        rpcstats=true;
+                        break;
+                    case "disable-rpcstats":
+                        rpcstats=false;
+                        break;
+                    case "rpcstats":
+                        retval.put(key, String.format("rpcstats=%b (enable-rpcstats to enable), " +
+                                                        "extended stats=%b (rpcs-enable-details to enable)",
+                                                      rpcstats, rpc_stats.extendedStats()));
                         break;
                 }
                 if("avg-req-delivery".startsWith(key))
@@ -672,7 +711,8 @@ public class RequestCorrelator {
             return new String[]{"requests", "reqtable-info", "rpcs", "rpcs-reset", "rpcs-enable-details",
               "rpcs-disable-details", "rpcs-details", "rtt", "rtt-reset",
               "avg-req-delivery", "avg-req-delivery-reset", "async-rsp-handling",
-              "avg-rsp-delivery", "avg-rsp-delivery-reset", "fjp"};
+              "avg-rsp-delivery", "avg-rsp-delivery-reset", "fjp", "enable-rpcstats", "disable-rpcstats",
+            "stats"};
         }
     }
 

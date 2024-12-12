@@ -34,10 +34,10 @@ public class PERF extends Protocol {
     protected int     avg_size=1024;
 
     @ManagedAttribute(description="Average latency in ns",type=AttributeType.TIME,unit=TimeUnit.NANOSECONDS)
-    public double latencyInNs() {return avg.getAverage();}
+    public double latencyInNs() {return avg.average();}
 
     @ManagedAttribute(description="Average latency in ms",type=AttributeType.TIME)
-    public double latencyInMs() {return avg.getAverage() / 1000000.0;}
+    public double latencyInMs() {return avg.average() / 1000000.0;}
 
     public void init() throws Exception {
         super.init();

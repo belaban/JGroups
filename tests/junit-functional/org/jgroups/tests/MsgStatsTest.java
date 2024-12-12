@@ -74,7 +74,7 @@ public class MsgStatsTest {
         assert stats_b.getNumUcastBytesReceived() >= TOTAL_BYTES;
         assert stats_b.getNumBatchesReceived() > 0;
         AverageMinMax avg=stats_b.getAvgBatchSize();
-        assert avg.getAverage() > 0;
+        assert avg.average() > 0;
         assert stats_a.getNumSingleMsgsSent() + stats_a.getNumBatchesSent() > 0;
     }
 

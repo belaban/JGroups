@@ -6,6 +6,7 @@ import org.jgroups.Message.Flag;
 import org.jgroups.Message.TransientFlag;
 import org.jgroups.protocols.relay.SiteUUID;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.tests.perf.PerfUtil.AverageSummary;
 import org.jgroups.util.UUID;
 import org.jgroups.util.*;
 import org.testng.Assert;
@@ -17,6 +18,7 @@ import java.net.*;
 import java.nio.ByteBuffer;
 import java.text.DecimalFormatSymbols;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -917,6 +919,63 @@ public class UtilTest {
         assert random == 1;
     }
 
+    public void testWithinRange() {
+        boolean within=Util.withinRange(1.0, 1.0, 0.1);
+        assert within;
+
+        within=Util.withinRange(105.0, 100, 0.1);
+        assert within;
+
+        within=Util.withinRange(100.0, 109.0, 0.1);
+        assert within;
+
+        within=Util.withinRange(100.0, 110.0, 0.1);
+        assert within;
+
+        within=Util.withinRange(100.0, 90.0, 0.1);
+        assert within;
+
+        within=Util.withinRange(100.0, 89.9, 0.1);
+        assert !within;
+    }
+
+    public void testAverageSummary() {
+        AverageSummary s1=new AverageSummary(4, 3.5, 22).unit(TimeUnit.MILLISECONDS),
+          s2=new AverageSummary(5, 7.5, 10), s3=new AverageSummary(2, 10, 100);
+        assertSummary(s1, 4, 3.5, 22);
+        s1.merge(s2);
+        assertSummary(s1, 4, 5.5, 22);
+        s1.merge(s3);
+        assertSummary(s1, 2, 7.75, 100);
+    }
+
+    public void testAverageSummarySerialization() throws Exception {
+        AverageSummary s1=new AverageSummary(4, 3.5, 22).unit(TimeUnit.MILLISECONDS);
+        byte[] buf=Util.streamableToByteBuffer(s1);
+        AverageSummary s2=Util.streamableFromByteBuffer(AverageSummary.class, buf);
+        assert s1.min() == s2.min();
+        assert s1.avg() == s2.avg();
+        assert s1.max() == s2.max();
+        assert s1.unit() == s2.unit();
+    }
+
+    public void testAverageSummaryMerge() {
+        AverageSummary s1=new AverageSummary(10,20,50).unit(TimeUnit.NANOSECONDS),
+          s2=new AverageSummary(8,10,30).unit(TimeUnit.NANOSECONDS),
+          s3=new AverageSummary(4,40,40).unit(TimeUnit.NANOSECONDS),
+          s4=new AverageSummary(6,30,300).unit(TimeUnit.NANOSECONDS);
+        AverageSummary sum=new AverageSummary().unit(TimeUnit.NANOSECONDS);
+        sum.set(List.of(s1,s2,s3,s4));
+        assert sum.min() == 4;
+        assert sum.avg() == 25;
+        assert sum.max() == 300;
+    }
+
+    protected static void assertSummary(AverageSummary s, double min, double avg, double max) {
+        assert s.min() == min;
+        assert s.avg() == avg;
+        assert s.max() == max;
+    }
 
     public static void testChanged() {
         Address a=null, b=null;

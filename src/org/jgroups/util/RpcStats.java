@@ -4,11 +4,11 @@ import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.protocols.RTTHeader;
 
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
@@ -18,12 +18,12 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  * @since  3.6.8
  */
 public class RpcStats {
-    protected final AtomicInteger           sync_unicasts=new AtomicInteger(0);
-    protected final AtomicInteger           async_unicasts=new AtomicInteger(0);
-    protected final AtomicInteger           sync_multicasts=new AtomicInteger(0);
-    protected final AtomicInteger           async_multicasts=new AtomicInteger(0);
-    protected final AtomicInteger           sync_anycasts=new AtomicInteger(0);
-    protected final AtomicInteger           async_anycasts=new AtomicInteger(0);
+    protected final LongAdder               sync_unicasts=new LongAdder();
+    protected final LongAdder               async_unicasts=new LongAdder();
+    protected final LongAdder               sync_multicasts=new LongAdder();
+    protected final LongAdder               async_multicasts=new LongAdder();
+    protected final LongAdder               sync_anycasts=new LongAdder();
+    protected final LongAdder               async_anycasts=new LongAdder();
     protected volatile Map<Address,Result>  stats;
     protected volatile Map<Address,RTTStat> rtt_stats;
 
@@ -33,9 +33,9 @@ public class RpcStats {
         extendedStats(extended_stats);
     }
 
-    public int unicasts(boolean sync)    {return sync? sync_unicasts.get()   : async_unicasts.get();}
-    public int multicasts(boolean sync)  {return sync? sync_multicasts.get() : async_multicasts.get();}
-    public int anycasts(boolean sync)    {return sync? sync_anycasts.get()   : async_anycasts.get();}
+    public long unicasts(boolean sync)    {return sync? sync_unicasts.sum()   : async_unicasts.sum();}
+    public long multicasts(boolean sync)  {return sync? sync_multicasts.sum() : async_multicasts.sum();}
+    public long anycasts(boolean sync)    {return sync? sync_anycasts.sum()   : async_anycasts.sum();}
 
     public boolean  extendedStats()          {return stats != null;}
     public RpcStats extendedStats(boolean f) {
@@ -53,8 +53,8 @@ public class RpcStats {
             stats.clear();
         if(rtt_stats != null)
             rtt_stats.clear();
-        for(AtomicInteger ai: Arrays.asList(sync_unicasts, async_unicasts, sync_multicasts, async_multicasts, sync_anycasts, async_anycasts))
-            ai.set(0);
+        for(LongAdder a: List.of(sync_unicasts, async_unicasts, sync_multicasts, async_multicasts, sync_anycasts, async_anycasts))
+            a.reset();
     }
 
     public void add(Type type, Address dest, boolean sync, long time) {
@@ -112,29 +112,29 @@ public class RpcStats {
 
     public String toString() {
         return String.format("sync mcasts: %d, async mcasts: %d, sync ucasts: %d, async ucasts: %d, sync acasts: %d, async acasts: %d",
-                             sync_multicasts.get(), async_multicasts.get(), sync_unicasts.get(), async_unicasts.get(),
-                             sync_anycasts.get(), async_anycasts.get());
+                             sync_multicasts.sum(), async_multicasts.sum(), sync_unicasts.sum(), async_unicasts.sum(),
+                             sync_anycasts.sum(), async_anycasts.sum());
     }
 
     protected void update(Type type, boolean sync) {
         switch(type) {
             case MULTICAST:
                 if(sync)
-                    sync_multicasts.incrementAndGet();
+                    sync_multicasts.increment();
                 else
-                    async_multicasts.incrementAndGet();
+                    async_multicasts.increment();
                 break;
             case UNICAST:
                 if(sync)
-                    sync_unicasts.incrementAndGet();
+                    sync_unicasts.increment();
                 else
-                    async_unicasts.incrementAndGet();
+                    async_unicasts.increment();
                 break;
             case ANYCAST:
                 if(sync)
-                    sync_anycasts.incrementAndGet();
+                    sync_anycasts.increment();
                 else
-                    async_anycasts.incrementAndGet();
+                    async_anycasts.increment();
                 break;
         }
     }
@@ -152,7 +152,7 @@ public class RpcStats {
 
     protected static class Result {
         protected long                sync, async;
-        protected final AverageMinMax avg=new AverageMinMax();
+        protected final AverageMinMax avg=new AverageMinMax().unit(NANOSECONDS);
         protected long                sync()  {return sync;}
         protected long                async() {return async;}
         protected double              min()   {return avg.min();}
@@ -169,21 +169,25 @@ public class RpcStats {
         }
 
         public String toString() {
-            double avg_us=avg()/1000.0;     // convert nanos to microsecs
-            double min_us=avg.min()/1000.0; // us
-            double max_us=avg.max()/1000.0; // us
-            return String.format("async: %d, sync: %d, round-trip min/avg/max (us): %.2f / %.2f / %.2f", async, sync, min_us, avg_us, max_us);
+            return String.format("async: %,d, sync: %,d, round-trip %s", async, sync, avg);
         }
     }
 
     protected static class RTTStat {
-        protected final AverageMinMax total_time=new AverageMinMax();  // RTT for a sync request
-        protected final AverageMinMax down_req_time=new AverageMinMax(); // send until the req is serialized
-        protected final AverageMinMax network_req_time=new AverageMinMax(); // serialization of req until deserialization
-        protected final AverageMinMax network_rsp_time=new AverageMinMax(); // serialization of rsp until deserialization
-        protected final AverageMinMax req_up_time=new AverageMinMax(); // deserialization of req until dispatching to app
-        protected final AverageMinMax rsp_up_time=new AverageMinMax(); // deserialization of rsp until after dispatching to app
-        protected final AverageMinMax processing_time=new AverageMinMax(); // time between reception of req and sending of rsp
+        // RTT for a sync request
+        protected final Average total_time=new AverageMinMax().unit(NANOSECONDS);
+        // send until the req is serialized
+        protected final Average down_req_time=new AverageMinMax().unit(NANOSECONDS);
+        // serialization of req until deserialization
+        protected final Average network_req_time=new AverageMinMax().unit(NANOSECONDS);
+        // serialization of rsp until deserialization
+        protected final Average network_rsp_time=new AverageMinMax().unit(NANOSECONDS);
+        // deserialization of req until dispatching to app
+        protected final Average req_up_time=new AverageMinMax().unit(NANOSECONDS);
+        // deserialization of rsp until after dispatching to app
+        protected final Average rsp_up_time=new AverageMinMax().unit(NANOSECONDS);
+        // time between reception of req and sending of rsp
+        protected final Average processing_time=new AverageMinMax().unit(NANOSECONDS);
 
         protected void add(RTTHeader hdr) {
             if(hdr == null)

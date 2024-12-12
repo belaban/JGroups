@@ -40,6 +40,7 @@ public class LazyThreadFactoryTest {
 
         factory.setClusterName("my-cluster");
         assert factory.size() == NUM;
+        // will remove the thread from the LazyThreadFactory, as it has been completely named
         factory.setAddress("localhost-12345");
         assert factory.size() == 0 : "found threads in the queue: " + factory.dumpThreads();
     }

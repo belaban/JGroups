@@ -222,7 +222,7 @@ public class BundlerStressTest {
                 System.out.print(".");
             else
                 System.out.printf("%d: %,.2f reqs/sec, %s / req\n", i, reqs_sec,
-                                  Util.printTime(senders[0].send.getAverage(), NANOSECONDS));
+                                  Util.printTime(senders[0].send.average(), NANOSECONDS));
         }
 
         for(Sender sender: senders)

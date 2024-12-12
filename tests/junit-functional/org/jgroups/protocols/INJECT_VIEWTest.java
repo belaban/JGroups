@@ -10,6 +10,7 @@ import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
 import java.util.*;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Tests the INJECT_VIEW protocol. Note that the logical names of the members should be unique, otherwise - when
@@ -50,10 +51,9 @@ public class INJECT_VIEWTest {
                                                        "B","B","C",
                                                        "C","C");
             System.out.println("\ninjecting views: "+injectionViewString);
-            for (JChannel channel : channels) {
+            for(JChannel channel: channels)
                 channel.getProtocolStack().addProtocol( new INJECT_VIEW());
-            }
-            for (JChannel channel : channels) {
+            for (JChannel channel: channels) {
                 INJECT_VIEW iv = channel.getProtocolStack().findProtocol(INJECT_VIEW.class);
                 iv.injectView(injectionViewString);
             }
@@ -163,11 +163,11 @@ public class INJECT_VIEWTest {
         return membership.elementAt(0);
     }
 
-    private static void checkViews(JChannel[] channels, String channel_name, String ... members) {
+    private static void checkViews(JChannel[] channels, String channel_name, String ... members) throws TimeoutException {
         JChannel ch=findChannel(channel_name, channels);
         View view=ch.getView();
-        assert view.size() == members.length : "view is " + view + ", members: " + Arrays.toString(members);
-
+        Util.waitUntil(4000, 200, () -> view.size() == members.length,
+                       () -> "view is " + view + ", members: " + Arrays.toString(members));
         for(String member: members) {
             Address addr=findAddress(member, channels);
             assert view.getMembers().contains(addr) : "view " + view + " does not contain " + addr;

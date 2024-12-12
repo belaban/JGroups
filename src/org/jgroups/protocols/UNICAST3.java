@@ -130,7 +130,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     protected final LongAdder  xmit_rsps_sent=new LongAdder();
 
     @ManagedAttribute(description="Average batch size of messages delivered to the application")
-    protected final AverageMinMax avg_delivery_batch_size=new AverageMinMax();
+    protected final AverageMinMax avg_delivery_batch_size=new AverageMinMax(1024);
 
     @ManagedAttribute(description="True if sending a message can block at the transport level")
     protected boolean sends_can_block=true;

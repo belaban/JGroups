@@ -97,8 +97,8 @@ public class MessageBundlingTest extends ChannelTestBase {
         }
         for(int i=0; i < times.length; i++)
             System.out.printf("latency for %d: %s\n", i, print(times[i]));
-        System.out.printf("\nmin/max/avg (us): %.2f  / %.2f / %.2f\n", min / 1000.0, max / 1000.0, avg.getAverage() / 1000.0);
-        assert avg.getAverage() < LATENCY_NS;
+        System.out.printf("\nmin/max/avg (us): %.2f  / %.2f / %.2f\n", min / 1000.0, max / 1000.0, avg.average() / 1000.0);
+        assert avg.average() < LATENCY_NS;
     }
 
 

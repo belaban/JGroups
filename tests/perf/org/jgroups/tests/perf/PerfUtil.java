@@ -3,14 +3,22 @@ package org.jgroups.tests.perf;
 import org.jgroups.Global;
 import org.jgroups.blocks.MethodCall;
 import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.util.*;
+import org.jgroups.util.Bits;
+import org.jgroups.util.SizeStreamable;
+import org.jgroups.util.Streamable;
+import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+
+import static org.jgroups.util.Util.printTime;
 
 /**
  * Misc stuff for performance tests
@@ -132,19 +140,90 @@ public class PerfUtil {
         }
     }
 
+    public static class AverageSummary implements Streamable {
+        protected double   min, avg, max;
+        protected TimeUnit unit;
+
+        public AverageSummary() {
+        }
+
+        public AverageSummary(double min, double avg, double max) {
+            this.min=min;
+            this.avg=avg;
+            this.max=max;
+        }
+
+        public double         min()               {return min;}
+        public AverageSummary min(double min)     {this.min=min; return this;}
+        public double         avg()               {return avg;}
+        public AverageSummary avg(double avg)     {this.avg=avg; return this;}
+        public double         max()               {return max;}
+        public AverageSummary max(double max)     {this.max=max; return this;}
+        public TimeUnit       unit()              {return unit;}
+        public AverageSummary unit(TimeUnit unit) {this.unit=unit;return this;}
+
+        public AverageSummary merge(AverageSummary other) {
+            if(other == null)
+                return this;
+            min=Math.min(min, other.min);
+            avg=(avg + other.avg) / 2;
+            max=Math.max(max, other.max);
+            return this;
+        }
+
+        /** Overwrites the current values with the given list of new values */
+        public AverageSummary set(List<AverageSummary> others) {
+            if(others == null)
+                return this;
+            min=others.stream().map(AverageSummary::min).min(Double::compare).orElse(0.0);
+            max=others.stream().map(AverageSummary::max).max(Double::compare).orElse(0.0);
+            double avg_sum=others.stream().map(AverageSummary::avg).mapToDouble(d -> d).sum();
+            avg=avg_sum / others.size();
+            unit=others.stream().map(AverageSummary::unit).filter(Objects::nonNull).findFirst().orElse(null);
+            return this;
+        }
+
+        public String toString() {
+            return unit != null? toString(unit) : String.format("min/avg/max=%.2f/%.2f/%.2f", min, avg, max);
+        }
+
+        public String toString(TimeUnit u) {
+            return String.format("%s/%s/%s", printTime(min, u), printTime(avg, u), printTime(max, u));
+        }
+
+        @Override
+        public void writeTo(DataOutput out) throws IOException {
+            Bits.writeDouble(min, out);
+            Bits.writeDouble(avg, out);
+            Bits.writeDouble(max, out);
+            int ordinal=unit != null? unit.ordinal() : -1;
+            out.writeInt(ordinal);
+        }
+
+        @Override
+        public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
+            min=Bits.readDouble(in);
+            avg=Bits.readDouble(in);
+            max=Bits.readDouble(in);
+            int ordinal=in.readInt();
+            if(ordinal != -1)
+                unit=TimeUnit.values()[ordinal];
+        }
+    }
+
 
     public static class Results implements Streamable {
-        protected long          num_gets;
-        protected long          num_puts;
-        protected long          total_time;     // in ms
-        protected AverageMinMax avg_gets; // RTT in ns
-        protected AverageMinMax avg_puts; // RTT in ns
+        protected long           num_gets;
+        protected long           num_puts;
+        protected long           total_time;     // in ms
+        protected AverageSummary avg_gets;       // RTT
+        protected AverageSummary avg_puts;       // RTT
 
         public Results() {
 
         }
 
-        public Results(int num_gets, int num_puts, long total_time, AverageMinMax avg_gets, AverageMinMax avg_puts) {
+        public Results(int num_gets, int num_puts, long total_time, AverageSummary avg_gets, AverageSummary avg_puts) {
             this.num_gets=num_gets;
             this.num_puts=num_puts;
             this.total_time=total_time;
@@ -166,16 +245,16 @@ public class PerfUtil {
             num_gets=Bits.readLongCompressed(in);
             num_puts=Bits.readLongCompressed(in);
             total_time=Bits.readLongCompressed(in);
-            avg_gets=Util.readStreamable(AverageMinMax::new, in);
-            avg_puts=Util.readStreamable(AverageMinMax::new, in);
+            avg_gets=Util.readStreamable(AverageSummary::new, in);
+            avg_puts=Util.readStreamable(AverageSummary::new, in);
         }
 
         public String toString() {
             long total_reqs=num_gets + num_puts;
             double total_reqs_per_sec=total_reqs / (total_time / 1000.0);
-            return String.format("%,.2f reqs/sec (%,d gets, %,d puts, get RTT %,.2f us, put RTT %,.2f us)",
-                                 total_reqs_per_sec, num_gets, num_puts, avg_gets.average() / 1000.0,
-                                 avg_puts.getAverage()/1000.0);
+            return String.format("%,.2f reqs/sec (%,d gets, %,d puts, get RTT %s, put RTT %s)",
+                                 total_reqs_per_sec, num_gets, num_puts, Util.printTime(avg_gets.avg(), avg_gets.unit()),
+                                 Util.printTime(avg_puts.avg(), avg_puts.unit()));
         }
     }
 

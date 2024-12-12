@@ -25,21 +25,22 @@ public class LazyThreadFactory extends DefaultThreadFactory {
 
     public Thread newThread(Runnable r, String name) {
         Thread retval=null;
+        boolean name_complete=true;
         String addr=address;
-        if(addr == null)
+        if(addr == null) {
             addr=ADDR;
+            name_complete=false;
+        }
         String cluster_name=clusterName;
-        if(cluster_name == null)
+        if(cluster_name == null) {
             cluster_name=CLUSTER;
-
+            name_complete=false;
+        }
         retval=super.newThread(r, name, addr, cluster_name);
-        int size=threads.size();
-        threads.add(new WeakReference<>(retval));
-        if(size > 0)
-            removeTerminatedThreads();
+        if(!name_complete)
+            threads.add(new WeakReference<>(retval));
         return retval;
     }
-
 
     public void setAddress(String address) {
         boolean changed=!Util.match(this.address, address);
@@ -77,10 +78,6 @@ public class LazyThreadFactory extends DefaultThreadFactory {
         for(Iterator<WeakReference<Thread>> it=threads.iterator(); it.hasNext();) {
             WeakReference<Thread> ref=it.next();
             Thread thread=ref.get();
-            if(thread == null || thread.getState() == Thread.State.TERMINATED) {
-                it.remove();
-                continue;
-            }
             String name=thread.getName();
             name=changeName(name);
             thread.setName(name);

@@ -180,7 +180,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
     /** The average number of messages in a received {@link MessageBatch} */
     @ManagedAttribute(description="The average number of messages in a batch removed from the table and delivered to the application")
-    protected final AverageMinMax avg_batch_size=new AverageMinMax();
+    protected final AverageMinMax avg_batch_size=new AverageMinMax(1024);
 
     @ManagedAttribute(description="Is the retransmit task running")
     public boolean isXmitTaskRunning() {return xmit_task != null && !xmit_task.isDone();}

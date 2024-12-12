@@ -104,7 +104,7 @@ public class RED_Test {
         protected long   getSentMessages() {return sent.sum();}
         protected long   getSingle()       {return single.sum();}
         protected long   getBatches()      {return batches.sum();}
-        protected double getAvgBatchSize() {return avg_batch_size.getAverage();}
+        protected double getAvgBatchSize() {return avg_batch_size.average();}
 
         protected void sendSingleMessage(Message msg, ByteArrayDataOutputStream out) {
             sent.increment();

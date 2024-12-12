@@ -12,7 +12,7 @@ import static org.jgroups.util.Util.printTime;
  * @since  5.2.13
  */
 public class Profiler {
-    protected final AverageMinMax    avg=new AverageMinMax().unit(NANOSECONDS);
+    protected final AverageMinMax    avg=new AverageMinMax(1024).unit(NANOSECONDS);
     protected final Map<Thread,Long> threads=new ConcurrentHashMap<>();
     protected boolean                print_details=true;
     protected boolean                enabled=true;

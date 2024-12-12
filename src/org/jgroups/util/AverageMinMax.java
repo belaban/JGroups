@@ -34,6 +34,8 @@ public class AverageMinMax extends Average {
     public List<Double>  values()                {return values;}
 
     public <T extends Average> T add(double num) {
+        if(num < 0)
+            return (T)this;
         super.add(num);
         min=Math.min(min, num);
         max=Math.max(max, num);
@@ -87,16 +89,16 @@ public class AverageMinMax extends Average {
     }
 
     public String toString() {
-        return count.sum() == 0? "n/a" :
+        return count() == 0? "n/a" :
           unit != null? toString(unit) :
           String.format("min/avg/max=%.2f/%.2f/%.2f%s",
-                        min, getAverage(), max, unit == null? "" : " " + Util.suffix(unit));
+                        min, average(), max, unit == null? "" : " " + Util.suffix(unit));
     }
 
     public String toString(TimeUnit u) {
-        if(count.sum() == 0)
+        if(count() == 0)
             return "n/a";
-        return String.format("%s/%s/%s", printTime(min, u), printTime(getAverage(), u), printTime(max, u));
+        return String.format("%s/%s/%s", printTime(min, u), printTime(average(), u), printTime(max, u));
     }
 
     public void writeTo(DataOutput out) throws IOException {

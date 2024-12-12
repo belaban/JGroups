@@ -125,6 +125,7 @@ public class Util {
     protected static final String                   UUID_PREFIX="uuid://";
     protected static final String                   SITE_UUID_PREFIX="site-addr://";
     protected static final String                   IP_PREFIX="ip://";
+    protected static final SplittableRandom         RANDOM=new SplittableRandom();
 
     static {
 
@@ -2514,6 +2515,13 @@ public class Util {
         return range == 0? 1 : ThreadLocalRandom.current().nextLong(range) + 1;
     }
 
+    public static int random(int range) {
+        return range == 0? 1 : ThreadLocalRandom.current().nextInt(range) + 1;
+    }
+
+    public static int randomSplittable(int range) {
+        return RANDOM.nextInt(0, range) +1;
+    }
 
     /** Sleeps between floor and ceiling milliseconds, chosen randomly */
     public static void sleepRandom(long floor,long ceiling) {
@@ -2525,6 +2533,21 @@ public class Util {
         sleep(r);
     }
 
+    /** Returns true if (positive) numbers a and b are within a certain percentage, otherwise false */
+    public static boolean withinRange(double a, double b, double range) {
+        double diff=0.0, delta=0.0;
+        if(a == b)
+            return true;
+        if(b > a) {
+            diff=b-a;
+            delta=range * b;
+        }
+        else {
+            diff=a-b;
+            delta=range * a;
+        }
+        return diff <= delta;
+    }
 
     /**
      * Tosses a coin weighted with probability and returns true or false. Example: if probability=0.8,
@@ -2540,13 +2563,11 @@ public class Util {
         return r < cutoff;
     }
 
-
     public static String dumpThreads() {
         ThreadMXBean bean=ManagementFactory.getThreadMXBean();
         ThreadInfo[] threads=bean.dumpAllThreads(true, true);
         return Stream.of(threads).map(Util::dumpThreadInfo).collect(Collectors.joining("\n"));
     }
-
 
     private static String dumpThreadInfo(ThreadInfo thread) { // copied from Infinispan
         StringBuilder sb=new StringBuilder(String.format("\"%s\" #%s prio=0 tid=0x%x nid=NA %s%n", thread.getThreadName(), thread.getThreadId(),

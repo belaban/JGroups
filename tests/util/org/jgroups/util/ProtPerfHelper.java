@@ -227,9 +227,9 @@ public class ProtPerfHelper extends Helper {
                     Entry e=m.get(name);
                     if(e != null) {
                         if(down)
-                            avg_down_sum+=e.avg_down.getAverage();
+                            avg_down_sum+=e.avg_down.average();
                         else
-                            avg_up_sum+=e.avg_up.getAverage();
+                            avg_up_sum+=e.avg_up.average();
                     }
                     sb.append(String.format(format, name + ":", e == null? "n/a" : e.toString(down,up,detailed)));
                     sb.append("\n");
@@ -241,12 +241,12 @@ public class ProtPerfHelper extends Helper {
                             if(down) {
                                 if(e.avg_down.count() == 0)
                                     continue;
-                                avg_down_sum+=e.avg_down.getAverage();
+                                avg_down_sum+=e.avg_down.average();
                             }
                             else {
                                 if(e.avg_up.count() == 0)
                                     continue;
-                                avg_up_sum+=e.avg_up.getAverage();
+                                avg_up_sum+=e.avg_up.average();
                             }
                         }
                         sb.append(String.format(format, "  " + name + ":", e == null? "  n/a" : e.toString(down,up,detailed)));
@@ -307,7 +307,7 @@ public class ProtPerfHelper extends Helper {
         public static String print(AverageMinMax avg, boolean detailed) {
             return detailed?
               avg.toString() :
-              Util.printTime(avg.getAverage(), NANOSECONDS);
+              Util.printTime(avg.average(), NANOSECONDS);
         }
     }
 }

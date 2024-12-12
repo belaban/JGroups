@@ -10,10 +10,7 @@ import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.protocols.TP;
 import org.jgroups.protocols.relay.RELAY;
 import org.jgroups.stack.AddressGenerator;
-import org.jgroups.tests.perf.PerfUtil.Config;
-import org.jgroups.tests.perf.PerfUtil.GetCall;
-import org.jgroups.tests.perf.PerfUtil.PutCall;
-import org.jgroups.tests.perf.PerfUtil.Results;
+import org.jgroups.tests.perf.PerfUtil.*;
 import org.jgroups.util.*;
 
 import javax.management.MBeanServer;
@@ -27,6 +24,8 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.LongAdder;
+
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 
 /**
@@ -264,21 +263,23 @@ public class UPerf implements Receiver {
         long total_time=System.currentTimeMillis() - start;
 
         System.out.println();
-        AverageMinMax avg_gets=null, avg_puts=null;
+        double gets_avg=0.0, puts_avg=0.0, gets_min=Double.MAX_VALUE, gets_max=0.0, puts_min=Double.MAX_VALUE, puts_max=0;
         for(int i=0; i < invokers.length; i++) {
             Invoker invoker=invokers[i];
             if(print_invokers)
                 System.out.printf("invoker %s: gets %s puts %s\n", threads[i].getId(),
                                   print(invoker.avgGets(), print_details), print(invoker.avgPuts(), print_details));
-            if(avg_gets == null)
-                avg_gets=invoker.avgGets();
-            else
-                avg_gets.merge(invoker.avgGets());
-            if(avg_puts == null)
-                avg_puts=invoker.avgPuts();
-            else
-                avg_puts.merge(invoker.avgPuts());
+            gets_avg+=invoker.avg_gets.average();
+            gets_min=Math.min(gets_min, invoker.avg_gets.min());
+            gets_max=Math.max(gets_max, invoker.avg_gets.max());
+            puts_avg+=invoker.avg_puts.average();
+            puts_min=Math.min(puts_min, invoker.avg_puts.min());
+            puts_max=Math.max(puts_max, invoker.avg_puts.max());
         }
+        gets_avg/=num_threads;
+        puts_avg/=num_threads;
+        AverageSummary avg_gets=new AverageSummary(gets_min, gets_avg, gets_max).unit(NANOSECONDS),
+          avg_puts=new AverageSummary(puts_min, puts_avg, puts_max).unit(NANOSECONDS);
         if(print_invokers)
             System.out.printf("\navg over all invokers: gets %s puts %s\n",
                               print(avg_gets, print_details), print(avg_puts, print_details));
@@ -401,10 +402,11 @@ public class UPerf implements Receiver {
         }
 
         long total_reqs=0, total_time=0;
-        AverageMinMax avg_gets=null, avg_puts=null;
         long time_to_wait=(long)(time * 1000 * 1.2); // add 20% more
         results_coll.waitForAllResponses(time_to_wait);
         Map<Address,Results> results=results_coll.getResults();
+        AverageSummary avg_gets=new AverageSummary(), avg_puts=new AverageSummary();
+        List<AverageSummary> gets=new ArrayList<>(results.size()), puts=new ArrayList<>(results.size());
 
         System.out.println("\n======================= Results: ===========================");
         for(Map.Entry<Address,Results> entry: results.entrySet()) {
@@ -413,17 +415,13 @@ public class UPerf implements Receiver {
             if(result != null) {
                 total_reqs+=result.num_gets + result.num_puts;
                 total_time+=result.total_time;
-                if(avg_gets == null)
-                    avg_gets=result.avg_gets;
-                else
-                    avg_gets.merge(result.avg_gets);
-                if(avg_puts == null)
-                    avg_puts=result.avg_puts;
-                else
-                    avg_puts.merge(result.avg_puts);
+                gets.add(result.avg_gets);
+                puts.add(result.avg_puts);
             }
             System.out.println(mbr + ": " + result);
         }
+        avg_gets.set(gets);
+        avg_puts.set(puts);
         double total_reqs_sec=total_reqs / ( total_time/ 1000.0);
         double throughput=total_reqs_sec * BUFFER.length;
         System.out.println("\n");
@@ -473,9 +471,14 @@ public class UPerf implements Receiver {
     protected static String print(AverageMinMax avg, boolean details) {
         if(avg == null)
             return "n/a";
-        return details? String.format("min/avg/max = %,.2f/%,.2f/%,.2f us",
-                                      avg.min() / 1000.0, avg.average() / 1000.0, avg.max() / 1000.0) :
-          String.format("avg = %,.2f us", avg.average() / 1000.0);
+        return details? avg.toString() :
+          String.format("avg = %s", Util.printTime(avg.average(), avg.unit()));
+    }
+
+    protected static String print(AverageSummary avg, boolean details) {
+        if(avg == null)
+            return "n/a";
+        return details? avg.toString() : Util.printTime(avg.avg(), avg.unit());
     }
 
     protected static List<String> getSites(JChannel channel) {
@@ -483,25 +486,12 @@ public class UPerf implements Receiver {
         return relay != null? relay.siteNames() : new ArrayList<>(0);
     }
 
-    /** Picks the next member in the view */
-    private Address getReceiver() {
-        try {
-            List<Address> mbrs=channel.getView().getMembers();
-            int index=mbrs.indexOf(local_addr);
-            int new_index=index + 1 % mbrs.size();
-            return mbrs.get(new_index);
-        }
-        catch(Exception e) {
-            System.err.println("UPerf.getReceiver(): " + e);
-            return null;
-        }
-    }
-
 
     private class Invoker implements Runnable {
         private final List<Address>  dests=new ArrayList<>();
         private final CountDownLatch latch;
-        private final AverageMinMax  avg_gets=new AverageMinMax(), avg_puts=new AverageMinMax(); // in ns
+        private final AverageMinMax  avg_gets=new AverageMinMax(100_000).unit(NANOSECONDS),
+                                     avg_puts=new AverageMinMax(100_000).unit(NANOSECONDS); // in ns
         private final List<Address>  targets=new FastArray<>(anycast_count);
         private volatile boolean     running=true;
 
@@ -509,9 +499,9 @@ public class UPerf implements Receiver {
         public Invoker(Collection<Address> dests, CountDownLatch latch) {
             this.latch=latch;
             this.dests.addAll(dests);
+
         }
 
-        
         public AverageMinMax avgGets() {return avg_gets;}
         public AverageMinMax avgPuts() {return avg_puts;}
         public void          stop()    {running=false;}
@@ -549,11 +539,11 @@ public class UPerf implements Receiver {
                         num_reads.increment();
                     }
                     else {    // sync or async (based on value of 'sync') PUT
+                        targets.clear();
                         pickAnycastTargets(targets);
                         long start=System.nanoTime();
                         disp.callRemoteMethods(targets, put_call, put_options);
                         long put_time=System.nanoTime()-start;
-                        targets.clear();
                         avg_puts.add(put_time);
                         num_writes.increment();
                     }
@@ -561,7 +551,6 @@ public class UPerf implements Receiver {
                 catch(Throwable t) {
                     if(running)
                         t.printStackTrace();
-
                 }
             }
         }

@@ -42,7 +42,7 @@ public class CreditMap {
     public long   getAccumulatedCredits() {return accumulated_credits;}
     public long   getMinCredits()         {return min_credits;}
     public int    getNumBlockings()       {return num_blockings;}
-    public double getAverageBlockTime()   {return avg_block_time.getAverage();} // ns
+    public double getAverageBlockTime()   {return avg_block_time.average();} // ns
 
     public Set<Address> keys() {
         lock.lock();

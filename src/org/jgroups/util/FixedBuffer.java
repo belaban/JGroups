@@ -31,7 +31,7 @@ public class FixedBuffer<T> extends Buffer<T> {
     protected boolean             open=true;
 
     protected final LongAdder     num_blockings=new LongAdder();
-    protected final AverageMinMax avg_time_blocked=new AverageMinMax().unit(TimeUnit.NANOSECONDS);
+    protected final AverageMinMax avg_time_blocked=new AverageMinMax(512).unit(TimeUnit.NANOSECONDS);
     /** Number of received messages dropped due to full buffer */
     protected final LongAdder     num_dropped_msgs=new LongAdder();
 

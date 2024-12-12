@@ -46,7 +46,7 @@ public class Credit {
         }
     }
 
-    public double getAverageBlockTime() {return avg_blockings.getAverage();} // in ns
+    public double getAverageBlockTime() {return avg_blockings.average();} // in ns
     public void   resetStats()          {num_blockings=0; avg_blockings.clear();}
 
     public boolean decrementIfEnoughCredits(final Message msg, int credits, long timeout) {

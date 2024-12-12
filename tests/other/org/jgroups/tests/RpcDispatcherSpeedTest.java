@@ -127,7 +127,7 @@ public class RpcDispatcherSpeedTest implements Receiver {
             max=Math.max(max, time_ns);
         }
         System.out.println("");
-        System.out.printf("\nround-trip = min/avg/max: %.2f / %.2f / %.2f us\n\n", min/1000.0, avg.getAverage() / 1000.0, max/1000.0);
+        System.out.printf("\nround-trip = min/avg/max: %.2f / %.2f / %.2f us\n\n", min/1000.0, avg.average() / 1000.0, max/1000.0);
     }
 
 

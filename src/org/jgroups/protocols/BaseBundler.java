@@ -58,7 +58,7 @@ public abstract class BaseBundler implements Bundler {
     protected int                                   capacity=16384;
 
     @ManagedAttribute(description="Time (us) to send the bundled messages")
-    protected final AverageMinMax                   avg_send_time=new AverageMinMax().unit(NANOSECONDS);
+    protected final AverageMinMax                   avg_send_time=new AverageMinMax(1024).unit(NANOSECONDS);
 
     @ManagedOperation(description="Prints the capacity of the buffers")
     public String printBuffers() {

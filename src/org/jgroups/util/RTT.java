@@ -96,7 +96,7 @@ public class RTT {
         if(exclude_self)
             targets.remove(transport.addr());
         for(Address addr: targets) {
-            rtts.put(addr, new AverageMinMax().usePercentiles(128).unit(TimeUnit.MICROSECONDS));
+            rtts.put(addr, new AverageMinMax(1024).usePercentiles(128).unit(TimeUnit.MICROSECONDS));
             times.put(addr, new long[num_reqs]);
         }
         AsciiString cluster=transport.getClusterNameAscii();

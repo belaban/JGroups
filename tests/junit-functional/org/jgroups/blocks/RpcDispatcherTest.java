@@ -666,6 +666,7 @@ public class RpcDispatcherTest {
         Method meth=ServerObject.class.getDeclaredMethod("foo");
         List<Address> targets=Arrays.asList(b.getAddress(), c.getAddress());
         RpcStats stats=da.rpcStats().extendedStats(true);
+        da.correlator().rpcStats(true);
 
         // sync mcast with future
         da.callRemoteMethodsWithFuture(null, new MethodCall(meth), RequestOptions.SYNC());
