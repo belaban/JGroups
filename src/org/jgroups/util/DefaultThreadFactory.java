@@ -119,10 +119,8 @@ public class DefaultThreadFactory implements ThreadFactory {
         if(addr == null)
             addr=this.address;
 
-        if(!includeClusterName && !includeLocalAddress && cluster_name != null) {
-            sb.append(",shared=").append(cluster_name);
+        if(!includeClusterName && !includeLocalAddress)
             return sb.toString();
-        }
 
         if(includeClusterName)
             sb.append(',').append(cluster_name);
@@ -150,10 +148,8 @@ public class DefaultThreadFactory implements ThreadFactory {
         if(addr == null)
             addr=this.address;
 
-        if(!includeClusterName && !includeLocalAddress && cluster_name != null) {
-            sb.append(",shared=").append(cluster_name);
+        if(!includeClusterName && !includeLocalAddress)
             return sb.toString();
-        }
 
         if(includeClusterName)
             sb.append(',').append(cluster_name);

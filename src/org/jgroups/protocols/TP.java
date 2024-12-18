@@ -129,17 +129,14 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @Property(description="If true, create virtual threads, otherwise create native threads")
     protected boolean use_vthreads;
 
-    @Property(description="Thread naming pattern for threads in this channel. Valid values are \"pcl\": " +
-      "\"p\": includes the thread name, e.g. \"Incoming thread-1\", \"UDP ucast receiver\", " +
+    @Property(description="Thread naming pattern for threads in this channel. Valid values are \"cl\": " +
       "\"c\": includes the cluster name, e.g. \"MyCluster\", " +
-      "\"l\": includes the local address of the current member, e.g. \"192.168.5.1:5678\"")
+      "\"l\": includes the local address of the current member, e.g. \"A\"")
     protected String thread_naming_pattern="cl";
-
 
     @Property(description="Interval (in ms) at which the time service updates its timestamp. 0 disables the time service",
       type=AttributeType.TIME)
     protected long time_service_interval=500;
-
 
     /** Whether warnings about messages from different groups are logged - private flag, not for common use */
     @Property(description="whether or not warnings about messages from different groups are logged")
@@ -623,8 +620,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
     /**
-     * Names the current thread. Valid values are "pcl":
-     * p: include the previous (original) name, e.g. "Incoming thread-1", "UDP ucast receiver"
+     * Names the current thread. Valid values are "cl":
      * c: include the cluster name, e.g. "MyCluster"
      * l: include the local address of the current member, e.g. "192.168.5.1:5678"
      */
@@ -1478,8 +1474,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
     protected void setInAllThreadFactories(String cluster_name, Address local_address, String pattern) {
-        ThreadFactory[] factories= {thread_factory};
-
+        ThreadFactory[] factories={thread_factory};
         for(ThreadFactory factory: factories) {
             if(pattern != null)
                 factory.setPattern(pattern);
