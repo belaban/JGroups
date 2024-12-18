@@ -9,7 +9,9 @@ import org.jgroups.util.Digest;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -41,18 +43,17 @@ public class INJECT_VIEWTest {
     public void testInjectView() throws Exception {
         JChannel[] channels=null;
         try {
-            channels=create( "testInjectView", "A", "B", "C");
+            // the names needs to be unique: INJECT_VIEW uses lookup by string, and this might return an address
+            // associated with a different test running concurrently in the test suite. See the javadoc of this class
+            channels=create( "testInjectView", "AX", "BX", "CX");
             print(channels);
             View view=channels[channels.length -1].getView();
             assert view.size() == channels.length : "view is " + view;
 
-            String injectionViewString = String.format("%s=%s/%s;%s=%s/%s;%s=%s",
-                                                       "A","A","B",
-                                                       "B","B","C",
-                                                       "C","C");
+            String injectionViewString = "AX=AX/BX;BX=BX/CX;CX=CX"; // AX: {AX,BX} BX: {BX,CX} CX: {CX}
             System.out.println("\ninjecting views: "+injectionViewString);
             for(JChannel channel: channels)
-                channel.getProtocolStack().addProtocol( new INJECT_VIEW());
+                channel.getProtocolStack().addProtocol( new INJECT_VIEW().level("trace"));
             for (JChannel channel: channels) {
                 INJECT_VIEW iv = channel.getProtocolStack().findProtocol(INJECT_VIEW.class);
                 iv.injectView(injectionViewString);
@@ -61,22 +62,21 @@ public class INJECT_VIEWTest {
             System.out.println("\nInjected views: "+injectionViewString);
             print(channels);
             System.out.println("\nchecking views: ");
-            checkViews(channels, "A", "A", "B");
-            System.out.println("\nA is OK");
-            checkViews(channels, "B", "B", "C");
-            System.out.println("\nB is OK");
-            checkViews(channels, "C", "C");
-            System.out.println("\nC is OK");
+            checkViews(channels, "AX", "AX", "BX");
+            System.out.println("\nAX is OK");
+            checkViews(channels, "BX", "BX", "CX");
+            System.out.println("\nBX is OK");
+            checkViews(channels, "CX", "CX");
+            System.out.println("\nCX is OK");
 
             System.out.println("\ndigests:");
             printDigests(channels);
 
-            Address leader=determineLeader(channels, "A", "B", "C");
+            Address leader=determineLeader(channels, "AX", "BX", "CX");
             long end_time=System.currentTimeMillis() + 30000;
             do {
                 System.out.println("\n==== injecting merge events into " + leader + " ====");
-                injectMergeEvent(channels, leader, "A", "B", "C");
-                Util.sleep(1000);
+                injectMergeEvent(channels, leader, "AX", "BX", "CX");
                 if(allChannelsHaveViewOf(channels, channels.length))
                     break;
             }
@@ -127,17 +127,14 @@ public class INJECT_VIEWTest {
 
     private static JChannel[] create(String cluster_name, String ... names) throws Exception {
         JChannel[] retval=new JChannel[names.length];
-
         for(int i=0; i < retval.length; i++) {
             JChannel ch;
             Protocol[] props=getProps();
-            ch=new JChannel(props);
-            // ((MyChannel)ch).setId(i+1);
-            ch.setName(names[i]);
+            ch=new JChannel(props).name(names[i]);
             retval[i]=ch;
             ch.connect(cluster_name);
             if(i == 0)
-                Util.sleep(3000);
+                Util.sleep(1000);
         }
         return retval;
     }
@@ -167,7 +164,7 @@ public class INJECT_VIEWTest {
         JChannel ch=findChannel(channel_name, channels);
         View view=ch.getView();
         Util.waitUntil(4000, 200, () -> view.size() == members.length,
-                       () -> "view is " + view + ", members: " + Arrays.toString(members));
+                       () -> "view is " + view + ", expected: " + Arrays.toString(members));
         for(String member: members) {
             Address addr=findAddress(member, channels);
             assert view.getMembers().contains(addr) : "view " + view + " does not contain " + addr;
@@ -206,23 +203,9 @@ public class INJECT_VIEWTest {
         return null;
     }
 
-    private static void applyViews(List<View> views, JChannel[] channels) {
-        for(View view: views) {
-            Collection<Address> members=view.getMembers();
-            for(JChannel ch: channels) {
-                Address addr=ch.getAddress();
-                if(members.contains(addr)) {
-                    GMS gms=ch.getProtocolStack().findProtocol(GMS.class);
-                    gms.installView(view);
-                }
-            }
-        }
-    }
-
     private static void print(JChannel[] channels) {
-        for(JChannel ch: channels) {
-            System.out.println(ch.getName() + ": " + ch.getView());
-        }
+        for(JChannel ch: channels)
+            System.out.printf("%s: %s\n", ch.name(), ch.view());
     }
 
     private static void printDigests(JChannel[] channels) {

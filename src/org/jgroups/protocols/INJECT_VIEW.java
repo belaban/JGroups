@@ -38,7 +38,7 @@ public class INJECT_VIEW extends Protocol {
             String[] perNode = newView.split(NODE_VIEWS_SEPARATOR);
             String thisNodeAddress = getProtocolStack().getChannel().getAddressAsString();
 
-            for( String nodeView : perNode ){
+            for(String nodeView: perNode) {
                 if( nodeView.startsWith(thisNodeAddress) ) {
                     log.info("[channel: %s] Injecting a new view: %s", thisNodeAddress, nodeView);
 
@@ -48,7 +48,7 @@ public class INJECT_VIEW extends Protocol {
                     for( String nodeName : nodeView.split(VIEW_SEPARATOR)[1].split(NAMES_SEPARATOR) ){
                         for( Map.Entry<Address, String> entry : NameCache.getContents().entrySet() ) {
                             if( nodeName.equals(entry.getValue()) ){
-                                log.debug("[channel: %s] Found name: <%s> for address: <%s>", entry.getValue(), entry.getKey().toString());
+                                log.debug("[channel: %s] Found name: <%s> for address: <%s>", nodeName, entry.getValue(), entry.getKey().toString());
                                 nodes.add( entry.getKey() );
                                 break;
                             }
@@ -58,8 +58,9 @@ public class INJECT_VIEW extends Protocol {
                     View view = new View( nodes.get(0), viewId, nodes);
 
                     GMS gms = getProtocolStack().findProtocol(GMS.class);
+                    log.info("[channel: %s] Injecting view %s", gms.addr(), view);
                     gms.installView(view);
-                    log.info("[channel: %s] Injection finished of view: %s", thisNodeAddress, nodeView);
+                    log.info("[channel: %s] Injection finished of view: %s", thisNodeAddress, view);
                 }
             }
         }

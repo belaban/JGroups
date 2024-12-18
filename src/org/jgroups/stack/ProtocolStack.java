@@ -448,8 +448,6 @@ public class ProtocolStack extends Protocol {
 
     /**
      * Adds a protocol at the tail of the protocol list
-     * @param prot
-     * @return
      * @since 2.11
      */
     public ProtocolStack addProtocol(Protocol prot) {
