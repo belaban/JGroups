@@ -43,8 +43,17 @@ public class AverageTest {
 
     public void testAverage2() {
         Average avg=new Average(16);
-        double expected_avg=IntStream.rangeClosed(5, 20).sum() / 16.0;
-        IntStream.rangeClosed(1,20).forEach(avg::add);
+        double expected_avg=IntStream.rangeClosed(1, 16).sum() / 16.0;
+        IntStream.rangeClosed(1,16).forEach(avg::add);
+        double actual_avg=avg.average();
+        assert Util.withinRange(actual_avg, expected_avg, DEVIATION) : String.format("actual: %.2f expected: %.2f\n", actual_avg, expected_avg);
+    }
+
+
+    public void testAverage3() {
+        Average avg=new Average(16);
+        IntStream.rangeClosed(1,10_000).forEach(avg::add); // values towards 10'000 will dominate
+        double expected_avg=10_000;
         double actual_avg=avg.average();
         assert Util.withinRange(actual_avg, expected_avg, DEVIATION) : String.format("actual: %.2f expected: %.2f\n", actual_avg, expected_avg);
     }
