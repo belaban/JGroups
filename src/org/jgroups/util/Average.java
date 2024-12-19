@@ -17,7 +17,7 @@ import static org.jgroups.util.Util.printTime;
  * @since  3.4, 5.4
  */
 public class Average implements Streamable {
-    protected double[]         samples;
+    protected long[]           samples;
     protected TimeUnit         unit;
     protected volatile boolean all_filled;
     protected static final int DEFAULT_CAPACITY=512;
@@ -27,8 +27,8 @@ public class Average implements Streamable {
     }
 
     public Average(final int capacity) {
-        this.samples=new double[capacity];
-        Arrays.fill(samples, -1.0);
+        this.samples=new long[capacity];
+        Arrays.fill(samples, -1);
     }
 
     public int                   capacity()       {return samples.length;}
@@ -36,16 +36,12 @@ public class Average implements Streamable {
     public <T extends Average> T unit(TimeUnit u) {this.unit=u; return (T)this;}
     public double                getAverage()     {return average();}
 
-    public <T extends Average> T add(double num) {
+    public <T extends Average> T add(long num) {
         if(num < 0)
             return (T)this;
         int idx=Util.random(samples.length)-1;
         samples[idx]=num;
         return (T)this;
-    }
-
-    public <T extends Average> T add(long num) {
-        return add((double)num);
     }
 
     /** Merges this average with another one */
@@ -58,10 +54,10 @@ public class Average implements Streamable {
     }
 
     /** Returns the total of all valid (>= 0) values */
-    public double total() {
-        double ret=0.0;
+    public long total() {
+        long ret=0;
         for(int i=0; i < samples.length; i++) {
-            double sample=samples[i];
+            long sample=samples[i];
             if(sample >= 0)
                 ret+=sample;
         }
@@ -96,9 +92,9 @@ public class Average implements Streamable {
     /** Returns the average of all valid samples divided by the number of valid samples */
     public double average() {
         int count=0;
-        double total=0.0;
+        long total=0;
         for(int i=0; i < samples.length; i++) {
-            double sample=samples[i];
+            long sample=samples[i];
             if(sample >= 0) {
                 count++;
                 total+=sample;
@@ -106,7 +102,7 @@ public class Average implements Streamable {
         }
         if(count == 0)
             return 0.0;
-        return total / count;
+        return total / (double)count;
     }
 
     public void clear() {
@@ -128,15 +124,15 @@ public class Average implements Streamable {
     public void writeTo(DataOutput out) throws IOException {
         out.writeInt(samples.length);
         for(int i=0; i < samples.length; i++)
-            Bits.writeDouble(samples[i], out);
+            Bits.writeLongCompressed(samples[i], out);
     }
 
     @Override
     public void readFrom(DataInput in) throws IOException {
         int len=in.readInt();
-        samples=new double[len];
+        samples=new long[len];
         for(int i=0; i < samples.length; i++)
-            samples[i]=Bits.readDouble(in);
+            samples[i]=Bits.readLongCompressed(in);
     }
 
 }

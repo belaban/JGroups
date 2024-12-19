@@ -16,8 +16,8 @@ import static org.jgroups.util.Util.printTime;
  * @since  4.0, 3.6.10
  */
 public class AverageMinMax extends Average {
-    protected double           min=Double.MAX_VALUE, max=0;
-    protected List<Double>     values;
+    protected long             min=Long.MAX_VALUE, max=0;
+    protected List<Long>       values;
     protected volatile boolean sorted;
 
     public AverageMinMax() {
@@ -27,13 +27,13 @@ public class AverageMinMax extends Average {
         super(capacity);
     }
 
-    public double        min()                   {return min;}
-    public double        max()                   {return max;}
+    public long          min()                   {return min;}
+    public long          max()                   {return max;}
     public boolean       usePercentiles()        {return values != null;}
     public AverageMinMax usePercentiles(int cap) {values=cap > 0? new ArrayList<>(cap) : null; return this;}
-    public List<Double>  values()                {return values;}
+    public List<Long>    values()                {return values;}
 
-    public <T extends Average> T add(double num) {
+    public <T extends Average> T add(long num) {
         if(num < 0)
             return (T)this;
         super.add(num);
@@ -44,10 +44,6 @@ public class AverageMinMax extends Average {
             sorted=false;
         }
         return (T)this;
-    }
-
-    public <T extends Average> T add(long num) {
-        return add((double)num);
     }
 
     public <T extends Average> T merge(T other) {
@@ -70,7 +66,7 @@ public class AverageMinMax extends Average {
         super.clear();
         if(values != null)
             values.clear();
-        min=Double.MAX_VALUE; max=0;
+        min=Long.MAX_VALUE; max=0;
     }
 
     public String percentiles() {
@@ -92,7 +88,7 @@ public class AverageMinMax extends Average {
         return count() == 0? "n/a" :
           unit != null? toString(unit) :
           String.format("min/avg/max=%.2f/%.2f/%.2f%s",
-                        min, average(), max, unit == null? "" : " " + Util.suffix(unit));
+                        (double)min, average(), (double)max, unit == null? "" : " " + Util.suffix(unit));
     }
 
     public String toString(TimeUnit u) {
@@ -103,14 +99,14 @@ public class AverageMinMax extends Average {
 
     public void writeTo(DataOutput out) throws IOException {
         super.writeTo(out);
-        Bits.writeDouble(min, out);
-        Bits.writeDouble(max, out);
+        Bits.writeLongCompressed(min, out);
+        Bits.writeLongCompressed(max, out);
     }
 
     public void readFrom(DataInput in) throws IOException {
         super.readFrom(in);
-        min=Bits.readDouble(in);
-        max=Bits.readDouble(in);
+        min=Bits.readLongCompressed(in);
+        max=Bits.readLongCompressed(in);
     }
 
     public double percentile(double percentile) {

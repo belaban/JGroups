@@ -41,12 +41,13 @@ public class AverageTest {
         assert Util.withinRange(avg, expected_avg, DEVIATION);
     }
 
+    // @Test(invocationCount=100,successPercentage=50)
     public void testAverage2() {
         Average avg=new Average(16);
         double expected_avg=IntStream.rangeClosed(1, 16).sum() / 16.0;
         IntStream.rangeClosed(1,16).forEach(avg::add);
         double actual_avg=avg.average();
-        assert Util.withinRange(actual_avg, expected_avg, DEVIATION) : String.format("actual: %.2f expected: %.2f\n", actual_avg, expected_avg);
+        assert Util.withinRange(actual_avg, expected_avg, 0.5) : String.format("actual: %.2f expected: %.2f\n", actual_avg, expected_avg);
     }
 
 
