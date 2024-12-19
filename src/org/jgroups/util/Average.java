@@ -34,6 +34,7 @@ public class Average implements Streamable {
     public int                   capacity()       {return samples.length;}
     public TimeUnit              unit()           {return unit;}
     public <T extends Average> T unit(TimeUnit u) {this.unit=u; return (T)this;}
+    public double                getAverage()     {return average();}
 
     public <T extends Average> T add(double num) {
         if(num < 0)
