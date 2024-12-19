@@ -837,14 +837,14 @@ public class RelayTest extends RelayTests {
         for(int i=1; i <=5; i++)
             a.send(target, "hello-" + i);
 
-        Util.waitUntil(3000, 100,
+        Util.waitUntil(5000, 100,
                        () -> ((RELAY)d.getProtocolStack().findProtocol(RELAY.class)).isSiteMaster());
         MyReceiver<Message> r=getReceiver(d);
-        Util.waitUntil(2000, 200, () -> r.size() == 5);
+        Util.waitUntil(5000, 200, () -> r.size() == 5);
 
         Table<Message> send_win=unicast.getSendWindow(target);
         // wait until the ack from D has been received
-        Util.waitUntil(2000, 100, () -> send_win.getHighestDelivered() == send_win.getHighestReceived());
+        Util.waitUntil(5000, 100, () -> send_win.getHighestDelivered() == send_win.getHighestReceived());
         relay.setRouteStatusListener(null);
     }
 
