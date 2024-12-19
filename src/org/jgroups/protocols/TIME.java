@@ -19,16 +19,16 @@ import java.util.concurrent.TimeUnit;
 @MBean(description="Measures message delivery times")
 public class TIME extends Protocol {
     @ManagedAttribute(description="Average delivery time (in microseconds) for single messages")
-    protected final AverageMinMax up_delivery_msgs=new AverageMinMax().unit(TimeUnit.MICROSECONDS);
+    protected final AverageMinMax up_delivery_msgs=new AverageMinMax().unit(TimeUnit.NANOSECONDS);
 
     @ManagedAttribute(description="Average delivery time (in microseconds) for message batches")
-    protected final AverageMinMax up_delivery_batches=new AverageMinMax().unit(TimeUnit.MICROSECONDS);
+    protected final AverageMinMax up_delivery_batches=new AverageMinMax().unit(TimeUnit.NANOSECONDS);
 
     @ManagedAttribute(description="Average size of received message batches")
     protected final AverageMinMax avg_up_batch_size=new AverageMinMax();
 
     @ManagedAttribute(description="Average down delivery time (in microseconds)")
-    protected final AverageMinMax down_delivery=new AverageMinMax().unit(TimeUnit.MICROSECONDS);
+    protected final AverageMinMax down_delivery=new AverageMinMax().unit(TimeUnit.NANOSECONDS);
 
     @Property(description="Enables or disables measuring times of messages sent down")
     protected boolean             down_msgs;
@@ -39,11 +39,6 @@ public class TIME extends Protocol {
     @Property(description="Enables or disables measuring times of messages received from below. Attribute " +
       "up_batches has to be true, or else up_msgs will be ignored")
     protected boolean             up_msgs;
-
-    /*@Property(description="When enabled, the delay until a message in a batch is processed gets added to the " +
-      "up-processing time of a message. Otherwise the up-processing time of a message is the up-processing " +
-      "time of a batch divided by the batch size")
-    protected boolean include_delay=true;*/
 
 
     public void resetStats() {
@@ -62,8 +57,8 @@ public class TIME extends Protocol {
             return down_prot.down(msg);
         }
         finally {
-            long time=(System.nanoTime() - start) / 1000; // us
-            add(down_delivery, time);
+            long time=System.nanoTime() - start;
+            down_delivery.add(time);
         }
     }
 
@@ -76,8 +71,8 @@ public class TIME extends Protocol {
             return up_prot.up(msg);
         }
         finally {
-            long time=(System.nanoTime() - start) / 1000; // us
-            add(up_delivery_msgs, time);
+            long time=System.nanoTime() - start;
+            up_delivery_msgs.add(time);
         }
     }
 
@@ -106,22 +101,11 @@ public class TIME extends Protocol {
             up_prot.up(batch);
         }
         finally {
-            long time=(System.nanoTime() - start) / 1000; // us
-            add(up_delivery_batches, time);
+            long time=System.nanoTime() - start;
+            up_delivery_batches.add(time);
             avg_up_batch_size.add(size);
         }
     }
 
-    protected static double avgTimePerMessageIncludingDelay(int num, long time) {
-        double avg_per_msg=(double)time / num, total=0;
-        for(int i=0; i < num; i++)
-            total+=(avg_per_msg * i) + avg_per_msg;
-        return total/num;
-    }
-
-    protected static void add(final AverageMinMax avg, long num) {
-        if(num > 0)
-            avg.add(num);
-    }
 
 }

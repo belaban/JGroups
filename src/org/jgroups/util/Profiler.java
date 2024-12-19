@@ -28,9 +28,7 @@ public class Profiler {
 
     public void reset() {
         threads.clear();
-        synchronized(avg) {
-            avg.clear();
-        }
+        avg.clear();
     }
 
     public void start() {
@@ -46,7 +44,7 @@ public class Profiler {
         Thread curr_thread=Thread.currentThread();
         Long start=threads.remove(curr_thread);
         if(start != null) {
-            double time=System.nanoTime() - start;
+            long time=System.nanoTime() - start;
             avg.add(time);
         }
     }
