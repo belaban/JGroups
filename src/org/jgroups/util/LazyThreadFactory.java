@@ -78,6 +78,10 @@ public class LazyThreadFactory extends DefaultThreadFactory {
         for(Iterator<WeakReference<Thread>> it=threads.iterator(); it.hasNext();) {
             WeakReference<Thread> ref=it.next();
             Thread thread=ref.get();
+            if(thread == null) {
+                it.remove();
+                continue;
+            }
             String name=thread.getName();
             name=changeName(name);
             thread.setName(name);

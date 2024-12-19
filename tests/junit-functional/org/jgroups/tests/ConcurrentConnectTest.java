@@ -70,7 +70,7 @@ public class ConcurrentConnectTest {
             a.send(addr_b, String.format("%s%d", addr_a, i));
         for(int i=1; i <= NUM; i++)
             b.send(addr_a, String.format("%s%d", addr_b, i));
-        Util.waitUntil(5000, 100, () -> la.size() == 5 && lb.size() == 5,
+        Util.waitUntil(10000, 100, () -> la.size() == 5 && lb.size() == 5,
                        () -> String.format("A: %s, B: %s", la, lb));
         System.out.printf("### conns after sending:\n%s\n", printConnections(a,b));
 

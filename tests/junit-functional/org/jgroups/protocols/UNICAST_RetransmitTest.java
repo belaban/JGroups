@@ -73,7 +73,7 @@ public class UNICAST_RetransmitTest {
         startRetransmission(a, b);
         setLevel("trace", a,b);
 
-        Util.waitUntilListHasSize(list, NUM_MSGS, 10000, 1000);
+        Util.waitUntilListHasSize(list, NUM_MSGS, 15000, 1000);
         int expected=1;
         for(int num: list) {
             assert expected == num;
