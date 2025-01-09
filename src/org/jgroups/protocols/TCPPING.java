@@ -9,6 +9,7 @@ import org.jgroups.annotations.Property;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.*;
 
+import java.io.InputStream;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -18,7 +19,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.jgroups.Message.Flag.*;
+import static org.jgroups.Message.Flag.DONT_BUNDLE;
+import static org.jgroups.Message.Flag.OOB;
 import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
 
 
@@ -38,21 +40,25 @@ public class TCPPING extends Discovery {
     @Property(name="initial_hosts", description="Comma delimited list of hosts to be contacted for initial membership. " +
       "Ideally, all members should be listed. If this is not possible, send_cache_on_join and / or return_entire_cache " +
       "can be set to true",dependsUpon="port_range",systemProperty=Global.TCPPING_INITIAL_HOSTS)
-    protected String                       initial_hosts_str;
+    protected String             initial_hosts_str;
+
+    @Property(description="Name of the file in which the initial hosts are defined. Can be absolute or relative" +
+      ", or the name of a file found on the classpath. If set and found, this will override initial_hosts_str")
+    protected String             initial_hosts_file;
 
     @Property(description="Number of additional ports to be probed for membership. A port_range of 0 does not " +
       "probe additional ports. Example: initial_hosts=A[7800] port_range=0 probes A:7800, port_range=1 probes " +
       "A:7800 and A:7801")
-    protected int                          port_range=1;
+    protected int                port_range=1;
 
     @ManagedAttribute(description="True if initial hosts were set programmatically (via setInitialHosts())")
-    protected boolean                      initial_hosts_set_programmatically;
+    protected boolean            initial_hosts_set_programmatically;
 
     @ManagedAttribute(description="A list of unresolved hosts of initial_hosts")
-    protected Collection<String>           unresolved_hosts=new HashSet<>();
+    protected Collection<String> unresolved_hosts=new HashSet<>();
 
     @Property(description="max number of hosts to keep beyond the ones in initial_hosts")
-    protected int                          max_dynamic_hosts=2000;
+    protected int                max_dynamic_hosts=2000;
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
 
@@ -61,7 +67,9 @@ public class TCPPING extends Discovery {
     /** https://issues.redhat.com/browse/JGRP-989 */
     protected BoundedList<PhysicalAddress> dynamic_hosts;
 
-    protected StackType stack_type=StackType.Dual;
+    protected int                          default_port;
+
+    protected StackType                    stack_type=StackType.Dual;
 
 
 
@@ -130,14 +138,25 @@ public class TCPPING extends Discovery {
     public void init() throws Exception {
         super.init();
 
+        default_port=transport.getBindPort();
         InetAddress bind_addr=transport.getBindAddr();
+        if(default_port == 0)
+            log.warn("a bind_port of 0 doesn't make any sense with TCPPING");
         if(bind_addr != null)
             stack_type=bind_addr instanceof Inet6Address? StackType.IPv6 : StackType.IPv4;
 
         dynamic_hosts=new BoundedList<>(max_dynamic_hosts);
         if(!initial_hosts_set_programmatically) {
+            if(initial_hosts_file != null) {
+                try(InputStream input=Util.getResourceAsStream(initial_hosts_file, getClass())) {
+                    if(input == null)
+                        throw new IllegalArgumentException(String.format("initial_hosts_file '%s' not found", initial_hosts_file));
+                    initial_hosts_str=Util.readContents(input);
+                }
+            }
+
             boolean all_resolved=Util.parseCommaDelimitedHostsInto(initial_hosts, unresolved_hosts, initial_hosts_str,
-                                                                   port_range, stack_type);
+                                                                   default_port, port_range, stack_type);
             if(!all_resolved)
                 log.warn("unable to resolve the following hostnames: %s", unresolved_hosts);
         }
@@ -189,7 +208,8 @@ public class TCPPING extends Discovery {
         if(!initial_hosts_set_programmatically) {
             if(!unresolved_hosts.isEmpty()) {
                 unresolved_hosts.clear();
-                if(Util.parseCommaDelimitedHostsInto(initial_hosts, unresolved_hosts, initial_hosts_str, port_range, stack_type))
+                if(Util.parseCommaDelimitedHostsInto(initial_hosts, unresolved_hosts, initial_hosts_str, default_port,
+                                                     port_range, stack_type))
                     log.debug("finally resolved all hosts: %s", initial_hosts);
             }
         }

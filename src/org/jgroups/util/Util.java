@@ -3996,16 +3996,18 @@ public class Util {
      * @param port_range The port range to consider
      * @return True if all hostnames resolved fine, false otherwise
      */
-    public static boolean parseCommaDelimitedHostsInto(final Collection<PhysicalAddress> list,
-                                                       final Collection<String> unresolved_hosts,
-                                                       String hosts,int port_range, StackType stack_type) {
-        StringTokenizer tok=hosts != null? new StringTokenizer(hosts,",") : null;
+    public static boolean parseCommaDelimitedHostsInto(Collection<PhysicalAddress> list,
+                                                       Collection<String> unresolved_hosts,
+                                                       String hosts, int default_port, int port_range,
+                                                       StackType stack_type) {
+        StringTokenizer tok=hosts != null? new StringTokenizer(hosts, " \t\n\r\f,") : null;
         boolean all_resolved=true;
         while(tok != null && tok.hasMoreTokens()) {
             String t=tok.nextToken().trim();
-            String host=t.substring(0,t.indexOf('['));
+            int left_index=t.indexOf('['), right_index=t.indexOf(']');
+            String host=left_index != -1? t.substring(0, left_index) : t;
             host=host.trim();
-            int port=Integer.parseInt(t.substring(t.indexOf('[') + 1,t.indexOf(']')));
+            int port=left_index != -1? Integer.parseInt(t.substring(left_index+1, right_index)) : default_port;
             try {
                 InetAddress[] resolvedAddresses=InetAddress.getAllByName(host);
                 for(int i=0; i < resolvedAddresses.length; i++) {
@@ -4129,7 +4131,7 @@ public class Util {
         return sb.toString();
     }
 
-    /** Reads all bytes fro, an input stream, until eof (-1) is reached */
+    /** Reads all bytes from an input stream, until eof (-1) is reached */
     public static ByteArray readBytes(InputStream in) throws IOException {
         byte[] retval=new byte[in.available()];
         int index=0;
