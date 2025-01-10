@@ -2076,13 +2076,22 @@ public class Util {
 
 
     public static String readContents(InputStream input) {
+        return readContents(input, (char)0);
+    }
+
+    public static String readContents(InputStream input, char comment) {
         StringBuilder sb=new StringBuilder();
         int ch;
         while(true) {
             try {
                 ch=input.read();
-                if(ch != -1)
+                if(ch != -1) {
+                    if(comment != 0 && comment == ch) {
+                        skipUntilEndOfLine(input);
+                        continue;
+                    }
                     sb.append((char)ch);
+                }
                 else
                     break;
             }
@@ -2091,6 +2100,21 @@ public class Util {
             }
         }
         return sb.toString();
+    }
+
+    protected static void skipUntilEndOfLine(InputStream input) {
+        for(;;) {
+            try {
+                int ch=input.read();
+                if(ch == -1)
+                    break;
+                if(ch == '\n' || ch == '\r')
+                    break;
+            }
+            catch(IOException e) {
+                break;
+            }
+        }
     }
 
     public static byte[] readFileContents(InputStream input) throws IOException {
