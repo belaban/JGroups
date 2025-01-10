@@ -151,7 +151,7 @@ public class TCPPING extends Discovery {
                 try(InputStream input=Util.getResourceAsStream(initial_hosts_file, getClass())) {
                     if(input == null)
                         throw new IllegalArgumentException(String.format("initial_hosts_file '%s' not found", initial_hosts_file));
-                    initial_hosts_str=Util.readContents(input);
+                    initial_hosts_str=Util.readContents(input, '#');
                 }
             }
 
