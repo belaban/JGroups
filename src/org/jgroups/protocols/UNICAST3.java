@@ -350,6 +350,11 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         return accumulate(Table::size, send_table.values());
     }
 
+    public int getNumUnackedMessages(Address dest) {
+        Entry entry=send_table.get(dest);
+        return entry != null ? entry.msgs.size() : 0;
+    }
+
     @ManagedAttribute(description="Total number of undelivered messages in all receive windows",type=SCALAR)
     public int getXmitTableUndeliveredMessages() {
         return accumulate(Table::size, recv_table.values());

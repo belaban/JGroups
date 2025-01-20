@@ -51,6 +51,17 @@ public class NAKACK4 extends ReliableMulticast {
     public NAKACK4           ackThreshold(int t)       {ack_threshold=t; return this;}
     @Override public Options sendOptions()             {return SEND_OPTIONS;}
 
+    @ManagedAttribute(type = SCALAR)
+    public long getNumUnackedMessages() {
+        long minAck=ack_table.min();
+        return minAck > 0 ? seqno.get() - minAck : 0;
+    }
+
+    public long getNumUnackedMessages(Address dest) {
+        long minAck=ack_table.min(dest);
+        return minAck > 0 ? seqno.get() - minAck : 0;
+    }
+
     @ManagedAttribute(description="Number of times sender threads were blocked on a full send window",type=SCALAR)
     public long getNumBlockings() {
         FixedBuffer<Message> buf=(FixedBuffer<Message>)sendBuf();
