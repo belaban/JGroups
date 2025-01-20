@@ -105,6 +105,9 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
     @ManagedAttribute(description="Number of messages received",type=SCALAR)
     protected final LongAdder num_messages_received=new LongAdder();
 
+    @ManagedAttribute(description="Number of sends dropped",type=SCALAR)
+    protected final LongAdder num_sends_dropped=new LongAdder();
+
     protected static final Message DUMMY_OOB_MSG=new EmptyMessage().setFlag(OOB);
 
     // Accepts messages which are (1) non-null, (2) no DUMMY_OOB_MSGs and (3) not OOB_DELIVERED
@@ -240,6 +243,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
     public ReliableMulticast sendsCanBlock(boolean s)                 {this.sends_can_block=s; return this;}
     public long              getNumMessagesSent()                     {return num_messages_sent.sum();}
     public long              getNumMessagesReceived()                 {return num_messages_received.sum();}
+    public long              getNumSendsDropped()                     {return num_sends_dropped.sum();}
     public boolean           reuseMessageBatches()                    {return reuse_message_batches;}
     public ReliableMulticast reuseMessageBatches(boolean b)           {this.reuse_message_batches=b; return this;}
     public boolean           sendAtomically()                         {return send_atomically;}
@@ -353,6 +357,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
     public void resetStats() {
         num_messages_sent.reset();
         num_messages_received.reset();
+        num_sends_dropped.reset();
         xmit_reqs_received.reset();
         xmit_reqs_sent.reset();
         xmit_rsps_received.reset();
@@ -518,7 +523,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
             return down_prot.down(msg); // unicast address: not null and not mcast, pass down unchanged
 
         if(!running) {
-            log.trace("%s: discarded message as we're not in the 'running' state, message: %s", local_addr, msg);
+            log.trace("%s: discarded message as start() has not yet been called, message: %s", local_addr, msg);
             return null;
         }
         Entry send_entry=sendEntry();
@@ -529,11 +534,17 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
             msg.setSrc(local_addr); // this needs to be done so we can check whether the message sender is the local_addr
         boolean dont_loopback_set=msg.isFlagSet(DONT_LOOPBACK);
         Buffer<Message> win=send_entry.buf();
-        send(msg, win, dont_loopback_set);
-        num_messages_sent.increment();
+        boolean sent=send(msg, win, dont_loopback_set);
         last_seqno_resender.skipNext();
-        if(dont_loopback_set && needToSendAck(send_entry, 1))
-            handleAck(local_addr, win.highestDelivered()); // https://issues.redhat.com/browse/JGRP-2829
+        if (sent) {
+            num_messages_sent.increment();
+            if(dont_loopback_set && needToSendAck(send_entry, 1))
+                handleAck(local_addr, win.highestDelivered()); // https://issues.redhat.com/browse/JGRP-2829
+        }
+        else {
+            num_sends_dropped.increment();
+            log.warn("%s: discarded message due to full send buffer, message: %s", local_addr, msg);
+        }
         return null;    // don't pass down the stack
     }
 
@@ -703,7 +714,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
         }
     }
 
-    protected void send(Message msg, Buffer<Message> win, boolean dont_loopback_set) {
+    protected boolean send(Message msg, Buffer<Message> win, boolean dont_loopback_set) {
         long msg_id=seqno.incrementAndGet();
         if(is_trace)
             log.trace("%s --> [all]: #%d", local_addr, msg_id);
@@ -718,8 +729,10 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
             lock.lock();
         }
         try {
-            if(addToSendBuffer(win, msg_id, msg, dont_loopback_set? remove_filter : null, msg.isFlagSet(DONT_BLOCK)))
+            boolean added=addToSendBuffer(win, msg_id, msg, dont_loopback_set? remove_filter : null, msg.isFlagSet(DONT_BLOCK));
+            if (added)
                 down_prot.down(msg); // if this fails, since msg is in sent_msgs, it can be retransmitted
+            return added;
         }
         finally {
             if(lock != null)
@@ -729,14 +742,17 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
 
     /** Adds the message to the send buffer. The loop tries to handle temporary OOMEs by retrying if add() failed */
     protected boolean addToSendBuffer(Buffer<Message> win, long seq, Message msg, Predicate<Message> filter, boolean dont_block) {
+        Buffer.Options opts = sendOptions();
         long sleep=10;
         boolean rc=false;
         do {
             try {
-                rc=win.add(seq, msg, filter, sendOptions(), dont_block);
+                rc=win.add(seq, msg, filter, opts, dont_block);
                 break;
             }
             catch(Throwable t) {
+                if (!opts.block() || dont_block)
+                    break;
                 if(running) {
                     Util.sleep(sleep);
                     sleep=Math.min(5000, sleep*2);

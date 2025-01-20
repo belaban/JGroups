@@ -102,6 +102,8 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
     protected final LongAdder num_msgs_sent=new LongAdder();
     @ManagedAttribute(description="Number of message received",type=SCALAR)
     protected final LongAdder num_msgs_received=new LongAdder();
+    @ManagedAttribute(description="Number of sends dropped",type=SCALAR)
+    protected final LongAdder num_sends_dropped=new LongAdder();
     @ManagedAttribute(description="Number of acks sent",type=SCALAR)
     protected final LongAdder num_acks_sent=new LongAdder();
     @ManagedAttribute(description="Number of acks received",type=SCALAR)
@@ -287,6 +289,7 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
     public long getNumMessagesReceived() {return num_msgs_received.sum();}
 
 
+    public long getNumSendsDropped()     {return num_sends_dropped.sum();}
     public long getNumAcksSent()         {return num_acks_sent.sum();}
     public long getNumAcksReceived()     {return num_acks_received.sum();}
     public long getNumXmits()            {return num_xmits.sum();}
@@ -370,8 +373,8 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
 
     public void resetStats() {
         avg_delivery_batch_size.clear();
-        Stream.of(num_msgs_sent, num_msgs_received, num_acks_sent, num_acks_received, num_xmits, xmit_reqs_received,
-                  xmit_reqs_sent, xmit_rsps_sent, num_loopbacks).forEach(LongAdder::reset);
+        Stream.of(num_msgs_sent, num_msgs_received, num_sends_dropped, num_acks_sent, num_acks_received, num_xmits,
+                xmit_reqs_received, xmit_reqs_sent, xmit_rsps_sent, num_loopbacks).forEach(LongAdder::reset);
         send_table.values().stream().map(e -> e.buf).forEach(Buffer::resetStats);
         recv_table.values().stream().map(e -> e.buf).forEach(Buffer::resetStats);
     }
@@ -693,8 +696,14 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
         SenderEntry entry=getSenderEntry(dst);
         boolean dont_loopback_set=msg.isFlagSet(DONT_LOOPBACK) && dst.equals(local_addr),
           dont_block=msg.isFlagSet(DONT_BLOCK);
-        if(send(msg, entry, dont_loopback_set, dont_block))
+        boolean sent=send(msg, entry, dont_loopback_set, dont_block);
+        if(sent) {
             num_msgs_sent.increment();
+        }
+        else {
+            num_sends_dropped.increment();
+            log.warn("%s: discarded message due to full send buffer, message: %s", local_addr, msg);
+        }
         return null; // the message was already sent down the stack in send()
     }
 
@@ -1132,14 +1141,17 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
      */
     protected boolean addToSendBuffer(Buffer<Message> win, long seq, Message msg,
                                       Predicate<Message> filter, boolean dont_block) {
+        Buffer.Options opts = sendOptions();
         long sleep=10;
         boolean rc=false;
         do {
             try {
-                rc=win.add(seq, msg, filter, sendOptions(), dont_block);
+                rc=win.add(seq, msg, filter, opts, dont_block);
                 break;
             }
             catch(Throwable t) {
+                if (!opts.block() || dont_block)
+                    break;
                 if(running) {
                     Util.sleep(sleep);
                     sleep=Math.min(5000, sleep*2);
