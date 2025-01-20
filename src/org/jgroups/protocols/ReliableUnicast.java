@@ -331,6 +331,11 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
         return accumulate(Buffer::size, send_table.values());
     }
 
+    public int getNumUnackedMessages(Address dest) {
+        Entry entry=send_table.get(dest);
+        return entry != null ? entry.buf.size() : 0;
+    }
+
     @ManagedAttribute(description="Total number of undelivered messages in all receive windows",type=SCALAR)
     public int getXmitTableUndeliveredMessages() {
         return accumulate(Buffer::size, recv_table.values());

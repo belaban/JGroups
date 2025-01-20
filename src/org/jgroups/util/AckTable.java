@@ -31,6 +31,15 @@ public class AckTable {
         }
     }
 
+    public long min(Address mbr) {
+        lock.lock();
+        try {
+            return acks.getOrDefault(mbr, 0L);
+        } finally {
+            lock.unlock();
+        }
+    }
+
     /** Adds an ACK from a sender to the map. Returns the old and new minimum */
     public long[] ack(Address sender, long seqno) {
         lock.lock();
