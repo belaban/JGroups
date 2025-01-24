@@ -216,6 +216,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     @Property
     public <T extends TP> T useVirtualThreads(boolean f) {use_vthreads=f; return (T)this;}
+    public boolean          useVirtualThreads()          {return use_vthreads;}
 
     @ManagedAttribute(description="Is the logical_addr_cache reaper task running")
     public boolean isLogicalAddressCacheReaperRunning() {
