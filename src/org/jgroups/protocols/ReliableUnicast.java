@@ -701,10 +701,8 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
         SenderEntry entry=getSenderEntry(dst);
         boolean dont_loopback_set=msg.isFlagSet(DONT_LOOPBACK) && dst.equals(local_addr),
           dont_block=msg.isFlagSet(DONT_BLOCK);
-        boolean sent=send(msg, entry, dont_loopback_set, dont_block);
-        if(sent) {
+        if(send(msg, entry, dont_loopback_set, dont_block))
             num_msgs_sent.increment();
-        }
         else {
             num_sends_dropped.increment();
             log.warn("%s: discarded message due to full send buffer, message: %s", local_addr, msg);
@@ -1146,7 +1144,7 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
      */
     protected boolean addToSendBuffer(Buffer<Message> win, long seq, Message msg,
                                       Predicate<Message> filter, boolean dont_block) {
-        Buffer.Options opts = sendOptions();
+        Buffer.Options opts=sendOptions();
         long sleep=10;
         boolean rc=false;
         do {
@@ -1155,7 +1153,7 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
                 break;
             }
             catch(Throwable t) {
-                if (!opts.block() || dont_block)
+                if(!opts.block() || dont_block)
                     break;
                 if(running) {
                     Util.sleep(sleep);

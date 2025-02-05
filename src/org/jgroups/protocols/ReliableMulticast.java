@@ -536,7 +536,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
         Buffer<Message> win=send_entry.buf();
         boolean sent=send(msg, win, dont_loopback_set);
         last_seqno_resender.skipNext();
-        if (sent) {
+        if(sent) {
             num_messages_sent.increment();
             if(dont_loopback_set && needToSendAck(send_entry, 1))
                 handleAck(local_addr, win.highestDelivered()); // https://issues.redhat.com/browse/JGRP-2829
@@ -730,7 +730,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
         }
         try {
             boolean added=addToSendBuffer(win, msg_id, msg, dont_loopback_set? remove_filter : null, msg.isFlagSet(DONT_BLOCK));
-            if (added)
+            if(added)
                 down_prot.down(msg); // if this fails, since msg is in sent_msgs, it can be retransmitted
             return added;
         }
@@ -742,7 +742,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
 
     /** Adds the message to the send buffer. The loop tries to handle temporary OOMEs by retrying if add() failed */
     protected boolean addToSendBuffer(Buffer<Message> win, long seq, Message msg, Predicate<Message> filter, boolean dont_block) {
-        Buffer.Options opts = sendOptions();
+        Buffer.Options opts=sendOptions();
         long sleep=10;
         boolean rc=false;
         do {
@@ -751,7 +751,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
                 break;
             }
             catch(Throwable t) {
-                if (!opts.block() || dont_block)
+                if(!opts.block() || dont_block)
                     break;
                 if(running) {
                     Util.sleep(sleep);
