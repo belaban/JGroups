@@ -823,12 +823,6 @@
             <java classname="org.jgroups.util.PropertiesToAsciidoc" classpathref="jg.classpath" fork="true">
                 <arg value="@{protocols-file}"/>
                 <arg value="@{installation-file}"/>
-                <!--jvmarg value="-Dcom.sun.management.jmxremote"/-->
-                <!--permissions>
-                    <grant class="javax.management.MBeanTrustPermission" name="*" actions=""/>
-                    <grant class="java.io.FilePermission" name="${manual.dir}/-" actions="read,write"/>
-                    <grant class="java.security.AllPermission"/>
-                </permissions-->
             </java>
         </sequential>
     </macrodef>
