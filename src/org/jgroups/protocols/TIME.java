@@ -9,6 +9,10 @@ import org.jgroups.util.AverageMinMax;
 import org.jgroups.util.MessageBatch;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.LongAdder;
+
+import static org.jgroups.Message.Flag.OOB;
+import static org.jgroups.conf.AttributeType.SCALAR;
 
 /**
  * Protocol measuring delivery times. Can be used in the up or down direction
@@ -31,21 +35,56 @@ public class TIME extends Protocol {
     protected final AverageMinMax down_delivery=new AverageMinMax().unit(TimeUnit.NANOSECONDS);
 
     @Property(description="Enables or disables measuring times of messages sent down")
-    protected boolean             down_msgs;
+    protected boolean             down_msgs=true;
 
     @Property(description="Enables or disables measuring times of message batches received from below")
     protected boolean             up_batches=true;
 
     @Property(description="Enables or disables measuring times of messages received from below. Attribute " +
       "up_batches has to be true, or else up_msgs will be ignored")
-    protected boolean             up_msgs;
+    protected boolean             up_msgs=true;
 
+    @Property(description="The number of (regular plus OOB) batches passed up to the application",type=SCALAR)
+    protected final LongAdder     num_batches=new LongAdder();
+
+    @Property(description="The number of OOB batches passed up to the application",type=SCALAR)
+    protected final LongAdder     num_batches_oob=new LongAdder();
+
+    @Property(description="The number of regular batches passed up to the application",type=SCALAR)
+    protected final LongAdder     num_batches_reg=new LongAdder();
+
+    @Property(description="The number of (regular plus OOB) messages passed down by the application",type=SCALAR)
+    protected final LongAdder     num_down_msgs=new LongAdder();
+
+    @Property(description="The number of OOB messages passed down by the application",type=SCALAR)
+    protected final LongAdder     num_down_msgs_oob=new LongAdder();
+
+    @Property(description="The number of regular messages passed down by the application",type=SCALAR)
+    protected final LongAdder     num_down_msgs_reg=new LongAdder();
+
+    @Property(description="The number of (regular and OOB) messages passed up to the application",type=SCALAR)
+    protected final LongAdder     num_up_msgs=new LongAdder();
+
+    @Property(description="The number of OOB messages passed up to the application",type=SCALAR)
+    protected final LongAdder     num_up_msgs_oob=new LongAdder();
+
+    @Property(description="The number of regular messages passed up to the application",type=SCALAR)
+    protected final LongAdder     num_up_msgs_reg=new LongAdder();
 
     public void resetStats() {
         down_delivery.clear();
         up_delivery_msgs.clear();
         up_delivery_batches.clear();
         avg_up_batch_size.clear();
+        num_batches.reset();
+        num_batches_oob.reset();
+        num_batches_reg.reset();
+        num_down_msgs.reset();
+        num_down_msgs_oob.reset();
+        num_down_msgs_reg.reset();
+        num_up_msgs.reset();
+        num_up_msgs_oob.reset();
+        num_up_msgs_reg.reset();
     }
 
 
@@ -59,6 +98,11 @@ public class TIME extends Protocol {
         finally {
             long time=System.nanoTime() - start;
             down_delivery.add(time);
+            num_down_msgs.increment();
+            if(msg.isFlagSet(OOB))
+                num_down_msgs_oob.increment();
+            else
+                num_down_msgs_reg.increment();
         }
     }
 
@@ -73,6 +117,11 @@ public class TIME extends Protocol {
         finally {
             long time=System.nanoTime() - start;
             up_delivery_msgs.add(time);
+            num_up_msgs.increment();
+            if(msg.isFlagSet(OOB))
+                num_up_msgs_oob.increment();
+            else
+                num_up_msgs_reg.increment();
         }
     }
 
@@ -104,6 +153,11 @@ public class TIME extends Protocol {
             long time=System.nanoTime() - start;
             up_delivery_batches.add(time);
             avg_up_batch_size.add(size);
+            num_batches.increment();
+            if(batch.mode() == MessageBatch.Mode.OOB)
+                num_batches_oob.increment();
+            else
+                num_batches_reg.increment();
         }
     }
 
