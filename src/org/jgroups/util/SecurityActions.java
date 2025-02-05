@@ -58,23 +58,14 @@ final class SecurityActions {
    }
 
    public static String getProperty(String name, String defaultValue) {
-      if (System.getSecurityManager() == null)
-         return SysProps.NON_PRIVILEGED.getProperty(name, defaultValue);
-
-      return SysProps.PRIVILEGED.getProperty(name, defaultValue);
+      return SysProps.NON_PRIVILEGED.getProperty(name, defaultValue);
    }
 
    public static String getProperty(String name) {
-      if (System.getSecurityManager() == null)
-         return SysProps.NON_PRIVILEGED.getProperty(name);
-
-      return SysProps.PRIVILEGED.getProperty(name);
+      return SysProps.NON_PRIVILEGED.getProperty(name);
    }
 
    public static String getEnv(String name) {
-      if (System.getSecurityManager() == null)
-         return SysProps.NON_PRIVILEGED.getEnv(name);
-
-      return SysProps.PRIVILEGED.getEnv(name);
+      return SysProps.NON_PRIVILEGED.getEnv(name);
    }
 }
