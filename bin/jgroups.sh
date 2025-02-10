@@ -53,5 +53,8 @@ Z1=-XX:+UseZGC
 # Dump with jcmd <pid> Thread.dump_to_file <filename>
 # DUMP_VTHREADS=-Djdk.trackAllThreads=true
 
-java $DUMP_VTHREADS $Z1 -cp $CP $SSL_FLAGS $DEBUG $LOG $JG_FLAGS $FLAGS $JMX $JMC $*
+# Dump when virtual threads are pinned on a carrier thread
+# FLAGS="$FLAGS -Djdk.tracePinnedThreads=full"
+
+java $GC $DUMP_VTHREADS $Z1 -cp $CP $SSL_FLAGS $DEBUG $LOG $JG_FLAGS $FLAGS $JMX $JMC $*
 
