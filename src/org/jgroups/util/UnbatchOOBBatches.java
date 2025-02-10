@@ -1,6 +1,7 @@
 package org.jgroups.util;
 
 import org.jgroups.Message;
+import org.jgroups.annotations.Property;
 
 /**
  * Same as {@link MaxOneThreadPerSender}, but for OOB message batches, every message of the batch is passed to the
@@ -10,9 +11,14 @@ import org.jgroups.Message;
  */
 public class UnbatchOOBBatches extends MaxOneThreadPerSender {
 
+    @Property(description="If non-null, then message batches greater than this are not unbatched, but passed up")
+    protected int max_size;
+
     @Override
     public boolean process(MessageBatch batch, boolean oob) {
         if(!oob)
+            return super.process(batch, oob);
+        if(max_size > 0 && batch.size() > max_size)
             return super.process(batch, oob);
         AsciiString tmp=batch.clusterName();
         byte[] cname=tmp != null? tmp.chars() : null;
