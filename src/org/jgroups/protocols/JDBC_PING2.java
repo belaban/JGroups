@@ -15,6 +15,8 @@ import javax.sql.DataSource;
 import java.sql.*;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -28,6 +30,7 @@ import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
  * @since 5.4, 5.3.7
  */
 public class JDBC_PING2 extends FILE_PING {
+    protected final Lock lock=new ReentrantLock();
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
 
@@ -169,7 +172,8 @@ public class JDBC_PING2 extends FILE_PING {
     // This synchronization should not be a performance problem as this is just a Discovery protocol.
     // Many SQL dialects have some "insert or update" expression, but that would need
     // additional configuration and testing on each database. See JGRP-1440
-    protected synchronized void writeToDB(PingData data, String clustername) throws SQLException {
+    protected void writeToDB(PingData data, String clustername) throws SQLException {
+        lock.lock();
         try(Connection connection=getConnection()) {
             if(call_insert_sp != null && insert_sp != null)
                 callInsertStoredProcedure(connection, data, clustername);
@@ -177,6 +181,8 @@ public class JDBC_PING2 extends FILE_PING {
                 delete(connection, clustername, data.getAddress());
                 insert(connection, data, clustername);
             }
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -309,7 +315,8 @@ public class JDBC_PING2 extends FILE_PING {
           DriverManager.getConnection(connection_url, connection_username, connection_password);
     }
 
-    protected synchronized void insert(Connection connection, PingData data, String clustername) throws SQLException {
+    protected void insert(Connection connection, PingData data, String clustername) throws SQLException {
+        lock.lock();
         try(PreparedStatement ps=connection.prepareStatement(insert_single_sql)) {
             Address address=data.getAddress();
             String addr=Util.addressToString(address);
@@ -325,10 +332,13 @@ public class JDBC_PING2 extends FILE_PING {
                 log.trace("%s: SQL for insertion: %s", local_addr, ps);
             ps.executeUpdate();
             log.debug("%s: inserted %s for cluster %s", local_addr, address, clustername);
+        } finally {
+            lock.unlock();
         }
     }
 
-    protected synchronized void callInsertStoredProcedure(Connection connection, PingData data, String clustername) throws SQLException {
+    protected void callInsertStoredProcedure(Connection connection, PingData data, String clustername) throws SQLException {
+        lock.lock();
         try(PreparedStatement ps=connection.prepareStatement(call_insert_sp)) {
             Address address=data.getAddress();
             String addr=Util.addressToString(address);
@@ -344,10 +354,13 @@ public class JDBC_PING2 extends FILE_PING {
                 log.trace("%s: SQL for insertion: %s", local_addr, ps);
             ps.executeUpdate();
             log.debug("%s: inserted %s for cluster %s", local_addr, address, clustername);
+        } finally {
+            lock.lock();
         }
     }
 
-    protected synchronized void delete(Connection conn, String clustername, Address addressToDelete) throws SQLException {
+    protected void delete(Connection conn, String clustername, Address addressToDelete) throws SQLException {
+        lock.lock();
         try(PreparedStatement ps=conn.prepareStatement(delete_single_sql)) {
             String addr=Util.addressToString(addressToDelete);
             ps.setString(1, addr);
@@ -355,6 +368,8 @@ public class JDBC_PING2 extends FILE_PING {
                 log.trace("%s: SQL for deletion: %s", local_addr, ps);
             ps.executeUpdate();
             log.debug("%s: removed %s for cluster %s from database", local_addr, addressToDelete, clustername);
+        } finally {
+            lock.unlock();
         }
     }
 
