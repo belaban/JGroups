@@ -38,6 +38,7 @@ import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
  */
 @MBean(description="Group membership protocol")
 public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
+    protected final Lock lock=new ReentrantLock();
     protected static final String CLIENT="Client";
     protected static final String COORD="Coordinator";
     protected static final String PART="Participant";
@@ -603,90 +604,95 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
      * of View), then digest will be non-null and has to be set before installing the view.
      */
     public synchronized void installView(View new_view, Digest digest) {
-        ViewId vid=new_view.getViewId();
-        List<Address> mbrs=new_view.getMembers();
-        ltime=Math.max(vid.getId(), ltime);  // compute the logical time, regardless of whether the view is accepted
+        lock.lock();
+        try {
+            ViewId vid=new_view.getViewId();
+            List<Address> mbrs=new_view.getMembers();
+            ltime=Math.max(vid.getId(), ltime);  // compute the logical time, regardless of whether the view is accepted
 
-        // Discards view with id lower than or equal to our own. Will be installed without check if it is the first view
-        if(view != null && vid.compareToIDs(view.getViewId()) <= 0)
-            return;
+            // Discards view with id lower than or equal to our own. Will be installed without check if it is the first view
+            if(view != null && vid.compareToIDs(view.getViewId()) <= 0)
+                return;
 
         /* Check for self-inclusion: if I'm not part of the new membership, I just discard it.
            This ensures that messages sent in view V1 are only received by members of V1 */
-        if(!mbrs.contains(local_addr)) {
-            if(log_view_warnings)
-                log.warn("%s: not member of view %s; discarding it", local_addr, new_view.getViewId());
-            return;
-        }
-
-        if(digest != null) {
-            if(new_view instanceof MergeView)
-                mergeDigest(digest);
-            else
-                setDigest(digest);
-        }
-
-        if(log.isDebugEnabled()) {
-            Address[][] diff=View.diff(view, new_view);
-            log.debug("%s: installing view %s %s", local_addr, new_view,
-                      print_view_details? View.printDiff(diff) : "");
-        }
-
-        Event view_event;
-        boolean was_coord, is_coord;
-        synchronized(members) {
-            was_coord=view != null && Objects.equals(local_addr, view.getCoord());
-            view=new_view;
-            is_coord=Objects.equals(local_addr, view.getCoord());
-            view_event=new Event(Event.VIEW_CHANGE, new_view);
-
-            // Set the membership. Take into account joining members
-            if(!mbrs.isEmpty()) {
-                members.set(mbrs);
-                tmp_members.set(members);
-                joining.removeAll(mbrs);  // remove all members in mbrs from joining
-                // remove all elements from 'leaving' that are not in 'mbrs'
-                leaving.retainAll(mbrs);
-
-                tmp_members.add(joining);    // add members that haven't yet shown up in the membership
-                tmp_members.remove(leaving); // remove members that haven't yet been removed from the membership
-                suspected_mbrs.retainAll(mbrs);
-
-                // add to prev_members
-                mbrs.stream().filter(addr -> !prev_members.contains(addr)).forEach(addr -> prev_members.add(addr));
+            if(!mbrs.contains(local_addr)) {
+                if(log_view_warnings)
+                    log.warn("%s: not member of view %s; discarding it", local_addr, new_view.getViewId());
+                return;
             }
 
-            if(is_coord) {
-                if(!was_coord) // client (view = null) or participant
-                    becomeCoordinator();
+            if(digest != null) {
+                if(new_view instanceof MergeView)
+                    mergeDigest(digest);
+                else
+                    setDigest(digest);
             }
-            else {
-                if(was_coord || impl instanceof ClientGmsImpl)
-                    becomeParticipant();
+
+            if(log.isDebugEnabled()) {
+                Address[][] diff=View.diff(view, new_view);
+                log.debug("%s: installing view %s %s", local_addr, new_view,
+                        print_view_details? View.printDiff(diff) : "");
             }
-        }
 
-        // - Changed order of passing view up and down (https://issues.redhat.com/browse/JGRP-347)
-        // - Changed it back (bela Sept 4 2007): https://issues.redhat.com/browse/JGRP-564
-        // - Moved sending up view_event out of the synchronized block (bela Nov 2011)
-        down_prot.down(view_event); // needed e.g. by failure detector or UDP
-        up_prot.up(view_event);
+            Event view_event;
+            boolean was_coord, is_coord;
+            synchronized(members) {
+                was_coord=view != null && Objects.equals(local_addr, view.getCoord());
+                view=new_view;
+                is_coord=Objects.equals(local_addr, view.getCoord());
+                view_event=new Event(Event.VIEW_CHANGE, new_view);
 
-        List<Address> tmp_mbrs=new_view.getMembers();
-        ack_collector.retainAll(tmp_mbrs);
+                // Set the membership. Take into account joining members
+                if(!mbrs.isEmpty()) {
+                    members.set(mbrs);
+                    tmp_members.set(members);
+                    joining.removeAll(mbrs);  // remove all members in mbrs from joining
+                    // remove all elements from 'leaving' that are not in 'mbrs'
+                    leaving.retainAll(mbrs);
 
-        if(new_view instanceof MergeView) {
-            // Everybody except the merge leader cancels the merge, otherwise - if UNICAST3.loopback is true - we'd
-            // interrupt our own thread which will fail code that later sends a message before returning!
-            // Note that the merge leader does cancel the merge later, after having installed the MergeView
-            // (in Merger.handleMergeView() in the finally clause)
-            if(!Objects.equals(local_addr, new_view.getCoord()))
-                merger.forceCancelMerge();
-        }
+                    tmp_members.add(joining);    // add members that haven't yet shown up in the membership
+                    tmp_members.remove(leaving); // remove members that haven't yet been removed from the membership
+                    suspected_mbrs.retainAll(mbrs);
 
-        if(stats) {
-            num_views++;
-            prev_views.add(Util.utcNow() + ": " + new_view);
+                    // add to prev_members
+                    mbrs.stream().filter(addr -> !prev_members.contains(addr)).forEach(addr -> prev_members.add(addr));
+                }
+
+                if(is_coord) {
+                    if(!was_coord) // client (view = null) or participant
+                        becomeCoordinator();
+                }
+                else {
+                    if(was_coord || impl instanceof ClientGmsImpl)
+                        becomeParticipant();
+                }
+            }
+
+            // - Changed order of passing view up and down (https://issues.redhat.com/browse/JGRP-347)
+            // - Changed it back (bela Sept 4 2007): https://issues.redhat.com/browse/JGRP-564
+            // - Moved sending up view_event out of the synchronized block (bela Nov 2011)
+            down_prot.down(view_event); // needed e.g. by failure detector or UDP
+            up_prot.up(view_event);
+
+            List<Address> tmp_mbrs=new_view.getMembers();
+            ack_collector.retainAll(tmp_mbrs);
+
+            if(new_view instanceof MergeView) {
+                // Everybody except the merge leader cancels the merge, otherwise - if UNICAST3.loopback is true - we'd
+                // interrupt our own thread which will fail code that later sends a message before returning!
+                // Note that the merge leader does cancel the merge later, after having installed the MergeView
+                // (in Merger.handleMergeView() in the finally clause)
+                if(!Objects.equals(local_addr, new_view.getCoord()))
+                    merger.forceCancelMerge();
+            }
+
+            if(stats) {
+                num_views++;
+                prev_views.add(Util.utcNow() + ": " + new_view);
+            }
+        } finally {
+            lock.unlock();
         }
     }
 
