@@ -26,6 +26,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
@@ -35,6 +37,7 @@ import java.util.stream.Collectors;
  */
 @MBean(description="Server used to accept connections from other servers (or clients) and send data to servers")
 public abstract class BaseServer implements Closeable, ConnectionListener {
+    protected final Lock                      lock=new ReentrantLock();
     protected Address                         local_addr; // typically the address of the server socket or channel
     protected final List<ConnectionListener>  conn_listeners=new CopyOnWriteArrayList<>();
     protected final Map<Address,Connection>   conns=new ConcurrentHashMap<>();
@@ -159,10 +162,13 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         Util.close(reaper);
         reaper=null;
 
-        synchronized(this) {
+        lock.lock();
+        try {
             for(Connection c: conns.values())
                 Util.close(c);
             conns.clear();
+        } finally {
+            lock.unlock();
         }
         conn_listeners.clear();
     }
@@ -322,7 +328,8 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         if(connected(conn=conns.get(dest)))
             return conn;
 
-        synchronized(this) {
+        lock.lock();
+        try {
             if(connected(conn=conns.get(dest)))
                 return conn;
             conn=createConnection(dest);
@@ -340,6 +347,8 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
                 removeConnectionIfPresent(dest, conn); // removes and closes the conn
                 throw connect_ex;
             }
+        } finally {
+            lock.unlock();
         }
         return conn;
     }
@@ -427,11 +436,15 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         if(address == null || conn == null)
             return;
         Connection tmp=null;
-        synchronized(this) {
+
+        lock.lock();
+        try {
             Connection existing=conns.get(address);
             if(conn == existing) {
                 tmp=conns.remove(address);
             }
+        } finally {
+            lock.unlock();
         }
         if(tmp != null) { // Moved conn close outside of sync block (https://issues.redhat.com/browse/JGRP-2053)
             log.trace("%s: removed connection to %s", local_addr, address);
@@ -455,9 +468,12 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
             return;
 
         Map<Address,Connection> copy=null;
-        synchronized(this) {
+        lock.lock();
+        try {
             copy=new HashMap<>(conns);
             conns.keySet().retainAll(current_mbrs);
+        } finally {
+            lock.unlock();
         }
         copy.keySet().removeAll(current_mbrs);
         for(Map.Entry<Address,Connection> entry: copy.entrySet())
@@ -599,7 +615,8 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
 
         public void run() {
             while(!Thread.currentThread().isInterrupted()) {
-                synchronized(BaseServer.this) {
+                lock.lock();
+                try {
                     for(Iterator<Entry<Address,Connection>> it=conns.entrySet().iterator();it.hasNext();) {
                         Entry<Address,Connection> entry=it.next();
                         Connection c=entry.getValue();
@@ -608,6 +625,8 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
                             it.remove();                           
                         }
                     }
+                } finally {
+                    lock.unlock();
                 }
                 Util.sleep(reaperInterval);
             }           
