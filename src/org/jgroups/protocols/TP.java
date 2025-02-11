@@ -121,7 +121,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected int port_range=10; // 27-6-2003 bgooren, Only try one port by default
 
     @Property(description="The fully qualified name of a class implementing MessageProcessingPolicy")
-    protected String  message_processing_policy;
+    protected String  message_processing_policy="max";
 
     @Property(description="The fully qualified name of a class implementing LocalTransport")
     protected String  local_transport_class;
