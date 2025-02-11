@@ -89,7 +89,6 @@ public class Membership {
         return this;
     }
 
-
    /**
     * Removes a member from the membership. If this member doesn't exist, no action will be
     * performed on the existing membership
@@ -103,7 +102,6 @@ public class Membership {
         }
         return this;
     }
-
 
    /**
     * Removes all the members contained in v from this membership
@@ -126,7 +124,6 @@ public class Membership {
         }
         return this;
     }
-
 
     /**
      * Removes all the members from this membership
@@ -254,6 +251,12 @@ public class Membership {
     public boolean isCoord(Address mbr) {
         synchronized(members) {
             return mbr != null && Objects.equals(mbr, getFirst());
+        }
+    }
+
+    public Address nextCoord() {
+        synchronized(members) {
+            return members.size() > 1? members.get(1) : null;
         }
     }
 

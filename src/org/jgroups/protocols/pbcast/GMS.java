@@ -113,7 +113,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     protected int                       num_views;
     protected BoundedList<String>       prev_views;  // History of the last N views
     protected GmsImpl                   impl;
-    protected final Lock                impl_lock=new ReentrantLock(); // synchronizes event entry into impl
+    protected final Lock                lock=new ReentrantLock();
     protected final Map<String,GmsImpl> impls=new HashMap<>(3);
 
     protected Merger                    merger; // handles merges
@@ -317,14 +317,14 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     }
 
     public void setImpl(GmsImpl new_impl) {
-        impl_lock.lock();
+        lock.lock();
         try {
             if(impl == new_impl)
                 return;
             impl=new_impl;
         }
         finally {
-            impl_lock.unlock();
+            lock.unlock();
         }
     }
 
@@ -441,7 +441,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
      * {@code suspected_mbrs} removed and {@code joiners} added.
      */
     public View getNextView(Collection<Address> joiners, Collection<Address> leavers, Collection<Address> suspected_mbrs) {
-        synchronized(members) {
+        lock.lock();
+        try {
             ViewId view_id=view != null? view.getViewId() : null;
             if(view_id == null) {
                 log.error(Util.getMessage("ViewidIsNull"));
@@ -468,6 +469,9 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
             if(suspected_mbrs != null)
                 suspected_mbrs.stream().filter(addr -> !leaving.contains(addr)).forEach(leaving::add);
             return v;
+        }
+        finally {
+            lock.unlock();
         }
     }
 
@@ -610,42 +614,43 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
      * Sets the new view and sends a VIEW_CHANGE event up and down the stack. If the view is a MergeView (subclass
      * of View), then digest will be non-null and has to be set before installing the view.
      */
-    public synchronized void installView(View new_view, Digest digest) {
-        ViewId vid=new_view.getViewId();
+    public void installView(View new_view, Digest digest) {
+        Event         view_event;
+        ViewId        vid=new_view.getViewId();
         List<Address> mbrs=new_view.getMembers();
-        ltime=Math.max(vid.getId(), ltime);  // compute the logical time, regardless of whether the view is accepted
+        boolean       am_i_coord;
+        lock.lock();
+        try {
+            ltime=Math.max(vid.getId(), ltime);  // compute the logical time, regardless of whether the view is accepted
 
-        // Discards view with id lower than or equal to our own. Will be installed without check if it is the first view
-        if(view != null && vid.compareToIDs(view.getViewId()) <= 0)
-            return;
+            // Discards view with id lower than or equal to our own. Will be installed without check if it is the first view
+            if(view != null && vid.compareToIDs(view.getViewId()) <= 0)
+                return;
 
-        /* Check for self-inclusion: if I'm not part of the new membership, I just discard it.
+            /* Check for self-inclusion: if I'm not part of the new membership, I just discard it.
            This ensures that messages sent in view V1 are only received by members of V1 */
-        if(!mbrs.contains(local_addr)) {
-            if(log_view_warnings)
-                log.warn("%s: not member of view %s; discarding it", local_addr, new_view.getViewId());
-            return;
-        }
+            if(!mbrs.contains(local_addr)) {
+                if(log_view_warnings)
+                    log.warn("%s: not member of view %s; discarding it", local_addr, new_view.getViewId());
+                return;
+            }
 
-        if(digest != null) {
-            if(new_view instanceof MergeView)
-                mergeDigest(digest);
-            else
-                setDigest(digest);
-        }
+            if(digest != null) {
+                if(new_view instanceof MergeView)
+                    mergeDigest(digest);
+                else
+                    setDigest(digest);
+            }
 
-        if(log.isDebugEnabled()) {
-            Address[][] diff=View.diff(view, new_view);
-            log.debug("%s: installing view %s %s", local_addr, new_view,
-                      print_view_details? View.printDiff(diff) : "");
-        }
+            if(log.isDebugEnabled()) {
+                Address[][] diff=View.diff(view, new_view);
+                log.debug("%s: installing view %s %s", local_addr, new_view,
+                          print_view_details? View.printDiff(diff) : "");
+            }
 
-        Event view_event;
-        boolean was_coord, is_coord;
-        synchronized(members) {
-            was_coord=view != null && Objects.equals(local_addr, view.getCoord());
+            boolean was_coord=view != null && Objects.equals(local_addr, view.getCoord());
             view=new_view;
-            is_coord=Objects.equals(local_addr, view.getCoord());
+            boolean is_coord=Objects.equals(local_addr, view.getCoord());
             view_event=new Event(Event.VIEW_CHANGE, new_view);
 
             // Set the membership. Take into account joining members
@@ -655,12 +660,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 joining.removeAll(mbrs);  // remove all members in mbrs from joining
                 // remove all elements from 'leaving' that are not in 'mbrs'
                 leaving.retainAll(mbrs);
-
-                tmp_members.add(joining);    // add members that haven't yet shown up in the membership
-                tmp_members.remove(leaving); // remove members that haven't yet been removed from the membership
+                tmp_members.add(joining).remove(leaving);
                 suspected_mbrs.retainAll(mbrs);
-
-                // add to prev_members
                 mbrs.stream().filter(addr -> !prev_members.contains(addr)).forEach(addr -> prev_members.add(addr));
             }
 
@@ -674,6 +675,17 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                     merge_ack_collector.reset(null); // we don't need this one anymore
                 }
             }
+            List<Address> tmp_mbrs=new_view.getMembers();
+            ack_collector.retainAll(tmp_mbrs);
+            merge_ack_collector.retainAll(tmp_mbrs);
+            if(stats) {
+                num_views++;
+                prev_views.add(Util.utcNow() + ": " + new_view);
+            }
+            am_i_coord=Objects.equals(local_addr, new_view.getCoord());
+        }
+        finally {
+            lock.unlock();
         }
 
         // - Changed order of passing view up and down (https://issues.redhat.com/browse/JGRP-347)
@@ -682,46 +694,31 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         down_prot.down(view_event); // needed e.g. by failure detector or UDP
         up_prot.up(view_event);
 
-        List<Address> tmp_mbrs=new_view.getMembers();
-        ack_collector.retainAll(tmp_mbrs);
-        merge_ack_collector.retainAll(tmp_mbrs);
-
-        if(new_view instanceof MergeView) {
-            // Everybody except the merge leader cancels the merge, otherwise - if UNICAST3.loopback is true - we'd
-            // interrupt our own thread which will fail code that later sends a message before returning!
-            // Note that the merge leader does cancel the merge later, after having installed the MergeView
-            // (in Merger.handleMergeView() in the finally clause)
-            if(!Objects.equals(local_addr, new_view.getCoord()))
-                merger.forceCancelMerge();
-        }
-
-        if(stats) {
-            num_views++;
-            prev_views.add(Util.utcNow() + ": " + new_view);
-        }
+        // Everybody except the merge leader cancels the merge, otherwise - if UNICAST3.loopback is true - we'd
+        // interrupt our own thread which will fail code that later sends a message before returning!
+        // Note that the merge leader does cancel the merge later, after having installed the MergeView
+        // (in Merger.handleMergeView() in the finally clause)
+        if(new_view instanceof MergeView && !am_i_coord)
+            merger.forceCancelMerge();
     }
 
     protected Address getCoord() {
-        impl_lock.lock();
+        lock.lock();
         try {
             return isCoord()? determineNextCoordinator() : determineCoordinator();
         }
         finally {
-            impl_lock.unlock();
+            lock.unlock();
         }
     }
 
     protected Address determineCoordinator() {
-        synchronized(members) {
-            return members.getFirst();
-        }
+        return members.getFirst();
     }
 
     /** Returns the second-in-line */
     protected Address determineNextCoordinator() {
-        synchronized(members) {
-            return members.size() > 1? members.elementAt(1) : null;
-        }
+        return members.nextCoord();
     }
 
     protected static View createDeltaView(final View current_view, final View next_view) {
@@ -731,29 +728,29 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         return new DeltaView(next_view_id, current_view_id, diff[1], diff[0]);
     }
 
-
     /** Checks whether the potential_new_coord would be the new coordinator (2nd in line) */
     protected boolean wouldBeNewCoordinator(Address potential_new_coord) {
         if(potential_new_coord == null) return false;
-        synchronized(members) {
+        lock.lock();
+        try {
             if(members.size() < 2) return false;
             Address new_coord=members.elementAt(1);  // member at 2nd place
             return Objects.equals(new_coord, potential_new_coord);
         }
+        finally {
+            lock.unlock();
+        }
     }
-
 
     /** Send down a SET_DIGEST event */
     public void setDigest(Digest d) {
         down_prot.down(new Event(Event.SET_DIGEST, d));
     }
 
-
     /** Send down a MERGE_DIGEST event */
     public void mergeDigest(Digest d) {
         down_prot.down(new Event(Event.MERGE_DIGEST,d));
     }
-
 
     /** Grabs the current digest from NAKACK{2} */
     public Digest getDigest() {
