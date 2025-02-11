@@ -256,6 +256,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         catch(Exception e) {
             log.error("failed setting message_processing_policy", e);
         }
+        if(msg_processing_policy != null)
+            message_processing_policy=policy;
         return (T)this;
     }
 

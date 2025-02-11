@@ -11,14 +11,15 @@ import org.jgroups.annotations.Property;
  */
 public class UnbatchOOBBatches extends MaxOneThreadPerSender {
 
-    @Property(description="If non-null, then message batches greater than this are not unbatched, but passed up")
+    @Property(description="If > 0, then batches > max_size will be unbatched, batches <= max_size will be " +
+      "sent up. This ensures that no batch will ever be greater than a given size.")
     protected int max_size;
 
     @Override
     public boolean process(MessageBatch batch, boolean oob) {
         if(!oob)
             return super.process(batch, oob);
-        if(max_size > 0 && batch.size() > max_size)
+        if(max_size > 0 && batch.size() <= max_size)
             return super.process(batch, oob);
         AsciiString tmp=batch.clusterName();
         byte[] cname=tmp != null? tmp.chars() : null;
