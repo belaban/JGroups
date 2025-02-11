@@ -34,7 +34,6 @@ public class MembershipTest {
         m1=new Membership();
     }
 
-
     public void testConstructor() {
         v1=Arrays.asList(a1, a2, a3);
         m2=new Membership(v1);
@@ -43,7 +42,6 @@ public class MembershipTest {
         assert m2.contains(a2);
         assert m2.contains(a3);
     }
-
 
     public void testClone() {
         v1=Arrays.asList(a1, a2, a3);
@@ -56,8 +54,6 @@ public class MembershipTest {
         assert m2.contains(a2);
     }
 
-
-
     public void testCopy() {
         v1=Arrays.asList(a1, a2, a3);
         m2=new Membership(v1);
@@ -69,8 +65,6 @@ public class MembershipTest {
         assert m2.contains(a2);
     }
 
-
-
     public void testAdd() {
         m1.add(a1, a2, a3);
         assert m1.size() == 2;
@@ -79,8 +73,6 @@ public class MembershipTest {
         assert m1.contains(a3);
     }
 
-
-
     public void testAddVector() {
         v1=Arrays.asList(a1, a2, a3);
         m1.add(v1);
@@ -88,7 +80,6 @@ public class MembershipTest {
         assert m1.contains(a1);
         assert m1.contains(a2);
     }
-
 
     public void testAddVectorDupl() {
         v1=Arrays.asList(a1, a2, a3, a4, a5);
@@ -100,12 +91,10 @@ public class MembershipTest {
         assert m1.contains(a5);
     }
 
-
     public void testRemove() {
         m1.add(a1, a2, a3, a4, a5).remove(a2);
         assert m1.size() == 3;
     }
-
 
     public void testGetMembers() {
         testAdd();
@@ -136,6 +125,16 @@ public class MembershipTest {
         m1.add(a2);
         coord=m1.isCoord(a2);
         assert !coord;
+    }
+
+    public void testNextCoord() {
+        m1.add(a1,a2);
+        assert m1.isCoord(a1);
+        Address tmp=m1.nextCoord();
+        assert a2.equals(tmp);
+        m1.remove(a2);
+        tmp=m1.nextCoord();
+        assert tmp == null;
     }
 
     public void testGetNext() {
