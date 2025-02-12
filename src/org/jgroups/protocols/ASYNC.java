@@ -33,7 +33,8 @@ public class ASYNC extends Protocol {
         MessageBatch.Mode mode=batch.mode();
         if((mode == MessageBatch.Mode.OOB || handle_reg_msgs) && batch.size() >= max_batch_size)
             thread_pool.execute(new AsyncBatchDispatcher(batch));
-        up_prot.up(batch);
+        else
+            up_prot.up(batch);
     }
 
     protected class AsyncBatchDispatcher implements Runnable {
