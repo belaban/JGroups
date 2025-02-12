@@ -161,7 +161,6 @@ then send no more messages, then a message batch of 10 will be sent immediately 
 
 If we send 1000 messages of 100 bytes each, then - after exceeding 64'000 bytes (after ca. 64 messages) - we'll
 send the message batch, and this might have taken only 3 ms.
-            
 
 NOTE: Since 3.x, message bundling is the default, and it cannot be enabled or disabled anymore (the config
       is ignored). However, a message can set the `DONT_BUNDLE` flag to skip message bundling. This is only recognized
@@ -183,7 +182,8 @@ If max_bundle_size exceeded, or no more message -> send message batch
                 
 When the message send rate is high and/or many large messages are sent, latency is more or less the time to fill
 `max_bundle_size`. This should be sufficient for a lot of applications. If not, flags `OOB` and `DONT_BUNDLE` can be
-used to bypass bundling.
+used to bypass bundling. Alternatively, `max_bundle_size` can be reduced, so that smaller batches are accumulated
+and sent (it takes less time to fill smaller batches).
 
 
 
@@ -200,14 +200,13 @@ be the address and port number of the _unicast_ socket.
 
 ===== Using UDP and plain IP multicasting
 
-A protocol stack with UDP as transport protocol is typically used with clusters whose members run on
-                    the same host or are distributed across a LAN. Note that before running instances
-                    _in different subnets_, an admin has to make sure that IP multicast is enabled
-                    across subnets. It is often the case that IP multicast is not enabled across subnets.
-                    Refer to section <<ItDoesntWork>> for running a test program that determines whether
-                    members can reach each other via IP multicast. If this does not work, the protocol stack cannot use
-                    UDP with IP multicast as transport. In this case, the stack has to either use UDP without IP
-                    multicasting, or use a different transport such as TCP.
+A protocol stack with UDP as transport protocol is typically used with clusters whose members run on the same host or
+are distributed across a LAN. Note that before running instances _in different subnets_, an admin has to make sure
+that IP multicast is enabled across subnets. It is often the case that IP multicast is not enabled across subnets.
+
+Refer to section <<ItDoesntWork>> for running a test program that determines whether members can reach each other
+via IP multicast. If this does not work, the protocol stack cannot use UDP with IP multicast as transport. In this
+case, the stack has to either use UDP without IP multicasting, or use a different transport such as TCP.
                 
 
 [[IpNoMulticast]]
@@ -597,8 +596,8 @@ message 5. Alternatively, the application might receive a message batch containi
 through that batch, message 4 will be consumed before message 5.
 
 Regular messages from different senders P and Q are delivered in parallel. E.g if P sends 4 and 5 and Q sends 56 and 57,
-then the `receive()` callback might get invoked in parallel for P4 and Q57. Therefore the `receive()` callbacks
-have to be thread-safe.
+then the `receive()` callback might get invoked in parallel for P4 and Q57. Therefore the `receive()` callback
+has to be thread-safe.
 
 In contrast, OOB messages are delivered in an undefined order, e.g. messages P4 and P5 might get delivered as P4 -> P5
 (P4 followed by P5) in some receivers and P5 -> P4 in others. It is also possible that P4 is delivered in parallel with
@@ -606,6 +605,54 @@ P5, each message getting delivered by a different thread.
 
 The only guarantee for both regular and OOB messages is that a message will get delivered exactly once. Dropped messages
 are retransmitted and duplicate messages are dropped.
+
+[[MessageProcessingPolicy]]
+==== Message processing policy
+
+When a message or message batch is received, it is forwarded to an implementation of `MessageProcessingPolicy`. The
+policy defines how to deliver a message / batch. A number of predefined policies are provided, but custom policies
+can be used: to do this, `message_processing_policy` can be set to the fully qualified name of a class implementing
+`MessageProcessingPolicy`.
+
+The following policies are provided:
+
+.MessageProcessingPolicy implementations
+[options="header",cols="2,10"]
+|===============
+|Name|Description
+
+| `submit` | `SubmitToThreadPool`. Messages and batches are handed to the thread pool for delivery. E.g. if we receive
+`A:7`, `B:22`, `A:8` and a batch `B:23-30`, then we'll use 4 threads from the thread pool to deliver the 3 messages and
+the batch. Contrast this to `max`, which uses 2 threads (see below). +
+This is the default for OOB messages/batches, as they can be delivered in any order. Can be used for regular messages /
+batches, too, but not very efficient as they will get reordered in `NAKACK-X` / `UNICAST-X` again. +
+The main advantage of `submit` is that independent messages/batches can be processed *concurrently* by the application;
+in a message batch, messages are processed one-by-one, delaying messages at the tail of the batch by the time it
+takes to process messages ahead of them.
+
+| `max` | `MaxOneThreadPerSender`, subclass of `SubmitToThreadPool`. Default policy. OOB messages/batches are passed to
+the superclass (`SubmitToThreadPool`). +
+Regular messages/batches are queued: one queue exists for each sender. When a message/batch is received, it is added
+to the corresponding queue. If no thread is processing that queue, a new thread from the pool is started to process
+all messages from that queue, until empty, then the thread terminates. +
+This ensures that at max one thread is delivering messages/batches from a given sender. In the example above, we'd have
+2 threads delivering messages/batches: one for `A:7-8` and the other for `B22-30`. +
+
+| `unbatch` | `UnbatchOOBBatches`, subclass of `MaxOneThreadPerSender`. This policy passes message batches up to
+`max_size` up to the `SubmitToThreadPool` policy. When `max_size` is exceeded, then all messages in the batch are
+passed to the thread pool one by one. +
+Example with `max_size=5`: an OOB batch of 4 is passed up to `submit`. An OOB batch of 6 is not passed up, but the 6
+messages are each passed up by a separate thread from the pool (6 threads). +
+The idea of `unbatch` is that when the average processing time per message is large, then the messages toward the tail
+of the batch are disadvantaged; processing all messages in separate threads is faster. See <<MessageBatch>> for
+details. +
+The max size can be defined in the configuration as follows:
+`<TCP message_processing_policy="unbatch" msg_processing_policy.max_size="5">`
+
+| `direct` | `PassRegularMessagesUpDirectly`, subclass of `SubmitToThreadPool`. OOB messages/batches are handled by
+`SubmitToThreadPool`. Regular messages/batches are passed up on the same thread (the one that read from the network). +
+Experimental, used to measure performance. Might get removed soon.
+|===============
 
 
 [[OOB]]

@@ -727,6 +727,26 @@ JGroups tries to bundle as many messages as possible into a batch on the sender 
 Also on the receiver side, if multiple threads added messages to a table, it tries to remove as many of them as possible
 and pass them up to other protocols (or the application) as a batch.
 
+==== Cost of processing of message batches
+A message batch is delivered to the application via the `receive(MessageBatch)` callback. While each message of
+an *OOB batch* could be delivered in a separate thread, regular messages need to be delivered one by one, or else
+ordering will be destroyed.
+
+If the average processing time for a message is `20us`, in a batch of `10` it will take `20us` to process the first
+message, `40us` to process the second and so on. The last message is delayed by `180us` before it can be processed.
+
+For latency-sensitive applications, batching is detrimental to performance. There are a few things to fix this:
+
+* Make smaller batches on the sender side: reduce `max_bundle_size`. However, a `MessageProcessingPolicy`
+(<<MessageProcessingPolicy>>) of `max` will still create larger batches on the receiver side. A smaller
+`max_bundle_size` leads only to faster filling and sending of batches on the sender side. This still helps latency.
+* Use a `MessageProcessingPolicy` of `unbatch`: this delivers only OOB batches up to a given size; larger batches
+deliver their messages in separate threads.
+* Application: an application knows best whether messages in a batch can be processed in parallel, or whether they
+need to be delivered sequentially. Example: responses in a batch could be delivered each by a separate thread,
+whereas requests would need to be processed sequentially.
+
+
 
 [[Header]]
 === Header
