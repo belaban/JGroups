@@ -38,6 +38,7 @@ public class PinnedVThreads {
         }
         else
             System.out.printf("-- FJP parallelism will use %d cores\n", available_cores);
+        System.out.printf("-- %d virtual threads will be pinned\n", pinned);
 
         ThreadFactory factory=new DefaultThreadFactory("test", true, false).useVirtualThreads(true);
         Object[] locks=new Object[pinned];
