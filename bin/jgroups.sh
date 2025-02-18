@@ -41,7 +41,8 @@ FLAGS="-server -Xmx1G -Xms500m -XX:+HeapDumpOnOutOfMemoryError -Djava.net.prefer
 
 #FLAGS="$FLAGS -Djdk.defaultScheduler.parallelism=2"
 
-#FLAGS="$FLAGS -Djava.util.concurrent.ForkJoinPool.common.parallelism=1"
+# Set the number of platform threads to be used by the ForkJoinPool for virtual threads
+# FLAGS="$FLAGS -Djdk.virtualThreadScheduler.parallelism=12"
 
 #JMX="-Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost"
 
