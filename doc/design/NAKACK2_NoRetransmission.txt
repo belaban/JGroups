@@ -7,6 +7,9 @@ Date:      March 2023
 JIRA:      https://issues.redhat.com/browse/JGRP-2675
 Unit test: NAKACK2_NoRetransmissionTest
 
+******************************************************************
+****** REMOVED: https://issues.redhat.com/browse/JGRP-2866 *******
+******************************************************************
 
 Goal
 ----
@@ -67,15 +70,6 @@ This design requires that a message received over TCP *cannot be dropped before 
 LastMessageDroppedTest, which inserts DISCARD just below NAKACK2 to drop selected messages, won't pass with
 retransmission disabled. As TCP/IP considers the message delivered, if it is nevertheless dropped later on, it will
 never be retransmitted (not by TCP/IP and not by NAKACK2).
-
-
-
-
-
-
-
-
-
 
 
 

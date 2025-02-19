@@ -83,10 +83,10 @@ public class TcpConnection extends Connection {
     }
 
     public void connect(Address dest) throws Exception {
-        connect(dest, server.usePeerConnections(), server.useAcks());
+        connect(dest, server.usePeerConnections());
     }
 
-    protected void connect(Address dest, boolean send_local_addr, boolean use_acks) throws Exception {
+    protected void connect(Address dest, boolean send_local_addr) throws Exception {
         SocketAddress destAddr=new InetSocketAddress(((IpAddress)dest).getIpAddress(), ((IpAddress)dest).getPort());
         try {
             if(!server.defer_client_binding)
@@ -100,15 +100,6 @@ public class TcpConnection extends Connection {
             this.in=createDataInputStream(sock.getInputStream());
             if(send_local_addr)
                 sendLocalAddress(server.localAddress());
-            if(use_acks) {
-                int len=in.readInt();
-                byte[] ack=new byte[len];
-                in.readFully(ack, 0, ack.length);
-                if(Arrays.equals(BaseServer.OK, ack))
-                    ;
-                else
-                    server.log().error("%s: received invalid ACK: %s", localAddress(), Arrays.toString(ack));
-            }
             // needs to be at the end or else isConnected() will return this connection and threads can start sending
             // even though we haven't yet sent the local address and waited for the ack (if use_acks==true)
             connected=sock.isConnected();

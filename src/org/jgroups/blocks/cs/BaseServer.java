@@ -12,13 +12,10 @@ import org.jgroups.logging.LogFactory;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.*;
 
-import javax.net.ssl.SSLException;
 import java.io.Closeable;
 import java.io.DataInput;
 import java.io.IOException;
-import java.net.ConnectException;
 import java.net.InetAddress;
-import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.Map.Entry;
@@ -69,6 +66,7 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     @ManagedAttribute(description="Wait for an ack from the server when a connection is established, and retry " +
       "connection establishment until a valid connection has been established, or the connection to the peer cannot " +
       "be established (https://issues.redhat.com/browse/JGRP-2684)",writable=true)
+    @Deprecated(since="5.4.4",forRemoval=true)
     protected boolean                         use_acks;
     @ManagedAttribute(description="Log a stack trace when a connection is closed")
     protected boolean                         log_details=true;
@@ -76,8 +74,6 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     protected boolean                         tcp_nodelay=false;
     protected int                             linger=-1;
     protected TimeService                     time_service;
-    public static final byte[]                OK={1,2,3,4};   // ack (srv->client) on successful connection establishment
-
 
 
     protected BaseServer(ThreadFactory f, SocketFactory sf, int recv_buf_size) {
@@ -105,8 +101,8 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     public BaseServer       socketFactory(SocketFactory factory)    {this.socket_factory=factory; return this;}
     public boolean          usePeerConnections()                    {return use_peer_connections;}
     public BaseServer       usePeerConnections(boolean flag)        {this.use_peer_connections=flag; return this;}
-    public boolean          useAcks()                               {return use_acks;}
-    public BaseServer       useAcks(boolean f)                      {use_acks=f; return this;}
+    public static boolean   useAcks()                               {return false;}
+    public BaseServer       useAcks(boolean ignored)                {return this;}
     public boolean          logDetails()                            {return log_details;}
     public BaseServer       logDetails(boolean l)                   {log_details=l; return this;}
     public int              socketConnectionTimeout()               {return sock_conn_timeout;}
@@ -254,7 +250,7 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         // Get a connection (or create one if not yet existent) and send the data
         Connection conn=null;
         try {
-            conn=getConnection(dest, use_acks);
+            conn=getConnection(dest);
             conn.send(data, offset, length);
         }
         catch(Exception ex) {
@@ -281,7 +277,7 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         // Get a connection (or create one if not yet existent) and send the data
         Connection conn=null;
         try {
-            conn=getConnection(dest, use_acks);
+            conn=getConnection(dest);
             conn.send(data);
         }
         catch(Exception ex) {
@@ -311,27 +307,6 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     public boolean connectionEstablishedTo(Address address) {
         return connected(conns.get(address));
     }
-
-    public Connection getConnection(Address dest, boolean retry) throws Exception {
-        if(!retry)
-            return getConnection(dest);
-        Connection conn=null;
-        do {
-            try {
-                conn=getConnection(dest);
-            }
-            catch(ConnectException | SocketTimeoutException | SSLException ex) {
-                throw ex;
-            }
-            catch(Exception ise) {
-                Util.sleepRandom(1, 100);
-                log.trace("%s: retrying connection to %s", local_addr, dest);
-            }
-        }
-        while(!connected(conn));
-        return conn;
-    }
-
 
     /** Creates a new connection to dest, or returns an existing one */
     public Connection getConnection(Address dest) throws Exception {

@@ -17,7 +17,7 @@ fi
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 LIB=`dirname $SCRIPT_DIR`/lib
-BM_OPTS="-Dorg.jboss.byteman.compile.to.bytecode=true"
+BM_OPTS="-Dorg.jboss.byteman.compile.to.bytecode=true -Dorg.jboss.byteman.verbose=true"
 
 shift
 shift

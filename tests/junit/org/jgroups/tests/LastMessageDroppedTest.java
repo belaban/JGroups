@@ -118,10 +118,10 @@ public class LastMessageDroppedTest extends ChannelTestBase {
         for(JChannel ch: channels) {
             ProtocolStack stack=ch.getProtocolStack();
             Protocol nak=stack.findProtocol(NAKACK2.class);
-            if(nak != null && ((NAKACK2)nak).getXmitInterval() > 0)
+            if(nak != null)
                 continue;
             nak=stack.findProtocol(ReliableMulticast.class);
-            if(nak != null && ((ReliableMulticast)nak).getXmitInterval() > 0)
+            if(nak != null)
                 continue;
             return false;
         }

@@ -123,8 +123,6 @@ public class TcpServer extends TcpBaseServer {
                   replace=conn_exists && use_peer_connections && local_addr.compareTo(peer_addr) < 0; // bigger conn wins
 
                 if(!conn_exists || replace) {
-                    if(use_acks)
-                        conn.send(OK, 0, OK.length); // do this *before* other threads can send messages!!
                     replaceConnection(peer_addr, conn); // closes old conn
                     conn.start();
                     log.trace("%s: accepted connection from %s", local_addr, peer_addr);

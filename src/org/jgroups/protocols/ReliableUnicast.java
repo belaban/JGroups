@@ -14,8 +14,6 @@ import org.jgroups.util.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
-import java.util.concurrent.RejectedExecutionHandler;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -63,7 +61,8 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
 
     @Property(description="When true, the sender retransmits messages until ack'ed and the receiver asks for missing " +
       "messages. When false, this is not done, but ack'ing and stale connection testing is still done. " +
-      "https://issues.redhat.com/browse/JGRP-2676")
+      "https://issues.redhat.com/browse/JGRP-2676",deprecatedMessage="is ignored")
+    @Deprecated(since="5.4.4",forRemoval=true)
     protected boolean xmits_enabled=true;
 
     @Property(description="If true, trashes warnings about retransmission messages not found in the xmit_table (used for testing)")
@@ -219,8 +218,8 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
     }
     public long            getXmitInterval()                     {return xmit_interval;}
     public ReliableUnicast setXmitInterval(long i)               {xmit_interval=i; return this;}
-    public boolean         isXmitsEnabled()                      {return xmits_enabled;}
-    public ReliableUnicast setXmitsEnabled(boolean b)            {xmits_enabled=b; return this;}
+    public static boolean  isXmitsEnabled()                      {return true;}
+    public ReliableUnicast setXmitsEnabled(boolean b)            {return this;}
     public long            getConnExpiryTimeout()                {return conn_expiry_timeout;}
     public ReliableUnicast setConnExpiryTimeout(long c)          {this.conn_expiry_timeout=c; return this;}
     public long            getConnCloseTimeout()                 {return conn_close_timeout;}
@@ -411,23 +410,6 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
             log.warn("%s: xmit_interval (%d) has to be > 0; setting it to the default of %d",
                      local_addr, xmit_interval, DEFAULT_XMIT_INTERVAL);
             xmit_interval=DEFAULT_XMIT_INTERVAL;
-        }
-
-        if(xmits_enabled == false) {
-            // https://issues.redhat.com/browse/JGRP-2676
-            RejectedExecutionHandler handler=transport.getThreadPool().getRejectedExecutionHandler();
-            if(handler != null && !isCallerRunsHandler(handler)) {
-                log.warn("%s: xmits_enabled == false requires a CallerRunsPolicy in the thread pool; replacing %s",
-                         local_addr, handler.getClass().getSimpleName());
-                transport.getThreadPool().setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-            }
-            Class<RED> cl=RED.class;
-            if(stack.findProtocol(cl) != null) {
-                String e=String.format("found %s: when retransmission is disabled (xmits_enabled=false), this can lead " +
-                                         "to message loss. Please remove %s or enable retransmission",
-                                       cl.getSimpleName(), cl.getSimpleName());
-                throw new IllegalStateException(e);
-            }
         }
         relay_present=ProtocolStack.findProtocol(this.down_prot, true, RELAY.class) != null;
     }
@@ -1224,12 +1206,6 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
         }
     }
 
-    protected static boolean isCallerRunsHandler(RejectedExecutionHandler h) {
-        return h instanceof ThreadPoolExecutor.CallerRunsPolicy ||
-          (h instanceof ShutdownRejectedExecutionHandler
-            && ((ShutdownRejectedExecutionHandler)h).handler() instanceof ThreadPoolExecutor.CallerRunsPolicy);
-    }
-
     protected void sendAck(Address dst, Entry entry, Address real_dest) { // real_dest required by RELAY3
         if(!running) // if we are disconnected, then don't send any acks which throw exceptions on shutdown
             return;
@@ -1387,50 +1363,46 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
             if(win != null && val.needToSendAck()) // sendAck() resets send_ack to false
                 sendAck(target, val, val.realDest());
 
-            if(xmits_enabled) {
                 // receiver: retransmit missing messages (getNumMissing() is fast)
-                SeqnoList missing;
-                if(win != null && win.numMissing() > 0 && (missing=win.getMissing(max_xmit_req_size)) != null) {
-                    long highest=missing.getLast();
-                    Long prev_seqno=xmit_task_map.get(target);
-                    if(prev_seqno == null)
-                        xmit_task_map.put(target, highest); // no retransmission
-                    else {
-                        missing.removeHigherThan(prev_seqno); // we only retransmit the 'previous batch'
-                        if(highest > prev_seqno)
-                            xmit_task_map.put(target, highest);
-                        if(!missing.isEmpty()) {
-                            // remove msgs that are <= highest-delivered (https://issues.redhat.com/browse/JGRP-2574)
-                            long highest_deliverable=win.getHighestDeliverable(), first=missing.getFirst();
-                            if(first < highest_deliverable)
-                                missing.removeLowerThan(highest_deliverable + 1);
-                            retransmit(missing, target, val.real_dest);
-                        }
+            SeqnoList missing;
+            if(win != null && win.numMissing() > 0 && (missing=win.getMissing(max_xmit_req_size)) != null) {
+                long highest=missing.getLast();
+                Long prev_seqno=xmit_task_map.get(target);
+                if(prev_seqno == null)
+                    xmit_task_map.put(target, highest); // no retransmission
+                else {
+                    missing.removeHigherThan(prev_seqno); // we only retransmit the 'previous batch'
+                    if(highest > prev_seqno)
+                        xmit_task_map.put(target, highest);
+                    if(!missing.isEmpty()) {
+                        // remove msgs that are <= highest-delivered (https://issues.redhat.com/browse/JGRP-2574)
+                        long highest_deliverable=win.getHighestDeliverable(), first=missing.getFirst();
+                        if(first < highest_deliverable)
+                            missing.removeLowerThan(highest_deliverable + 1);
+                        retransmit(missing, target, val.real_dest);
                     }
                 }
-                else if(!xmit_task_map.isEmpty())
-                    xmit_task_map.remove(target); // no current gaps for target
             }
+            else if(!xmit_task_map.isEmpty())
+                xmit_task_map.remove(target); // no current gaps for target
         }
 
-        if(xmits_enabled) {
-            // resend sent messages until ack'ed
-            // sender: only send the *highest sent* message if HA < HS and HA/HS didn't change from the prev run
-            for(SenderEntry val : send_table.values()) {
-                Buffer<Message> win=val != null? val.buf : null;
-                if(win != null) {
-                    long highest_acked=win.highestDelivered(); // highest delivered == highest ack (sender win)
-                    long highest_sent=win.high();   // we use table as a *sender* win, so it's highest *sent*...
+        // resend sent messages until ack'ed
+        // sender: only send the *highest sent* message if HA < HS and HA/HS didn't change from the prev run
+        for(SenderEntry val : send_table.values()) {
+            Buffer<Message> win=val != null? val.buf : null;
+            if(win != null) {
+                long highest_acked=win.highestDelivered(); // highest delivered == highest ack (sender win)
+                long highest_sent=win.high();   // we use table as a *sender* win, so it's highest *sent*...
 
-                    if(highest_acked < highest_sent && val.watermark[0] == highest_acked && val.watermark[1] == highest_sent) {
-                        // highest acked and sent hasn't moved up - let's resend the HS
-                        Message highest_sent_msg=win.get(highest_sent);
-                        if(highest_sent_msg != null)
-                            retransmit(highest_sent_msg);
-                    }
-                    else
-                        val.watermark(highest_acked, highest_sent);
+                if(highest_acked < highest_sent && val.watermark[0] == highest_acked && val.watermark[1] == highest_sent) {
+                    // highest acked and sent hasn't moved up - let's resend the HS
+                    Message highest_sent_msg=win.get(highest_sent);
+                    if(highest_sent_msg != null)
+                        retransmit(highest_sent_msg);
                 }
+                else
+                    val.watermark(highest_acked, highest_sent);
             }
         }
 

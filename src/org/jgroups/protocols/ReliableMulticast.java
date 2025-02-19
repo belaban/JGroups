@@ -390,30 +390,11 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
             }
         }
 
-        if(xmit_interval <= 0) {
-            // https://issues.redhat.com/browse/JGRP-2675
-            become_server_queue=new ConcurrentLinkedQueue<>();
-            RejectedExecutionHandler handler=transport.getThreadPool().getRejectedExecutionHandler();
-            if(handler != null && !isCallerRunsHandler(handler)) {
-                log.warn("%s: xmit_interval of %d requires a CallerRunsPolicy in the thread pool; replacing %s",
-                         local_addr, xmit_interval, handler.getClass().getSimpleName());
-                transport.getThreadPool().setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-            }
-            Class<RED> cl=RED.class;
-            if(stack.findProtocol(cl) != null) {
-                String e=String.format("found %s: when retransmission is disabled (xmit_interval=0), this can lead " +
-                                         "to message loss. Please remove %s, or enable retransmission",
-                                       cl.getSimpleName(), cl.getSimpleName());
-                throw new IllegalStateException(e);
-            }
+        if(become_server_queue_size <= 0) {
+            log.warn("%s: %s.become_server_queue_size is <= 0; setting it to 10", local_addr, ReliableMulticast.class.getSimpleName());
+            become_server_queue_size=10;
         }
-        else {
-            if(become_server_queue_size <= 0) {
-                log.warn("%s: %s.become_server_queue_size is <= 0; setting it to 10", local_addr, ReliableMulticast.class.getSimpleName());
-                become_server_queue_size=10;
-            }
-            become_server_queue=new ArrayBlockingQueue<>(become_server_queue_size);
-        }
+        become_server_queue=new ArrayBlockingQueue<>(become_server_queue_size);
 
         if(suppress_time_non_member_warnings > 0)
             suppress_log_non_member=new SuppressLog<>(log, "MsgDroppedNak");
@@ -1065,12 +1046,6 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
         newhdr.type=NakAckHeader.MSG; // change the type back from XMIT_RSP --> MSG
         msg.putHeader(id,newhdr);
         return msg;
-    }
-
-    protected static boolean isCallerRunsHandler(RejectedExecutionHandler h) {
-        return h instanceof ThreadPoolExecutor.CallerRunsPolicy ||
-          (h instanceof ShutdownRejectedExecutionHandler
-            && ((ShutdownRejectedExecutionHandler)h).handler() instanceof ThreadPoolExecutor.CallerRunsPolicy);
     }
 
     /**

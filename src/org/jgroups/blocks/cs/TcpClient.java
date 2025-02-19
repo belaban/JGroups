@@ -117,7 +117,7 @@ public class TcpClient extends TcpBaseServer implements Client, ConnectionListen
         super.start();
         conn=createConnection(remote_addr);
         addConnectionListener(this);
-        conn.connect(remote_addr, false, false);
+        conn.connect(remote_addr, false);
         local_addr=conn.localAddress();
         if(use_peer_connections)
             conn.sendLocalAddress(local_addr);

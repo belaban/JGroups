@@ -21,7 +21,7 @@ public class Tests {
         for(JChannel ch: channels) {
             ProtocolStack stack=ch.getProtocolStack();
             Protocol nak=stack.findProtocol(NAKACK2.class);
-            if(nak == null || ((NAKACK2)nak).getXmitInterval() <= 0)
+            if(nak == null)
                 return false;
         }
         return true;
@@ -31,7 +31,7 @@ public class Tests {
         for(JChannel ch: channels) {
             ProtocolStack stack=ch.getProtocolStack();
             Protocol prot=stack.findProtocol(UNICAST3.class);
-            if(prot == null || !((UNICAST3)prot).isXmitsEnabled())
+            if(prot == null)
                 return false;
         }
         return true;

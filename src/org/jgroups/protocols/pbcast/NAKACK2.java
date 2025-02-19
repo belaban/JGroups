@@ -6,7 +6,6 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
-import org.jgroups.protocols.RED;
 import org.jgroups.protocols.TCP;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.DiagnosticsHandler;
@@ -80,7 +79,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     protected boolean log_not_found_msgs=true;
 
     @Property(description="Interval (in milliseconds) at which missing messages (from all retransmit buffers) " +
-      "are retransmitted. 0 turns retransmission off",type=AttributeType.TIME)
+      "are retransmitted",type=AttributeType.TIME)
     protected long    xmit_interval=1000;
 
     @Property(description="Number of rows of the matrix in the retransmission table (only for experts)",writable=false)
@@ -502,30 +501,13 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             }
         }
 
-        if(xmit_interval <= 0) {
-            // https://issues.redhat.com/browse/JGRP-2675
-            become_server_queue=new ConcurrentLinkedQueue<>();
-            RejectedExecutionHandler handler=transport.getThreadPool().getRejectedExecutionHandler();
-            if(handler != null && !isCallerRunsHandler(handler)) {
-                log.warn("%s: xmit_interval of %d requires a CallerRunsPolicy in the thread pool; replacing %s",
-                         local_addr, xmit_interval, handler.getClass().getSimpleName());
-                transport.getThreadPool().setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-            }
-            Class<RED> cl=RED.class;
-            if(stack.findProtocol(cl) != null) {
-                String e=String.format("found %s: when retransmission is disabled (xmit_interval=0), this can lead " +
-                                         "to message loss. Please remove %s, or enable retransmission",
-                                       cl.getSimpleName(), cl.getSimpleName());
-                throw new IllegalStateException(e);
-            }
+        if(xmit_interval <= 0)
+            throw new IllegalArgumentException("xmit_interval has to be > 0");
+        if(become_server_queue_size <= 0) {
+            log.warn("%s: %s.become_server_queue_size is <= 0; setting it to 10", local_addr, NAKACK2.class.getSimpleName());
+            become_server_queue_size=10;
         }
-        else {
-            if(become_server_queue_size <= 0) {
-                log.warn("%s: %s.become_server_queue_size is <= 0; setting it to 10", local_addr, NAKACK2.class.getSimpleName());
-                become_server_queue_size=10;
-            }
-            become_server_queue=new ArrayBlockingQueue<>(become_server_queue_size);
-        }
+        become_server_queue=new ArrayBlockingQueue<>(become_server_queue_size);
 
         if(suppress_time_non_member_warnings > 0)
             suppress_log_non_member=new SuppressLog<>(log, "MsgDroppedNak");
@@ -1124,14 +1106,6 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         return msg;
     }
 
-
-    protected static boolean isCallerRunsHandler(RejectedExecutionHandler h) {
-        return h instanceof ThreadPoolExecutor.CallerRunsPolicy ||
-          (h instanceof ShutdownRejectedExecutionHandler
-            && ((ShutdownRejectedExecutionHandler)h).handler() instanceof ThreadPoolExecutor.CallerRunsPolicy);
-    }
-
-
     /**
      * Removes old members from xmit-table and adds new members to xmit-table (at seqnos hd=0, hr=0).
      * This method is not called concurrently
@@ -1152,10 +1126,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         members.stream().filter(mbr -> !keys.contains(mbr)).forEach(mbr -> xmit_table.putIfAbsent(mbr, createTable(0)));
     }
 
-
-    /**
-     * Returns a message digest: for each member P the highest delivered and received seqno is added
-     */
+    /** Returns a message digest: for each member P the highest delivered and received seqno is added */
     public Digest getDigest() {
         final Map<Address,long[]> map=new HashMap<>();
         for(Map.Entry<Address,Table<Message>> entry: xmit_table.entrySet()) {
@@ -1285,13 +1256,10 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         }
     }
 
-
     protected Table<Message> createTable(long initial_seqno) {
         return new Table<>(xmit_table_num_rows, xmit_table_msgs_per_row,
                            initial_seqno, xmit_table_resize_factor, xmit_table_max_compaction_time);
     }
-
-
 
     /**
      * Garbage collect messages that have been seen by all members. Update sent_msgs: for the sender P in the digest

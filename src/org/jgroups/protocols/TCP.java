@@ -125,7 +125,6 @@ public class TCP extends BasicTCP {
           .peerAddressReadTimeout(peer_addr_read_timeout)
           .nonBlockingSends(non_blocking_sends).maxSendQueue(max_send_queue)
           .usePeerConnections(true)
-          .useAcks(this.use_acks)
           .socketFactory(getSocketFactory())
           .receiver(this)
           .timeService(time_service)
