@@ -71,6 +71,9 @@ public final class Global {
     public static final String MATCH_HOST="match-host";
     public static final String MATCH_INTF="match-interface";
 
+    // used to return all groups (https://issues.redhat.com/browse/JGRP-2693)
+    public static final String ALL_GROUPS="<<all-groups>>";
+
     public static final String PREFIX="org.jgroups.protocols.";
     public static final String DEFAULT_PROTOCOL_STACK="udp.xml";
 

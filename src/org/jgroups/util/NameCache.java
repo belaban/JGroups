@@ -2,7 +2,6 @@ package org.jgroups.util;
 
 import org.jgroups.Address;
 import org.jgroups.Global;
-import org.jgroups.blocks.LazyRemovalCache;
 
 import java.util.Collection;
 import java.util.Map;

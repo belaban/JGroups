@@ -1,16 +1,14 @@
 package org.jgroups.stack;
 
 import org.jgroups.Address;
+import org.jgroups.Global;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.GuardedBy;
+import org.jgroups.util.*;
 import org.jgroups.blocks.cs.*;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.PingData;
-import org.jgroups.util.ByteArrayDataInputStream;
-import org.jgroups.util.ByteArrayDataOutputStream;
-import org.jgroups.util.SocketFactory;
-import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.net.InetAddress;
@@ -19,6 +17,7 @@ import java.util.*;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.jgroups.stack.GossipType.GET_MBRS_RSP_LAST;
 import static org.jgroups.util.Util.printTime;
 
 
@@ -28,8 +27,11 @@ import static org.jgroups.util.Util.printTime;
  */
 public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub>, ConnectionListener {
     public interface StubReceiver        {void receive(GossipData data);}
-    public interface MembersNotification {void members(List<PingData> mbrs);}
     public interface CloseListener       {void closed(RouterStub stub);}
+    public interface MembersNotification {
+        void         members(List<PingData> mbrs);
+        default void members(String group, List<PingData> mbrs, boolean last) {members(mbrs);}
+    }
 
     protected BaseServer        client;
     protected IpAddress         local;     // bind address
@@ -55,9 +57,15 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
     // When sending and non_blocking, how many messages to queue max
     protected int               max_send_queue=128;
 
+    // the max members in the get_all_members_list
+    protected int               max_cache_size=10;
+
+    // the max age of elements in the get_all_members_list
+    protected long              max_cache_age=5000;
+
     // map to correlate GET_MBRS requests and responses
     protected final Map<String,List<MembersNotification>> get_members_map=new HashMap<>();
-
+    protected final LazyRemovalList<MembersNotification>  get_all_members_list;
 
     public RouterStub(InetSocketAddress local_sa, InetSocketAddress remote_sa, boolean use_nio, CloseListener l, SocketFactory sf) {
        this(local_sa, remote_sa, use_nio, l, sf, -1);
@@ -93,6 +101,7 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
         this.max_send_queue=max_send_queue;
         if(resolveRemoteAddress()) // sets remote
             client=createClient(sf);
+        get_all_members_list=new LazyRemovalList<>(max_cache_size, max_cache_age);
     }
 
 
@@ -118,8 +127,10 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
     public RouterStub    nonBlockingSends(boolean b)          {this.non_blocking_sends=b; return this;}
     public int           maxSendQueue()                       {return max_send_queue;}
     public RouterStub    maxSendQueue(int s)                  {this.max_send_queue=s; return this;}
-
-
+    public int           maxCacheSize()                       {return max_cache_size;}
+    public RouterStub    maxCacheSize(int max_cache_size)     {this.max_cache_size=max_cache_size; return this;}
+    public long          maxCacheAge()                        {return max_cache_age;}
+    public RouterStub    maxCacheAge(long max_cache_age)      {this.max_cache_age=max_cache_age; return this;}
 
     /**
      * Registers mbr with the GossipRouter under the given group, with the given logical name and physical address.
@@ -180,10 +191,14 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
     public void getMembers(final String group, MembersNotification callback) throws Exception {
         if(callback == null)
             return;
-        // if(!isConnected()) throw new Exception ("not connected");
-        synchronized(get_members_map) {
-            List<MembersNotification> set=get_members_map.computeIfAbsent(group, k -> new ArrayList<>());
-            set.add(callback);
+        if(group == null) {
+            get_all_members_list.add(callback);
+        }
+        else {
+            synchronized(get_members_map) {
+                List<MembersNotification> list=get_members_map.computeIfAbsent(group, __ -> new ArrayList<>());
+                list.add(callback);
+            }
         }
         try {
             writeRequest(new GossipData(GossipType.GET_MBRS, group, null));
@@ -230,12 +245,16 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
                         receiver.receive(data);
                     break;
                 case GET_MBRS_RSP:
-                    notifyResponse(data.getGroup(), data.getPingData());
+                case GET_MBRS_RSP_LAST:
+                    List<PingData> ping_data=data.getPingData();
+                    if(ping_data != null)
+                        notifyResponse(data.getGroup(), data.getPingData(), data.getType() == GET_MBRS_RSP_LAST);
                     break;
             }
             if(handle_heartbeats)
                 last_heartbeat=currentTimeMillis();
-        } catch(Exception ex) {
+        }
+        catch(Exception ex) {
             log.error(Util.getMessage("FailedReadingData"), ex);
         }
     }
@@ -299,28 +318,36 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
     }
 
     protected void removeResponse(String group, MembersNotification notif) {
+        if(group == null || group.equals(Global.ALL_GROUPS)) {
+            get_all_members_list.remove(notif);
+            return;
+        }
         synchronized(get_members_map) {
-            List<MembersNotification> set=get_members_map.get(group);
-            if(set == null || set.isEmpty()) {
+            List<MembersNotification> list=get_members_map.get(group);
+            if(list == null || list.isEmpty()) {
                 get_members_map.remove(group);
                 return;
             }
-            if(set.remove(notif) && set.isEmpty())
+            if(list.remove(notif) && list.isEmpty())
                 get_members_map.remove(group);
         }
     }
 
-    protected void notifyResponse(String group, List<PingData> list) {
-        if(group == null)
+    protected void notifyResponse(String group, final List<PingData> list, boolean last) {
+        if(group.startsWith(Global.ALL_GROUPS)) {
+            int index=group.indexOf(':');
+            final String grp=group.substring(index+1);
+            get_all_members_list.forEach(n -> n.members(grp, list, last));
+            if(last)
+                get_all_members_list.clear(false);
             return;
-        if(list == null)
-            list=Collections.emptyList();
+        }
         synchronized(get_members_map) {
-            List<MembersNotification> set=get_members_map.get(group);
-            while(set != null && !set.isEmpty()) {
+            List<MembersNotification> l=get_members_map.get(group);
+            while(l != null && !l.isEmpty()) {
                 try {
-                    MembersNotification rsp=set.remove(0);
-                    rsp.members(list);
+                    MembersNotification rsp=l.remove(0);
+                    rsp.members(group, list, last);
                 }
                 catch(Throwable t) {
                     log.error("failed notifying %s: %s", group, t);

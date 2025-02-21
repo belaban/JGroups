@@ -2,7 +2,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.annotations.*;
-import org.jgroups.blocks.LazyRemovalCache;
+import org.jgroups.util.LazyRemovalCache;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;

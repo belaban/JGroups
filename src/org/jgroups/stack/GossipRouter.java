@@ -27,6 +27,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
+import static org.jgroups.Global.ALL_GROUPS;
+import static org.jgroups.stack.GossipType.GET_MBRS_RSP;
+import static org.jgroups.stack.GossipType.GET_MBRS_RSP_LAST;
+
 /**
  * Router for TCP based group comunication (using layer TCP instead of UDP). Instead of the TCP
  * layer sending packets point-to-point to each other member, it sends the packet to the router
@@ -176,9 +180,8 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
 
     @ManagedAttribute(description="The number of registered client (all clusters)")
     public int numRegisteredClients() {
-        return (int)address_mappings.values().stream().mapToLong(s -> s.keySet().size()).sum();
+        return (int)address_mappings.values().stream().mapToLong(Map::size).sum();
     }
-
 
     public GossipRouter init() throws Exception {
         diag=new DiagnosticsHandler(log, socket_factory, thread_factory)
@@ -187,7 +190,6 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
                                            localAddress(), Version.description));
         return this;
     }
-
 
     /**
      * Lifecycle operation. Called after create(). When this method is called, the managed attributes
@@ -485,37 +487,46 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
         GossipData req=readRequest(in, GossipType.GET_MBRS);
         if(req == null)
             return;
-        GossipData rsp=new GossipData(GossipType.GET_MBRS_RSP, req.getGroup(), null);
-        Map<Address,Entry> members=address_mappings.get(req.getGroup());
-        if(members != null) {
-            for(Map.Entry<Address,Entry> entry : members.entrySet()) {
-                Address logical_addr=entry.getKey();
-                PhysicalAddress phys_addr=entry.getValue().phys_addr;
-                String logical_name=entry.getValue().logical_name;
-                PingData data=new PingData(logical_addr, true, logical_name, phys_addr);
-                rsp.addPingData(data);
+        boolean all_groups=req.getGroup() == null;
+        Collection<String> clusters=all_groups? address_mappings.keySet() : List.of(req.getGroup());
+        int num_rsps=clusters.size();
+        for(String cluster: clusters) {
+            num_rsps--;
+            Map<Address,Entry> members=address_mappings.get(cluster);
+            if(members != null) {
+                String cluster_name=all_groups? ALL_GROUPS + ":" + cluster : cluster;
+                GossipData rsp=new GossipData(num_rsps <= 0? GET_MBRS_RSP_LAST : GET_MBRS_RSP, cluster_name, null);
+                for(Map.Entry<Address,Entry> entry: members.entrySet()) {
+                    Address logical_addr=entry.getKey();
+                    PhysicalAddress phys_addr=entry.getValue().phys_addr;
+                    String logical_name=entry.getValue().logical_name;
+                    PingData data=new PingData(logical_addr, true, logical_name, phys_addr);
+                    rsp.addPingData(data);
+                }
+                sendMembersResponse(sender, rsp, cluster);
             }
         }
+    }
 
+    protected void sendMembersResponse(Address to, GossipData rsp, String group) {
         if(dump_msgs == DumpMessages.ALL || log.isDebugEnabled()) {
             String rsps=rsp.ping_data == null? null
               : rsp.ping_data.stream().map(r -> String.format("%s (%s)", r.getLogicalName(), r.getPhysicalAddr()))
               .collect(Collectors.joining(", "));
             if(rsps != null) {
                 if(log.isDebugEnabled())
-                    log.debug("get(%s) -> %s", req.getGroup(), rsps);
+                    log.debug("get(%s) -> %s", group, rsps);
                 if(dump_msgs == DumpMessages.ALL)
-                    System.out.printf("get(%s) -> %s\n", req.getGroup(), rsps);
+                    System.out.printf("get(%s) -> %s\n", group, rsps);
             }
         }
-
         ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(rsp.serializedSize());
         try {
             rsp.writeTo(out);
-            server.send(sender, out.buffer(), 0, out.position());
+            server.send(to, out.buffer(), 0, out.position());
         }
         catch(Exception ex) {
-            log.error("failed sending %s to %s: %s", GossipType.GET_MBRS_RSP, sender, ex);
+            log.error("failed sending %s to %s: %s", rsp.type, to, ex);
         }
     }
 

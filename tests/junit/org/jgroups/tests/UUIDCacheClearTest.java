@@ -2,7 +2,7 @@ package org.jgroups.tests;
 
 
 import org.jgroups.*;
-import org.jgroups.blocks.LazyRemovalCache;
+import org.jgroups.util.LazyRemovalCache;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;

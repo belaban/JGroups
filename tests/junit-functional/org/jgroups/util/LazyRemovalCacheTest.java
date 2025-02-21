@@ -1,14 +1,13 @@
-package org.jgroups.blocks;
+package org.jgroups.util;
 
 import org.jgroups.Address;
 import org.jgroups.Global;
-import org.jgroups.util.UUID;
-import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * @author Bela Ban
@@ -174,5 +173,29 @@ public class LazyRemovalCacheTest {
         assert count == 4;
     }
 
+    public void testComputeIfAbsent() {
+        LazyRemovalCache<Integer,Integer> cache=new LazyRemovalCache<>(10, 20);
+        Integer retval=cache.computeIfAbsent(1, k -> 1);
+        assert retval == 1;
+        assert cache.size() == 1;
+        assert cache.get(1) == 1;
+
+        retval=cache.computeIfAbsent(1, k -> 2);
+        assert retval == 1;
+        assert cache.size() == 1;
+        assert cache.get(1) == 1;
+
+        for(int i=1; i <= 15; i++) {
+            final int key=i;
+            cache.computeIfAbsent(key, k -> key);
+        }
+        assert cache.size() == 15;
+        for(int i: List.of(5,6,7,10,11))
+            cache.remove(i);
+        System.out.println("cache = " + cache);
+        assert cache.size() == 15;
+        Set<Integer> nrv=cache.nonRemovedValues();
+        assert nrv.size() == 10;
+    }
 
 }

@@ -1,6 +1,4 @@
-package org.jgroups.blocks;
-
-import org.jgroups.util.Util;
+package org.jgroups.util;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
@@ -51,6 +49,19 @@ public class LazyRemovalCache<K,V> {
         return add(key, val, true);
     }
 
+    public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction) {
+        Objects.requireNonNull(key);
+        Objects.requireNonNull(mappingFunction);
+        V v=get(key);
+        if(v != null)
+            return v;
+        if((v=mappingFunction.apply(key)) != null) {
+            add(key, v);
+            return v;
+        }
+        return v;
+    }
+
     public void addAll(Map<K,V> m) {
        addAll(m, false);
     }
@@ -74,7 +85,6 @@ public class LazyRemovalCache<K,V> {
                 return false;
         return true;
     }
-
 
     public V get(K key) {
         if(key == null)
