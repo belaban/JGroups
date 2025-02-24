@@ -79,7 +79,7 @@ public class MFC extends FlowControl {
         return credits.getNumBlockings();
     }
 
-    @ManagedAttribute(description="Average time blocked (in ms) in flow control when trying to send a message",
+    @ManagedAttribute(description="Average time blocked (in ns) in flow control when trying to send a message",
       type=AttributeType.TIME,unit=TimeUnit.NANOSECONDS)
     public double getAverageTimeBlocked() {
         return credits.getAverageBlockTime();
