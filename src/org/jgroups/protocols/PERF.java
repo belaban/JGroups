@@ -36,7 +36,7 @@ public class PERF extends Protocol {
     @ManagedAttribute(description="Average latency in ns",type=AttributeType.TIME,unit=TimeUnit.NANOSECONDS)
     public double latencyInNs() {return avg.average();}
 
-    @ManagedAttribute(description="Average latency in ms",type=AttributeType.TIME)
+    @ManagedAttribute(description="Average latency in ms",type=AttributeType.TIME,unit=TimeUnit.MILLISECONDS)
     public double latencyInMs() {return avg.average() / 1000000.0;}
 
     public void init() throws Exception {
