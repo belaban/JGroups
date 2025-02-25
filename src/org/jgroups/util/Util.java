@@ -4042,7 +4042,7 @@ public class Util {
         while(true) {
             ch=in.read();
             if(ch == -1)
-                return sb.toString();
+                return sb.length() == 0? null : sb.toString();
             if(ch == '\r')
                 ;
             else {
