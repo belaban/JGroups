@@ -157,7 +157,7 @@ public class CompareMetrics {
             String key=old_entry.getKey();
             Collection<String> old_attrs=old_entry.getValue();
             Collection<String> new_attrs=new_metrics.get(key);
-            boolean rc=compareAttributes(new_attrs, old_attrs);
+            boolean rc=new_attrs != null && compareAttributes(new_attrs, old_attrs);
             if(rc) {
                 it.remove();
                 new_metrics.remove(key);
@@ -179,7 +179,8 @@ public class CompareMetrics {
     }
 
     protected static String print(Map<String,Collection<String>> map) {
-        return map.entrySet().stream().map(e -> String.format("%s: %s", e.getKey(), e.getValue()))
+        return map.entrySet().stream().filter(e -> e.getValue() != null && !e.getValue().isEmpty())
+          .map(e -> String.format("%s: %s", e.getKey(), e.getValue()))
           .collect(Collectors.joining("\n"));
     }
 
