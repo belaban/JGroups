@@ -22,12 +22,16 @@ import java.util.concurrent.locks.LockSupport;
  * @since  5.4.4
  */
 public class PinnedVThreads {
-    protected int cores, pinned;
+    protected int  cores, pinned;
+    protected long timeout=5000;
 
     public int  cores()            {return cores;}
     public void cores(int cores)   {this.cores=cores;}
     public int  pinned()           {return pinned;}
     public void pinned(int pinned) {this.pinned=pinned;}
+    public long timeout()          {return timeout;}
+    public void timeout(long t)    {timeout=t;}
+
 
     public void start() throws IOException, InterruptedException {
         int available_cores=Runtime.getRuntime().availableProcessors();
@@ -63,7 +67,7 @@ public class PinnedVThreads {
             t.start();
         }
 
-        Util.waitUntilTrue(6_000, 500, () -> count.get() == pinned);
+        Util.waitUntilTrue(timeout, 500, () -> count.get() == pinned);
         if(count.get() == pinned)
             System.out.printf("\n** SUCCESS: %d worker threads completed (expected: %d)\n", count.get(), pinned);
         else
@@ -89,7 +93,12 @@ public class PinnedVThreads {
                 test.pinned(Integer.parseInt(args[++i]));
                 continue;
             }
-            System.out.printf("%s [-cores <number of cores>] [-pinned <number of virtual threads pinned> ]\n",
+            if("-timeout".equals(args[i])) {
+                test.timeout(Long.parseLong(args[++i]));
+                continue;
+            }
+            System.out.printf("%s [-cores <number of cores>] [-pinned <number of virtual threads pinned>] " +
+                                "[-timeout <msecs>]\n",
                               PinnedVThreads.class.getSimpleName());
             return;
         }
