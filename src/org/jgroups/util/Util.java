@@ -2719,6 +2719,12 @@ public class Util {
         return unit.convert(num.multiply(new BigDecimal(tuple.getVal2())).longValue(), TimeUnit.MILLISECONDS);
     }
 
+    public static int readDurationInt(String input, TimeUnit unit) {
+        Tuple<String,Long> tuple=readDuration(input);
+        BigDecimal num = new BigDecimal(tuple.getVal1());
+        return (int)unit.convert(num.multiply(new BigDecimal(tuple.getVal2())).longValue(), TimeUnit.MILLISECONDS);
+    }
+
     private static Tuple<String,Long> readDuration(String input) {
         input=input.trim().toLowerCase();
 

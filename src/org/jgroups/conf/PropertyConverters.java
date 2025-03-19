@@ -16,6 +16,8 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.jgroups.conf.AttributeType.TIME;
+
 /**
  * Groups a set of standard PropertyConverter(s) supplied by JGroups.
  *
@@ -164,34 +166,33 @@ public final class PropertyConverters {
         }
 
         @Override
-        public Object convert(Property annotation, Object obj, Class<?> propertyFieldType, String propertyName, String propertyValue,
+        public Object convert(Property ann, Object obj, Class<?> propertyFieldType, String propertyName, String propValue,
                               boolean check_scope, StackType ip_version) throws Exception {
-            if(propertyValue == null)
+            if(propValue == null)
                 throw new NullPointerException("Property value cannot be null");
 
             if(Boolean.TYPE.equals(propertyFieldType))
-                return Boolean.parseBoolean(propertyValue);
+                return Boolean.parseBoolean(propValue);
             if(Integer.TYPE.equals(propertyFieldType))
-                return Util.readBytesInteger(propertyValue);
-            if(Long.TYPE.equals(propertyFieldType)) {
-                return annotation != null && annotation.type() == AttributeType.TIME ? Util.readDurationLong(propertyValue, annotation.unit()) : Util.readBytesLong(propertyValue);
-            }
+                return ann != null && ann.type() == TIME? Util.readDurationInt(propValue, ann.unit()) : Util.readBytesInteger(propValue);
+            if(Long.TYPE.equals(propertyFieldType))
+                return ann != null && ann.type() == TIME ? Util.readDurationLong(propValue, ann.unit()) : Util.readBytesLong(propValue);
             if(Byte.TYPE.equals(propertyFieldType))
-                return Byte.parseByte(propertyValue);
+                return Byte.parseByte(propValue);
             if(Double.TYPE.equals(propertyFieldType))
-                return Util.readBytesDouble(propertyValue);
+                return Util.readBytesDouble(propValue);
             if(Short.TYPE.equals(propertyFieldType))
-                return Short.parseShort(propertyValue);
+                return Short.parseShort(propValue);
             if(Float.TYPE.equals(propertyFieldType))
-                return Float.parseFloat(propertyValue);
+                return Float.parseFloat(propValue);
             if(String[].class.equals(propertyFieldType))
-                return Util.parseStringArray(propertyValue, ",");
+                return Util.parseStringArray(propValue, ",");
             if(propertyFieldType.isEnum())
-                return Util.createEnum(propertyValue, propertyFieldType);
+                return Util.createEnum(propValue, propertyFieldType);
             if(InetAddress.class.equals(propertyFieldType)) {
                 InetAddress retval=null;
-                if(propertyValue.contains(",")) {
-                    List<String> addrs=Util.parseCommaDelimitedStrings(propertyValue);
+                if(propValue.contains(",")) {
+                    List<String> addrs=Util.parseCommaDelimitedStrings(propValue);
                     for(String addr : addrs) {
                         try {
                             retval=Util.getAddress(addr, ip_version);
@@ -202,10 +203,10 @@ public final class PropertyConverters {
                         }
                     }
                     if(retval == null)
-                        throw new IllegalArgumentException(String.format("failed parsing attribute %s with value %s", propertyName, propertyValue));
+                        throw new IllegalArgumentException(String.format("failed parsing attribute %s with value %s", propertyName, propValue));
                 }
                 else
-                    retval=Util.getAddress(propertyValue, ip_version);
+                    retval=Util.getAddress(propValue, ip_version);
 
                 if(check_scope && retval instanceof Inet6Address && retval.isLinkLocalAddress()) {
                     // check scope
@@ -220,7 +221,7 @@ public final class PropertyConverters {
                 }
                 return retval;
             }
-            return propertyValue;
+            return propValue;
         }
 
 
