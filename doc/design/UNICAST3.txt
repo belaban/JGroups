@@ -66,7 +66,7 @@ in the previous run. Say we have HA=45 and HS=50. This means that we sent messag
 The retransmit task will (on the second iteration) now resend message 50 to B. B receives 50 and adds it to its
 retransmit table. B's own retransmit task does the same thing as UNICAST2: it scans all receiver windows and asks the
 senders to retransmit missing messages. Say B is missing message 46 and 48 from A. Once it receives 50, it'll ask
-A for retransmission of messages 46 and 48. A then sends 46 and 47, allowing B to remove messages 46-50 from A, and
+A for retransmission of messages 46 and 48. A then sends 46 and 48, allowing B to remove messages 46-50 from A, and
 sending an ack(50) back to A. A now has HA=50 and HS=50, so the retransmit task will not resend any message.
 
 In summary, UNICAST3 will ack messages quickly, allowing the sender to remove them from memory, because each message
