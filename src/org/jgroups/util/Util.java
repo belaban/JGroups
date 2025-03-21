@@ -3331,9 +3331,9 @@ public class Util {
      */
     public static Class<?> loadClass(String classname, ClassLoader preferredLoader) throws ClassNotFoundException {
         ClassNotFoundException exception = null;
-        List<ClassLoader> list=preferredLoader != null?
-          Arrays.asList(preferredLoader, Thread.currentThread().getContextClassLoader(), ClassLoader.getSystemClassLoader()) :
-          Arrays.asList(Thread.currentThread().getContextClassLoader(), ClassLoader.getSystemClassLoader());
+        List<ClassLoader> list = Stream.of(preferredLoader, Thread.currentThread().getContextClassLoader(), ClassLoader.getSystemClassLoader())
+              .filter(Objects::nonNull)
+              .collect(Collectors.toList());
         for(ClassLoader loader: list) {
             try {
                 return loader.loadClass(classname);
