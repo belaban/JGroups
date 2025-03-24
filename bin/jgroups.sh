@@ -35,6 +35,8 @@ fi;
 #JG_FLAGS="-Djgroups.bind_addr=match-address:192.168.1.*"
 FLAGS="-server -Xmx1G -Xms500m -XX:+HeapDumpOnOutOfMemoryError -Djava.net.preferIPv4Stack=true"
 
+#FLAGS="$FLAGS -XX:+PrintCompilation -XX:+UnlockDiagnosticVMOptions -XX:+PrintInlining -XX:+LogCompilation"
+
 #GC="-Xlog:gc:gc-$PPID.log"
 
 #FLAGS="$FLAGS -Duser.language=de"
