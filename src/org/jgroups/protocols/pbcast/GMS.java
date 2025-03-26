@@ -1,6 +1,5 @@
 package org.jgroups.protocols.pbcast;
 
-
 import org.jgroups.*;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
@@ -24,7 +23,10 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static org.jgroups.Message.Flag.*;
+import static org.jgroups.Message.Flag.NO_FC;
+import static org.jgroups.Message.Flag.NO_RELAY;
+import static org.jgroups.Message.Flag.NO_TOTAL_ORDER;
+import static org.jgroups.Message.Flag.OOB;
 import static org.jgroups.Message.TransientFlag.DONT_BLOCK;
 import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
 
@@ -544,9 +546,9 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
         Message view_change_msg=new BytesMessage().putHeader(this.id, new GmsHeader(GmsHeader.VIEW))
           .setArray(marshal(new_view, digest)).setFlag(DONT_LOOPBACK, DONT_BLOCK)
-          .setFlag(NO_RELAY,NO_FC); // a view should only be sent to the local cluster members
+          .setFlag(NO_RELAY, NO_FC); // a view should only be sent to the local cluster members
         if(new_view instanceof MergeView) // https://issues.redhat.com/browse/JGRP-1484
-            view_change_msg.setFlag(Message.Flag.NO_TOTAL_ORDER);
+            view_change_msg.setFlag(NO_TOTAL_ORDER);
 
         ack_collector.reset(expected_acks, local_addr) // exclude self, as we'll install the view locally
           .suspect(suspected_mbrs.getMembers()); // exclude cached suspects (https://issues.redhat.com/browse/JGRP-2556)
@@ -585,8 +587,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     public void sendJoinResponse(JoinRsp rsp, Address dest) {
         Message m=new BytesMessage(dest).putHeader(this.id, new GmsHeader(GmsHeader.JOIN_RSP))
-          .setFlag(DONT_BLOCK)
-          .setArray(marshal(rsp)).setFlag(OOB);
+          .setFlag(DONT_BLOCK).setFlag(OOB)
+          .setArray(marshal(rsp));
         getDownProtocol().down(m);
     }
 
@@ -840,7 +842,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 if(coord != null) {
                     ViewId view_id=view != null? view.getViewId() : null;
                     Message msg=new BytesMessage(coord).putHeader(id, new GmsHeader(GmsHeader.GET_CURRENT_VIEW))
-                      .setArray(marshal(view_id)).setFlag(OOB, NO_FC);
+                      .setArray(marshal(view_id)).setFlag(DONT_BLOCK).setFlag(OOB, NO_FC);
                     down_prot.down(msg);
                 }
                 return null; // don't pass the event further down
@@ -904,7 +906,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                             log.trace("%s: failed to create view from delta-view; dropping view: %s", local_addr, t.toString());
                         log.trace("%s: sending request for full view to %s", local_addr, msg.getSrc());
                         Message full_view_req=new EmptyMessage(msg.getSrc())
-                          .putHeader(id, new GmsHeader(GmsHeader.GET_CURRENT_VIEW)).setFlag(OOB, NO_FC);
+                          .putHeader(id, new GmsHeader(GmsHeader.GET_CURRENT_VIEW)).setFlag(DONT_BLOCK).setFlag(OOB, NO_FC);
                         down_prot.down(full_view_req);
                         return null;
                     }
@@ -970,7 +972,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 // fetch only my own digest
                 Digest digest=(Digest)down_prot.down(new Event(Event.GET_DIGEST, local_addr));
                 if(digest != null) {
-                    Message get_digest_rsp=new BytesMessage(msg.getSrc()).setFlag(OOB, NO_FC)
+                    Message get_digest_rsp=new BytesMessage(msg.getSrc()).setFlag(DONT_BLOCK).setFlag(OOB, NO_FC)
                       .putHeader(this.id, new GmsHeader(GmsHeader.GET_DIGEST_RSP))
                       .setArray(marshal(null, digest));
                     down_prot.down(get_digest_rsp);
@@ -996,7 +998,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 // either my view-id differs from sender's view-id, or sender's view-id is null: send view
                 log.trace("%s: received request for full view from %s, sending view %s", local_addr, msg.getSrc(), view);
                 Message view_msg=new BytesMessage(msg.getSrc()).putHeader(id,new GmsHeader(GmsHeader.VIEW))
-                  .setArray(marshal(view, null)).setFlag(OOB, NO_FC);
+                  .setArray(marshal(view, null)).setFlag(DONT_BLOCK).setFlag(OOB, NO_FC);
                 down_prot.down(view_msg);
                 break;
 
@@ -1014,7 +1016,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
 
     protected void sendViewAck(Address dest) {
-        Message view_ack=new EmptyMessage(dest).setFlag(OOB, NO_FC).setFlag(DONT_BLOCK)
+        Message view_ack=new EmptyMessage(dest).setFlag(DONT_BLOCK).setFlag(OOB, NO_FC)
           .putHeader(this.id, new GmsHeader(GmsHeader.VIEW_ACK));
         down_prot.down(view_ack);
     }
