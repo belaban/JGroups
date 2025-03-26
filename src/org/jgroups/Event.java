@@ -54,6 +54,7 @@ public class Event {
     public static final int INSTALL_MERGE_VIEW                 = 114; // arg = MergeView
     public static final int IS_LOCAL_SITEMASTER                = 115; // arg = SiteMaster(site), returns true / false
     public static final int IS_LOCAL                           = 116; // arg = SiteAddress(site), returns true / false
+    public static final int MBR_DISCONNECTED                   = 117; // arg = Address (member)
 
     public static final int USER_DEFINED                       = 1000; // arg = <user def., e.g. evt type + data>
 

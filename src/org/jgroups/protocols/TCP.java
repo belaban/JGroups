@@ -131,6 +131,7 @@ public class TCP extends BasicTCP {
           .socketConnectionTimeout(sock_conn_timeout)
           .tcpNodelay(tcp_nodelay).linger(linger)
           .clientBindAddress(client_bind_addr).clientBindPort(client_bind_port).deferClientBinding(defer_client_bind_addr)
+          .addConnectionListener(this)
           .log(this.log).logDetails(this.log_details);
 
         if(send_buf_size > 0)
