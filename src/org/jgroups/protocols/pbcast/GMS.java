@@ -23,10 +23,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static org.jgroups.Message.Flag.NO_FC;
-import static org.jgroups.Message.Flag.NO_RELAY;
-import static org.jgroups.Message.Flag.NO_TOTAL_ORDER;
-import static org.jgroups.Message.Flag.OOB;
+import static org.jgroups.Message.Flag.*;
 import static org.jgroups.Message.TransientFlag.DONT_BLOCK;
 import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
 
@@ -906,7 +903,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                             log.trace("%s: failed to create view from delta-view; dropping view: %s", local_addr, t.toString());
                         log.trace("%s: sending request for full view to %s", local_addr, msg.getSrc());
                         Message full_view_req=new EmptyMessage(msg.getSrc())
-                          .putHeader(id, new GmsHeader(GmsHeader.GET_CURRENT_VIEW)).setFlag(DONT_BLOCK).setFlag(OOB, NO_FC);
+                          .putHeader(id, new GmsHeader(GmsHeader.GET_CURRENT_VIEW))
+                          .setFlag(DONT_BLOCK).setFlag(OOB, NO_FC);
                         down_prot.down(full_view_req);
                         return null;
                     }
