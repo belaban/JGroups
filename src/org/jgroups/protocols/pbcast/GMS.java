@@ -83,6 +83,9 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
       "it always sends full views. See https://issues.redhat.com/browse/JGRP-1354 for details.")
     protected boolean                   use_delta_views=true;
 
+    @Property(description="Send the VIEW messages as multicast. Default is true")
+    protected boolean                   use_mcast_views=true;
+
     @Property(description="Max number of old members to keep in history. Default is 50")
     protected int                       num_prev_mbrs=50;
 
@@ -168,6 +171,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     public GMS     printPhysicalAddress(boolean p)     {print_physical_addrs=p; return this;}
     public boolean useDeltaViews()                     {return use_delta_views;}
     public GMS     useDeltaViews(boolean b)            {use_delta_views=b; return this;}
+    public boolean useMulticastViews()                 {return use_mcast_views;}
+    public GMS     useMulticastViews(boolean b)        {use_mcast_views=b; return this;}
     public long    getViewAckCollectionTimeout()       {return view_ack_collection_timeout;}
     public GMS     setViewAckCollectionTimeout(long v) {this.view_ack_collection_timeout=v; return this;}
     public boolean logCollectMessages()                {return log_collect_msgs;}
@@ -551,8 +556,13 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
           .suspect(suspected_mbrs.getMembers()); // exclude cached suspects (https://issues.redhat.com/browse/JGRP-2556)
         long start=System.currentTimeMillis();
         impl.handleViewChange(full_view, digest); // install the view locally first
-        log.trace("%s: mcasting view %s", local_addr, new_view);
-        down_prot.down(view_change_msg);
+        if (use_mcast_views) {
+            log.trace("%s: mcasting view %s", local_addr, new_view);
+            down_prot.down(view_change_msg);
+        } else {
+            log.trace("%s: unicasting view %s", local_addr, new_view);
+            full_view.forEach(member -> down_prot.down(view_change_msg.copy(true, true).dest(member)));
+        }
         sendJoinResponses(jr, joiners);
         try {
             if(ack_collector.size() > 0) {
