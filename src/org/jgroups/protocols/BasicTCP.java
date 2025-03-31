@@ -6,9 +6,10 @@ import org.jgroups.Global;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.LocalAddress;
 import org.jgroups.annotations.Property;
+import org.jgroups.blocks.cs.Connection;
+import org.jgroups.blocks.cs.ConnectionListener;
 import org.jgroups.blocks.cs.Receiver;
 import org.jgroups.conf.AttributeType;
-
 import java.net.InetAddress;
 import java.util.Collection;
 import java.util.HashSet;
@@ -19,7 +20,7 @@ import java.util.Set;
  * @author Scott Marlow
  * @author Bela Ban
  */
-public abstract class BasicTCP extends TP implements Receiver {
+public abstract class BasicTCP extends TP implements Receiver, ConnectionListener {
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     
@@ -177,5 +178,20 @@ public abstract class BasicTCP extends TP implements Receiver {
             retainAll(physical_mbrs); // remove all connections which are not members
         }
         return ret;
+    }
+
+    @Override
+    public void connectionClosed(Connection conn) {
+        memberDisconnected((PhysicalAddress)conn.peerAddress());
+    }
+
+    @Override
+    public void connectionEstablished(Connection conn) {}
+
+    protected void memberDisconnected(PhysicalAddress address) {
+        var member = logical_addr_cache.getByValue(address);
+        log.trace("%s: %s disconnected", local_addr, member != null ? member : address);
+        if (member != null && members.contains(member))
+            thread_pool.execute(() -> up_prot.up(new Event(Event.MBR_DISCONNECTED, member)));
     }
 }
