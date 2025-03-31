@@ -696,10 +696,6 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
     }
 
     protected boolean send(Message msg, Buffer<Message> win, boolean dont_loopback_set) {
-        long msg_id=seqno.incrementAndGet();
-        if(is_trace)
-            log.trace("%s --> [all]: #%d", local_addr, msg_id);
-        msg.putHeader(this.id, NakAckHeader.createMessageHeader(msg_id));
         final Lock lock=send_atomically? win.lock() : null;
         if(lock != null) {
             // As described in doc/design/NAKACK4 ("misc"): if we hold the lock while (1) getting the seqno for a message,
@@ -709,6 +705,10 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
             //noinspection LockAcquiredButNotSafelyReleased
             lock.lock();
         }
+        long msg_id=seqno.incrementAndGet();
+        if(is_trace)
+            log.trace("%s --> [all]: #%d", local_addr, msg_id);
+        msg.putHeader(this.id, NakAckHeader.createMessageHeader(msg_id));
         try {
             boolean added=addToSendBuffer(win, msg_id, msg, dont_loopback_set? remove_filter : null, msg.isFlagSet(DONT_BLOCK));
             if(added)
