@@ -1080,7 +1080,9 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
 
     protected boolean send(Message msg, SenderEntry entry, boolean dont_loopback_set, boolean dont_block) {
         Buffer<Message> buf=entry.buf;
-        final Lock lock=send_atomically? buf.lock() : null;
+        short           send_conn_id=entry.connId();
+        long            seqno;
+        final Lock      lock=send_atomically? buf.lock() : null;
         if(lock != null) {
             // As described in doc/design/NAKACK4 ("misc"): if we hold the lock while (1) getting the seqno for a message,
             // (2) adding it to the send window and (3) sending it (so it is sent by the transport in that order).
@@ -1089,10 +1091,9 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
             //noinspection LockAcquiredButNotSafelyReleased
             lock.lock();
         }
-        long seqno=entry.seqno.getAndIncrement();
-        short send_conn_id=entry.connId();
-        msg.putHeader(this.id,UnicastHeader.createDataHeader(seqno, send_conn_id,seqno == DEFAULT_FIRST_SEQNO));
         try {
+            seqno=entry.seqno.getAndIncrement();
+            msg.putHeader(this.id,UnicastHeader.createDataHeader(seqno, send_conn_id,seqno == DEFAULT_FIRST_SEQNO));
             boolean added=addToSendBuffer(buf, seqno, msg, dont_loopback_set? remove_filter : null, dont_block);
             if(!added) // e.g. message already present in send buffer, or no space and dont_block set
                 return false;
