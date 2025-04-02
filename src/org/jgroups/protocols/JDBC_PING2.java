@@ -178,8 +178,18 @@ public class JDBC_PING2 extends FILE_PING {
             if(call_insert_sp != null && insert_sp != null)
                 callInsertStoredProcedure(connection, data, clustername);
             else {
-                delete(connection, clustername, data.getAddress());
-                insert(connection, data, clustername);
+                boolean isAutocommit=connection.getAutoCommit();
+                try {
+                    if(isAutocommit)
+                        connection.setAutoCommit(false);
+                    delete(connection, clustername, data.getAddress());
+                    insert(connection, data, clustername);
+                    if(isAutocommit)
+                        connection.commit();
+                }
+                finally {
+                    connection.setAutoCommit(isAutocommit);
+                }
             }
         } finally {
             lock.unlock();
