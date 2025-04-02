@@ -180,18 +180,28 @@ public class JDBC_PING2 extends FILE_PING {
             else {
                 boolean isAutocommit=connection.getAutoCommit();
                 try {
-                    if(isAutocommit)
+                    if(isAutocommit) {
+                        // Always use a transaction for the delete+insert to make it atomic
+                        // to avoid the short moment where there is no entry in the table.
                         connection.setAutoCommit(false);
+                    }
                     delete(connection, clustername, data.getAddress());
                     insert(connection, data, clustername);
-                    if(isAutocommit)
+                    if(isAutocommit) // if set to false by the caller, let the caller also commit it
                         connection.commit();
                 }
+                catch(SQLException ex) {
+                    if(isAutocommit)
+                        connection.rollback();
+                    throw ex;
+                }
                 finally {
-                    connection.setAutoCommit(isAutocommit);
+                    if(isAutocommit)
+                        connection.setAutoCommit(isAutocommit);
                 }
             }
-        } finally {
+        }
+        finally {
             lock.unlock();
         }
     }
