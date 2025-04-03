@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
  * @author Bela Ban
  * @since  5.4, 5.3.7
  */
-@Test(groups= Global.FUNCTIONAL)
+@Test(groups=Global.JDBC,singleThreaded=true)
 public class JDBC_PING2_Test {
     protected static final String CLUSTER="jdbc-test";
 
