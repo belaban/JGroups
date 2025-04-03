@@ -1473,7 +1473,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                     sendUnicast(target, buf, offset, length);
             }
             catch(SocketException | SocketTimeoutException sock_ex) {
-                log.debug(Util.getMessage("FailureSendingToPhysAddr"), local_addr, mbr, sock_ex);
+                log.trace(Util.getMessage("FailureSendingToPhysAddr"), local_addr, mbr, sock_ex);
             }
             catch(Throwable t) {
                 log.error(Util.getMessage("FailureSendingToPhysAddr"), local_addr, mbr, t);
