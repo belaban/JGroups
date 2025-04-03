@@ -87,7 +87,7 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
         if(suspected_mbrs.isEmpty() && leaving_mbrs.isEmpty())
             return;
 
-        if(wouldIBeCoordinator(leaving_mbrs)) {
+        if(wouldIBeCoordinator(leaving_mbrs, suspected_mbrs)) {
             log.debug("%s: members are %s, coord=%s: I'm the new coordinator", gms.getAddress(), gms.members, gms.getAddress());
             gms.becomeCoordinator();
             Collection<Request> leavingOrSuspectedMembers=new LinkedHashSet<>();
@@ -102,8 +102,8 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
             gms.getViewHandler().add(leavingOrSuspectedMembers);
         }
         else
-            log.warn("%s: I'm not the coordinator (or next-in-line); dropping LEAVE request by %s",
-                     gms.getAddress(), leaving_mbrs);
+            log.warn("%s: I'm not the coordinator (or next-in-line); dropping leave/suspect request: " +
+                       "leavers=%s, suspects=%s", gms.getAddress(), leaving_mbrs, suspected_mbrs);
     }
 
 
@@ -127,8 +127,8 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
      * D}. The resulting list is {B, C}. The first member of {B, C} is B, which is equal to the
      * local_addr. Therefore, true is returned.
      */
-    protected boolean wouldIBeCoordinator(Collection<Address> leaving_mbrs) {
-        List<Address> mbrs=gms.computeNewMembership(gms.members.getMembers(), null, leaving_mbrs, suspected_mbrs);
+    protected boolean wouldIBeCoordinator(Collection<Address> leaving_mbrs, Collection<Address> suspected_members) {
+        List<Address> mbrs=gms.computeNewMembership(gms.members.getMembers(), null, leaving_mbrs, suspected_members);
         if(mbrs.isEmpty()) return false;
         Address new_coord=mbrs.get(0);
         return gms.getAddress().equals(new_coord);
