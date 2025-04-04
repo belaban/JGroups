@@ -70,7 +70,6 @@ public class CoordGmsImpl extends ServerGmsImpl {
         handleMembershipChange(suspected);
     }
 
-
     /**
      * Fetches the digests from all members and installs them again. Used only for diagnosis and support; don't
      * use this otherwise !
@@ -78,8 +77,6 @@ public class CoordGmsImpl extends ServerGmsImpl {
     void fixDigests() {
         merger.fixDigests();
     }
-
-
 
     public void handleMembershipChange(Collection<Request> requests) {
         boolean joinAndStateTransferInitiated=false;

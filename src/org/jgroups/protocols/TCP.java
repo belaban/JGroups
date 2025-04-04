@@ -132,7 +132,8 @@ public class TCP extends BasicTCP {
           .socketConnectionTimeout(sock_conn_timeout)
           .tcpNodelay(tcp_nodelay).linger(linger)
           .clientBindAddress(client_bind_addr).clientBindPort(client_bind_port).deferClientBinding(defer_client_bind_addr)
-          .log(this.log).logDetails(this.log_details);
+          .log(this.log).logDetails(this.log_details)
+          .addConnectionListener(this);
 
         if(send_buf_size > 0)
             srv.sendBufferSize(send_buf_size);

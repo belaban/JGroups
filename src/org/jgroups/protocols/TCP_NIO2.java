@@ -112,7 +112,8 @@ public class TCP_NIO2 extends BasicTCP {
           .clientBindAddress(client_bind_addr).clientBindPort(client_bind_port).deferClientBinding(defer_client_bind_addr)
           .log(this.log).logDetails(log_details);
         server.maxSendBuffers(max_send_buffers).usePeerConnections(true);
-        server.copyOnPartialWrite(this.copy_on_partial_write).readerIdleTime(this.reader_idle_time);
+        server.copyOnPartialWrite(this.copy_on_partial_write).readerIdleTime(this.reader_idle_time)
+          .addConnectionListener(this);
 
         if(send_buf_size > 0)
             server.sendBufferSize(send_buf_size);

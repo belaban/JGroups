@@ -379,8 +379,9 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     }
 
     public void closeConnection(Connection conn, boolean notify) {
+        boolean closed=conn.isClosed();
         Util.close(conn);
-        if(notify)
+        if(notify && !closed)
             notifyConnectionClosed(conn);
         removeConnectionIfPresent(conn != null? conn.peerAddress() : null, conn);
     }

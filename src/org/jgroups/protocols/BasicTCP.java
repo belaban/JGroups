@@ -5,21 +5,26 @@ import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.LocalAddress;
+import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
+import org.jgroups.blocks.cs.Connection;
+import org.jgroups.blocks.cs.ConnectionListener;
 import org.jgroups.blocks.cs.Receiver;
 import org.jgroups.conf.AttributeType;
 
 import java.net.InetAddress;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.LongAdder;
 
 /**
  * Shared base class for TCP protocols
  * @author Scott Marlow
  * @author Bela Ban
  */
-public abstract class BasicTCP extends TP implements Receiver {
+public abstract class BasicTCP extends TP implements Receiver, ConnectionListener {
 
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     
@@ -71,6 +76,12 @@ public abstract class BasicTCP extends TP implements Receiver {
     @Property(description="Log a stack trace when a connection is closed")
     protected boolean     log_details=true;
 
+    @Property(description="When true, a SUSPECT(P) event is passed up when a connection is closed by the peer P. " +
+      "This is not recommended when connection reaping is enabled. https://issues.redhat.com/browse/JGRP-2869")
+    protected boolean     enable_suspect_events;
+
+    @ManagedAttribute(description="Number of suspect events sent up the stack due to peers closing connections")
+    protected final LongAdder num_suspect_events=new LongAdder();
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
     
@@ -124,6 +135,9 @@ public abstract class BasicTCP extends TP implements Receiver {
     public boolean     logDetails()                     {return log_details;}
     public BasicTCP    logDetails(boolean l)            {log_details=l; return this;}
 
+    public boolean     enableSuspectEvents()            {return enable_suspect_events;}
+    public BasicTCP    enableSuspectEvents(boolean b)   {enable_suspect_events=b; return this;}
+
 
 
     public void init() throws Exception {
@@ -135,6 +149,8 @@ public abstract class BasicTCP extends TP implements Receiver {
                                                      ", as no dynamic discovery protocol (e.g. MPING or TCPGOSSIP) has been detected.");
         }
         if(reaper_interval > 0 || conn_expire_time > 0) {
+            if(enable_suspect_events)
+                log.warn("reaping is enabled, but also suspect events; this is not recommended");
             if(conn_expire_time == 0 && reaper_interval > 0) {
                 log.warn("reaper interval (%d) set, but not conn_expire_time, disabling reaping", reaper_interval);
                 reaper_interval=0;
@@ -146,8 +162,6 @@ public abstract class BasicTCP extends TP implements Receiver {
         }
     }
 
-
-
     public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {
         send(dest, data, offset, length);
     }
@@ -156,12 +170,17 @@ public abstract class BasicTCP extends TP implements Receiver {
         return String.format("connections: %s\n", printConnections());
     }
 
-
     public abstract String printConnections();
 
     public abstract void send(Address dest, byte[] data, int offset, int length) throws Exception;
 
     public abstract void retainAll(Collection<Address> members);
+
+    @Override
+    public void resetStats() {
+        super.resetStats();
+        num_suspect_events.reset();
+    }
 
     @Override
     public Object down(Event evt) {
@@ -176,5 +195,26 @@ public abstract class BasicTCP extends TP implements Receiver {
             retainAll(physical_mbrs); // remove all connections which are not members
         }
         return ret;
+    }
+
+    @Override
+    public void connectionClosed(Connection conn) {
+        if(!enable_suspect_events)
+            return;
+        Address peer_ip=conn.peerAddress();
+        Address peer=peer_ip != null? logical_addr_cache.getByValue((PhysicalAddress)peer_ip) : null;
+        if(peer != null) {
+            if(log.isDebugEnabled())
+                log.debug("%s: connection closed by peer %s (IP=%s), sending up a suspect event",
+                          local_addr, peer, peer_ip);
+            Event suspect=new Event(Event.SUSPECT, List.of(peer));
+            up_prot.up(suspect);
+            num_suspect_events.increment();
+        }
+    }
+
+    @Override
+    public void connectionEstablished(Connection conn) {
+
     }
 }
