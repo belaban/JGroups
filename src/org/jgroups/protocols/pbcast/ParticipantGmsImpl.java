@@ -103,9 +103,6 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
                 leavingOrSuspectedMembers.add(new Request(Request.COORD_LEAVE));
             gms.getViewHandler().add(leavingOrSuspectedMembers);
         }
-        else
-            log.warn("%s: I'm not the coordinator (or next-in-line); dropping leave/suspect request: " +
-                       "leavers=%s, suspects=%s", gms.getAddress(), leaving_mbrs, suspected_mbrs);
     }
 
 

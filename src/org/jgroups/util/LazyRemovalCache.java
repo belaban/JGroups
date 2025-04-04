@@ -93,11 +93,12 @@ public class LazyRemovalCache<K,V> {
         return entry != null? entry.val : null;
     }
 
+    /** Returns a (non-removable) entry based on the value */
     public K getByValue(V val) {
         if(val == null) return null;
         for(Map.Entry<K,Entry<V>> entry: map.entrySet()) {
             Entry<V> v=entry.getValue();
-            if(Objects.equals(v.val, val))
+            if(!v.isRemovable() && Objects.equals(v.val, val))
                 return entry.getKey();
         }
         return null;

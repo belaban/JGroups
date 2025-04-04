@@ -1194,6 +1194,23 @@ The attributes defined in `FailureDetection` (FD_ALLX classes extend it) are:
 ${FailureDetection}
 
 
+
+==== Failure detection in TCP and TCP_NIO2
+Both TCP and TCP_NIO2 connect to other members via TCP/IP. If a TCP/IP connection is closed, then we know that the peer
+might be dead, and a `SUSPECT` event can be sent up the stack. To enable this, set `enable_suspect_events` to `true`.
+
+NOTE: A TCP/IP connection can also be closed by *connection reaping*: when `reaper_interval` and `conn_expire_time` are
+set to non-zero values, then idle connections will be closed. In this case, if suspect events are enabled,
+`VERIFY_SUSPECT2` will ping the 'crashed' member on reception of a `SUSPECT` event and thus re-establish the connection.
+It is therefore not recommended to enable both connection reaping and failure detection (`enable_suspect_events`)
+in `TCP` / `TCP_NIO2`.
+
+A stack that has failure detection in `TCP` / `TCP_NIO2` enabled does not necessarily need `FD_SOCK` / `FD_SOCK2`. The
+recommendation in this case is to remove `FD_SOCK` / `FD_SOCK2` and only leave `FD_ALL3` in the stack, as a second line
+of defense.
+
+
+
 [[FD_ALL]]
 ==== FD_ALL
 
