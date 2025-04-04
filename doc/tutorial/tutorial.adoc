@@ -1,5 +1,5 @@
 = The JGroups tutorial
-:author: Bela Ban <belaban@yahoo.com>
+:author: Bela Ban <belaban@gmail.com>
 :toc:
 :icons:
 :homepage: http://www.jgroups.org
