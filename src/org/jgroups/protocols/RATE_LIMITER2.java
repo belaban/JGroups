@@ -30,14 +30,14 @@ public class RATE_LIMITER2 extends Protocol {
     @Property(description="Max number of bytes that can be sent in the given interval",type=AttributeType.BYTES)
     protected int                 max_bytes=20_000_000;
 
-    @Property(description="Interval (ms) at which the bucket is replenished")
+    @Property(description="Interval (ms) at which the bucket is replenished",type=AttributeType.TIME)
     protected long                interval=1000;
 
     @Property(description="If true, messages with a DONT_BLOCK flag will be dropped instead of blocking when " +
       "no bytes are left")
     protected boolean             drop_dont_block_msgs;
 
-    @ManagedAttribute
+    @ManagedAttribute(type=AttributeType.BYTES)
     protected long                bytes_left=max_bytes;
 
     @ManagedAttribute(description="Number of replenishments")
