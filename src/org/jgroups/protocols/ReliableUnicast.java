@@ -187,7 +187,6 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
     protected static final BiConsumer<MessageBatch,Message> BATCH_ACCUMULATOR=MessageBatch::add;
 
     protected abstract Buffer<Message> createBuffer(long initial_seqno);
-    protected Buffer.Options           sendOptions() {return Buffer.Options.DEFAULT();}
     protected abstract boolean         needToSendAck(Entry e, int num_acks);
 
     public long getNumLoopbacks() {return num_loopbacks.sum();}
@@ -681,9 +680,8 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
         }
 
         SenderEntry entry=getSenderEntry(dst);
-        boolean dont_loopback_set=msg.isFlagSet(DONT_LOOPBACK) && dst.equals(local_addr),
-          dont_block=msg.isFlagSet(DONT_BLOCK);
-        if(send(msg, entry, dont_loopback_set, dont_block))
+        boolean dont_loopback_set=msg.isFlagSet(DONT_LOOPBACK) && dst.equals(local_addr);
+        if(send(msg, entry, dont_loopback_set))
             num_msgs_sent.increment();
         else {
             num_sends_dropped.increment();
@@ -1078,7 +1076,7 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
         }
     }
 
-    protected boolean send(Message msg, SenderEntry entry, boolean dont_loopback_set, boolean dont_block) {
+    protected boolean send(Message msg, SenderEntry entry, boolean dont_loopback_set) {
         Buffer<Message> buf=entry.buf;
         short           send_conn_id=entry.connId();
         long            seqno;
@@ -1094,8 +1092,8 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
         try {
             seqno=entry.seqno.getAndIncrement();
             msg.putHeader(this.id,UnicastHeader.createDataHeader(seqno, send_conn_id,seqno == DEFAULT_FIRST_SEQNO));
-            boolean added=addToSendBuffer(buf, seqno, msg, dont_loopback_set? remove_filter : null, dont_block);
-            if(!added) // e.g. message already present in send buffer, or no space and dont_block set
+            boolean added=addToSendBuffer(buf, seqno, msg, dont_loopback_set? remove_filter : null);
+            if(!added) // e.g. message already present in send buffer
                 return false;
             down_prot.down(msg); // if this fails, since msg is in sent_msgs, it can be retransmitted
             if(entry.state() == State.CLOSING)
@@ -1125,19 +1123,15 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
      * @return True if added successfully. False if not, e.g. no space in buffer and DONT_BLOCK set, or message
      * already present, or seqno lower than buffer.low
      */
-    protected boolean addToSendBuffer(Buffer<Message> win, long seq, Message msg,
-                                      Predicate<Message> filter, boolean dont_block) {
-        Buffer.Options opts=sendOptions();
+    protected boolean addToSendBuffer(Buffer<Message> win, long seq, Message msg, Predicate<Message> filter) {
         long sleep=10;
         boolean rc=false;
         do {
             try {
-                rc=win.add(seq, msg, filter, opts, dont_block);
+                rc=win.add(seq, msg, filter);
                 break;
             }
             catch(Throwable t) {
-                if(!opts.block() || dont_block)
-                    break;
                 if(running) {
                     Util.sleep(sleep);
                     sleep=Math.min(5000, sleep*2);

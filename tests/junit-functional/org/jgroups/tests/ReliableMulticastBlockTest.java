@@ -1,21 +1,22 @@
 package org.jgroups.tests;
 
-import org.jgroups.Global;
-import org.jgroups.JChannel;
-import org.jgroups.View;
-import org.jgroups.protocols.DISCARD;
-import org.jgroups.protocols.NAKACK4;
-import org.jgroups.protocols.ReliableMulticast;
-import org.jgroups.protocols.TP;
+import org.jgroups.*;
+import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
+import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.MyReceiver;
+import org.jgroups.util.ThreadPool;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -31,6 +32,7 @@ public class ReliableMulticastBlockTest {
     protected static final int      NUM=4;
     protected JChannel[]            channels=new JChannel[NUM];
     protected MyReceiver<Integer>[] receivers=new MyReceiver[NUM];
+    protected static short          NAKACK4_ID=ClassConfigurator.getProtocolId(NAKACK4.class);
 
     @BeforeMethod
     protected void setup() throws Exception {
@@ -123,8 +125,98 @@ public class ReliableMulticastBlockTest {
         assert !sender.isAlive() : "sender should have been unblocked";
     }
 
+    /**
+      * Tests https://issues.redhat.com/browse/JGRP-2873
+      */
+    public void testNonBlockingMulticastSends() throws Exception {
+        final Class<? extends Protocol> CLAZZ=NAKACK4.class;
+        final Address target=null;
+        changeCapacity(CLAZZ, 11, channels[0]);
+        insertAckDropper(CLAZZ, channels);
+        // A already sent a JOIN-RSP to B, so we can only send 10 more unicasts to B before we block (capacity: 11)
+        for(int i=1; i <= 10; i++)
+            channels[0].send(target, i);
+        sendMessages(target, 11,15);
+        removeAckDropper(channels);
+        assertSize(expected(1,15), receivers);
+        NAKACK4 n=channels[0].stack().findProtocol(NAKACK4.class);
+        long num_blockings=n.getNumBlockings();
+        System.out.printf("-- num_blockings=%d\n", num_blockings);
+        assert num_blockings > 0;
+    }
+
+    protected static class AckDropper extends Protocol {
+        @Override
+        public Object down(Message msg) {
+            NakAckHeader hdr=msg.getHeader(NAKACK4_ID);
+            if(hdr != null && hdr.type() == UnicastHeader.ACK)
+                return null;
+            return down_prot.down(msg);
+        }
+    }
+
+    // messages are sent in *any order*, so we need to sort when comparing (see below in assertSize())
+    protected void sendMessages(Address target, int from, int to) {
+        ThreadPool thread_pool=channels[0].stack().getTransport().getThreadPool();
+        for(int i=from; i <= to; i++) {
+            Message msg=new ObjectMessage(target, i);
+            if(i % 2 != 0) // set odd numbers to DONT_BLOCK
+                msg.setFlag(Message.TransientFlag.DONT_BLOCK);
+            thread_pool.execute(() -> send(channels[0], msg));
+        }
+    }
+
+    protected static List<Integer> expected(int from, int to) {
+        return IntStream.rangeClosed(from,to).boxed().collect(Collectors.toList());
+    }
+
+    protected static void send(JChannel ch, Message msg) {
+        try {
+            ch.send(msg);
+        }
+        catch(Exception ex) {
+            System.err.printf("sending of %s failed: %s\n", msg, ex);
+        }
+    }
+
+    protected static void changeCapacity(Class<? extends Protocol> cl, int new_capacity, JChannel ... channels) throws Exception {
+        for(JChannel ch: channels) {
+            Protocol prot=ch.stack().findProtocol(cl);
+            Util.invoke(prot, "changeCapacity", new_capacity);
+        }
+    }
+
+    protected static void insertAckDropper(Class<? extends Protocol> cl, JChannel ... channels) throws Exception {
+        for(JChannel ch: channels)
+            ch.stack().insertProtocol(new AckDropper(), ProtocolStack.Position.BELOW, cl);
+    }
+
+    protected static void removeAckDropper(JChannel ... channels) {
+        for(JChannel ch: channels)
+            ch.stack().removeProtocol(AckDropper.class);
+    }
+
+    @SafeVarargs
+    protected static void assertSize(List<Integer> expected, MyReceiver<Integer> ... receivers) throws TimeoutException {
+        for(MyReceiver<Integer> r: receivers) {
+            int expected_size=expected.size();
+            Util.waitUntil(3000, 200,
+                           () -> r.size() == expected_size && sort(r).equals(expected),
+                           () -> String.format("%s: expected %s (size: %d) but got %s (size: %d)",
+                                               r.name(), expected, expected_size, sort(r), r.size()));
+            System.out.printf("%s: expected: %s, actual: %s\n", r.name(), expected, sort(r));
+        }
+    }
+
+    protected static List<Integer> sort(MyReceiver<Integer> r) {
+        List<Integer> list=new ArrayList<>(r.list());
+        Collections.sort(list);
+        return list;
+    }
+
     @SafeVarargs
     protected static String print(MyReceiver<Integer> ... receivers) {
-        return Stream.of(receivers).map(r -> String.format("%s: %s", r.name(), r.list())).collect(Collectors.joining("\n"));
+        return Stream.of(receivers).map(r -> String.format("%s: %s", r.name(), r.list()))
+          .collect(Collectors.joining("\n"));
     }
 }

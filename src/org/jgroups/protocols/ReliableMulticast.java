@@ -153,7 +153,6 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
     }
 
     protected abstract Buffer<Message> createXmitWindow(long initial_seqno);
-    protected Buffer.Options sendOptions() {return Buffer.Options.DEFAULT();}
 
     @ManagedOperation(description="Clears the cache for messages from non-members")
     public void clearNonMemberCache() {
@@ -711,7 +710,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
             if(is_trace)
                 log.trace("%s --> [all]: #%d", local_addr, msg_id);
             msg.putHeader(this.id, NakAckHeader.createMessageHeader(msg_id));
-            boolean added=addToSendBuffer(win, msg_id, msg, dont_loopback_set? remove_filter : null, msg.isFlagSet(DONT_BLOCK));
+            boolean added=addToSendBuffer(win, msg_id, msg, dont_loopback_set? remove_filter : null);
             if(added)
                 down_prot.down(msg); // if this fails, since msg is in sent_msgs, it can be retransmitted
             return added;
@@ -723,18 +722,15 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
     }
 
     /** Adds the message to the send buffer. The loop tries to handle temporary OOMEs by retrying if add() failed */
-    protected boolean addToSendBuffer(Buffer<Message> win, long seq, Message msg, Predicate<Message> filter, boolean dont_block) {
-        Buffer.Options opts=sendOptions();
+    protected boolean addToSendBuffer(Buffer<Message> win, long seq, Message msg, Predicate<Message> filter) {
         long sleep=10;
         boolean rc=false;
         do {
             try {
-                rc=win.add(seq, msg, filter, opts, dont_block);
+                rc=win.add(seq, msg, filter);
                 break;
             }
             catch(Throwable t) {
-                if(!opts.block() || dont_block)
-                    break;
                 if(running) {
                     Util.sleep(sleep);
                     sleep=Math.min(5000, sleep*2);

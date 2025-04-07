@@ -19,8 +19,6 @@ import static org.jgroups.conf.AttributeType.SCALAR;
  * @since  5.4
  */
 public class UNICAST4 extends ReliableUnicast {
-    protected static final Buffer.Options BLOCKING_SENDS=new Buffer.Options().block(true);
-
     @Property(description="Size of the send/receive buffers, in messages",writable=false)
     protected int capacity=2048;
 
@@ -81,8 +79,6 @@ public class UNICAST4 extends ReliableUnicast {
         return new FixedBuffer<>(capacity, seqno);
     }
 
-    @Override
-    public Buffer.Options     sendOptions()       {return BLOCKING_SENDS;}
     public int                capacity()          {return capacity;}
     public UNICAST4           capacity(int c)     {capacity=c; return this;}
     public int                ackThreshold()      {return ack_threshold;}

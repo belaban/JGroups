@@ -7,7 +7,6 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.util.*;
-import org.jgroups.util.Buffer.Options;
 
 import java.util.List;
 import java.util.Map;
@@ -26,7 +25,6 @@ import static org.jgroups.conf.AttributeType.SCALAR;
  */
 public class NAKACK4 extends ReliableMulticast {
     protected final AckTable          ack_table=new AckTable();
-    protected static final Options    SEND_OPTIONS=new Options().block(true);
 
     @Property(description="Size of the send/receive buffers, in messages",writable=false)
     protected int                     capacity=2048;
@@ -49,7 +47,6 @@ public class NAKACK4 extends ReliableMulticast {
     public NAKACK4           capacity(int c)           {capacity=c; return this;}
     public int               ackThreshold()            {return ack_threshold;}
     public NAKACK4           ackThreshold(int t)       {ack_threshold=t; return this;}
-    @Override public Options sendOptions()             {return SEND_OPTIONS;}
 
     @ManagedAttribute(type = SCALAR)
     public long getNumUnackedMessages() {
@@ -202,7 +199,7 @@ public class NAKACK4 extends ReliableMulticast {
     }
 
     @Override
-    protected boolean addToSendBuffer(Buffer<Message> win, long seq, Message msg, Predicate<Message> filter, boolean dont_block) {
-        return win.add(seq, msg, filter, sendOptions(), dont_block);
+    protected boolean addToSendBuffer(Buffer<Message> win, long seq, Message msg, Predicate<Message> filter) {
+        return win.add(seq, msg, filter);
     }
 }

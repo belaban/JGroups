@@ -1,6 +1,5 @@
 package org.jgroups.util;
 
-import org.jgroups.Message;
 import org.jgroups.annotations.GuardedBy;
 
 import java.io.Closeable;
@@ -70,7 +69,7 @@ public abstract class Buffer<T> implements Iterable<T>, Closeable {
      */
     // used: single message received
     public boolean add(long seqno, T element) {
-        return add(seqno, element, null, Options.DEFAULT(), false);
+        return add(seqno, element, null);
     }
 
     /**
@@ -82,13 +81,10 @@ public abstract class Buffer<T> implements Iterable<T>, Closeable {
      * @param remove_filter A filter used to remove all consecutive messages passing the filter (and non-null). This
      *                      doesn't necessarily null a removed message, but may simply advance an index
      *                      (e.g. highest delivered). Ignored if null.
-     * @param options       The options passed to the call
-     * @param dont_block    If true, don't block when no space is available, but instead drop the element. This
-     *                      parameter is set by calling Message.isFlagSet(DONT_BLOCK)
      * @return True if the element at the computed index was null, else false
      */
     // used: send message
-    public abstract boolean add(long seqno, T element, Predicate<T> remove_filter, Options options, boolean dont_block);
+    public abstract boolean add(long seqno, T element, Predicate<T> remove_filter);
 
     // used: MessageBatch received
     public abstract boolean add(MessageBatch batch, Function<T,Long> seqno_getter, boolean remove_from_batch, T const_value);
@@ -269,25 +265,6 @@ public abstract class Buffer<T> implements Iterable<T>, Closeable {
     @Override
     public String toString() {
         return String.format("[%,d | %,d | %,d] (size: %,d, missing: %,d)", low, hd, high, size, numMissing());
-    }
-
-    public static class Options {
-        protected boolean              block;
-        protected boolean              remove_from_batch;
-        protected Predicate<Message>   remove_filter;
-        protected static final Options DEFAULT=new Options();
-        public static Options     DEFAULT() {return DEFAULT;}
-        public boolean            block()                            {return block;}
-        public Options            block(boolean block)               {this.block=block;return this;}
-        public boolean            removeFromBatch()                  {return remove_from_batch;}
-        public Options            removeFromBatch(boolean r)         {this.remove_from_batch=r; return this;}
-        public Predicate<Message> remove_filter()                    {return remove_filter;}
-        public Options            removeFilter(Predicate<Message> f) {this.remove_filter=f; return this;}
-
-        @Override
-        public String toString() {
-            return String.format("block=%b remove_from_batch=%b", block, remove_from_batch);
-        }
     }
 
     public interface Visitor<T> {

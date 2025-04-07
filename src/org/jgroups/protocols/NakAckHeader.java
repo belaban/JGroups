@@ -68,6 +68,7 @@ public class NakAckHeader extends Header {
     }
 
     public byte      getType()    {return type;}
+    public byte      type()       {return type;}
     public long      getSeqno()   {return seqno;}
     public Address   getSender()  {return sender;}
 
