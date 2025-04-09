@@ -34,10 +34,10 @@ public class SHUFFLE extends Protocol {
 
 
     @Property(description="Reorder up messages and message batches")
-    protected boolean             up=true;
+    protected volatile boolean    up=true;
 
     @Property(description="Reorder down messages and message batches")
-    protected boolean             down;
+    protected volatile boolean    down;
 
     @Property(description="max number of messages before we reorder queued messages and send them up")
     protected int                 max_size=10;
@@ -140,14 +140,11 @@ public class SHUFFLE extends Protocol {
         }
     }
 
-
     protected static void shuffle(MessageBatch batch) {
         Message[] msgs=batch.stream().toArray(Message[]::new);
         Util.shuffle(msgs, 0, msgs.length);
         batch.array().set(msgs);
     }
-
-
 
     protected synchronized void startTask() {
         if(task == null || task.isDone() || task.isCancelled())

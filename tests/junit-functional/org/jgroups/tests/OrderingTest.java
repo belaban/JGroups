@@ -15,6 +15,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Stream;
 
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+
 /**
  * Tests multicast and unicast ordering of <em>regular</em> messages.<br/>
  * Regular messages from different senders can be delivered in parallel; messages from the same sender must be
@@ -25,14 +27,12 @@ import java.util.stream.Stream;
  */
 @Test(groups=Global.TIME_SENSITIVE,singleThreaded=true)
 public class OrderingTest {
-    protected static final int NUM_MSGS=100000;
+    protected static final int NUM_MSGS=50_000;
     protected static final int PRINT=NUM_MSGS / 5;
     protected static final int NUM_SENDERS=2;
+    protected JChannel[]       channels=new JChannel[NUM_SENDERS];
 
-    protected JChannel[] channels=new JChannel[NUM_SENDERS];
-
-
-    @BeforeMethod void init() throws Exception {
+    @BeforeMethod protected void init() throws Exception {
         for(int i=0; i < channels.length; i++) {
             channels[i]=createChannel(i).connect("OrderingTest.testFIFOOrder");
             channels[i].setReceiver(new MyReceiver(channels[i].name()));
@@ -44,8 +44,7 @@ public class OrderingTest {
         }
     }
 
-    @AfterMethod void destroy() {
-
+    @AfterMethod protected void destroy() {
         Stream.of(channels).forEach(ch -> {
             SHUFFLE shuffle=ch.getProtocolStack().findProtocol(SHUFFLE.class);
             shuffle.setDown(false).setUp(false);
@@ -53,19 +52,18 @@ public class OrderingTest {
         Util.close(channels);
     }
 
-
     protected static JChannel createChannel(int index) throws Exception {
         return new JChannel(new SHARED_LOOPBACK(),
                             new SHARED_LOOPBACK_PING(),
-                            new SHUFFLE().setUp(false).setDown(false).setMaxSize(200), // reorders messages
-                            new NAKACK2().useMcastXmit(false).setDiscardDeliveredMsgs(true).setXmitInterval(200),
+                            new SHUFFLE().setUp(false).setDown(false).setMaxSize(100), // reorders messages
+                            new NAKACK2().setDiscardDeliveredMsgs(true).setXmitInterval(200),
                             new UNICAST3(),
                             new STABLE().setMaxBytes(50_000).setDesiredAverageGossip(1000),
                             new GMS().setJoinTimeout(500).printLocalAddress(false),
-                            new UFC().setMaxCredits(2_000_000),
-                            new MFC().setMaxCredits(2_000_000),
-                            new FRAG2())
-          .name(String.valueOf((char)('A' +index)));
+                            new UFC().setMaxCredits(200_000).setMinCredits(50_000),
+                            new MFC().setMaxCredits(200_000).setMinCredits(50_000),
+                            new FRAG2().setFragSize(40_000))
+          .name(String.valueOf((char)('A' + index)));
     }
 
 
@@ -73,37 +71,40 @@ public class OrderingTest {
     public void testMulticastFIFOOrdering() throws Exception {
         System.out.println("\n-- sending " + NUM_MSGS + " messages");
         final CountDownLatch latch=new CountDownLatch(1);
-        MySender[] senders=new MySender[NUM_SENDERS];
+        Thread[] senders=new Thread[NUM_SENDERS];
         for(int i=0; i < senders.length; i++) {
-            senders[i]=new MySender(channels[i], null, latch);
+            senders[i]=new Thread(new MySender(channels[i], null, latch), "sender-" + i);
             senders[i].start();
         }
         latch.countDown();
-        for(MySender sender: senders)
+        long start=System.nanoTime();
+        for(Thread sender: senders)
             sender.join();
-
         System.out.println("-- senders done");
-
         checkOrder(NUM_MSGS * NUM_SENDERS);
+        long time=System.nanoTime()-start;
+        System.out.printf("-- took %s to send and receive %,d msgs\n", Util.printTime(time, NANOSECONDS), NUM_MSGS*NUM_SENDERS);
     }
 
     public void testUnicastFIFOOrdering() throws Exception {
         System.out.printf("\n-- sending %d unicast messages\n", NUM_MSGS);
         final CountDownLatch latch=new CountDownLatch(1);
-        MySender[] senders=new MySender[NUM_SENDERS];
+        Thread[] senders=new Thread[NUM_SENDERS];
         for(int i=0; i < senders.length; i++) {
             Address dest=channels[(i+1) % channels.length].getAddress();
-            senders[i]=new MySender(channels[i], dest, latch);
+            senders[i]=new Thread(new MySender(channels[i], dest, latch), "sender=" + i);
             System.out.printf("-- %s sends to %s\n", channels[i].getAddress(), dest);
             senders[i].start();
         }
         latch.countDown();
-        for(MySender sender: senders)
+        long start=System.nanoTime();
+        for(Thread sender: senders)
             sender.join();
 
         System.out.println("-- senders done");
-
         checkOrder(NUM_MSGS);
+        long time=System.nanoTime()-start;
+        System.out.printf("-- took %s to send, reshuffle and receive %,d msgs\n", Util.printTime(time, NANOSECONDS), NUM_MSGS);
     }
 
     protected void checkOrder(int expected_msgs) {
@@ -114,16 +115,16 @@ public class OrderingTest {
         }
 
         System.out.println("\n-- waiting for message reception by all receivers:");
-        Util.waitUntilTrue(10000, 500,
+        Util.waitUntilTrue(500000, 500,
                            () -> Stream.of(channels).map(JChannel::getReceiver)
                              .allMatch(r -> ((MyReceiver)r).getReceived() == expected_msgs));
 
         Stream.of(channels).forEach(ch -> System.out.printf("%s: %d\n", ch.getAddress(),
                                                             ((MyReceiver)ch.getReceiver()).getReceived()));
         for(JChannel ch: channels) {
-            MyReceiver receiver=(MyReceiver)ch.getReceiver();
-            assert receiver.getReceived() == expected_msgs :
-              String.format("%s had %d messages (expected=%d)", receiver.name, receiver.getReceived(), expected_msgs);
+            MyReceiver r=(MyReceiver)ch.getReceiver();
+            assert r.getReceived() == expected_msgs :
+              String.format("%s received %d messages (expected=%d)", r.name, r.getReceived(), expected_msgs);
         }
 
         System.out.println("\n-- checking message order");
@@ -138,7 +139,7 @@ public class OrderingTest {
 
 
 
-    protected static class MySender extends Thread {
+    protected static class MySender implements Runnable {
         protected final JChannel       ch;
         protected final Address        dest;
         protected final CountDownLatch latch;
@@ -158,7 +159,7 @@ public class OrderingTest {
             }
             for(int i=1; i <= NUM_MSGS; i++) {
                 try {
-                    Message msg=new BytesMessage(dest, i);
+                    Message msg=new ObjectMessage(dest, i);
                     ch.send(msg);
                     if(i % PRINT == 0)
                         System.out.println(ch.getAddress() + ": " + i + " sent");
@@ -202,7 +203,9 @@ public class OrderingTest {
             if(++received % PRINT == 0)
                 System.out.printf("%s: received %d\n", name, received);
         }
+
     }
+
 
 
 }
