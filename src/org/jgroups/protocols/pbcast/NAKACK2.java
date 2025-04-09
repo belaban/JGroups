@@ -310,6 +310,9 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     public int getNumMessagesReceived() {return num_messages_received;}
     public NAKACK2 setNumMessagesReceived(int n) {this.num_messages_received=n; return this;}
 
+    public int     getMaxBatchSize() {return max_batch_size;}
+    public NAKACK2 setMaxBatchSize(int s) {max_batch_size=s; return this;}
+
     public boolean isTrace() {return is_trace;}
     public NAKACK2 isTrace(boolean i) {this.is_trace=i; return this;}
 
