@@ -1006,7 +1006,8 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
     protected void handleHighestSeqno(Address sender, long seqno) {
         // check whether the highest seqno received from sender is > highest seqno received for sender in my digest.
         // If yes, request retransmission (see "Last Message Dropped" topic in DESIGN)
-        Buffer<Message> win=getBuf(sender);
+        Entry recv_entry=getEntry(sender);
+        Buffer<Message> win=recv_entry != null? recv_entry.buf() : null;
         if(win == null)
             return;
         long my_highest_received=win.high();
@@ -1015,6 +1016,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
                       local_addr, sender, my_highest_received, sender, seqno);
             retransmit(seqno, seqno, sender, false);
         }
+        needToSendAck(recv_entry, 1); // https://issues.redhat.com/browse/JGRP-2874
     }
 
     protected void handleAck(Address sender, long ack) {
@@ -1357,7 +1359,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
             if(highest_sent_seqno == 0 || low == highest_sent_seqno)
                 return;
             Message msg=new EmptyMessage(null).putHeader(id, NakAckHeader.createHighestSeqnoHeader(highest_sent_seqno))
-              .setFlag(OOB, NO_FC).setFlag(DONT_LOOPBACK,DONT_BLOCK); // we don't need to receive our own broadcast
+              .setFlag(OOB, NO_FC).setFlag(DONT_BLOCK); // we don't need to receive our own broadcast
             down_prot.down(msg);
         }
     }

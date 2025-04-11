@@ -45,6 +45,7 @@ public class ReliableMulticastBlockTest {
                 NAKACK4 nak=ch.stack().findProtocol(ReliableMulticast.class);
                 nak.capacity(5); // A can send 5 messages before it blocks
             }
+            ch.stack().getTransport().enableDiagnostics();
             channels[i]=ch.name(name).connect("ReliableMulticastBlockTest");
             ch.receiver(receivers[i]);
         }
@@ -131,7 +132,8 @@ public class ReliableMulticastBlockTest {
     public void testNonBlockingMulticastSends() throws Exception {
         final Class<? extends Protocol> CLAZZ=NAKACK4.class;
         final Address target=null;
-        changeCapacity(CLAZZ, 11, channels[0]);
+        // 3 messages were sent before (3 view changes): we need 3+13 capacity
+        changeCapacity(CLAZZ, 14, channels[0]);
         insertAckDropper(CLAZZ, channels);
         // A already sent a JOIN-RSP to B, so we can only send 10 more unicasts to B before we block (capacity: 11)
         for(int i=1; i <= 10; i++)
@@ -149,7 +151,7 @@ public class ReliableMulticastBlockTest {
         @Override
         public Object down(Message msg) {
             NakAckHeader hdr=msg.getHeader(NAKACK4_ID);
-            if(hdr != null && hdr.type() == UnicastHeader.ACK)
+            if(hdr != null && hdr.type() == NakAckHeader.ACK)
                 return null;
             return down_prot.down(msg);
         }

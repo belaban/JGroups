@@ -113,13 +113,22 @@ public class NAKACK4 extends ReliableMulticast {
     @ManagedOperation(description="Prints the ACKs received from members")
     public String printAckTable() {return "\n" + ack_table;}
 
-    @ManagedOperation(description="Sends ACKs immediately for entries which are marked as pending")
+    @ManagedOperation(description="Sends ACKs immediately for all receive buffers")
+    public void sendAcks() {
+        sendAcks(true);
+    }
+
+    @ManagedOperation(description="Sends ACKs immediately for all receive buffers")
     public void sendPendingAcks() {
+        sendAcks(false);
+    }
+
+    protected void sendAcks(boolean always_send) {
         for(Map.Entry<Address,Entry> entry: xmit_table.entrySet()) {
             Address         target=entry.getKey(); // target to send retransmit requests to
             Entry           val=entry.getValue();
             Buffer<Message> win=val != null? val.buf() : null;
-            if(win != null && needToSendAck(val)) // needToSendAck() resets send_ack to false
+            if(win != null && (always_send || needToSendAck(val))) // needToSendAck() resets send_ack to false
                 sendAck(target, win);
         }
     }

@@ -3,8 +3,6 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
-import org.jgroups.protocols.pbcast.NAKACK2;
-import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -53,17 +51,16 @@ public class OrderingTest {
     }
 
     protected static JChannel createChannel(int index) throws Exception {
-        return new JChannel(new SHARED_LOOPBACK(),
-                            new SHARED_LOOPBACK_PING(),
-                            new SHUFFLE().setUp(false).setDown(false).setMaxSize(100), // reorders messages
-                            new NAKACK2().setDiscardDeliveredMsgs(true).setXmitInterval(200),
-                            new UNICAST3(),
-                            new STABLE().setMaxBytes(50_000).setDesiredAverageGossip(1000),
-                            new GMS().setJoinTimeout(500).printLocalAddress(false),
-                            new UFC().setMaxCredits(200_000).setMinCredits(50_000),
-                            new MFC().setMaxCredits(200_000).setMinCredits(50_000),
-                            new FRAG2().setFragSize(40_000))
+        JChannel ch=new JChannel(new SHARED_LOOPBACK(),
+                                 new SHARED_LOOPBACK_PING(),
+                                 new SHUFFLE().setUp(false).setDown(false).setMaxSize(100), // reorders messages
+                                 new NAKACK4().capacity(32000),
+                                 new UNICAST4().capacity(32000).setConnExpiryTimeout(0),
+                                 new GMS().setJoinTimeout(500).printLocalAddress(false),
+                                 new FRAG2().setFragSize(40_000))
           .name(String.valueOf((char)('A' + index)));
+        ch.stack().getTransport().enableDiagnostics();
+        return ch;
     }
 
 
@@ -86,6 +83,7 @@ public class OrderingTest {
         System.out.printf("-- took %s to send and receive %,d msgs\n", Util.printTime(time, NANOSECONDS), NUM_MSGS*NUM_SENDERS);
     }
 
+    // @Test(invocationCount=10)
     public void testUnicastFIFOOrdering() throws Exception {
         System.out.printf("\n-- sending %d unicast messages\n", NUM_MSGS);
         final CountDownLatch latch=new CountDownLatch(1);
@@ -111,11 +109,11 @@ public class OrderingTest {
         for(JChannel ch: channels) {
             SHUFFLE shuffle=ch.getProtocolStack().findProtocol(SHUFFLE.class);
             if(shuffle != null)
-                shuffle.flush(true);
+                shuffle.flush(true);  // disables shuffling
         }
 
         System.out.println("\n-- waiting for message reception by all receivers:");
-        Util.waitUntilTrue(500000, 500,
+        Util.waitUntilTrue(10000, 500,
                            () -> Stream.of(channels).map(JChannel::getReceiver)
                              .allMatch(r -> ((MyReceiver)r).getReceived() == expected_msgs));
 

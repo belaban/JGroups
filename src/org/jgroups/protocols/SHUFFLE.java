@@ -182,6 +182,8 @@ public class SHUFFLE extends Protocol {
                 queue.add(msg); // queue can become a bit larger as a result of adding the entire batch
             if(queue.size() >= max_size)
                 reorderAndSend(queue, lock, send_function); // clears queue
+            else
+                startTask();
             return this;
         }
         finally {
