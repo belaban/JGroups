@@ -101,8 +101,6 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
     protected final LongAdder num_msgs_sent=new LongAdder();
     @ManagedAttribute(description="Number of message received",type=SCALAR)
     protected final LongAdder num_msgs_received=new LongAdder();
-    @ManagedAttribute(description="Number of sends dropped",type=SCALAR)
-    protected final LongAdder num_sends_dropped=new LongAdder();
     @ManagedAttribute(description="Number of acks sent",type=SCALAR)
     protected final LongAdder num_acks_sent=new LongAdder();
     @ManagedAttribute(description="Number of acks received",type=SCALAR)
@@ -287,7 +285,6 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
     public long getNumMessagesReceived() {return num_msgs_received.sum();}
 
 
-    public long getNumSendsDropped()     {return num_sends_dropped.sum();}
     public long getNumAcksSent()         {return num_acks_sent.sum();}
     public long getNumAcksReceived()     {return num_acks_received.sum();}
     public long getNumXmits()            {return num_xmits.sum();}
@@ -376,7 +373,7 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
 
     public void resetStats() {
         avg_delivery_batch_size.clear();
-        Stream.of(num_msgs_sent, num_msgs_received, num_sends_dropped, num_acks_sent, num_acks_received, num_xmits,
+        Stream.of(num_msgs_sent, num_msgs_received, num_acks_sent, num_acks_received, num_xmits,
                 xmit_reqs_received, xmit_reqs_sent, xmit_rsps_sent, num_loopbacks).forEach(LongAdder::reset);
         send_table.values().stream().map(e -> e.buf).forEach(Buffer::resetStats);
         recv_table.values().stream().map(e -> e.buf).forEach(Buffer::resetStats);
@@ -683,10 +680,8 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
         boolean dont_loopback_set=msg.isFlagSet(DONT_LOOPBACK) && dst.equals(local_addr);
         if(send(msg, entry, dont_loopback_set))
             num_msgs_sent.increment();
-        else {
-            num_sends_dropped.increment();
-            log.warn("%s: discarded message due to full send buffer, message: %s", local_addr, msg);
-        }
+        else
+            log.trace("%s: dropped message due to closed send buffer, message: %s", local_addr, msg);
         return null; // the message was already sent down the stack in send()
     }
 
@@ -1092,9 +1087,8 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
         try {
             seqno=entry.seqno.getAndIncrement();
             msg.putHeader(this.id,UnicastHeader.createDataHeader(seqno, send_conn_id,seqno == DEFAULT_FIRST_SEQNO));
-            boolean added=addToSendBuffer(buf, seqno, msg, dont_loopback_set? remove_filter : null);
-            if(!added) // e.g. message already present in send buffer
-                return false;
+            if(!addToSendBuffer(buf, seqno, msg, dont_loopback_set? remove_filter : null))
+                return false; // e.g. message already present in send buffer, or buffer is closed
             down_prot.down(msg); // if this fails, since msg is in sent_msgs, it can be retransmitted
             if(entry.state() == State.CLOSING)
                 entry.state(State.OPEN);
