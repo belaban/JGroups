@@ -509,13 +509,14 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
             msg.setSrc(local_addr); // this needs to be done so we can check whether the message sender is the local_addr
         boolean dont_loopback_set=msg.isFlagSet(DONT_LOOPBACK);
         Buffer<Message> win=send_entry.buf();
-        if(send(msg, win, dont_loopback_set))
+        if(send(msg, win, dont_loopback_set)) {
             num_messages_sent.increment();
+            if(dont_loopback_set && needToSendAck(send_entry, 1))
+                handleAck(local_addr, win.highestDelivered()); // https://issues.redhat.com/browse/JGRP-2829
+        }
         else
             log.trace("%s: dropped message due to closed send buffer, message: %s", local_addr, msg);
         last_seqno_resender.skipNext();
-        if(dont_loopback_set && needToSendAck(send_entry, 1))
-            handleAck(local_addr, win.highestDelivered()); // https://issues.redhat.com/browse/JGRP-2829
         return null;    // don't pass down the stack
     }
 
@@ -704,12 +705,12 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
             if(!addToSendBuffer(win, msg_id, msg, dont_loopback_set? remove_filter : null))
                 return false; // e.g. message already present in send buffer, or buffer is closed
             down_prot.down(msg); // if this fails, since msg is in sent_msgs, it can be retransmitted
+            return true;
         }
         finally {
             if(lock != null)
                 lock.unlock();
         }
-        return true;
     }
 
     /** Adds the message to the send buffer. The loop tries to handle temporary OOMEs by retrying if add() failed */
