@@ -6,6 +6,7 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
+import org.jgroups.protocols.ReliableMulticast;
 import org.jgroups.protocols.TP;
 import org.jgroups.protocols.pbcast.GmsImpl.Request;
 import org.jgroups.stack.DiagnosticsHandler;
@@ -89,7 +90,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     @Property(description="Number of views to store in history")
     protected int                       num_prev_views=10;
 
-    @Property(description="Time in ms to wait for all VIEW acks (0 == wait forever. Default is 2000 msec",
+    @Property(description="Time in ms to wait for all VIEW acks (0 == wait forever. Default is 2000 ms",
       type=AttributeType.TIME)
     protected long                      view_ack_collection_timeout=2000;
 
@@ -111,11 +112,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     protected GmsImpl                   impl;
     protected final Lock                lock=new ReentrantLock();
     protected final Map<String,GmsImpl> impls=new HashMap<>(3);
-
     protected Merger                    merger; // handles merges
-
     protected final Leaver              leaver=new Leaver(this); // handles a member leaving the cluster
-
     protected final Membership          tmp_members=new Membership();      // base for computing next view
 
     @ManagedAttribute(description="The set of currently suspected members")
@@ -132,12 +130,11 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     /** Keeps track of old members (up to num_prev_mbrs) */
     protected BoundedList<Address>      prev_members;
-
     protected volatile View             view;
-
     protected long                      ltime;
-
     protected TimeScheduler             timer;
+    // only used when views need to be sent asynchronously (https://issues.redhat.com/browse/JGRP-2875)
+    protected ThreadPool                thread_pool;
 
     /** Class to process JOIN, LEAVE and MERGE requests */
     protected final ViewHandler<Request> view_handler=
@@ -281,7 +278,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         }
     }
 
-
     public MergeId _getMergeId() {
         return impl instanceof CoordGmsImpl? ((CoordGmsImpl)impl).getMergeId() : null;
     }
@@ -297,7 +293,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         num_views=0;
         prev_views.clear();
     }
-
 
     public List<Integer> requiredDownServices() {
         return Arrays.asList(Event.GET_DIGEST, Event.SET_DIGEST, Event.FIND_INITIAL_MBRS, Event.FIND_MBRS);
@@ -319,7 +314,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         }
     }
 
-
     public GmsImpl getImpl() {
         return impl;
     }
@@ -337,6 +331,9 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         if(impl != null)
             impl.init();
         transport.registerProbeHandler(this);
+        ReliableMulticast rmc=stack.findProtocol(ReliableMulticast.class);
+        if(rmc != null && rmc.sendBufferCanBlock())
+            thread_pool=transport.getThreadPool();
     }
 
     public void start() throws Exception {
@@ -552,8 +549,20 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         long start=System.currentTimeMillis();
         impl.handleViewChange(full_view, digest); // install the view locally first
         log.trace("%s: mcasting view %s", local_addr, new_view);
-        down_prot.down(view_change_msg);
-        sendJoinResponses(jr, joiners);
+        if(thread_pool == null) {
+            down_prot.down(view_change_msg);
+            sendJoinResponses(jr, joiners);
+        }
+        else {
+            // If the mcast protocol can block, we need to send a view asynchronously. The views will still
+            // be delivered in order, see https://issues.redhat.com/browse/JGRP-2875 for details
+            Runnable r=() -> {
+                down_prot.down(view_change_msg);
+                sendJoinResponses(jr, joiners);
+            };
+            thread_pool.execute(r);
+        }
+
         try {
             if(ack_collector.size() > 0) {
                 ack_collector.waitForAllAcks(view_ack_collection_timeout);
@@ -568,8 +577,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                          ack_collector.size(), ack_collector.printMissing());
         }
     }
-
-
 
     protected void sendJoinResponses(JoinRsp jr, Collection<Address> joiners) {
         if(jr == null || joiners == null || joiners.isEmpty())
@@ -909,6 +916,9 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                         return null;
                     }
                 }
+
+                System.out.printf("** %s: received view: %s\n", local_addr, new_view);
+
                 Address coord=msg.getSrc();
                 if(!new_view.containsMember(coord)) {
                     sendViewAck(coord); // we need to send the ack first, otherwise the connection is removed

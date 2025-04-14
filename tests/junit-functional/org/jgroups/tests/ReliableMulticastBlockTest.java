@@ -6,6 +6,7 @@ import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.FixedBuffer;
 import org.jgroups.util.MyReceiver;
 import org.jgroups.util.ThreadPool;
 import org.jgroups.util.Util;
@@ -145,6 +146,55 @@ public class ReliableMulticastBlockTest {
         long num_blockings=n.getNumBlockings();
         System.out.printf("-- num_blockings=%d\n", num_blockings);
         assert num_blockings > 0;
+    }
+
+    /**
+     * Tests https://issues.redhat.com/browse/JGRP-2875: {A,B,C,D}, D and C are unresponsive and will be removed, but
+     * not in the same view. Instead views V1 and V2 would be sent by A (who has a full send-window, caused by
+     * unresponsive members C and D), but V2 (which would unblock V1) is not sent as views are sent one-by-one.
+     */
+    public void testMultipleSuspicionsOnFullSendWindow() throws Exception {
+        JChannel a=channels[0], b=channels[1], c=channels[NUM-2], d=channels[NUM-1];
+        Address a_addr=a.address(), b_addr=b.address(), c_addr=c.address(), d_addr=d.address();
+        Util.shutdown(c);
+        Util.shutdown(d);
+
+        // all send-windows are at capacity 5: send a few messages until we would block on sending 1 more message
+        NAKACK4 nak=a.stack().findProtocol(NAKACK4.class);
+        FixedBuffer<Message> send_buf=nak.getBuf(a_addr);
+        while(send_buf.high() - send_buf.low() < send_buf.capacity())
+            a.send(null, 0);
+
+        MyReceiver<Message> ra=new MyReceiver<>(), rb=new MyReceiver<>();
+        a.setReceiver(ra);
+        b.setReceiver(rb);
+
+
+        GMS gms=a.stack().findProtocol(GMS.class);
+        gms.setViewAckCollectionTimeout(500);
+
+        // Suspect D. This sends view {A,B,C}. A's send window is full and C won't ACK the view, therefore this will block
+        System.out.println("-- suspecting D");
+        gms.up(new Event(Event.SUSPECT, List.of(d_addr)));
+
+        // Suspect C
+        Util.sleep(3000); // sleep so that D and C are removed in separate views
+        System.out.println("-- suspecting C");
+        gms.up(new Event(Event.SUSPECT, List.of(c_addr)));
+
+        Util.waitUntilAllChannelsHaveSameView(5000, 100, a,b);
+        System.out.printf("-- views:\n%s", Stream.of(a,b)
+          .map(ch -> String.format("%s: %s", ch.address(), ch.view())).collect(Collectors.joining("\n")));
+
+        // Verify that view {A,B,C} (D left) is received before {A,B} (C left):
+        List<Address> tmp1=List.of(a_addr, b_addr, c_addr);
+        List<Address> tmp2=List.of(a_addr, b_addr);
+        List<View> va=ra.views(), vb=rb.views();
+        System.out.printf("\nA's views: %s\nB's views: %s\n", va, vb);
+        assert va.get(0).getMembers().equals(tmp1);
+        assert vb.get(0).getMembers().equals(tmp1);
+        assert va.get(1).getMembers().equals(tmp2);
+        assert vb.get(1).getMembers().equals(tmp2);
     }
 
     protected static class AckDropper extends Protocol {

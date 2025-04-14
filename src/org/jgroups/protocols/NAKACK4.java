@@ -87,6 +87,11 @@ public class NAKACK4 extends ReliableMulticast {
     }
 
     @Override
+    public boolean sendBufferCanBlock() {
+        return true;
+    }
+
+    @Override
     public void resetStats() {
         super.resetStats();
         acks_received.reset();

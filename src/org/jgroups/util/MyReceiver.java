@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 public class MyReceiver<T> implements Receiver, Closeable {
     protected final Lock               lock=new ReentrantLock();
     protected final List<T>            list=new FastArray<>(128);
+    protected final List<View>         views=new FastArray<>(16);
     protected String                   name;
     protected boolean                  verbose;
     protected boolean                  raw_msgs;
@@ -40,6 +41,7 @@ public class MyReceiver<T> implements Receiver, Closeable {
     }
 
     @Override public void viewAccepted(View new_view) {
+        views.add(new_view);
         if(verbose)
             System.out.printf("-- %s: view is %s\n", name, new_view);
     }
@@ -74,16 +76,17 @@ public class MyReceiver<T> implements Receiver, Closeable {
     public MyReceiver<T>      rawMsgs(boolean flag)      {this.raw_msgs=flag; return this;}
     public List<T>            list()                     {return list;}
     public List<String>       list(Function<T,String> f) {return list.stream().map(f).collect(Collectors.toList());}
+    public List<View>         views()                    {return views;}
     public Map<String,String> state()                    {return state;}
     public MyReceiver<T>      verbose(boolean flag)      {verbose=flag; return this;}
     public String             name()                     {return name;}
     public MyReceiver<T>      name(String name)          {this.name=name; return this;}
-    public MyReceiver<T>      reset()                    {list.clear(); return this;}
+    public MyReceiver<T>      reset()                    {list.clear(); views.clear(); return this;}
     public int                size()                     {return list.size();}
     public void               close() throws IOException {reset();}
 
     @Override
     public String toString() {
-        return String.format("%d elements", list.size());
+        return String.format("%d elements (%d views)", list.size(), views.size());
     }
 }

@@ -151,6 +151,9 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
 
     protected abstract Buffer<Message> createXmitWindow(long initial_seqno);
 
+    /** Whether addition of a message to the send buffer can block */
+    public boolean sendBufferCanBlock() {return false;}
+
     @ManagedOperation(description="Clears the cache for messages from non-members")
     public void clearNonMemberCache() {
         if(suppress_log_non_member != null)
