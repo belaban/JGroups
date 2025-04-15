@@ -21,6 +21,7 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.*;
+import java.net.InetAddress;
 import java.util.*;
 
 import static org.jgroups.protocols.relay.RelayHeader.DATA;
@@ -664,7 +665,13 @@ public class SizeTest {
 
 
     public static void testIpAddress3() throws Exception {
-        IpAddress addr=new IpAddress(5555, false);
+        IpAddress addr=new IpAddress((String)null, 5555);
+        _testSize(addr);
+    }
+
+
+    public static void testIpAddress4() throws Exception {
+        IpAddress addr=new IpAddress((InetAddress)null, 5555);
         _testSize(addr);
     }
 
@@ -684,7 +691,7 @@ public class SizeTest {
     }
 
 
-    public static void testWriteAddresses() throws Exception {
+    public void testWriteAddresses() throws Exception {
         List<Address> list=new ArrayList<>();
         for(int i=0; i < 3; i++)
             list.add(UUID.randomUUID());
