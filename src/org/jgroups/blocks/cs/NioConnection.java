@@ -109,7 +109,7 @@ public class NioConnection extends Connection {
     }
 
     protected void connect(Address dest, boolean send_local_addr) throws Exception {
-        SocketAddress destAddr=new InetSocketAddress(((IpAddress)dest).getIpAddress(), ((IpAddress)dest).getPort());
+        SocketAddress destAddr=((IpAddress)dest).getSocketAddress();
         try {
             if(!server.deferClientBinding())
                 this.channel.bind(new InetSocketAddress(server.clientBindAddress(), server.clientBindPort()));

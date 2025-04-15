@@ -123,7 +123,7 @@ public class STATE_SOCK extends StreamingStateTransfer {
             socket=getSocketFactory().createSocket("jgroups.state_sock.sock");
             socket.bind(new InetSocketAddress(bind_addr, 0));
             socket.setReceiveBufferSize(buffer_size);
-            Util.connect(socket, new InetSocketAddress(address.getIpAddress(), address.getPort()), 0);
+            Util.connect(socket, address.getSocketAddress(), 0);
             log.debug("%s: connected to state provider %s:%d", local_addr, address.getIpAddress(), address.getPort());
             DataOutputStream out=new DataOutputStream(socket.getOutputStream());
             Util.writeAddress(local_addr, out);
