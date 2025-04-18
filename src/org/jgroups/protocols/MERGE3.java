@@ -439,7 +439,8 @@ public class MERGE3 extends Protocol {
                 MergeHeader hdr=createInfo();
                 addInfo(local_addr, hdr.view_id, hdr.logical_name, hdr.physical_addr);
                 if(!differentViewIds()) {
-                    log.trace("%s: found no inconsistent views: %s", local_addr, dumpViews());
+                    if(log.isTraceEnabled())
+                        log.trace("%s: found no inconsistent views: %s", local_addr, dumpViews());
                     return;
                 }
                 _run();
