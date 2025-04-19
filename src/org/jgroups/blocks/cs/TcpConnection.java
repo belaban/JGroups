@@ -87,7 +87,7 @@ public class TcpConnection extends Connection {
     }
 
     protected void connect(Address dest, boolean send_local_addr) throws Exception {
-        SocketAddress destAddr=new InetSocketAddress(((IpAddress)dest).getIpAddress(), ((IpAddress)dest).getPort());
+        SocketAddress destAddr=((IpAddress)dest).getSocketAddress();
         try {
             if(!server.defer_client_binding)
                 this.sock.bind(new InetSocketAddress(server.client_bind_addr, server.client_bind_port));
