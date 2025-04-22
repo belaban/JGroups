@@ -31,7 +31,7 @@ public class UUID implements Address, Constructable<UUID> {
         this.leastSigBits = leastSigBits;
     }
 
-    public UUID(java.util.UUID uuid) {
+    public UUID(UUID uuid) {
         this.mostSigBits = uuid.getMostSignificantBits();
         this.leastSigBits = uuid.getLeastSignificantBits();
     }
@@ -173,19 +173,21 @@ public class UUID implements Address, Constructable<UUID> {
     }
 
     /**
-     * Compares this object to the specified object.  The result is {@code
-     * true} if and only if the argument is not {@code null}, is a {@code UUID}
-     * object, has the same variant, and contains the same value, bit for bit,
-     * as this {@code UUID}.
+     * Compares this object to the specified object. The result is {@code true} if and only if the argument is
+     * not {@code null}, is a {@code UUID} object, and contains the same most- and least significant bits.
      * @param  obj The object to be compared
      * @return  {@code true} if the objects are the same; {@code false} otherwise
      */
     public boolean equals(Object obj) {
-        if (!(obj instanceof UUID))
+        if(this == obj)
+            return true;
+        if(obj == null)
             return false;
-        return compareTo((UUID)obj) == 0;
+        if(!(obj instanceof UUID))
+            return false;
+        UUID uuid=(UUID)obj;
+        return mostSigBits == uuid.mostSigBits && leastSigBits == uuid.leastSigBits;
     }
-
 
     /**
      * Compares this UUID with the specified UUID.
@@ -202,6 +204,12 @@ public class UUID implements Address, Constructable<UUID> {
         return most != 0? most : Long.compare(this.leastSigBits, val.leastSigBits);
     }
 
+    public int compareTo(UUID val) {
+        if(this == val)
+            return 0;
+        int most=Long.compare(this.mostSigBits, val.mostSigBits);
+        return most != 0? most : Long.compare(this.leastSigBits, val.leastSigBits);
+    }
 
     @Override
     public void writeTo(DataOutput out) throws IOException {
