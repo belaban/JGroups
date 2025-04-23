@@ -656,7 +656,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     protected boolean setupPingSocket(IpAddress dest) {
         lock.lock();
         try {
-            SocketAddress destAddr=new InetSocketAddress(dest.getIpAddress(), dest.getPort());
+            InetSocketAddress destAddr=dest.getSocketAddress();
             ping_sock=getSocketFactory().createSocket("jgroups.fd.ping_sock");
             Util.bind(ping_sock, bind_addr, client_bind_port, client_bind_port+port_range);
             ping_sock.setSoLinger(true, 1);

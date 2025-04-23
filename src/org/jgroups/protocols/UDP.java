@@ -457,7 +457,7 @@ public class UDP extends TP {
                     interfaces=receive_interfaces;
                 else
                     interfaces=Util.getAllAvailableInterfaces();
-                joinGroupOnInterfaces(interfaces, mcast_sock, mcast_addr.getIpAddress());
+                joinGroupOnInterfaces(interfaces, mcast_sock, mcast_addr.getSocketAddress());
             }
             else {
                 if(bind_addr != null)
@@ -535,17 +535,16 @@ public class UDP extends TP {
      * @param s The MulticastSocket to join on
      * @param mcast_addr The multicast address to join
      */
-    protected void joinGroupOnInterfaces(List<NetworkInterface> interfaces, MulticastSocket s, InetAddress mcast_addr) {
-        SocketAddress tmp_mcast_addr=new InetSocketAddress(mcast_addr, mcast_port);
+    protected void joinGroupOnInterfaces(List<NetworkInterface> interfaces, MulticastSocket s, SocketAddress mcast_addr) {
         for(NetworkInterface intf: interfaces) {
 
             //[ JGRP-680] - receive_on_all_interfaces requires every NIC to be configured
             try {
-                s.joinGroup(tmp_mcast_addr, intf);
-                log.debug("joined %s on %s", tmp_mcast_addr, intf.getName());
+                s.joinGroup(mcast_addr, intf);
+                log.debug("joined %s on %s", mcast_addr, intf.getName());
             }
             catch(IOException e) {
-                log.warn(Util.getMessage("InterfaceJoinFailed"), tmp_mcast_addr, intf.getName());
+                log.warn(Util.getMessage("InterfaceJoinFailed"), mcast_addr, intf.getName());
             }
         }
     }
@@ -688,7 +687,7 @@ public class UDP extends TP {
         if(mcast_sock != null) {
             try {
                 if(mcast_addr != null) {
-                    SocketAddress addr=new InetSocketAddress(mcast_addr.getIpAddress(), mcast_addr.getPort());
+                    SocketAddress addr=mcast_addr.getSocketAddress();
                     mcast_sock.leaveGroup(addr, bind_addr == null? null : NetworkInterface.getByInetAddress(bind_addr));
                 }
                 getSocketFactory().close(mcast_sock); // this will cause the mcast receiver thread to break out of its loop
