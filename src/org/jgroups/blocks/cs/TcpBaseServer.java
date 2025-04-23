@@ -1,6 +1,6 @@
 package org.jgroups.blocks.cs;
 
-import org.jgroups.Address;
+import org.jgroups.PhysicalAddress;
 import org.jgroups.util.SocketFactory;
 import org.jgroups.util.ThreadFactory;
 
@@ -21,7 +21,7 @@ public abstract class TcpBaseServer extends BaseServer {
     }
 
     @Override
-    protected TcpConnection createConnection(Address dest) throws Exception {
+    protected TcpConnection createConnection(PhysicalAddress dest) throws Exception {
         return non_blocking_sends? new TcpConnectionNonBlocking(dest, this, max_send_queue)
           : new TcpConnection(dest, this);
     }

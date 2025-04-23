@@ -1,9 +1,7 @@
-
 package org.jgroups.tests;
 
-
-import org.jgroups.Address;
 import org.jgroups.Global;
+import org.jgroups.PhysicalAddress;
 import org.jgroups.blocks.cs.BaseServer;
 import org.jgroups.blocks.cs.NioServer;
 import org.jgroups.blocks.cs.ReceiverAdapter;
@@ -55,7 +53,7 @@ public class ServerUnitTest {
         for(boolean nio: new boolean[]{false, true}) {
             try(BaseServer a=create(nio, 0)) {
                 byte[] data=new byte[0];
-                Address myself=a.localAddress();
+                PhysicalAddress myself=a.localAddress();
                 a.receiver(new ReceiverAdapter() {});
                 send(data, a, myself);
             }
@@ -65,7 +63,7 @@ public class ServerUnitTest {
     public void testSendNullData() throws Exception {
         for(boolean nio: new boolean[]{false, true}) {
             try(BaseServer a=create(nio, 0)) {
-                Address myself=a.localAddress();
+                PhysicalAddress myself=a.localAddress();
                 a.send(myself, null, 0, 0); // the test passes if send() doesn't throw an exception
             }
         }
@@ -76,7 +74,7 @@ public class ServerUnitTest {
         for(boolean nio: new boolean[]{false, true}) {
             try(BaseServer a=create(nio, 0)) {
                 long NUM=1000, total_time;
-                Address myself=a.localAddress();
+                PhysicalAddress myself=a.localAddress();
                 MyReceiver r=new MyReceiver(a, NUM, false);
                 byte[] data="hello world".getBytes();
                 a.receiver(r);
@@ -129,7 +127,7 @@ public class ServerUnitTest {
             try(BaseServer a=create(nio, 0);
                 BaseServer b=create(nio, 0)) {
                 long NUM=1000, total_time;
-                Address other=b.localAddress();
+                PhysicalAddress other=b.localAddress();
                 MyReceiver r=new MyReceiver(b, NUM, false);
                 byte[] data="hello world".getBytes();
 
@@ -155,7 +153,7 @@ public class ServerUnitTest {
             try(BaseServer a=create(nio, 0);
                 BaseServer b=create(nio, 0)) {
                 long NUM=1000, total_time;
-                Address other=b.localAddress();
+                PhysicalAddress other=b.localAddress();
                 MyReceiver r1=new MyReceiver(a, NUM, false);
                 MyReceiver r2=new MyReceiver(b, NUM, true); // send response
 
@@ -201,7 +199,7 @@ public class ServerUnitTest {
                 num_conns=b.getNumConnections();
                 assert num_conns == 0;
 
-                Address addr1=a.localAddress(), addr2=b.localAddress();
+                PhysicalAddress addr1=a.localAddress(), addr2=b.localAddress();
                 byte[] data="hello world".getBytes();
 
                 send(data, a, addr2);
@@ -225,7 +223,7 @@ public class ServerUnitTest {
        //  for(boolean nio: new boolean[]{true}) {
             try(BaseServer a=create(nio, 0);
                 BaseServer b=create(nio, 0)) {
-                Address addr_a=a.localAddress(), addr_b=b.localAddress();
+                PhysicalAddress addr_a=a.localAddress(), addr_b=b.localAddress();
                 byte[] data="hello world".getBytes();
                 send(data, a, addr_a); // send to self
                 assert a.getNumConnections() == 0;
@@ -259,7 +257,7 @@ public class ServerUnitTest {
         try(NioServer a=(NioServer)create(true, 0); NioServer b=(NioServer)create(true, 0)) {
             a.start();
             b.start();
-            Address target=b.localAddress();
+            PhysicalAddress target=b.localAddress();
             MyReceiver r=new MyReceiver(b, 2, false);
             b.receiver(r);
 
@@ -272,7 +270,7 @@ public class ServerUnitTest {
         }
     }
 
-    protected static void send(byte[] request, BaseServer server, Address dest) {
+    protected static void send(byte[] request, BaseServer server, PhysicalAddress dest) {
         try {
             server.send(dest, request, 0, request.length);
         }
@@ -309,7 +307,7 @@ public class ServerUnitTest {
     }
 
 
-    protected static void connectionEstablished(BaseServer server, Address dest) {
+    protected static void connectionEstablished(BaseServer server, PhysicalAddress dest) {
         for(int i=0; i < 10; i++) {
             if(server.connectionEstablishedTo(dest))
                 break;
@@ -345,7 +343,7 @@ public class ServerUnitTest {
         public synchronized long getNumExpected() {return num_expected;}
 
 
-        public synchronized void receive(Address sender, byte[] data, int offset, int length) {
+        public synchronized void receive(PhysicalAddress sender, byte[] data, int offset, int length) {
             // System.out.printf("[nio] from %s: %d bytes\n", sender, length);
             long tmp=num_received.incrementAndGet();
             if(tmp >= num_expected) {
@@ -365,7 +363,7 @@ public class ServerUnitTest {
             }
         }
 
-        public synchronized void receive(Address sender, DataInput in, int length) throws Exception {
+        public synchronized void receive(PhysicalAddress sender, DataInput in, int length) throws Exception {
             byte[] buf=new byte[length];
             in.readFully(buf);
             // System.out.printf("[tcp] from %s: %d bytes\n", sender, len);

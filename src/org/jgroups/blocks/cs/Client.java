@@ -1,7 +1,6 @@
 package org.jgroups.blocks.cs;
 
-import org.jgroups.Address;
-
+import org.jgroups.PhysicalAddress;
 import java.nio.ByteBuffer;
 
 /**
@@ -10,9 +9,9 @@ import java.nio.ByteBuffer;
  * @since  3.6.5
  */
 public interface Client {
-    Address localAddress();
+    PhysicalAddress localAddress();
 
-    Address remoteAddress();
+    PhysicalAddress remoteAddress();
 
     boolean isConnected();
 

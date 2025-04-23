@@ -226,7 +226,7 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
         return down_prot.down(evt);
     }
 
-    public void receive(Address sender, byte[] buf, int offset, int length) {
+    @Override public void receive(PhysicalAddress sender, byte[] buf, int offset, int length) {
         try {
             receive(sender, new ByteArrayDataInputStream(buf, offset, length), length);
         }
@@ -235,7 +235,7 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
         }
     }
 
-    public void receive(Address sender, DataInput in, int length) throws Exception {
+    @Override public void receive(PhysicalAddress sender, DataInput in, int length) throws Exception {
         Message msg=new EmptyMessage();
         msg.readFrom(in);
         FdHeader hdr=msg.getHeader(id);

@@ -3,6 +3,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.annotations.*;
+import org.jgroups.blocks.cs.Receiver;
 import org.jgroups.util.LazyRemovalCache;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.conf.ClassConfigurator;
@@ -55,7 +56,7 @@ import static org.jgroups.conf.AttributeType.SCALAR;
  * @author Bela Ban
  */
 @MBean(description="Transport protocol")
-public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHandler {
+public abstract class TP extends Protocol implements Receiver, DiagnosticsHandler.ProbeHandler {
     public static final    byte    LIST=1; // we have a list of messages rather than a single message when set
     public static final    byte    MULTICAST=2; // message is a multicast (versus a unicast) message when set
     public static final    int     MSG_OVERHEAD=Global.SHORT_SIZE*2 + Global.BYTE_SIZE; // version + flags
@@ -1195,7 +1196,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     /**
      * Subclasses must call this method when a unicast or multicast message has been received.
      */
-    public void receive(Address sender, byte[] data, int offset, int length) {
+    @Override
+    public void receive(PhysicalAddress sender, byte[] data, int offset, int length) {
         if(data == null) return;
 
         // drop message from self; it has already been looped back up (https://issues.redhat.com/browse/JGRP-1765)
@@ -1221,7 +1223,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             handleSingleMessage(in, multicast);
     }
 
-    public void receive(Address sender, DataInput in, int ignoredLength) throws Exception {
+    @Override
+    public void receive(PhysicalAddress sender, DataInput in, int ignoredLength) throws Exception {
         if(in == null) return;
 
         // drop message from self; it has already been looped back up (https://issues.redhat.com/browse/JGRP-1765)

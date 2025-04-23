@@ -1,14 +1,11 @@
-
 package org.jgroups.protocols;
 
-import org.jgroups.Address;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.blocks.cs.NioServer;
 import org.jgroups.conf.AttributeType;
-
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.ClosedChannelException;
 import java.util.Collection;
@@ -19,7 +16,7 @@ import java.util.Collection;
  * messages and dispatches handling of those to a (configurable) thread pool.
  * <p>
  * Most of the functionality is in {@link NioServer}. TCP_NIO sends
- * messages using {@link NioServer#send(Address,byte[],int,int)} and registers with the server
+ * messages using {@link NioServer#send(PhysicalAddress,byte[],int,int)} and registers with the server
  * to receive messages.
  * @author Bela Ban
  * @since 3.6.5
@@ -86,7 +83,7 @@ public class TCP_NIO2 extends BasicTCP {
     }
 
 
-    public void send(Address dest, byte[] data, int offset, int length) throws Exception {
+    @Override public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {
         if(server != null) {
             try {
                 server.send(dest, data, offset, length);
@@ -98,7 +95,7 @@ public class TCP_NIO2 extends BasicTCP {
         }
     }
 
-    public void retainAll(Collection<Address> members) {
+    @Override public void retainAll(Collection<PhysicalAddress> members) {
         server.retainAll(members);
     }
 
@@ -156,6 +153,6 @@ public class TCP_NIO2 extends BasicTCP {
 
 
     protected PhysicalAddress getPhysicalAddress() {
-        return server != null? (PhysicalAddress)server.localAddress() : null;
+        return server != null? server.localAddress() : null;
     }
 }

@@ -1,6 +1,6 @@
 package org.jgroups.blocks.cs;
 
-import org.jgroups.Address;
+import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.util.*;
 
@@ -88,7 +88,7 @@ public class NioServer extends NioBaseServer {
             conn=new NioConnection(client_channel, NioServer.this);
             SelectionKey client_key=client_channel.register(selector, OP_READ, conn);
             conn.key(client_key); // we need to set the selection key of the client channel *not* the server channel
-            Address peer_addr=conn.peerAddress();
+            PhysicalAddress peer_addr=conn.peerAddress();
             if(use_peer_connections)
                 return;
 

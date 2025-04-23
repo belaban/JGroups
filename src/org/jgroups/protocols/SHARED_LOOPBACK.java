@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
  * @author Bela Ban
  */
 public class SHARED_LOOPBACK extends TP {
-    protected short port=1;
+    protected static short port=1;
     protected PhysicalAddress physical_addr;
 
     @ManagedAttribute(description="The current view")
@@ -72,7 +72,7 @@ public class SHARED_LOOPBACK extends TP {
 
         targets.forEach(target -> {
             try {
-                target.receive(local_addr, data, offset, length);
+                target.receive(physical_addr, data, offset, length);
             }
             catch(Throwable t) {
                 log.error(Util.getMessage("FailedSendingMessageTo") + target.getAddress(), t);
@@ -98,7 +98,7 @@ public class SHARED_LOOPBACK extends TP {
                 return;
             }
         }
-        target.receive(local_addr, buf, offset, length);
+        target.receive(physical_addr, buf, offset, length);
     }
 
 

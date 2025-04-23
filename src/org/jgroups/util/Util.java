@@ -1234,7 +1234,7 @@ public class Util {
         return retval;
     }
 
-    public static void bufferToArray(final Address sender, final ByteBuffer buf, org.jgroups.blocks.cs.Receiver target) {
+    public static void bufferToArray(final PhysicalAddress sender, final ByteBuffer buf, org.jgroups.blocks.cs.Receiver target) {
         if(buf == null)
             return;
         int offset=buf.hasArray()? buf.arrayOffset() + buf.position() : buf.position(),

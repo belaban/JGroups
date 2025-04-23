@@ -2,8 +2,8 @@ package org.jgroups.tests.byteman;
 
 import org.jboss.byteman.contrib.bmunit.BMNGRunner;
 import org.jboss.byteman.contrib.bmunit.BMScript;
-import org.jgroups.Address;
 import org.jgroups.Global;
+import org.jgroups.PhysicalAddress;
 import org.jgroups.blocks.cs.BaseServer;
 import org.jgroups.blocks.cs.NioServer;
 import org.jgroups.blocks.cs.ReceiverAdapter;
@@ -30,7 +30,7 @@ public class ServerTest extends BMNGRunner {
     protected static final InetAddress loopback;
     protected MyReceiver               receiver_a, receiver_b;
     protected static final int         PORT_A, PORT_B;
-    public    static Address           A=null, B=null; // need to be static for the byteman rule scripts to access them
+    public    static PhysicalAddress   A=null, B=null; // need to be static for the byteman rule scripts to access them
     protected static final String      STRING_A="a.req", STRING_B="b.req";
 
 
@@ -137,7 +137,7 @@ public class ServerTest extends BMNGRunner {
         }
     }
 
-    protected static void send(String str, BaseServer server, Address dest) {
+    protected static void send(String str, BaseServer server, PhysicalAddress dest) {
         byte[] request=str.getBytes();
         try {
             server.send(dest, request, 0, request.length);
@@ -149,12 +149,12 @@ public class ServerTest extends BMNGRunner {
 
 
     protected static class Sender implements Runnable {
-        protected final BaseServer server;
-        protected final Address    dest;
-        protected final String     req_to_send;
+        protected final BaseServer      server;
+        protected final PhysicalAddress dest;
+        protected final String          req_to_send;
 
 
-        public Sender(BaseServer server, Address dest, String req_to_send) {
+        public Sender(BaseServer server, PhysicalAddress dest, String req_to_send) {
             this.server=server;
             this.dest=dest;
             this.req_to_send=req_to_send;
@@ -177,7 +177,7 @@ public class ServerTest extends BMNGRunner {
         public List<String> getList() {return reqs;}
         public void         clear()   {reqs.clear();}
 
-        public void receive(Address sender, byte[] data, int offset, int length) {
+        public void receive(PhysicalAddress sender, byte[] data, int offset, int length) {
             String str=new String(data, offset, length);
             System.out.println("[" + name + "] received request \"" + str + "\" from " + sender);
             synchronized(reqs) {
@@ -185,7 +185,7 @@ public class ServerTest extends BMNGRunner {
             }
         }
 
-        public void receive(Address sender, DataInput in, int length) throws Exception {
+        public void receive(PhysicalAddress sender, DataInput in, int length) throws Exception {
             byte[] data=new byte[length];
             in.readFully(data, 0, data.length);
             String str=new String(data);

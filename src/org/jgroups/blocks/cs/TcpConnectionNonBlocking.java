@@ -1,6 +1,6 @@
 package org.jgroups.blocks.cs;
 
-import org.jgroups.Address;
+import org.jgroups.PhysicalAddress;
 import org.jgroups.util.ByteArray;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.Util;
@@ -31,7 +31,7 @@ public class TcpConnectionNonBlocking extends TcpConnection {
     protected final LongAdder                dropped_msgs=new LongAdder();
 
 
-    public TcpConnectionNonBlocking(Address peer_addr, TcpBaseServer server, int max_size) throws Exception {
+    public TcpConnectionNonBlocking(PhysicalAddress peer_addr, TcpBaseServer server, int max_size) throws Exception {
         super(peer_addr, server);
         this.max_size=max_size;
         queue=new ArrayBlockingQueue<>(max_size);

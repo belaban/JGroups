@@ -1,6 +1,6 @@
 package org.jgroups.blocks.cs;
 
-import org.jgroups.Address;
+import org.jgroups.PhysicalAddress;
 import org.jgroups.util.Util;
 
 import java.io.DataInput;
@@ -22,7 +22,7 @@ public interface Receiver {
      * @param offset The offset at which the received data starts
      * @param length The length of the received data
      */
-    void receive(Address sender, byte[] buf, int offset, int length);
+    void receive(PhysicalAddress sender, byte[] buf, int offset, int length);
 
     /**
      * Delivers a message from a given sender to the application
@@ -32,12 +32,12 @@ public interface Receiver {
      *            if an application needs to use a buffer after this callback returns, it must make a copy.<p/>
      *            Note that buf could be a direct ByteBuffer.
      */
-    default void receive(Address sender, ByteBuffer buf) {
+    default void receive(PhysicalAddress sender, ByteBuffer buf) {
         Util.bufferToArray(sender, buf, this);
     }
 
     @Deprecated(since="5.3.3",forRemoval=true)
-    default void receive(Address sender, DataInput in) throws Exception {
+    default void receive(PhysicalAddress sender, DataInput in) throws Exception {
         receive(sender, in, -1);
     }
 
@@ -48,7 +48,5 @@ public interface Receiver {
      * @param length The number of bytes to read
      * @throws Exception
      */
-    default void receive(Address sender, DataInput in, int length) throws Exception {
-
-    }
+    void receive(PhysicalAddress sender, DataInput in, int length) throws Exception;
 }

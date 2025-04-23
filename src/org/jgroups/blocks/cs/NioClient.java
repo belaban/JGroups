@@ -1,6 +1,6 @@
 package org.jgroups.blocks.cs;
 
-import org.jgroups.Address;
+import org.jgroups.PhysicalAddress;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.*;
 
@@ -13,8 +13,8 @@ import java.nio.channels.Selector;
  * @since  3.6.5
  */
 public class NioClient extends NioBaseServer implements Client {
-    protected Address       remote_addr; // the address of the server (needs to be set before connecting)
-    protected NioConnection conn;        // connection to the server
+    protected PhysicalAddress remote_addr; // the address of the server (needs to be set before connecting)
+    protected NioConnection   conn;        // connection to the server
 
 
     /**
@@ -53,7 +53,7 @@ public class NioClient extends NioBaseServer implements Client {
 
 
 
-    public Address           remoteAddress()               {return remote_addr;}
+    public PhysicalAddress   remoteAddress()               {return remote_addr;}
     /** Sets the address of the server. Has no effect when already connected. */
     public NioClient         remoteAddress(IpAddress addr) {this.remote_addr=addr; return this;}
     @Override public boolean isConnected()                 {return conn != null && conn.isConnected();}
@@ -79,12 +79,12 @@ public class NioClient extends NioBaseServer implements Client {
     }
 
     @Override
-    public void send(Address dest, ByteBuffer data) throws Exception {
+    public void send(PhysicalAddress dest, ByteBuffer data) throws Exception {
         send(data);
     }
 
     @Override
-    public void send(Address dest, byte[] data, int offset, int length) throws Exception {
+    public void send(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {
         send(data, offset, length);
     }
 

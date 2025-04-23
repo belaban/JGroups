@@ -257,7 +257,7 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
                 if(Objects.equals(local_addr, data.getSender()))
                     return;
                 byte[] msg=data.getBuffer();
-                receive(data.getSender(), msg, 0, msg.length);
+                receive(data.getPhysicalAddress(), msg, 0, msg.length);
                 break;
             case SUSPECT:
                 Address suspect=data.getAddress();

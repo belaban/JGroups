@@ -227,12 +227,12 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
 
 
     @Override
-    public void receive(Address sender, byte[] buf, int offset, int length) {
+    public void receive(PhysicalAddress sender, byte[] buf, int offset, int length) {
         receive(sender, new ByteArrayDataInputStream(buf, offset, length), length);
     }
 
     @Override
-    public void receive(Address sender, DataInput in, int length) {
+    public void receive(PhysicalAddress sender, DataInput in, int length) {
         try {
             GossipData data=new GossipData();
             data.readFrom(in);

@@ -1,6 +1,6 @@
 package org.jgroups.demos;
 
-import org.jgroups.Address;
+import org.jgroups.PhysicalAddress;
 import org.jgroups.blocks.cs.*;
 import org.jgroups.util.Util;
 
@@ -28,19 +28,19 @@ public class PubClient implements Receiver, ConnectionListener {
 
 
     @Override
-    public void receive(Address sender, ByteBuffer buf) {
+    public void receive(PhysicalAddress sender, ByteBuffer buf) {
         byte[] buffer=buf.array();
         String msg=new String(buffer, buf.arrayOffset(), buf.remaining());
         System.out.printf("-- %s\n", msg);
     }
 
     @Override
-    public void receive(Address sender, byte[] buf, int offset, int length) {
+    public void receive(PhysicalAddress sender, byte[] buf, int offset, int length) {
         String msg=new String(buf, offset, length);
         System.out.printf("-- %s\n", msg);
     }
 
-    @Override public void receive(Address sender, DataInput in, int length) throws Exception {
+    @Override public void receive(PhysicalAddress sender, DataInput in, int length) throws Exception {
         byte[] buf=new byte[length];
         in.readFully(buf);
         String msg=new String(buf);

@@ -1,6 +1,7 @@
 package org.jgroups.tests.rt.transports;
 
 import org.jgroups.Address;
+import org.jgroups.PhysicalAddress;
 import org.jgroups.blocks.cs.*;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
@@ -111,7 +112,7 @@ public class ServerTransport extends ReceiverAdapter implements RtTransport {
     }
 
     public void send(Object dest, byte[] buf, int offset, int length) throws Exception {
-        srv.send((Address)dest, buf, offset, buf.length);
+        srv.send((PhysicalAddress)dest, buf, offset, buf.length);
     }
 
     public void receive(Address sender, byte[] buf, int offset, int length) {

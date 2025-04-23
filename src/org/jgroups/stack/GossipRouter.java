@@ -32,7 +32,7 @@ import static org.jgroups.stack.GossipType.GET_MBRS_RSP;
 import static org.jgroups.stack.GossipType.GET_MBRS_RSP_LAST;
 
 /**
- * Router for TCP based group comunication (using layer TCP instead of UDP). Instead of the TCP
+ * Router for TCP based group communication (using layer TCP instead of UDP). Instead of the TCP
  * layer sending packets point-to-point to each other member, it sends the packet to the router
  * which - depending on the target address - multicasts or unicasts it to the group / or single member.
  * <p/>
@@ -132,7 +132,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
         init();
     }
 
-    public Address       localAddress()                     {return server.localAddress();}
+    public PhysicalAddress localAddress()                   {return server.localAddress();}
     public String        bindAddress()                      {return bind_addr != null? bind_addr.toString() : null;}
     public GossipRouter  bindAddress(InetAddress addr)      {this.bind_addr=addr; return this;}
     public int           port()                             {return port;}
@@ -277,12 +277,12 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
     }
 
 
-    @Override public void receive(Address sender, byte[] buf, int offset, int length) {
+    @Override public void receive(PhysicalAddress sender, byte[] buf, int offset, int length) {
         receive(sender, ByteBuffer.wrap(buf, offset, length));
     }
 
     @Override
-    public void receive(Address sender, ByteBuffer buf) {
+    public void receive(PhysicalAddress sender, ByteBuffer buf) {
         int original_pos=buf.position();
         GossipType type;
         try {
@@ -334,7 +334,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
         }
     }
 
-    public void receive(Address sender, DataInput in, int length) throws Exception {
+    @Override public void receive(PhysicalAddress sender, DataInput in, int length) throws Exception {
         GossipType type=GossipType.values()[in.readByte()];
 
         GossipData request=null;
@@ -450,7 +450,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
         return output_streams.computeIfAbsent(mbr, __ -> new ByteArrayDataOutputStream(size));
     }
 
-    protected void handleHeartbeat(Address sender) {
+    protected void handleHeartbeat(PhysicalAddress sender) {
         GossipData rsp=new GossipData(GossipType.HEARTBEAT);
         ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(rsp.serializedSize());
         try {
@@ -462,7 +462,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
         }
     }
 
-    protected void handleRegister(Address sender, DataInput in) {
+    protected void handleRegister(PhysicalAddress sender, DataInput in) {
         GossipData req=readRequest(in, GossipType.REGISTER);
         if(req != null) {
             String          group=req.getGroup();
@@ -483,7 +483,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
             removeAddressMapping(req.getGroup(), req.getAddress());
     }
 
-    protected void handleGetMembersRequest(Address sender, DataInput in) {
+    protected void handleGetMembersRequest(PhysicalAddress sender, DataInput in) {
         GossipData req=readRequest(in, GossipType.GET_MBRS);
         if(req == null)
             return;
@@ -508,7 +508,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
         }
     }
 
-    protected void sendMembersResponse(Address to, GossipData rsp, String group) {
+    protected void sendMembersResponse(PhysicalAddress to, GossipData rsp, String group) {
         if(dump_msgs == DumpMessages.ALL || log.isDebugEnabled()) {
             String rsps=rsp.ping_data == null? null
               : rsp.ping_data.stream().map(r -> String.format("%s (%s)", r.getLogicalName(), r.getPhysicalAddr()))
@@ -569,7 +569,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
     }
 
 
-    protected void addAddressMapping(Address sender, String group, Address addr, PhysicalAddress phys_addr, String logical_name) {
+    protected void addAddressMapping(PhysicalAddress sender, String group, Address addr, PhysicalAddress phys_addr, String logical_name) {
         NameCache.add(addr, logical_name);
         ConcurrentMap<Address,Entry> m=address_mappings.get(group);
         if(m == null) {
@@ -597,7 +597,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
     }
 
 
-    protected void removeFromAddressMappings(Address client_addr) {
+    protected void removeFromAddressMappings(PhysicalAddress client_addr) {
         if(client_addr == null) return;
         Set<Tuple<String,Address>> suspects=null; // group/address pairs
         for(Map.Entry<String,ConcurrentMap<Address,Entry>> entry: address_mappings.entrySet()) {
@@ -726,7 +726,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
     }
 
 
-    protected void sendToMember(Address dest, GossipData request) {
+    protected void sendToMember(PhysicalAddress dest, GossipData request) {
         ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(request.serializedSize());
         try {
             request.writeTo(out);
@@ -737,7 +737,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
         }
     }
 
-    protected void sendToMember(Address dest, ByteBuffer buf) {
+    protected void sendToMember(PhysicalAddress dest, ByteBuffer buf) {
         try {
             server.send(dest, buf);
         }
@@ -746,7 +746,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
         }
     }
 
-    protected void sendToMember(Address dest, byte[] buf, int offset, int len) {
+    protected void sendToMember(PhysicalAddress dest, byte[] buf, int offset, int len) {
         try {
             server.send(dest, buf, offset, len);
         }
@@ -759,9 +759,9 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
     protected static class Entry {
         protected final PhysicalAddress phys_addr;
         protected final String          logical_name;
-        protected final Address         client_addr; // address of the client which registered an item
+        protected final PhysicalAddress client_addr; // address of the client which registered an item
 
-        public Entry(Address client_addr, PhysicalAddress phys_addr, String logical_name) {
+        public Entry(PhysicalAddress client_addr, PhysicalAddress phys_addr, String logical_name) {
             this.phys_addr=phys_addr;
             this.logical_name=logical_name;
             this.client_addr=client_addr;

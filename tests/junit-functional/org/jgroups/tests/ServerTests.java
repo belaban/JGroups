@@ -1,7 +1,7 @@
 package org.jgroups.tests;
 
-import org.jgroups.Address;
 import org.jgroups.Global;
+import org.jgroups.PhysicalAddress;
 import org.jgroups.blocks.cs.BaseServer;
 import org.jgroups.blocks.cs.NioServer;
 import org.jgroups.blocks.cs.ReceiverAdapter;
@@ -32,7 +32,7 @@ public class ServerTests {
     protected static final InetAddress loopback;
     protected MyReceiver               receiver_a, receiver_b;
     protected static int               PORT_A, PORT_B, NUM_SENDERS=50;
-    public    static Address           A=null, B=null; // need to be static for the byteman rule scripts to access them
+    public    static PhysicalAddress   A=null, B=null; // need to be static for the byteman rule scripts to access them
     protected static final String      STRING_A="a.req";
 
 
@@ -180,7 +180,7 @@ public class ServerTests {
         }
     }
 
-    protected static void sendOld(String str, BaseServer server, Address dest) throws Exception {
+    protected static void sendOld(String str, BaseServer server, PhysicalAddress dest) throws Exception {
         byte[] request=str.getBytes();
         byte[] data=new byte[request.length + Global.INT_SIZE];
         Bits.writeInt(request.length, data, 0);
@@ -188,19 +188,19 @@ public class ServerTests {
         server.send(dest, data, 0, data.length);
     }
 
-    protected static void send(String str, BaseServer server, Address dest) throws Exception {
+    protected static void send(String str, BaseServer server, PhysicalAddress dest) throws Exception {
         byte[] request=str.getBytes();
         server.send(dest, request, 0, request.length);
     }
 
 
     protected static class Sender extends Thread {
-        protected final CountDownLatch latch;
-        protected final BaseServer     server;
-        protected final Address        dest;
-        protected final List<String>   receiver;
+        protected final CountDownLatch  latch;
+        protected final BaseServer      server;
+        protected final PhysicalAddress dest;
+        protected final List<String>    receiver;
 
-        public Sender(CountDownLatch latch, BaseServer server, Address dest, List<String> r) {
+        public Sender(CountDownLatch latch, BaseServer server, PhysicalAddress dest, List<String> r) {
             this.latch=latch;
             this.server=server;
             this.dest=dest;
@@ -234,7 +234,7 @@ public class ServerTests {
         public MyReceiver   verbose(boolean v) {verbose=v; return this;}
 
 
-        public void receive(Address sender, byte[] data, int offset, int length) {
+        public void receive(PhysicalAddress sender, byte[] data, int offset, int length) {
             String str=new String(data, offset, length);
             if(verbose)
                 System.out.println("[" + name + "] received request \"" + str + "\" from " + sender);
@@ -243,7 +243,7 @@ public class ServerTests {
             }
         }
 
-        public void receive(Address sender, DataInput in, int length) throws Exception {
+        public void receive(PhysicalAddress sender, DataInput in, int length) throws Exception {
             byte[] data=new byte[length];
             in.readFully(data, 0, data.length);
             String str=new String(data);

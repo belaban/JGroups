@@ -665,7 +665,7 @@ public class UtilTest {
         protected String name;
 
         @Override
-        public void receive(Address sender, byte[] buf, int offset, int length) {
+        public void receive(PhysicalAddress sender, byte[] buf, int offset, int length) {
             name=new String(buf, offset, length);
         }
     }

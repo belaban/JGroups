@@ -1,6 +1,6 @@
 package org.jgroups.blocks.cs;
 
-import org.jgroups.Address;
+import org.jgroups.PhysicalAddress;
 import org.jgroups.util.*;
 
 import java.net.InetAddress;
@@ -118,7 +118,7 @@ public class TcpServer extends TcpBaseServer {
                 conn=non_blocking_sends? new TcpConnectionNonBlocking(client_sock, TcpServer.this, max_send_queue)
                   : new TcpConnection(client_sock, TcpServer.this);
 
-                Address peer_addr=conn.peerAddress();
+                PhysicalAddress peer_addr=conn.peerAddress();
                 boolean conn_exists=hasConnection(peer_addr),
                   replace=conn_exists && use_peer_connections && local_addr.compareTo(peer_addr) < 0; // bigger conn wins
 

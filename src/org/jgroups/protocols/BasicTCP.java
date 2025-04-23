@@ -163,19 +163,13 @@ public abstract class BasicTCP extends TP implements Receiver, ConnectionListene
         }
     }
 
-    public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {
-        send(dest, data, offset, length);
-    }
-
     public String getInfo() {
         return String.format("connections: %s\n", printConnections());
     }
 
     public abstract String printConnections();
 
-    public abstract void send(Address dest, byte[] data, int offset, int length) throws Exception;
-
-    public abstract void retainAll(Collection<Address> members);
+    public abstract void retainAll(Collection<PhysicalAddress> members);
 
     @Override
     public void resetStats() {
@@ -187,7 +181,7 @@ public abstract class BasicTCP extends TP implements Receiver, ConnectionListene
     public Object down(Event evt) {
         Object ret=super.down(evt);
         if(evt.getType() == Event.VIEW_CHANGE) {
-            Set<Address> physical_mbrs=new HashSet<>();
+            Set<PhysicalAddress> physical_mbrs=new HashSet<>();
             for(Address addr: members) {
                 PhysicalAddress physical_addr=getPhysicalAddressFromCache(addr);
                 if(physical_addr != null)
@@ -202,8 +196,8 @@ public abstract class BasicTCP extends TP implements Receiver, ConnectionListene
     public void connectionClosed(Connection conn) {
         if(!enable_suspect_events)
             return;
-        Address peer_ip=conn.peerAddress();
-        Address peer=peer_ip != null? logical_addr_cache.getByValue((PhysicalAddress)peer_ip) : null;
+        PhysicalAddress peer_ip=conn.peerAddress();
+        Address peer=peer_ip != null? logical_addr_cache.getByValue(peer_ip) : null;
         if(peer != null) {
             if(log.isDebugEnabled())
                 log.debug("%s: connection closed by peer %s (IP=%s), sending up a suspect event",

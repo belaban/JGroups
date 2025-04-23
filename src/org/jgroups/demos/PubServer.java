@@ -1,6 +1,6 @@
 package org.jgroups.demos;
 
-import org.jgroups.Address;
+import org.jgroups.PhysicalAddress;
 import org.jgroups.blocks.cs.BaseServer;
 import org.jgroups.blocks.cs.NioServer;
 import org.jgroups.blocks.cs.Receiver;
@@ -45,7 +45,7 @@ public class PubServer implements Receiver {
 
 
     @Override
-    public void receive(Address sender, ByteBuffer buf) {
+    public void receive(PhysicalAddress sender, ByteBuffer buf) {
         try {
             server.send(null, buf);
         }
@@ -55,7 +55,7 @@ public class PubServer implements Receiver {
     }
 
     @Override
-    public void receive(Address sender, byte[] buf, int offset, int length) {
+    public void receive(PhysicalAddress sender, byte[] buf, int offset, int length) {
         try {
             server.send(null, buf, offset, length);
         }
@@ -64,7 +64,7 @@ public class PubServer implements Receiver {
         }
     }
 
-    public void receive(Address sender, DataInput in, int length) throws Exception {
+    public void receive(PhysicalAddress sender, DataInput in, int length) throws Exception {
         byte[] buf=new byte[length];
         in.readFully(buf, 0, length);
         server.send(null, buf, 0, buf.length);

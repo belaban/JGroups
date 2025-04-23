@@ -1,7 +1,5 @@
-
 package org.jgroups.protocols;
 
-import org.jgroups.Address;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.Component;
 import org.jgroups.annotations.ManagedAttribute;
@@ -104,12 +102,12 @@ public class TCP extends BasicTCP {
             srv.socketFactory(factory);
     }
 
-    public void send(Address dest, byte[] data, int offset, int length) throws Exception {
+    @Override public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {
         if(srv != null)
             srv.send(dest, data, offset, length);
     }
 
-    public void retainAll(Collection<Address> members) {
+    @Override public void retainAll(Collection<PhysicalAddress> members) {
         srv.retainAll(members);
     }
 
@@ -176,6 +174,6 @@ public class TCP extends BasicTCP {
 
 
     protected PhysicalAddress getPhysicalAddress() {
-        return srv != null? (PhysicalAddress)srv.localAddress() : null;
+        return srv != null? srv.localAddress() : null;
     }
 }

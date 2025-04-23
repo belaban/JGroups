@@ -1,6 +1,6 @@
 package org.jgroups.blocks.cs;
 
-import org.jgroups.Address;
+import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.util.SocketFactory;
@@ -75,7 +75,7 @@ public abstract class NioBaseServer extends BaseServer {
     public String printBuffers() {
         StringBuilder sb=new StringBuilder("\n");
         synchronized(this) {
-            for(Map.Entry<Address,Connection> entry: conns.entrySet()) {
+            for(Map.Entry<PhysicalAddress,Connection> entry: conns.entrySet()) {
                 NioConnection val=(NioConnection)entry.getValue();
                 sb.append(entry.getKey()).append(":\n  ").append("recv_buf: ").append(val.recv_buf)
                   .append("\n  send_buf: ").append(val.send_buf).append("\n");
@@ -98,7 +98,7 @@ public abstract class NioBaseServer extends BaseServer {
     }
 
     @Override
-    protected NioConnection createConnection(Address dest) throws Exception {
+    protected NioConnection createConnection(PhysicalAddress dest) throws Exception {
         return new NioConnection(dest, this).copyOnPartialWrite(copy_on_partial_write);
     }
 

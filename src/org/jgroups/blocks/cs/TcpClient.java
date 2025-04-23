@@ -1,6 +1,6 @@
 package org.jgroups.blocks.cs;
 
-import org.jgroups.Address;
+import org.jgroups.PhysicalAddress;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.*;
 
@@ -12,8 +12,8 @@ import java.nio.ByteBuffer;
  * @since  3.6.5
  */
 public class TcpClient extends TcpBaseServer implements Client, ConnectionListener {
-    protected Address       remote_addr; // the address of the server (needs to be set before connecting)
-    protected TcpConnection conn;        // connection to the server
+    protected PhysicalAddress remote_addr; // the address of the server (needs to be set before connecting)
+    protected TcpConnection   conn;        // connection to the server
 
 
      /**
@@ -51,7 +51,7 @@ public class TcpClient extends TcpBaseServer implements Client, ConnectionListen
     }
 
 
-    public Address           remoteAddress()               {return remote_addr;}
+    public PhysicalAddress   remoteAddress()               {return remote_addr;}
     /** Sets the address of the server. Has no effect when already connected. */
     public TcpClient         remoteAddress(IpAddress addr) {this.remote_addr=addr; return this;}
     @Override public boolean isConnected()                 {return conn != null && conn.isConnected();}
@@ -81,12 +81,12 @@ public class TcpClient extends TcpBaseServer implements Client, ConnectionListen
     }
 
     @Override
-    public void send(Address dest, byte[] data, int offset, int length) throws Exception {
+    public void send(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {
         send(data, offset, length);
     }
 
     @Override
-    public void send(Address dest, ByteBuffer data) throws Exception {
+    public void send(PhysicalAddress dest, ByteBuffer data) throws Exception {
         send(data);
     }
 

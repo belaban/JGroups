@@ -1,6 +1,6 @@
 package org.jgroups.blocks.cs;
 
-import org.jgroups.Address;
+import org.jgroups.PhysicalAddress;
 import org.jgroups.Version;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.stack.IpAddress;
@@ -39,7 +39,7 @@ public class TcpConnection extends Connection {
     protected final byte[]        length_buf=new byte[Integer.BYTES]; // used to write the length of the data
 
     /** Creates a connection to a remote peer, use {@link #connect(Address)} to connect */
-    public TcpConnection(Address peer_addr, TcpBaseServer server) throws Exception {
+    public TcpConnection(PhysicalAddress peer_addr, TcpBaseServer server) throws Exception {
         this.server=server;
         if(peer_addr == null)
             throw new IllegalArgumentException("Invalid parameter peer_addr="+ peer_addr);
@@ -68,7 +68,7 @@ public class TcpConnection extends Connection {
             sock.setSoLinger(true, 0);
     }
 
-    public Address localAddress() {
+    public PhysicalAddress localAddress() {
         InetSocketAddress local_addr=sock != null? (InetSocketAddress)sock.getLocalSocketAddress() : null;
         return local_addr != null? new IpAddress(local_addr) : null;
     }
@@ -82,11 +82,11 @@ public class TcpConnection extends Connection {
         return sb.toString();
     }
 
-    public void connect(Address dest) throws Exception {
+    public void connect(PhysicalAddress dest) throws Exception {
         connect(dest, server.usePeerConnections());
     }
 
-    protected void connect(Address dest, boolean send_local_addr) throws Exception {
+    protected void connect(PhysicalAddress dest, boolean send_local_addr) throws Exception {
         SocketAddress destAddr=((IpAddress)dest).getSocketAddress();
         try {
             if(!server.defer_client_binding)
@@ -208,7 +208,7 @@ public class TcpConnection extends Connection {
      * Send the cookie first, then our port number. If the cookie doesn't match the receiver's cookie,
      * the receiver will reject the connection and close it.
      */
-    protected void sendLocalAddress(Address local_addr) throws Exception {
+    protected void sendLocalAddress(PhysicalAddress local_addr) throws Exception {
         try {
             int addr_size=local_addr.serializedSize();
             ByteArrayDataOutputStream os=new ByteArrayDataOutputStream(addr_size + Short.BYTES*2 + cookie.length);
@@ -230,7 +230,7 @@ public class TcpConnection extends Connection {
      * Reads the peer's address. First a cookie has to be sent which has to
      * match my own cookie, otherwise the connection will be refused
      */
-    protected Address readPeerAddress(Socket client_sock) throws Exception {
+    protected PhysicalAddress readPeerAddress(Socket client_sock) throws Exception {
         int timeout=client_sock.getSoTimeout();
         client_sock.setSoTimeout(((TcpBaseServer)server).peerAddressReadTimeout());
 
@@ -250,7 +250,7 @@ public class TcpConnection extends Connection {
                                         ") from ours (" + Version.printVersion() + "); discarding it");
             in.readShort(); // address length is only needed by NioConnection
 
-            Address client_peer_addr=new IpAddress();
+            PhysicalAddress client_peer_addr=new IpAddress();
             client_peer_addr.readFrom(in);
             updateLastAccessed();
             return client_peer_addr;

@@ -1,7 +1,7 @@
 package org.jgroups.blocks.cs;
 
-import org.jgroups.Address;
 import org.jgroups.Global;
+import org.jgroups.PhysicalAddress;
 import org.jgroups.Version;
 import org.jgroups.nio.Buffers;
 import org.jgroups.stack.IpAddress;
@@ -44,7 +44,7 @@ public class NioConnection extends Connection {
 
 
      /** Creates a connection stub and binds it, use {@link #connect(Address)} to connect */
-    public NioConnection(Address peer_addr, NioBaseServer server) throws Exception {
+    public NioConnection(PhysicalAddress peer_addr, NioBaseServer server) throws Exception {
         this.server=server;
         if(peer_addr == null)
             throw new IllegalArgumentException("Invalid parameter peer_addr="+ peer_addr);
@@ -79,7 +79,7 @@ public class NioConnection extends Connection {
     public boolean isClosed() {return channel == null || !channel.isOpen();}
 
     @Override
-    public Address localAddress() {
+    public PhysicalAddress localAddress() {
         InetSocketAddress local_addr=null;
         if(channel != null) {
             try {local_addr=(InetSocketAddress)channel.getLocalAddress();} catch(IOException e) {}
@@ -104,11 +104,11 @@ public class NioConnection extends Connection {
     }
 
     @Override
-    public void connect(Address dest) throws Exception {
+    public void connect(PhysicalAddress dest) throws Exception {
         connect(dest, server.usePeerConnections());
     }
 
-    protected void connect(Address dest, boolean send_local_addr) throws Exception {
+    protected void connect(PhysicalAddress dest, boolean send_local_addr) throws Exception {
         SocketAddress destAddr=((IpAddress)dest).getSocketAddress();
         try {
             if(!server.deferClientBinding())
@@ -297,7 +297,7 @@ public class NioConnection extends Connection {
             client_sock.setSoLinger(false, -1);
     }
 
-    protected void sendLocalAddress(Address local_addr) throws Exception {
+    protected void sendLocalAddress(PhysicalAddress local_addr) throws Exception {
         try {
             int addr_size=local_addr.serializedSize();
             int expected_size=cookie.length + Global.SHORT_SIZE*2 + addr_size;
@@ -315,7 +315,7 @@ public class NioConnection extends Connection {
         }
     }
 
-    protected Address readPeerAddress() throws Exception {
+    protected PhysicalAddress readPeerAddress() throws Exception {
         while(recv_buf.read(channel)) {
             int current_position=recv_buf.position()-1;
             ByteBuffer buf=recv_buf.get(current_position);
