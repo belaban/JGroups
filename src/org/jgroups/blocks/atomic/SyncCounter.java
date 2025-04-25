@@ -18,14 +18,14 @@ public interface SyncCounter extends BaseCounter {
      *
      * @return The current value
      */
-    long get();
+    long get() throws Exception;
 
     /**
      * Sets the counter to a new value
      *
      * @param new_value The new value
      */
-    void set(long new_value);
+    void set(long new_value) throws Exception;
 
 
     /**
@@ -35,7 +35,7 @@ public interface SyncCounter extends BaseCounter {
      * @param update The new value of the counter
      * @return True if the counter could be updated, false otherwise
      */
-    default boolean compareAndSet(long expect, long update) {
+    default boolean compareAndSet(long expect, long update) throws Exception {
         return compareAndSwap(expect, update) == expect;
     }
 
@@ -46,14 +46,14 @@ public interface SyncCounter extends BaseCounter {
      * @param update The new value of the counter
      * @return The previous value of the counter
      */
-    long compareAndSwap(long expect, long update);
+    long compareAndSwap(long expect, long update) throws Exception;
 
     /**
      * Atomically increments the counter and returns the new value
      *
      * @return The new value
      */
-    default long incrementAndGet() {
+    default long incrementAndGet() throws Exception {
         return addAndGet(1L);
     }
 
@@ -62,7 +62,7 @@ public interface SyncCounter extends BaseCounter {
      *
      * @return The new value
      */
-    default long decrementAndGet() {
+    default long decrementAndGet() throws Exception {
         return addAndGet(-1L);
     }
 
@@ -73,7 +73,7 @@ public interface SyncCounter extends BaseCounter {
      * @param delta the value to add
      * @return the updated value
      */
-    long addAndGet(long delta);
+    long addAndGet(long delta) throws Exception;
 
     /**
      * Atomically updates the counter's value.
@@ -90,7 +90,7 @@ public interface SyncCounter extends BaseCounter {
      * @see LongSizeStreamable
      */
     @Experimental
-    default <T extends Streamable> T update(CounterFunction<T> updateFunction) {
+    default <T extends Streamable> T update(CounterFunction<T> updateFunction) throws Exception {
         throw new UnsupportedOperationException();
     }
 

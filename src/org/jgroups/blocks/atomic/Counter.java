@@ -9,7 +9,7 @@ package org.jgroups.blocks.atomic;
 public interface Counter extends SyncCounter {
 
     @Override
-    default long compareAndSwap(long expect, long update) {
+    default long compareAndSwap(long expect, long update) throws Exception {
         // throw exception by default to keep backwards compatibility
         throw new UnsupportedOperationException();
     }
