@@ -1719,6 +1719,17 @@ public class UtilTest {
         s=Util.addressToString(ip1);
         ip2=Util.addressFromString(s);
         assert ip1.equals(ip2);
+
+        byte[] symbNameKey = Util.stringToBytes("SYMBOLIC_NAME");
+        byte[] symbNameVal = Util.stringToBytes("member01");
+
+        ExtendedUUID euuid = ExtendedUUID.randomUUID();
+        euuid.put(symbNameKey, symbNameVal);
+        s = Util.addressToString(euuid);
+        assert s != null;
+        assert euuid instanceof ExtendedUUID;
+        ip2=Util.addressFromString(s);
+        assert ip2 != null;
     }
 
     protected static void check(Enumeration<Integer> en, Integer[] expected) {
