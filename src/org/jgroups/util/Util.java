@@ -1920,7 +1920,7 @@ public class Util {
             return String.format("%s%s:%s:%s", SITE_UUID_PREFIX, su.toStringLong(), su.getName(), su.getSite());
         }
         Class<? extends Address> cl=addr.getClass();
-        if(UUID.class.equals(cl))
+        if(UUID.class.isAssignableFrom(cl)) // UUID, FlagsUUID and ExtendedUUID
             return String.format("%s%s", UUID_PREFIX, ((UUID)addr).toStringLong());
         if(IpAddress.class.equals(cl))
             return String.format("%s%s", IP_PREFIX, addr);

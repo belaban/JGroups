@@ -1718,7 +1718,29 @@ public class UtilTest {
         ip1=new IpAddress("127.0.0.1", 7500);
         s=Util.addressToString(ip1);
         ip2=Util.addressFromString(s);
-        assert ip1.equals(ip2);
+        assertSame(ip1, ip2);
+
+        uuid=ExtendedUUID.randomUUID();
+        s=Util.addressToString(uuid);
+        assert s != null;
+        ip2=Util.addressFromString(s);
+        assertSame(uuid, ip2);
+
+        uuid=FlagsUUID.randomUUID().setFlag((short)22);
+        s=Util.addressToString(uuid);
+        assert s != null;
+        ip2=Util.addressFromString(s);
+        assertSame(uuid, ip2);
+    }
+
+    protected static void assertSame(Address u1, Address u2) {
+        assert u1.equals(u2);
+        assert u2.equals(u1);
+        assert u1.compareTo(u2) == 0;
+        assert u2.compareTo(u1) == 0;
+        Set<Address> s=new HashSet<>();
+        s.add(u1); s.add(u2);
+        assert s.size() == 1;
     }
 
     protected static void check(Enumeration<Integer> en, Integer[] expected) {
