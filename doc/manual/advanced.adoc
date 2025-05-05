@@ -2067,20 +2067,20 @@ The way probe works is that every stack has an additional multicast socket that 
 [options="header",cols="3,10"]
 |===============
 |Name|Description
-|enable_diagnostics|
-                            Whether or not to enable diagnostics (default: true). When enabled, this will create
-                            a MulticastSocket and we have one additional thread listening for probe requests. When
-                            disabled, we'll have neither the thread nor the socket created.
-|diag_enable_udp|Use a multicast socket to listen for probe requests
+|diag.enabled|
+              Whether or not to enable diagnostics (default: true). When enabled, this will create
+              a MulticastSocket and we have one additional thread listening for probe requests. When
+              disabled, we'll have neither the thread nor the socket created.
+|diag.enable_udp|Use a multicast socket to listen for probe requests
 
-|diag_enable_tcp|Use a TCP socket to listen for probe requests (ignored if `enable_diagnostics` is false)
+|diag.enable_tcp|Use a TCP socket to listen for probe requests (ignored if `enable_diagnostics` is false)
 
-|diagnostics_addr| The multicast address which the MulticastSocket should join. The default is
-                   `224.0.75.75` for IPv4 and `ff0e::0:75:75` for IPv6.
+|diag.mcast_addr| The multicast address which the MulticastSocket should join. The default is
+                  `224.0.75.75` for IPv4 and `ff0e::0:75:75` for IPv6.
 
-|diagnostics_bind_addr|Bind address for diagnostic probing. Used when diag_enable_tcp is true")
+|diag.bind_addr|Bind address for diagnostic probing. Used when diag_enable_tcp is true")
 
-|diagnostics_port|The port on which the MulticastSocket should listen. The default is `7500`.
+|diag.port|The port on which the MulticastSocket should listen. The default is `7500`.
 |===============
 
 
@@ -2139,7 +2139,7 @@ However, we can also JMX information from a specific protocol, e.g. FRAG2 (sligh
 
 ----
 
-[linux]/home/bela$ probe.sh  jmx=FRAG2
+[linux]/home/bela$ probe.sh FRAG2
 
 -- send probe on /224.0.75.75:7500
 
@@ -2182,7 +2182,7 @@ We can also get information about specific properties in a given protocol:
 
 ----
 
-[belasmac] /Users/bela$ probe.sh  jmx=NAKACK2.xmit
+[belasmac] /Users/bela$ probe.sh NAKACK2.xmit
 
 -- sending probe on /224.0.75.75:7500
 
@@ -2209,7 +2209,7 @@ all cluster members. We can also pass a list of attributes:
 
 
 ----
-[belasmac] /Users/bela$ probe.sh jmx=NAKACK2.xmit,num
+[belasmac] /Users/bela$ probe.sh NAKACK2.xmit,num
 
 -- sending probe on /224.0.75.75:7500
 
@@ -2232,13 +2232,11 @@ This returns all attributes of NAKACK2 that start with `"xmit"` or `"num"`.
         
 
 To invoke an operation, e.g. to set the logging level in all UDP protocols from "warn" to "trace", we
-can use `probe.sh op=UPD.setLevel["trace"]`. This raises the logging level in all
+can use `probe.sh UPD.setLevel["trace"]`. This raises the logging level in all
 UDP protocols of all cluster members, which is useful to diagnose a running system.
-        
 
 Operation invocation uses reflection, so any method defined in any protocol can be invoked. This is
 a powerful tool to get diagnostics information from a running cluster.
-        
 
 For further information, refer to the command line options of probe (`probe.sh -h`).
 
@@ -2335,8 +2333,8 @@ The example output shows stats for members C, A, B and D. When looking at the ou
 To reset the numbers, `probe.sh rpcs-reset` can be called.
 
 ==== Using probe with TCP
-Probe uses IP multicasting by default. To enable TCP, `diag_enable_tcp` has to be set to true in the transport
-(and optionally `diag_enable_udp` to false).
+Probe uses IP multicasting by default. To enable TCP, `diag.enable_tcp` has to be set to true in the transport
+(and optionally `diag.enable_udp` to false).
 
 Probe can then be started by pointing it to the address of one member,
 using the `-addr` argument, e.g.: `probe.sh -addr 192.168.1.105 -port 7500` (note that port 7500 can be omitted, as
