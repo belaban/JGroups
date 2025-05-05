@@ -23,9 +23,6 @@ import java.util.Objects;
  * @author Bela Ban
  */
 public class ConfiguratorFactory {
-    public static final String JAXP_MISSING_ERROR_MSG="the required XML parsing classes are not available; " +
-      "make sure that JAXP compatible libraries are in the classpath.";
-
 
     protected ConfiguratorFactory() {
     }
@@ -38,7 +35,6 @@ public class ConfiguratorFactory {
      * @throws Exception if problems occur during the configuration of the protocol stack.
      */
     public static ProtocolStackConfigurator getStackConfigurator(File file) throws Exception {
-        checkJAXPAvailability();
         InputStream input=getConfigStream(file);
         return XmlConfigurator.getInstance(input);
     }
@@ -46,7 +42,6 @@ public class ConfiguratorFactory {
     public static ProtocolStackConfigurator getStackConfigurator(InputStream input) throws Exception {
         return XmlConfigurator.getInstance(input);
     }
-
 
     /**
      * Returns a protocol stack configurator based on the provided properties string.
@@ -66,13 +61,9 @@ public class ConfiguratorFactory {
         throw new IllegalStateException(String.format("configuration %s not found or invalid", properties));
     }
 
-
-
     public static InputStream getConfigStream(File file) throws Exception {
         return new FileInputStream(Objects.requireNonNull(file));
     }
-
-
 
     /**
      * Returns a JGroups XML configuration InputStream based on the provided properties string.
@@ -108,7 +99,6 @@ public class ConfiguratorFactory {
             configStream=Util.getResourceAsStream(properties, ConfiguratorFactory.class);
         return configStream;
     }
-
 
     public static InputStream getConfigStream(Object properties) throws IOException {
         InputStream input=null;
@@ -148,9 +138,6 @@ public class ConfiguratorFactory {
         return new ByteArrayInputStream(((String)properties).getBytes());
     }
 
-
-
-
     /**
      * Returns an XmlConfigurator based on the provided properties string (if possible).
      *
@@ -163,34 +150,14 @@ public class ConfiguratorFactory {
      *                      JGroups XML configuration pointed to by the URL can not be parsed.
      */
     static XmlConfigurator getXmlConfigurator(String properties) throws IOException {
-        XmlConfigurator returnValue=null;
         try(InputStream configStream=getConfigStream(properties)) {
             if(configStream == null && properties.endsWith("xml"))
                 throw new FileNotFoundException(String.format(Util.getMessage("FileNotFound"), properties));
 
-            if(configStream != null) {
-                checkJAXPAvailability();
-                returnValue=XmlConfigurator.getInstance(configStream);
-            }
+            if(configStream != null)
+                return XmlConfigurator.getInstance(configStream);
         }
-        return returnValue;
-    }
-
-
-
-    /**
-     * Checks the availability of the JAXP classes on the classpath.
-     * @throws NoClassDefFoundError if the required JAXP classes are not availabile on the classpath.
-     */
-    static void checkJAXPAvailability() {
-        try {
-            XmlConfigurator.class.getName();
-        }
-        catch (NoClassDefFoundError error) {
-            Error tmp=new NoClassDefFoundError(JAXP_MISSING_ERROR_MSG);
-            tmp.initCause(error);
-            throw tmp;
-        }
+        return null;
     }
 
 }
