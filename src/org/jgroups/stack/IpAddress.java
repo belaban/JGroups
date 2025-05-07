@@ -72,9 +72,8 @@ public class IpAddress implements PhysicalAddress, Constructable<IpAddress> {
         return null;
     }
 
-    public SocketAddress     getSocketAddress() {return new InetSocketAddress(ip_addr, port);}
-    public InetAddress       getIpAddress()     {return ip_addr;}
-    public  int              getPort()          {return port;}
+    @Override public InetAddress getIpAddress() {return ip_addr;}
+    @Override public int         getPort()      {return port;}
 
     /**
      * implements the java.lang.Comparable interface

@@ -9,7 +9,6 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
-import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
@@ -239,7 +238,7 @@ public class FD_HOST extends Protocol {
 
     protected InetAddress getHostFor(Address mbr) {
         PhysicalAddress phys_addr=getPhysicalAddress(mbr);
-        return phys_addr instanceof IpAddress? ((IpAddress)phys_addr).getIpAddress() : null;
+        return phys_addr != null? phys_addr.getIpAddress() : null;
     }
 
     protected boolean isPinger(Address mbr) {

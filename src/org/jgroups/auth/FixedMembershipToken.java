@@ -56,14 +56,6 @@ public class FixedMembershipToken extends AuthToken {
         fixed_members_seperator = value;
     }
 
-    /** Check if I'm in memberList, too */
-    /*public void start() throws Exception {
-        super.start();
-        IpAddress self=(IpAddress)auth.getPhysicalAddress();
-        if(!isInMembersList(self))
-            throw new IllegalStateException("own physical address " + self + " is not in members (" + memberList + ")");
-    } */
-
     public boolean authenticate(AuthToken token, Message msg) {
         if ((token instanceof FixedMembershipToken) && (this.memberList != null)) {
             PhysicalAddress src = (PhysicalAddress) auth.down(new Event(Event.GET_PHYSICAL_ADDRESS, msg.getSrc()));

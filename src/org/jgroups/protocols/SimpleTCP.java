@@ -96,7 +96,7 @@ public class SimpleTCP extends TP {
         switch(evt.type()) {
             case Event.ADD_PHYSICAL_ADDRESS:
                 Tuple<Address,PhysicalAddress> tuple=evt.arg();
-                IpAddress val=(IpAddress)tuple.getVal2();
+                PhysicalAddress val=tuple.getVal2();
                 addr_table.put(tuple.getVal1(), val.getSocketAddress());
                 break;
             case Event.VIEW_CHANGE:
@@ -181,8 +181,7 @@ public class SimpleTCP extends TP {
     }
 
     public boolean addPhysicalAddressToCache(Address logical_addr, PhysicalAddress physical_addr) {
-        IpAddress tmp=(IpAddress)physical_addr;
-        addr_table.put(logical_addr, tmp.getSocketAddress());
+        addr_table.put(logical_addr, physical_addr.getSocketAddress());
         return super.addPhysicalAddressToCache(logical_addr, physical_addr);
     }
 

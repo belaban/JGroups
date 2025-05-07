@@ -158,7 +158,7 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
         if(timer == null)
             throw new Exception("timer is null");
         PhysicalAddress addr=transport.getPhysicalAddress();
-        int actual_port=((IpAddress)addr).getPort();
+        int actual_port=addr.getPort();
         int[] bind_ports=computeBindPorts(actual_port);
         srv=createServer(bind_ports);
         srv.receiver(this).clientBindPort(client_bind_port).usePeerConnections(true).addConnectionListener(this).linger(linger);

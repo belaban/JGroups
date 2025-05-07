@@ -1,6 +1,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.Address;
+import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.protocols.relay.SiteUUID;
@@ -341,7 +342,7 @@ public class JDBC_PING2 extends FILE_PING {
             Address address=data.getAddress();
             String addr=Util.addressToString(address);
             String name=address instanceof SiteUUID? ((SiteUUID)address).getName() : NameCache.get(address);
-            IpAddress ip_addr=(IpAddress)data.getPhysicalAddr();
+            PhysicalAddress ip_addr=data.getPhysicalAddr();
             String ip=ip_addr.toString();
             ps.setString(1, addr);
             ps.setString(2, name);
@@ -363,7 +364,7 @@ public class JDBC_PING2 extends FILE_PING {
             Address address=data.getAddress();
             String addr=Util.addressToString(address);
             String name=address instanceof SiteUUID? ((SiteUUID)address).getName() : NameCache.get(address);
-            IpAddress ip_addr=(IpAddress)data.getPhysicalAddr();
+            PhysicalAddress ip_addr=data.getPhysicalAddr();
             String ip=ip_addr.toString();
             ps.setString(1, addr);
             ps.setString(2, name);

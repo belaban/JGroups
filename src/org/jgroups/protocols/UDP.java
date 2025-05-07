@@ -273,7 +273,7 @@ public class UDP extends TP {
     }
 
     public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {
-        _send(((IpAddress)dest).getIpAddress(), ((IpAddress)dest).getPort(), data, offset, length);
+        _send(dest.getIpAddress(), dest.getPort(), data, offset, length);
     }
 
 
