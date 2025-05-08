@@ -4,6 +4,7 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.Message;
+import org.jgroups.annotations.Experimental;
 import org.jgroups.util.Runner;
 import org.jgroups.util.Util;
 
@@ -21,6 +22,7 @@ import java.util.concurrent.locks.LockSupport;
  * @author Bela Ban
  * @since 4.0
  */
+@Experimental
 public class RingBufferBundlerLockless extends BaseBundler {
     protected Message[]                   buf;
     protected int                         read_index;

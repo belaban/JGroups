@@ -1,6 +1,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.Message;
+import org.jgroups.annotations.Experimental;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -8,6 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Bela Ban
  * @since  4.0
  */
+@Experimental
 public class SenderSendsBundler extends BaseBundler {
     protected final AtomicInteger num_senders=new AtomicInteger(0); // current senders adding msgs to the bundler
 

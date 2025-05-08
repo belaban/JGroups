@@ -5,6 +5,7 @@ import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.PhysicalAddress;
+import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.Property;
 import org.jgroups.util.*;
 
@@ -23,6 +24,7 @@ import static org.jgroups.util.MessageBatch.Mode.REG;
  * RingBuffer uses a wait strategy (to for example spinning) before blocking. Also, the hashmap of the superclass is not
  * used, but the array of the RingBuffer is used directly to bundle and send messages, minimizing memory allocation.
  */
+@Experimental
 public class RingBufferBundler extends BaseBundler {
     protected RingBuffer<Message>         rb;
     protected Runner                      bundler_thread;

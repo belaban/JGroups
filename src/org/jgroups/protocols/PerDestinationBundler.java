@@ -1,6 +1,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
+import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
@@ -34,6 +35,7 @@ import static org.jgroups.util.MessageBatch.Mode.REG;
  * @author Bela Ban
  * @since  5.2.7
  */
+@Experimental
 public class PerDestinationBundler implements Bundler {
 
     /**
