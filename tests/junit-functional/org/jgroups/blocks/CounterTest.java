@@ -20,10 +20,10 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import static org.testng.AssertJUnit.assertEquals;
 import static org.testng.AssertJUnit.assertFalse;
@@ -65,7 +65,7 @@ public class CounterTest {
     }
 
 
-    public void testIncrement() {
+    public void testIncrement() throws Exception {
         ca.incrementAndGet();
         assertValues(1);
         cb.incrementAndGet();
@@ -74,7 +74,7 @@ public class CounterTest {
         assertValues(3);
     }
 
-    public void testAsyncIncrement() throws TimeoutException {
+    public void testAsyncIncrement() throws Exception {
         AverageMinMax avg=new AverageMinMax();
         long[] values=new long[1000];
 
@@ -123,14 +123,14 @@ public class CounterTest {
         System.out.printf("val=%d, time=%d ms\n", val.get(), time);
     }
 
-    public void testCompareAndSet() {
+    public void testCompareAndSet() throws Exception {
         boolean result=cb.compareAndSet(0, 5);
         assert result && cb.get() == 5;
         result=cc.compareAndSet(0, 5);
         assert !result && cb.get() == 5;
     }
 
-    public void testCompareAndSwap() {
+    public void testCompareAndSwap() throws Exception {
         long previous_value=cb.compareAndSwap(0, 5);
         assert previous_value == 0;
         long val=cb.get();
@@ -139,14 +139,14 @@ public class CounterTest {
         assert previous_value == 5 && cb.get() == 10;
     }
 
-    public void testIncrementUsingFunction() {
+    public void testIncrementUsingFunction() throws Exception {
         assertEquals(1, ca.incrementAndGet());
         assertEquals(1, cb.update(new GetAndAddFunction(1)).getAsLong());
         assertEquals(2, cc.update(new GetAndAddFunction(5)).getAsLong());
         assertValues(7);
     }
 
-    public void testComplexFunction() {
+    public void testComplexFunction() throws Exception {
         assertEquals(0, ca.get());
         AddWithLimitResult res = cb.update(new AddWithLimitFunction(2, 10));
         assertEquals(2, res.result);
@@ -172,8 +172,11 @@ public class CounterTest {
         assertValues(10);
     }
 
-    protected void assertValues(int expected_val) {
-        assert Stream.of(ca,cb,cc).allMatch(c -> c.get() == expected_val);
+    protected void assertValues(int expected_val) throws Exception {
+        List<SyncCounter> counters = List.of(ca, cb, cc);
+        for(SyncCounter c: counters) {
+            assert c.get() == expected_val;
+        }
     }
 
     protected static JChannel create(String name) throws Exception {
