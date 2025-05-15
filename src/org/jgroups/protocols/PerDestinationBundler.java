@@ -193,7 +193,7 @@ public class PerDestinationBundler implements Bundler {
         }
 
         protected void addAndSendIfSizeExceeded(Message msg) {
-            int size=msg.size();
+            int size=msg.getLength();
             if(count + size >= max_size) {
                 sendBundledMessages();
                 num_sends_due_to_max_size.increment();
