@@ -24,12 +24,15 @@ import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
 import java.io.*;
 import java.lang.annotation.Annotation;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.lang.management.*;
 import java.lang.reflect.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.*;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.security.MessageDigest;
@@ -128,6 +131,9 @@ public class Util {
     protected static final SplittableRandom         RANDOM=new SplittableRandom();
 
     protected static final Function<String,List<Address>> FUNC=__ -> new ArrayList<>();
+
+    public static final VarHandle LONG_ARRAY_VIEW = MethodHandles.byteArrayViewVarHandle(long[].class, ByteOrder.BIG_ENDIAN);
+    public static final VarHandle INT_ARRAY_VIEW = MethodHandles.byteArrayViewVarHandle(int[].class, ByteOrder.BIG_ENDIAN);
 
     static {
 

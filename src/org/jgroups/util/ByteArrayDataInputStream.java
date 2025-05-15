@@ -168,48 +168,39 @@ public class ByteArrayDataInputStream extends InputStream implements DataInput {
     }
 
     public short readShort() throws IOException {
-        int ch1=read();
-        int ch2=read();
-        if ((ch1 | ch2) < 0)
-            throw new EOFException();
-        return (short)((ch1 << 8) + (ch2 << 0));
+        return (short) readUnsignedShort();
     }
 
     public int readUnsignedShort() throws IOException {
-        int ch1=read();
-        int ch2=read();
-        if ((ch1 | ch2) < 0)
-            throw new EOFException();
-        return (ch1 << 8) + (ch2 << 0);
+        var index = pos;
+        var array = buf;
+        if (index + 2 > limit) {
+            throw new IOException();
+        }
+        pos += 2;
+        return ((array[index] & 0xFF) << 8) + (array[index + 1] & 0xFF);
     }
 
     public char readChar() throws IOException {
-        int ch1=read();
-        int ch2=read();
-        if ((ch1 | ch2) < 0)
-            throw new EOFException();
-        return (char)((ch1 << 8) + (ch2 << 0));
+        return (char) readUnsignedShort();
     }
 
     public int readInt() throws IOException {
-        int ch1=read();
-        int ch2=read();
-        int ch3=read();
-        int ch4=read();
-        if ((ch1 | ch2 | ch3 | ch4) < 0)
-            throw new EOFException();
-        return ((ch1 << 24) + (ch2 << 16) + (ch3 << 8) + (ch4 << 0));
+        var index = pos;
+        if (index + 4 > limit) {
+            throw new IOException();
+        }
+        pos += 4;
+        return (int) Util.INT_ARRAY_VIEW.get(buf, index);
     }
 
     public long readLong() throws IOException {
-        return (((long)read() << 56) +
-          ((long)(read() & 0xff) << 48) +
-          ((long)(read() & 0xff) << 40) +
-          ((long)(read() & 0xff) << 32) +
-          ((long)(read() & 0xff) << 24) +
-          ((read() & 0xff) << 16) +
-          ((read() & 0xff) <<  8) +
-          ((read() & 0xff) <<  0));
+        var index = pos;
+        if (index + 8 > limit) {
+            throw new IOException();
+        }
+        pos += 8;
+        return (long) Util.LONG_ARRAY_VIEW.get(buf, index);
     }
 
     public float readFloat() throws IOException {
