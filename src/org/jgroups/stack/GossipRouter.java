@@ -447,6 +447,9 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
     }
 
     protected ByteArrayDataOutputStream getOutputStream(Address mbr, int size) {
+        ByteArrayDataOutputStream ret=output_streams.get(mbr);
+        if(ret != null)
+            return ret;
         return output_streams.computeIfAbsent(mbr, __ -> new ByteArrayDataOutputStream(size));
     }
 

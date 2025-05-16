@@ -910,10 +910,16 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         boolean remove_msgs=discard_delivered_msgs && !loopback;
         AsciiString cl=cluster != null? cluster : getTransport().getClusterNameAscii();
         int cap=Math.max(Math.max(Math.max(buf.size(), max_batch_size), min_size), DEFAULT_INITIAL_CAPACITY);
-        MessageBatch batch=reuse_message_batches && cl != null?
-          cached_batches.computeIfAbsent(sender, __ -> new MessageBatch(cap).dest(null).sender(sender).cluster(cl).mcast(true))
-          : new MessageBatch(cap).dest(null).sender(sender).cluster(cl).multicast(true);
-        batch.array().increment(DEFAULT_INCREMENT);
+        MessageBatch b=null;
+        if(reuse_message_batches) {
+            b=cached_batches.get(sender);
+            if(b == null)
+                b=cached_batches.computeIfAbsent(sender, __ -> new MessageBatch(cap).dest(null).sender(sender)
+                  .cluster(cl).mcast(true).incr(DEFAULT_INCREMENT));
+        }
+        else
+            b=new MessageBatch(cap).dest(null).sender(sender).cluster(cl).mcast(true).incr(DEFAULT_INCREMENT);
+        MessageBatch batch=b;
         Supplier<MessageBatch> batch_creator=() -> batch;
         MessageBatch mb=null;
         do {

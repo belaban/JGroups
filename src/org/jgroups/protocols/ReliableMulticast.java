@@ -819,11 +819,16 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
         boolean remove_msgs=discard_delivered_msgs && !loopback;
         int cap=max_batch_size > 0 && max_batch_size < win.capacity()? max_batch_size : win.capacity();
         AsciiString cl=cluster != null? cluster : getTransport().getClusterNameAscii();
-
-        MessageBatch batch=reuse_message_batches && cl != null?
-          cached_batches.computeIfAbsent(sender, __ -> new MessageBatch(cap).dest(null).sender(sender).cluster(cl).mcast(true))
-          : new MessageBatch(cap).dest(null).sender(sender).cluster(cl).multicast(true);
-
+        MessageBatch b=null;
+        if(reuse_message_batches) {
+            b=cached_batches.get(sender);
+            if(b == null)
+                b=cached_batches.computeIfAbsent(sender, __ -> new MessageBatch(cap).dest(null).sender(sender)
+                  .cluster(cl).mcast(true));
+        }
+        else
+            b=new MessageBatch(cap).dest(null).sender(sender).cluster(cl).mcast(true);
+        MessageBatch batch=b;
         Supplier<MessageBatch> batch_creator=() -> batch;
         MessageBatch mb=null;
         do {

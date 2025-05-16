@@ -558,7 +558,9 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                 continue;
             }
 
-            List<LongTuple<Message>> list=msgs.computeIfAbsent(hdr.conn_id, k -> new ArrayList<>(size));
+            List<LongTuple<Message>> list=msgs.get(hdr.conn_id);
+            if(list == null)
+                list=msgs.computeIfAbsent(hdr.conn_id, __ -> new ArrayList<>(size));
             list.add(new LongTuple<>(hdr.seqno(), msg));
 
             if(hdr.first)
@@ -976,10 +978,16 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
         AsciiString cl=cluster != null? cluster : getTransport().getClusterNameAscii();
         int cap=Math.max(Math.max(Math.max(win.size(), max_batch_size), min_size), DEFAULT_INITIAL_CAPACITY);
-        MessageBatch batch=reuse_message_batches && cl != null?
-          cached_batches.computeIfAbsent(sender, __ -> new MessageBatch(cap).dest(local_addr).sender(sender).cluster(cl))
-          : new MessageBatch(cap).dest(local_addr).sender(sender).cluster(cl).multicast(true);
-        batch.array().increment(DEFAULT_INCREMENT);
+        MessageBatch b=null;
+        if(reuse_message_batches) {
+            b=cached_batches.get(sender);
+            if(b == null)
+                b=cached_batches.computeIfAbsent(sender, __ -> new MessageBatch(cap).dest(local_addr)
+                  .sender(sender).cluster(cl).incr(DEFAULT_INCREMENT));
+        }
+        else
+            b=new MessageBatch(cap).dest(local_addr).sender(sender).cluster(cl).incr(DEFAULT_INCREMENT);
+        MessageBatch batch=b;
         Supplier<MessageBatch> batch_creator=() -> batch;
         MessageBatch mb=null;
         do {

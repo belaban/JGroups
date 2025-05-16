@@ -231,7 +231,7 @@ public class Merger {
            Map<Address,Collection<Address>> retval=new HashMap<>();
            for(View view: views.values()) {
                Address coord=view.getCreator();
-               Collection<Address> members=retval.computeIfAbsent(coord, k -> new ArrayList<>());
+               Collection<Address> members=retval.computeIfAbsent(coord, __ -> new ArrayList<>());
                for(Address mbr: view.getMembersRaw())
                    if(!members.contains(mbr))
                        members.add(mbr);

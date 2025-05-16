@@ -127,6 +127,8 @@ public class Util {
     protected static final String                   IP_PREFIX="ip://";
     protected static final SplittableRandom         RANDOM=new SplittableRandom();
 
+    protected static final Function<String,List<Address>> FUNC=__ -> new ArrayList<>();
+
     static {
 
         try {
@@ -5249,7 +5251,7 @@ public class Util {
                 String sitename=((SiteUUID)a).getSite();
                 if(sitename == null || sitename.equals(excluding_site))
                     continue;
-                List<Address> site_addrs=m.computeIfAbsent(sitename, s -> new ArrayList<>());
+                List<Address> site_addrs=m.computeIfAbsent(sitename, FUNC);
                 site_addrs.add(a);
             }
         }

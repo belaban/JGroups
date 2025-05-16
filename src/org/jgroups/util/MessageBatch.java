@@ -94,6 +94,7 @@ public class MessageBatch implements Iterable<Message> {
     public long         timestamp()                      {return timestamp;}
     public MessageBatch timestamp(long ts)               {timestamp=ts; return this;}
     public MessageBatch increment(int i)                 {messages.increment(i); return this;}
+    public MessageBatch incr(int i)                      {return increment(i);}
 
 
     /** Returns the underlying message array. This is only intended for testing ! */

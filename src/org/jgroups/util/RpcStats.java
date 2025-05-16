@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Function;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
@@ -26,6 +27,9 @@ public class RpcStats {
     protected final LongAdder               async_anycasts=new LongAdder();
     protected volatile Map<Address,Result>  stats;
     protected volatile Map<Address,RTTStat> rtt_stats;
+
+    protected static final Function<Address,RTTStat> FUNC=__ -> new RTTStat();
+    protected static final Function<Address,Result> FUNC2=__ -> new Result();
 
     public enum Type {MULTICAST, UNICAST, ANYCAST}
 
@@ -75,7 +79,7 @@ public class RpcStats {
         if(this.rtt_stats == null)
             this.rtt_stats=new ConcurrentHashMap<>();
         Address key=sender == null? Global.NULL_ADDRESS : sender;
-        RTTStat rtt_stat=rtt_stats.computeIfAbsent(key, k -> new RTTStat());
+        RTTStat rtt_stat=rtt_stats.computeIfAbsent(key, FUNC);
         rtt_stat.add(hdr);
     }
 
@@ -145,7 +149,7 @@ public class RpcStats {
             return;
         if(dest == null)
             dest=Global.NULL_ADDRESS;
-        Result res=map.computeIfAbsent(dest, k -> new Result());
+        Result res=map.computeIfAbsent(dest, FUNC2);
         res.add(sync, time);
     }
 

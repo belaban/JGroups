@@ -116,7 +116,9 @@ public class PerDestinationBundler implements Bundler {
         if(msg.getSrc() == null)
             msg.setSrc(local_addr);
         Address dest=msg.dest() == null ? NULL : msg.dest();
-        SendBuffer buf=dests.computeIfAbsent(dest, k -> new SendBuffer(dest).start());
+        SendBuffer buf=dests.get(dest);
+        if(buf == null)
+            buf=dests.computeIfAbsent(dest, k -> new SendBuffer(dest).start());
         buf.send(msg);
     }
 

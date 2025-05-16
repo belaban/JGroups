@@ -10,6 +10,7 @@ import org.jgroups.util.MessageBatch;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
 
 /**
  * Provides various stats
@@ -28,6 +29,8 @@ public class STATS extends Protocol {
 
     /** Maintains stats per receiver */
     protected final ConcurrentMap<Address,MsgStats> received=new ConcurrentHashMap<>();
+
+    protected static final Function<Address,MsgStats> FUNC=__ -> new MsgStats();
 
 
 
@@ -98,10 +101,9 @@ public class STATS extends Protocol {
 
     protected void sent(Message msg) {
         mstats.sent(msg);
-
         Address key=msg.dest();
         if(key == null) key=NULL_DEST;
-        MsgStats entry=((Map<Address,MsgStats>)sent).computeIfAbsent(key, k -> new MsgStats());
+        MsgStats entry=sent.computeIfAbsent(key, FUNC);
         entry.sent(msg);
     }
 
@@ -110,7 +112,7 @@ public class STATS extends Protocol {
 
         Address key=msg.src();
         if(key == null) key=NULL_DEST;
-        MsgStats entry=((Map<Address,MsgStats>)received).computeIfAbsent(key, k -> new MsgStats());
+        MsgStats entry=received.computeIfAbsent(key, FUNC);
         entry.received(msg);
     }
 
@@ -119,7 +121,7 @@ public class STATS extends Protocol {
 
         Address key=batch.sender();
         if(key == null) key=NULL_DEST;
-        MsgStats entry=((Map<Address,MsgStats>)received).computeIfAbsent(key, k -> new MsgStats());
+        MsgStats entry=received.computeIfAbsent(key, FUNC);
         entry.received(batch);
     }
 

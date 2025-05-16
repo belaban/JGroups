@@ -22,6 +22,7 @@ import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -59,6 +60,8 @@ public class FORK extends Protocol {
 
     // mappings between fork-stack-ids and fork-stacks (bottom-most protocol)
     protected final ConcurrentMap<String,Protocol> fork_stacks=new ConcurrentHashMap<>();
+
+    protected static final Function<? super String, ? extends List<Message>> FUNC=k -> new ArrayList<>();
 
     public FORK setUnknownForkHandler(UnknownForkHandler unknownForkHandler) {
         this.unknownForkHandler = unknownForkHandler;
@@ -155,7 +158,7 @@ public class FORK extends Protocol {
             ForkHeader hdr=msg.getHeader(id);
             if(hdr != null) {
                 it.remove();
-                List<Message> list=map.computeIfAbsent(hdr.fork_stack_id, k -> new ArrayList<>());
+                List<Message> list=map.computeIfAbsent(hdr.fork_stack_id, FUNC);
                 list.add(msg);
             }
         }
