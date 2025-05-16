@@ -116,6 +116,19 @@ public class Leaver {
     protected void sendLeaveRequest(Address coord, Address leaving_mbr) {
         Message msg=new EmptyMessage(coord).setFlag(Message.Flag.OOB).setFlag(Message.TransientFlag.DONT_BLOCK)
           .putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.LEAVE_REQ, leaving_mbr));
-        gms.getDownProtocol().down(msg);
+        if(gms.thread_pool == null)
+            gms.getDownProtocol().down(msg);
+        else {
+            // If the mcast protocol can block, we need to send a view asynchronously. The views will still
+            // be delivered in order, see https://issues.redhat.com/browse/JGRP-2875 for details
+            Runnable r=() -> {
+                gms.getDownProtocol().down(msg);
+            };
+            boolean rc=gms.thread_pool.execute(r);
+            if(!rc) { // https://issues.redhat.com/browse/JGRP-2880
+                Thread th=gms.getThreadFactory().newThread(r);
+                th.start();
+            }
+        }
     }
 }

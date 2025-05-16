@@ -560,7 +560,11 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 down_prot.down(view_change_msg);
                 sendJoinResponses(jr, joiners);
             };
-            thread_pool.execute(r);
+            boolean rc=thread_pool.execute(r);
+            if(!rc) { // https://issues.redhat.com/browse/JGRP-2880
+                Thread th=getThreadFactory().newThread(r);
+                th.start();
+            }
         }
 
         try {

@@ -75,6 +75,14 @@ public class ThreadPool implements Lifecycle {
     @ManagedAttribute(description="The number of messages dropped because the thread pool was full",type= SCALAR)
     protected final LongAdder     num_rejected_msgs=new LongAdder();
 
+    protected final RejectedExecutionHandler rejected_handler=(r, pool) -> {
+        num_rejected_msgs.increment();
+        //https://issues.redhat.com/browse/JGRP-2802
+        String thread_dump=thread_dumps_enabled? String.format(". Threads:\n%s", Util.dumpThreads()) : "";
+        thread_pool_full_log.log(warn, "thread-pool-full", thread_pool_full_suppress_time,
+                                 address, max_threads, getThreadPoolSize(), thread_dump);
+    };
+
     public ThreadPool() {
     }
 
@@ -231,17 +239,17 @@ public class ThreadPool implements Lifecycle {
 
     public Executor pool() {return thread_pool;}
 
-    public boolean execute(Runnable task) {
+    public boolean execute(Runnable task, RejectedExecutionHandler h) {
         try {
             thread_pool.execute(task);
             return true;
         }
         catch(RejectedExecutionException ex) {
-            num_rejected_msgs.increment();
-            //https://issues.redhat.com/browse/JGRP-2802
-            String thread_dump=thread_dumps_enabled? String.format(". Threads:\n%s", Util.dumpThreads()) : "";
-            thread_pool_full_log.log(warn, "thread-pool-full", thread_pool_full_suppress_time,
-                                     address, max_threads, getThreadPoolSize(), thread_dump);
+            rejected_handler.rejectedExecution(task, null); // we want the default behavior (incr rej. msgs)
+            if(h != null) {
+                ThreadPoolExecutor tmp=thread_pool instanceof ThreadPoolExecutor? (ThreadPoolExecutor)thread_pool : null;
+                h.rejectedExecution(task, tmp);
+            }
             return false;
         }
         catch(Throwable t) {
@@ -249,6 +257,10 @@ public class ThreadPool implements Lifecycle {
             num_rejected_msgs.increment();
             return false;
         }
+    }
+
+    public boolean execute(Runnable task) {
+        return execute(task, null);
     }
 
     public String toString() {
