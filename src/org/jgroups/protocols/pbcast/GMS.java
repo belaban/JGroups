@@ -916,9 +916,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                         return null;
                     }
                 }
-
-                System.out.printf("** %s: received view: %s\n", local_addr, new_view);
-
                 Address coord=msg.getSrc();
                 if(!new_view.containsMember(coord)) {
                     sendViewAck(coord); // we need to send the ack first, otherwise the connection is removed
