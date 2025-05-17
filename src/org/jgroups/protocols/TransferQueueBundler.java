@@ -10,6 +10,8 @@ import org.jgroups.util.Util;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.LongAdder;
+import java.util.stream.Stream;
 
 import static org.jgroups.conf.AttributeType.SCALAR;
 
@@ -29,13 +31,13 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
 
     protected volatile boolean       running=true;
     @ManagedAttribute(description="Number of times a message was sent because the queue was full", type=SCALAR)
-    protected long                   num_sends_because_full_queue;
+    protected final LongAdder        num_sends_because_full_queue=new LongAdder();
     @ManagedAttribute(description="Number of times a message was sent because there was no message available in the queue",
       type=SCALAR)
-    protected long                   num_sends_because_no_msgs;
+    protected final LongAdder        num_sends_because_no_msgs=new LongAdder();
 
     @ManagedAttribute(description="Number of dropped messages (when drop_when_full is true)",type=SCALAR)
-    protected long                   num_drops_on_full_queue;
+    protected final LongAdder        num_drops_on_full_queue=new LongAdder();
 
     @ManagedAttribute(description="Average fill size of the queue (in bytes)")
     protected final AverageMinMax    avg_fill_count=new AverageMinMax(512); // avg number of bytes when a batch is sent
@@ -60,7 +62,8 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
     @Override
     public void resetStats() {
         super.resetStats();
-        num_sends_because_full_queue=num_sends_because_no_msgs=num_drops_on_full_queue=0;
+        Stream.of(num_sends_because_full_queue,num_sends_because_no_msgs,num_drops_on_full_queue)
+          .forEach(LongAdder::reset);
         avg_fill_count.clear();
     }
 
@@ -109,7 +112,7 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
             return;
         if(drop_when_full || msg.isFlagSet(Message.TransientFlag.DONT_BLOCK)) {
             if(!queue.offer(msg))
-                num_drops_on_full_queue++;
+                num_drops_on_full_queue.increment();
         }
         else
             queue.put(msg);
@@ -133,7 +136,7 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
                     if(transport.statsEnabled())
                         avg_fill_count.add(count);
                     sendBundledMessages();
-                    num_sends_because_no_msgs++;
+                    num_sends_because_no_msgs.increment();
                 }
             }
             catch(InterruptedException iex) {
@@ -152,7 +155,7 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
             if(transport.statsEnabled())
                 avg_fill_count.add(count);
             sendBundledMessages();
-            num_sends_because_full_queue++;
+            num_sends_because_full_queue.increment();
         }
         addMessage(msg, size);
     }

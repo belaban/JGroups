@@ -22,6 +22,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Stream;
 
 import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
+import static org.jgroups.conf.AttributeType.SCALAR;
 import static org.jgroups.protocols.TP.MSG_OVERHEAD;
 import static org.jgroups.util.MessageBatch.Mode.OOB;
 import static org.jgroups.util.MessageBatch.Mode.REG;
@@ -46,12 +47,15 @@ public class PerDestinationBundler implements Bundler {
       description="Maximum number of bytes for messages to be queued (per destination) until they are sent")
     protected int                           max_size=64000;
 
+    @Property(description="When the queue is full, senders will drop a message rather than wait until space " +
+      "is available (https://issues.redhat.com/browse/JGRP-2765)")
+    protected boolean                       drop_when_full=true;
+
     @ManagedAttribute(description="Total number of messages sent (single and batches)",type=AttributeType.SCALAR)
     protected final LongAdder               total_msgs_sent=new LongAdder();
 
     @ManagedAttribute(description="Number of single messages sent",type=AttributeType.SCALAR)
     protected final LongAdder               num_single_msgs_sent=new LongAdder();
-
 
     @ManagedAttribute(description="Number of batches sent",type=AttributeType.SCALAR)
     protected final LongAdder               num_batches_sent=new LongAdder();
@@ -61,6 +65,9 @@ public class PerDestinationBundler implements Bundler {
 
     @ManagedAttribute(description="Number of batches sent because the queue was full",type=AttributeType.SCALAR)
     protected final LongAdder               num_sends_due_to_max_size=new LongAdder();
+
+    @ManagedAttribute(description="Number of dropped messages (when drop_when_full is true)",type=SCALAR)
+    protected final LongAdder               num_drops_on_full_queue=new LongAdder();
 
     @ManagedAttribute(description="Times to send messages")
     protected final AverageMinMax           send_times=new AverageMinMax().unit(TimeUnit.NANOSECONDS);
@@ -77,7 +84,6 @@ public class PerDestinationBundler implements Bundler {
     public int     size() {
         return dests.values().stream().map(SendBuffer::size).reduce(0, Integer::sum);
     }
-    
     public int     getQueueSize()         {return -1;}
     public int     getMaxSize()           {return max_size;}
     public Bundler setMaxSize(int s)      {this.max_size=s; return this;}
@@ -91,7 +97,7 @@ public class PerDestinationBundler implements Bundler {
     }
 
     @Override public void resetStats() {
-        Stream.of(total_msgs_sent, num_batches_sent, num_single_msgs_sent, num_sends_due_to_max_size)
+        Stream.of(total_msgs_sent, num_batches_sent, num_single_msgs_sent, num_sends_due_to_max_size, num_drops_on_full_queue)
           .forEach(LongAdder::reset);
         send_times.clear();
     }
@@ -209,7 +215,14 @@ public class PerDestinationBundler implements Bundler {
         }
 
         protected void send(Message msg) throws Exception {
-            queue.put(msg);
+            if(!running)
+                return;
+            if(drop_when_full || msg.isFlagSet(Message.TransientFlag.DONT_BLOCK)) {
+                if(!queue.offer(msg))
+                    num_drops_on_full_queue.increment();
+            }
+            else
+                queue.put(msg);
         }
 
         protected void sendBundledMessages() {
