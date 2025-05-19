@@ -132,8 +132,8 @@ public class Util {
 
     protected static final Function<String,List<Address>> FUNC=__ -> new ArrayList<>();
 
-    public static final VarHandle LONG_ARRAY_VIEW = MethodHandles.byteArrayViewVarHandle(long[].class, ByteOrder.BIG_ENDIAN);
-    public static final VarHandle INT_ARRAY_VIEW = MethodHandles.byteArrayViewVarHandle(int[].class, ByteOrder.BIG_ENDIAN);
+    public static final VarHandle LONG_ARRAY_VIEW=MethodHandles.byteArrayViewVarHandle(long[].class, ByteOrder.BIG_ENDIAN);
+    public static final VarHandle INT_ARRAY_VIEW=MethodHandles.byteArrayViewVarHandle(int[].class, ByteOrder.BIG_ENDIAN);
 
     static {
 

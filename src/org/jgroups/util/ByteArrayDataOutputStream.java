@@ -37,7 +37,7 @@ public class ByteArrayDataOutputStream extends BaseDataOutputStream {
 
     @Override
     public void writeChar(int v) {
-        writeShort((short) v);
+        writeShort((short)v);
     }
 
     @Override

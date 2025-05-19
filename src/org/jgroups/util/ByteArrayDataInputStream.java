@@ -168,39 +168,36 @@ public class ByteArrayDataInputStream extends InputStream implements DataInput {
     }
 
     public short readShort() throws IOException {
-        return (short) readUnsignedShort();
+        return (short)readUnsignedShort();
     }
 
     public int readUnsignedShort() throws IOException {
-        var index = pos;
-        var array = buf;
-        if (index + 2 > limit) {
+        var index=pos;
+        var array=buf;
+        if(index + 2 > limit)
             throw new IOException();
-        }
         pos += 2;
         return ((array[index] & 0xFF) << 8) + (array[index + 1] & 0xFF);
     }
 
     public char readChar() throws IOException {
-        return (char) readUnsignedShort();
+        return (char)readUnsignedShort();
     }
 
     public int readInt() throws IOException {
-        var index = pos;
-        if (index + 4 > limit) {
+        var index=pos;
+        if(index + 4 > limit)
             throw new IOException();
-        }
         pos += 4;
-        return (int) Util.INT_ARRAY_VIEW.get(buf, index);
+        return (int)Util.INT_ARRAY_VIEW.get(buf, index);
     }
 
     public long readLong() throws IOException {
-        var index = pos;
-        if (index + 8 > limit) {
+        var index=pos;
+        if(index + 8 > limit)
             throw new IOException();
-        }
         pos += 8;
-        return (long) Util.LONG_ARRAY_VIEW.get(buf, index);
+        return (long)Util.LONG_ARRAY_VIEW.get(buf, index);
     }
 
     public float readFloat() throws IOException {
