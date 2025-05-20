@@ -35,6 +35,7 @@ import java.util.function.Supplier;
  * @since 5.x
  */
 @Experimental
+@Deprecated(forRemoval=true,since="5.4.9")
 @MBean(description="Protocol just below flow control that wraps messages to improve throughput with small messages.")
 public class BATCH extends Protocol {
 
