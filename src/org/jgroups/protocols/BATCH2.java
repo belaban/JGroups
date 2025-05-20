@@ -26,17 +26,15 @@ import java.util.function.Supplier;
  * wrapper.  On the receiving end, the batch is unwrapped when it reaches this protocol and then forwarded to higher
  * protocols as individual messages in a loop.
  * @author Chris Johnson
+ * @author Bela Ban
  * @since 5.x
  */
 @Experimental
 @MBean(description="Protocol just below flow control that wraps messages to improve throughput with small messages.")
 public class BATCH2 extends Protocol {
 
-    @Property(description="Max interval (millis) at which the queued messages are sent")
-    protected long                   flush_interval=100;
-
     @Property(description="The maximum number of messages per batch")
-    public int                       max_batch_size = 100;
+    public int                       max_batch_size=100;
 
     @Property(description="Time (microseconds) to wait on poll() from the down_queue. A value of <= 0 doesn't wait",
       type=AttributeType.TIME, unit=TimeUnit.MICROSECONDS)
@@ -60,7 +58,6 @@ public class BATCH2 extends Protocol {
     protected long                   num_ebs_sent_due_to_timeout;
 
     protected final NullAddress      nullAddress = new NullAddress();
-    protected TimeScheduler          timer;
     protected volatile boolean       running;
     protected Map<Address,Buffer>    msgMap = Util.createConcurrentMap();
     protected static Batch2Header    HEADER= new Batch2Header();
@@ -224,9 +221,6 @@ public class BATCH2 extends Protocol {
     }
 
     public void start() throws Exception {
-        timer=getTransport().getTimer();
-        if(timer == null)
-            throw new Exception("timer is null");
         running=true;
         runner.start();
     }
