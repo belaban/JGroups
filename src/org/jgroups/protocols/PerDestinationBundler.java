@@ -72,7 +72,7 @@ public class PerDestinationBundler implements Bundler {
     protected final LongAdder               num_drops_on_full_queue=new LongAdder();
 
     @ManagedAttribute(description="Times to send messages")
-    protected final AverageMinMax           send_times=new AverageMinMax().unit(TimeUnit.NANOSECONDS);
+    protected final AverageMinMax           avg_send_time=new AverageMinMax().unit(TimeUnit.NANOSECONDS);
 
     protected TP                            transport;
     protected MsgStats                      msg_stats;
@@ -107,7 +107,7 @@ public class PerDestinationBundler implements Bundler {
     @Override public void resetStats() {
         Stream.of(total_msgs_sent, num_batches_sent, num_single_msgs_sent, num_sends_due_to_max_size, num_drops_on_full_queue)
           .forEach(LongAdder::reset);
-        send_times.clear();
+        avg_send_time.clear();
     }
 
     public void init(TP transport) {
@@ -253,7 +253,7 @@ public class PerDestinationBundler implements Bundler {
                 else
                     sendMultiple(dest, src, list, this.output);
                 if(start > 0)
-                    send_times.add(System.nanoTime()-start);
+                    avg_send_time.add(System.nanoTime()-start);
                 total_msgs_sent.add(size);
             }
             catch(Throwable e) {
