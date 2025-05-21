@@ -3,7 +3,6 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.protocols.TP;
 import org.jgroups.protocols.UNICAST3;
-import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.AverageMinMax;
@@ -35,7 +34,7 @@ public class BundlerStressTest {
     protected int                           num_sender_threads=1;
     protected boolean                       details;
 
-    protected String                        cfg="udp.xml";
+    protected String                        cfg="tcp.xml";
     protected JChannel[]                    channels;
     protected final Map<Long,Promise<Long>> sender_threads=new ConcurrentHashMap<>();
 
@@ -60,19 +59,9 @@ public class BundlerStressTest {
         for(int i=0; i < channels.length; i++) {
             char ch=(char)('A' + i);
             String name=String.valueOf(ch);
-            channels[i]=new JChannel(cfg).name(name);
-            GMS gms=channels[i].getProtocolStack().findProtocol(GMS.class);
-           // if(gms != null)
-             //   gms.printLocalAddress(false);
-
-            channels[i].connect("bst");
+            channels[i]=new JChannel(cfg).name(name).connect("bst");
             System.out.print(".");
-            //if(i == 0) {
-              //  TP transport=channels[0].getProtocolStack().getTransport();
-               // transport.bundler(bundler);
-            //}
-            //else
-                channels[i].setReceiver(new BundlerTestReceiver());
+            channels[i].setReceiver(new BundlerTestReceiver());
         }
         Util.waitUntilAllChannelsHaveSameView(10000, 500, channels);
         for(int i=0; i < channels.length; i++) {
@@ -95,7 +84,7 @@ public class BundlerStressTest {
     // Removes all protocols but the transports
     protected BundlerStressTest removeProtocols() {
         for(JChannel ch: channels) {
-            ProtocolStack stack=ch.getProtocolStack();
+            ProtocolStack stack=ch.stack();
             Protocol prot=stack.getTopProtocol();
             while(prot != null && !(prot instanceof TP)) {
                 try {
@@ -157,6 +146,9 @@ public class BundlerStressTest {
                     case '4':
                         msg_size=Util.readIntFromStdin("msg_size: ");
                         break;
+                    case '5':
+                        time=Util.readIntFromStdin("time (secs): ");
+                        break;
                     case 'b':
                         String type=null;
                         try {
@@ -206,7 +198,7 @@ public class BundlerStressTest {
             System.out.printf("-- warmup for %d seconds\n", this.warmup);
         else
             System.out.printf("-- %d sender threads sending messages for %d seconds\n", num_sender_threads, time);
-        long start=Util.micros();
+        long start=System.nanoTime();
         latch.countDown(); // starts all sender threads
 
         // wait for time seconds
@@ -233,7 +225,7 @@ public class BundlerStressTest {
             System.out.println();
             return;
         }
-        long time_us=Util.micros()-start;
+        long time_ns=System.nanoTime()-start;
         AverageMinMax send_avg=null;
         for(Sender sender: senders) {
             if(details && !is_warmup)
@@ -245,14 +237,14 @@ public class BundlerStressTest {
         }
 
         long num_msgs=sent_msgs.sum();
-        double msgs_sec=num_msgs / (time_us / 1000.0 / 1000.0);
+        double msgs_sec=num_msgs / (time_ns / 1000.0 / 1000.0 / 1000.0);
         System.out.printf(Util.bold("\n" +
-                                      "\nbundler:        %s" +
-                                      "\nsender threads: %s" +
-                                      "\nreqs/sec:       %,.2f (time: %s)" +
-                                      "\nsend-time:      %s / %s / %s (min/avg/max)\n"),
+                                      "\nbundler:   %s" +
+                                      "\nthreads:   %s" +
+                                      "\nreqs/sec:  %,.2f (time: %s)" +
+                                      "\nsend-time: %s / %s / %s (min/avg/max)\n"),
                           getBundlerType(), num_sender_threads,
-                          msgs_sec, Util.printTime(time_us, MICROSECONDS), Util.printTime(send_avg.min(), NANOSECONDS),
+                          msgs_sec, Util.printTime(time_ns, NANOSECONDS), Util.printTime(send_avg.min(), NANOSECONDS),
                           Util.printTime(send_avg.average(), NANOSECONDS),
                           Util.printTime(send_avg.max(), NANOSECONDS));
     }
@@ -296,7 +288,7 @@ public class BundlerStressTest {
                 props=args[++i];
                 continue;
             }
-            System.out.print("BundlerStressTest [-props config] [-bundler bundler-type] [-time secs] [-warmup secs]" +
+            System.out.print("BundlerStressTest [-props config] [-bundler bundler-type] [-time secs] [-warmup secs] " +
                                "[-num_sender_threads num] [-nodes num] [-msg_size size] [-interactive false|true]\n");
             return;
         }
@@ -307,7 +299,7 @@ public class BundlerStressTest {
 
     protected class Sender extends Thread {
         protected final CountDownLatch latch;
-        protected final AverageMinMax  send=new AverageMinMax(); // ns
+        protected final AverageMinMax  send=new AverageMinMax().unit(NANOSECONDS); // ns
         protected long                 thread_id;
         protected Promise<Long>        promise;
         protected final LongAdder      sent_msgs;
