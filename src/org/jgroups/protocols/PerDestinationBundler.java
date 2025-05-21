@@ -3,6 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.logging.Log;
@@ -19,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
@@ -96,6 +98,12 @@ public class PerDestinationBundler implements Bundler {
         return batched_msgs / (double)num_batches;
     }
 
+    @ManagedOperation(description="Shows all destinations")
+    public String dests() {
+        return dests.entrySet().stream().map(e -> String.format("%s: %s", e.getKey(), e.getValue()))
+          .collect(Collectors.joining("\n"));
+    }
+
     @Override public void resetStats() {
         Stream.of(total_msgs_sent, num_batches_sent, num_single_msgs_sent, num_sends_due_to_max_size, num_drops_on_full_queue)
           .forEach(LongAdder::reset);
@@ -143,7 +151,7 @@ public class PerDestinationBundler implements Bundler {
 
     protected class SendBuffer implements Runnable {
         private final Address                   dest;
-        protected final FastArray<Message>      msgs=new FastArray<>(16);
+        protected final FastArray<Message>      msgs=new FastArray<>(128);
         private final Lock                      lock=new ReentrantLock(false);
         private final BlockingQueue<Message>    queue=new ArrayBlockingQueue<>(8192);
         private final List<Message>             remove_queue=new ArrayList<>(1024);
