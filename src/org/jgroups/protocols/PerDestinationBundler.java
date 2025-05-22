@@ -10,7 +10,6 @@ import org.jgroups.logging.Log;
 import org.jgroups.stack.MessageProcessingPolicy;
 import org.jgroups.util.*;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -154,7 +153,7 @@ public class PerDestinationBundler implements Bundler {
         protected final FastArray<Message>      msgs=new FastArray<>(128);
         private final Lock                      lock=new ReentrantLock(false);
         private final BlockingQueue<Message>    queue=new ArrayBlockingQueue<>(8192);
-        private final List<Message>             remove_queue=new ArrayList<>(1024);
+        private final List<Message>             remove_queue=new FastArray<Message>(1024).increment(128);
         private final ByteArrayDataOutputStream output=new ByteArrayDataOutputStream(max_size + MSG_OVERHEAD);
         private volatile Thread                 bundler_thread;
         private volatile boolean                running=true;
@@ -162,7 +161,7 @@ public class PerDestinationBundler implements Bundler {
 
 
         protected SendBuffer(Address dest) {
-            this.dest=dest;
+            this.dest=dest == null? NULL : dest;
         }
 
         public SendBuffer start() {
@@ -233,8 +232,7 @@ public class PerDestinationBundler implements Bundler {
         protected void sendBundledMessages() {
             if(msgs.isEmpty()) // should never happen!
                 return;
-            Address dst=dest == NULL? null : dest;
-            sendMessages(dst, local_addr, msgs);
+            sendMessages(dest, local_addr, msgs);
             msgs.clear(false);
             count=0;
         }
