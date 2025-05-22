@@ -71,8 +71,8 @@ public class PerDestinationBundler implements Bundler {
     @ManagedAttribute(description="Number of dropped messages (when drop_when_full is true)",type=SCALAR)
     protected final LongAdder               num_drops_on_full_queue=new LongAdder();
 
-    @ManagedAttribute(description="Times to send messages")
-    protected final AverageMinMax           avg_send_time=new AverageMinMax().unit(TimeUnit.NANOSECONDS);
+    @ManagedAttribute(description="Average time to send messages (transport part)")
+    protected final AverageMinMax           avg_send_time=new AverageMinMax(1024).unit(TimeUnit.NANOSECONDS);
 
     protected TP                            transport;
     protected MsgStats                      msg_stats;
