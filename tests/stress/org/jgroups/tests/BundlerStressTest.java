@@ -19,12 +19,13 @@ import static java.util.concurrent.TimeUnit.*;
 
 
 /**
- * Tests bundler performance. Creates N members, always sends from the first member to a random member and waits for
- * the response (synchronous communication). The request includes the thread's ID.
+ * Tests bundler performance. Creates N members, always sends from the first member to a random member (unicast)
+ * and waits for the request to be received by sender_threads (same process, synchronous communication).
+ * The request includes the thread's ID.
  * <br/>
- * Each sender adds their thread-id to a hashmap and waits on the promise (associated value). The receiver reads the
- * thread-id, grabs the promise and calls {@link org.jgroups.util.Promise#setResult(Object)}, waking up the sender
- * thread to send the next message.
+ * Each sender adds their thread-id to a hashmap (sender_threads) and waits on the promise (associated value). The
+ * receiver reads the thread-id, grabs the promise and calls {@link org.jgroups.util.Promise#setResult(Object)},
+ * waking up the sender thread to send the next message.
  * @author Bela Ban
  * @since  4.0
  */
@@ -180,7 +181,7 @@ public class BundlerStressTest {
     protected Address pickRandomDestination() {
         if(channels == null) return null;
         int size=channels.length;
-        int index=(int)Util.random(size-1);
+        int index=Util.random(size-1);
         return channels[index].getAddress();
     }
 
@@ -251,7 +252,7 @@ public class BundlerStressTest {
 
 
     public static void main(String[] args) throws Exception {
-        String bundler="transfer-queue", props="udp.xml";
+        String bundler="transfer-queue", props="tcp.xml";
         int time=60, warmup=time/2, nodes=4, num_sender_threads=1, msg_size=1000;
         boolean interactive=true;
         for(int i=0; i < args.length; i++) {
@@ -332,8 +333,8 @@ public class BundlerStressTest {
                     long start=System.nanoTime();
                     channels[0].send(msg);
                     promise.getResult(0);
-                    sent_msgs.increment();
                     long time_ns=System.nanoTime()-start;
+                    sent_msgs.increment();
                     send.add(time_ns); // single threaded; no lock needed
                 }
                 catch(Exception e) {
