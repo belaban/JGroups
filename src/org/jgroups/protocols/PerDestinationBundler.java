@@ -193,10 +193,7 @@ public class PerDestinationBundler implements Bundler {
                         int num_msgs=queue.drainTo(remove_queue);
                         if(num_msgs <= 0)
                             break;
-                        for(int i=0; i < remove_queue.size(); i++) {
-                            msg=remove_queue.get(i);
-                            addAndSendIfSizeExceeded(msg);
-                        }
+                        remove_queue.forEach(this::addAndSendIfSizeExceeded); // forEach() avoids array bounds check
                     }
                     if(count > 0) {
                         sendBundledMessages();
