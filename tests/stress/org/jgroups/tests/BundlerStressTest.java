@@ -1,8 +1,10 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
+import org.jgroups.protocols.FD_SOCK2;
 import org.jgroups.protocols.TP;
 import org.jgroups.protocols.UNICAST3;
+import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.AverageMinMax;
@@ -15,7 +17,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.LongAdder;
 
-import static java.util.concurrent.TimeUnit.*;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 
 /**
@@ -60,8 +63,12 @@ public class BundlerStressTest {
         for(int i=0; i < channels.length; i++) {
             char ch=(char)('A' + i);
             String name=String.valueOf(ch);
-            channels[i]=new JChannel(cfg).name(name).connect("bst");
+            channels[i]=new JChannel(cfg).name(name);
+            GMS gms=channels[i].stack().findProtocol(GMS.class);
+            gms.printLocalAddress(false);
             System.out.print(".");
+            System.out.flush();
+            channels[i].connect("bst");
             channels[i].setReceiver(new BundlerTestReceiver());
         }
         Util.waitUntilAllChannelsHaveSameView(10000, 500, channels);
@@ -73,11 +80,14 @@ public class BundlerStressTest {
         System.out.printf("\n-- view: %s (bundler=%s)\n", channels[0].getView(), getBundlerType());
         for(int i=0; i < channels.length; i++) {
             // UNICAST3.sendPendingAcks() (called by stop()) would cause an NPE (down_prot is null)
-            UNICAST3 uni=channels[i].getProtocolStack().findProtocol(UNICAST3.class);
+            UNICAST3 uni=channels[i].stack().findProtocol(UNICAST3.class);
             if(uni != null) {
                 uni.stopRetransmitTask();
                 uni.sendPendingAcks();
             }
+            FD_SOCK2 fd=channels[i].stack().findProtocol(FD_SOCK2.class);
+            if(fd != null)
+                fd.setHandlerToNull(); // so we don't get a NPE (null down_prot)
         }
         return removeProtocols();
     }

@@ -138,6 +138,9 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
     public int         getLinger()                       {return linger;}
     public FD_SOCK2    setLinger(int l)                  {this.linger=l; return this;}
 
+    /** Used for perf test only */
+    public FD_SOCK2    setHandlerToNull() {req_handler.setHandler(null); return this;}
+
     @ManagedAttribute(description="Actual port the server is listening on")
     public int getActualBindPort() {
         Address addr=srv != null? srv.localAddress() : null;
