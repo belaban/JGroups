@@ -612,28 +612,28 @@ public class COUNTER extends Protocol {
         }
 
         @Override
-        public long get() {
-            return CompletableFutures.join(counter.get());
+        public long get() throws Exception {
+            return counter.get().toCompletableFuture().get();
         }
 
         @Override
-        public void set(long new_value) {
-            CompletableFutures.join(counter.set(new_value));
+        public void set(long new_value) throws Exception {
+            counter.set(new_value).toCompletableFuture().get();
         }
 
         @Override
-        public long compareAndSwap(long expect, long update) {
-            return CompletableFutures.join(counter.compareAndSwap(expect, update));
+        public long compareAndSwap(long expect, long update) throws Exception {
+            return counter.compareAndSwap(expect, update).toCompletableFuture().get();
         }
 
         @Override
-        public long addAndGet(long delta) {
-            return CompletableFutures.join(counter.addAndGet(delta));
+        public long addAndGet(long delta) throws Exception {
+            return counter.addAndGet(delta).toCompletableFuture().get();
         }
 
         @Override
-        public <T extends Streamable> T update(CounterFunction<T> updateFunction) {
-            return CompletableFutures.join(counter.update(updateFunction));
+        public <T extends Streamable> T update(CounterFunction<T> updateFunction) throws Exception {
+            return counter.update(updateFunction).toCompletableFuture().get();
         }
 
         @Override
