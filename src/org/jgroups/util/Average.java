@@ -12,7 +12,7 @@ import static org.jgroups.util.Util.printTime;
  * Maintains an approximation of an average of positive (>= 0) values in a window and adding new values at random
  * indices.<br/>
  * This class is lock-less, at the expense of incorrect reads and writes (by multiple threads), but the noise of
- * these errors should be neglectable. Note that a bigger capacity (window size) reduces this noise.
+ * these errors should be negligible. Note that a bigger capacity (window size) reduces this noise.
  * @author Bela Ban
  * @since  3.4, 5.4
  */

@@ -62,7 +62,7 @@ public class PerDestinationBundler implements Bundler {
     protected final LongAdder               num_batches_sent=new LongAdder();
 
     @ManagedAttribute(description="Number of batches sent because no more messages were available",type=AttributeType.SCALAR)
-    protected final LongAdder               num_send_due_to_no_msgs=new LongAdder();
+    protected final LongAdder               num_sends_due_to_no_msgs=new LongAdder();
 
     @ManagedAttribute(description="Number of batches sent because the queue was full",type=AttributeType.SCALAR)
     protected final LongAdder               num_sends_due_to_max_size=new LongAdder();
@@ -72,6 +72,9 @@ public class PerDestinationBundler implements Bundler {
 
     @ManagedAttribute(description="Average time to send messages (transport part)")
     protected final AverageMinMax           avg_send_time=new AverageMinMax(1024).unit(TimeUnit.NANOSECONDS);
+
+    @ManagedAttribute(description="Average fill size of the queue (in bytes)")
+    protected final AverageMinMax           avg_fill_count=new AverageMinMax(512); // avg number of bytes when a batch is sent
 
     protected TP                            transport;
     protected MsgStats                      msg_stats;
@@ -88,6 +91,13 @@ public class PerDestinationBundler implements Bundler {
     public int     getQueueSize()         {return -1;}
     public int     getMaxSize()           {return max_size;}
     public Bundler setMaxSize(int s)      {this.max_size=s; return this;}
+
+    @ManagedOperation
+    public String dump() {
+        return dests.entrySet().stream()
+          .map(e -> String.format("%s: %s", e.getKey(), e.getValue().dump()))
+          .collect(Collectors.joining("\n"));
+    }
 
     @ManagedAttribute(description="Average number of messages in an BatchMessage")
     public double avgBatchSize() {
@@ -107,6 +117,7 @@ public class PerDestinationBundler implements Bundler {
         Stream.of(total_msgs_sent, num_batches_sent, num_single_msgs_sent, num_sends_due_to_max_size, num_drops_on_full_queue)
           .forEach(LongAdder::reset);
         avg_send_time.clear();
+        avg_fill_count.clear();
     }
 
     public void init(TP transport) {
@@ -150,15 +161,20 @@ public class PerDestinationBundler implements Bundler {
 
     protected class SendBuffer implements Runnable {
         private final Address                   dest;
-        protected final FastArray<Message>      msgs=new FastArray<>(128);
+        protected final FastArray<Message>      msgs=new FastArray<Message>(128).increment(64);
         private final Lock                      lock=new ReentrantLock(false);
-        private final BlockingQueue<Message>    queue=new ArrayBlockingQueue<>(8192);
-        private final List<Message>             remove_queue=new FastArray<Message>(1024).increment(128);
+        private final BlockingQueue<Message>    queue=new ArrayBlockingQueue<>(4096);
+        private final FastArray<Message>        remove_queue=new FastArray<Message>(REMOVE_QUEUE_SIZE).increment(128);
         private final ByteArrayDataOutputStream output=new ByteArrayDataOutputStream(max_size + MSG_OVERHEAD);
         private volatile Thread                 bundler_thread;
         private volatile boolean                running=true;
         private long                            count;
+        private static final int                REMOVE_QUEUE_SIZE=1024;
 
+
+        public String dump() {
+            return String.format("msgs.capacity(): %,d, remove-q cap: %,d", msgs.capacity(), remove_queue.capacity());
+        }
 
         protected SendBuffer(Address dest) {
             this.dest=dest == null? NULL : dest;
@@ -189,14 +205,16 @@ public class PerDestinationBundler implements Bundler {
                     addAndSendIfSizeExceeded(msg);
                     while(true) {
                         remove_queue.clear();
-                        int num_msgs=queue.drainTo(remove_queue);
+                        int num_msgs=queue.drainTo(remove_queue); //, REMOVE_QUEUE_SIZE);
                         if(num_msgs <= 0)
                             break;
-                        remove_queue.forEach(this::addAndSendIfSizeExceeded); // forEach() avoids array bounds check
+                       remove_queue.forEach(this::addAndSendIfSizeExceeded); // forEach() avoids array bounds check
                     }
                     if(count > 0) {
+                        if(transport.statsEnabled())
+                            avg_fill_count.add(count);
                         sendBundledMessages();
-                        num_send_due_to_no_msgs.increment();
+                        num_sends_due_to_no_msgs.increment();
                     }
                 }
                 catch(Throwable t) {
@@ -205,8 +223,10 @@ public class PerDestinationBundler implements Bundler {
         }
 
         protected void addAndSendIfSizeExceeded(Message msg) {
-            int size=msg.size(); // getLength() might return 0 when no [ayload is present: don't use!
+            int size=msg.size(); // getLength() might return 0 when no payload is present: don't use!
             if(count + size >= max_size) {
+                if(transport.statsEnabled())
+                    avg_fill_count.add(count);
                 sendBundledMessages();
                 num_sends_due_to_max_size.increment();
             }
