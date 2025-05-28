@@ -50,7 +50,7 @@
     <class id="80"  name="org.jgroups.protocols.relay.RelayHeader"/>
     <class id="82"  name="org.jgroups.protocols.UnicastHeader3"/>
     <class id="83"  name="org.jgroups.protocols.FORK$ForkHeader"/>
-    <class id="84"  name="org.jgroups.protocols.PERF$PerfHeader"/>
+    <class id="84"  name="org.jgroups.protocols.PerfHeader"/>
     <class id="86"  name="org.jgroups.protocols.SEQUENCER2$SequencerHeader"/>
     <class id="88"  name="org.jgroups.protocols.EncryptHeader"/>
     <class id="91"  name="org.jgroups.protocols.Frag3Header"/>

@@ -17,12 +17,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
+import static org.jgroups.conf.AttributeType.SCALAR;
 import static org.jgroups.protocols.TP.MSG_OVERHEAD;
 import static org.jgroups.util.MessageBatch.Mode.OOB;
 import static org.jgroups.util.MessageBatch.Mode.REG;
@@ -53,12 +56,44 @@ public abstract class BaseBundler implements Bundler {
       description="Maximum number of bytes for messages to be queued until they are sent")
     protected int                                   max_size=64000;
 
-    @Property(description="The max number of elements in a bundler if the bundler supports size limitations",
-      type=AttributeType.SCALAR)
+    @Property(description="The max number of messages in a bundler if the bundler supports size limitations",
+      type=SCALAR)
     protected int                                   capacity=16384;
+
+    @Property(description="Capacity of the remove queue. If > 0, the capacity is fixed, otherwise it will be " +
+      "computed dynamically as a function of capacity")
+    protected int                                   remove_queue_capacity;
+
+    @Property(description="When true, when there's no space to queue a message, senders will drop the message rather" +
+      "than wait until space is available (https://issues.redhat.com/browse/JGRP-2765)")
+    protected boolean                               drop_when_full=true;
+
+    @ManagedAttribute(description="Average fill size of the queue (in bytes) when messages are sent")
+    protected final AverageMinMax                   avg_fill_count=new AverageMinMax(512);
+
+    @ManagedAttribute(description="Average number of messages drained into the remove queue")
+    protected final AverageMinMax                   avg_remove_queue_size=new AverageMinMax(512);
 
     @ManagedAttribute(description="Time (us) to send the bundled messages")
     protected final AverageMinMax                   avg_send_time=new AverageMinMax(1024).unit(NANOSECONDS);
+
+    @ManagedAttribute(description="Total number of messages sent (single and batches)",type=AttributeType.SCALAR)
+    protected final LongAdder                       total_msgs_sent=new LongAdder();
+
+    @ManagedAttribute(description="Number of single messages sent",type=AttributeType.SCALAR)
+    protected final LongAdder                       num_single_msgs_sent=new LongAdder();
+
+    @ManagedAttribute(description="Number of batches sent",type=AttributeType.SCALAR)
+    protected final LongAdder                       num_batches_sent=new LongAdder();
+
+    @ManagedAttribute(description="Number of times a message was sent because the queue was full", type=SCALAR)
+    protected final LongAdder                       num_sends_because_full_queue=new LongAdder();
+    @ManagedAttribute(description="Number of times a message was sent because there were no more messages " +
+      "available in the queue", type=SCALAR)
+    protected final LongAdder                       num_sends_because_no_msgs=new LongAdder();
+
+    @ManagedAttribute(description="Number of dropped messages (when drop_when_full is true)",type=SCALAR)
+    protected final LongAdder                       num_drops_on_full_queue=new LongAdder();
 
     @ManagedOperation(description="Prints the capacity of the buffers")
     public String printBuffers() {
@@ -67,10 +102,22 @@ public abstract class BaseBundler implements Bundler {
           .collect(Collectors.joining("\n"));
     }
 
-    public int     getCapacity()               {return capacity;}
-    public Bundler setCapacity(int c)          {this.capacity=c; return this;}
-    public int     getMaxSize()                {return max_size;}
-    public Bundler setMaxSize(int s)           {max_size=s; return this;}
+    public int                   getCapacity()              {return capacity;}
+    public Bundler               setCapacity(int c)         {this.capacity=c; return this;}
+    public int                   removeQueueCapacity()      {return remove_queue_capacity;}
+    public Bundler               removeQueueCapacity(int c) {this.remove_queue_capacity=c; return this;}
+    public int                   getMaxSize()               {return max_size;}
+    public Bundler               setMaxSize(int s)          {max_size=s; return this;}
+    public boolean               dropWhenFull()             {return drop_when_full;}
+    public <T extends Bundler> T dropWhenFull(boolean d)    {this.drop_when_full=d; return (T)this;}
+
+    @ManagedAttribute(description="Average number of messages in an BatchMessage")
+    public double avgBatchSize() {
+        long num_batches=num_batches_sent.sum(), total_msgs=total_msgs_sent.sum(), single_msgs=num_single_msgs_sent.sum();
+        if(num_batches == 0 || total_msgs == 0) return 0.0;
+        long batched_msgs=total_msgs - single_msgs;
+        return batched_msgs / (double)num_batches;
+    }
 
     public void init(TP transport) {
         this.transport=transport;
@@ -81,7 +128,10 @@ public abstract class BaseBundler implements Bundler {
     }
 
     public void resetStats() {
-        avg_send_time.clear();
+        Stream.of(total_msgs_sent,num_batches_sent, num_single_msgs_sent,num_sends_because_full_queue,
+                  num_sends_because_no_msgs,num_drops_on_full_queue)
+          .forEach(LongAdder::reset);
+        avg_send_time.clear(); avg_fill_count.clear(); avg_remove_queue_size.clear();
     }
 
     public void start() {}
@@ -126,6 +176,7 @@ public abstract class BaseBundler implements Bundler {
                 sendSingle(dst, list.get(0), output);
             else
                 sendMultiple(dst, list.get(0).src(), list, output);
+            total_msgs_sent.add(list.size());
             list.clear();
         }
         count=0;
@@ -137,7 +188,7 @@ public abstract class BaseBundler implements Bundler {
 
     protected void sendSingle(Address dst, Message msg, ByteArrayDataOutputStream out) {
         if(dst == null) { // multicast
-            sendSingleMessage(msg, out);
+            sendSingleMessage(dst, msg, out);
             loopbackUnlessDontLoopbackIsSet(msg);
         }
         else {            // unicast
@@ -146,7 +197,7 @@ public abstract class BaseBundler implements Bundler {
             if(send_to_self)
                 loopbackUnlessDontLoopbackIsSet(msg);
             else
-                sendSingleMessage(msg, out);
+                sendSingleMessage(dst, msg, out);
         }
     }
 
@@ -167,7 +218,7 @@ public abstract class BaseBundler implements Bundler {
 
     protected void sendMultiple(Address dst, Address sender, Message[] list, int len, ByteArrayDataOutputStream out) {
         if(dst == null) { // multicast
-            sendMessageList(dst, sender, list, len, out);
+            sendMessageListArray(dst, sender, list, len, out);
             loopback(dst, transport.getAddress(), list, len);
         }
         else {            // unicast
@@ -176,7 +227,7 @@ public abstract class BaseBundler implements Bundler {
             if(send_to_self)
                 loopback(dst, transport.getAddress(), list, len);
             else
-                sendMessageList(dst, sender, list, len, out);
+                sendMessageListArray(dst, sender, list, len, out);
         }
     }
 
@@ -220,12 +271,12 @@ public abstract class BaseBundler implements Bundler {
         loopback(dest, sender, fa, fa.size());
     }
 
-    protected void sendSingleMessage(final Message msg, ByteArrayDataOutputStream out) {
-        Address dest=msg.getDest();
+    protected void sendSingleMessage(final Address dest, final Message msg, ByteArrayDataOutputStream out) {
         try {
             Util.writeMessage(msg, out, dest == null);
             transport.doSend(out.buffer(), 0, out.position(), dest);
             transport.getMessageStats().incrNumSingleMsgsSent();
+            num_single_msgs_sent.increment();
         }
         catch(Throwable e) {
             log.trace(Util.getMessage("SendFailure"),
@@ -238,13 +289,14 @@ public abstract class BaseBundler implements Bundler {
             Util.writeMessageList(dest, src, transport.cluster_name.chars(), list, out, dest == null);
             transport.doSend(out.buffer(), 0, out.position(), dest);
             transport.getMessageStats().incrNumBatchesSent();
+            num_batches_sent.increment();
         }
         catch(Throwable e) {
             log.trace(Util.getMessage("FailureSendingMsgBundle"), transport.getAddress(), e);
         }
     }
 
-    protected void sendMessageList(final Address dest, final Address src, Message[] list, int len, ByteArrayDataOutputStream out) {
+    protected void sendMessageListArray(final Address dest, final Address src, Message[] list, int len, ByteArrayDataOutputStream out) {
         try {
             Util.writeMessageList(dest, src, transport.cluster_name.chars(), list, 0, len, out, dest == null);
             transport.doSend(out.buffer(), 0, out.position(), dest);

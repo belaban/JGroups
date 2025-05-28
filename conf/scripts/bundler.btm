@@ -1,0 +1,62 @@
+
+
+# Byteman script to profile Bundler implementations
+
+RULE DiagnosticHandler creation
+CLASS ^TP
+HELPER org.jgroups.util.BundlerHelper
+METHOD handleConnect()
+AT ENTRY
+BIND tp=$this, diag=tp.getDiagnosticsHandler();
+IF TRUE
+   DO diagCreated(diag);
+ENDRULE
+
+
+## Bundler.send
+RULE Bundler.send() start
+INTERFACE org.jgroups.protocols.Bundler
+HELPER org.jgroups.util.BundlerHelper
+METHOD send
+COMPILE
+AT ENTRY
+BIND msg=$1;
+IF TRUE
+   DO setStartTime(msg);
+ENDRULE
+
+## BaseBundler.sendSingleMessage
+RULE BaseBundler.sendSingleMessage()
+CLASS BaseBundler
+HELPER org.jgroups.util.BundlerHelper
+METHOD sendSingleMessage
+COMPILE
+AT EXIT
+BIND msg=$2;
+IF TRUE
+  DO computeTime("send.single", msg);
+ENDRULE
+
+## BaseBundler.sendMessageList
+RULE BaseBundler.sendMessageList()
+CLASS BaseBundler
+HELPER org.jgroups.util.BundlerHelper
+METHOD sendMessageList
+COMPILE
+AT EXIT
+BIND list=$3;
+IF TRUE
+  DO computeTime("send.multiple", list);
+ENDRULE
+
+## BaseBundler.sendMessageListArray
+RULE BaseBundler.sendMessageListArray()
+CLASS BaseBundler
+HELPER org.jgroups.util.BundlerHelper
+METHOD sendMessageListArray
+COMPILE
+AT EXIT
+BIND list=$3;
+IF TRUE
+  DO computeTime("send.multiple", list);
+ENDRULE

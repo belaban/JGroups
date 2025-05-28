@@ -1,17 +1,18 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
+import org.jgroups.conf.ConfiguratorFactory;
+import org.jgroups.conf.ProtocolConfiguration;
+import org.jgroups.conf.ProtocolStackConfigurator;
 import org.jgroups.protocols.FD_SOCK2;
 import org.jgroups.protocols.TP;
 import org.jgroups.protocols.UNICAST3;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
-import org.jgroups.util.AverageMinMax;
-import org.jgroups.util.Bits;
-import org.jgroups.util.Promise;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
+import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -35,13 +36,13 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class BundlerStressTest {
     protected String                        bundler;
     protected int                           time=60 /* seconds */, warmup=time/2, nodes=4, msg_size=1000;
-    protected int                           num_sender_threads=1;
+    protected int                           num_sender_threads=100;
     protected boolean                       details;
-
     protected String                        cfg="tcp.xml";
     protected JChannel[]                    channels;
+    protected ThreadFactory                 thread_factory; // taken from channels[0]
     protected final Map<Long,Promise<Long>> sender_threads=new ConcurrentHashMap<>();
-
+    protected static final Field            BUNDLER_TYPE=Util.getField(TP.class, "bundler_type");
 
 
     public BundlerStressTest(String config, String bundler, int time_secs, int warmup,
@@ -59,11 +60,15 @@ public class BundlerStressTest {
     protected BundlerStressTest createChannels() throws Exception {
         if(channels != null)
             Util.closeReverse(channels);
+        String field_name=BUNDLER_TYPE.getName();
         channels=new JChannel[nodes];
         for(int i=0; i < channels.length; i++) {
             char ch=(char)('A' + i);
             String name=String.valueOf(ch);
-            channels[i]=new JChannel(cfg).name(name);
+            ProtocolStackConfigurator configurator=ConfiguratorFactory.getStackConfigurator(cfg);
+            ProtocolConfiguration transport_config=configurator.getProtocolStack().get(0);
+            transport_config.getProperties().put(field_name, bundler);
+            channels[i]=new JChannel(configurator).name(name);
             GMS gms=channels[i].stack().findProtocol(GMS.class);
             gms.printLocalAddress(false);
             System.out.print(".");
@@ -89,6 +94,7 @@ public class BundlerStressTest {
             if(fd != null)
                 fd.setHandlerToNull(); // so we don't get a NPE (null down_prot)
         }
+        thread_factory=channels[0].stack().getTransport().getThreadFactory();
         return removeProtocols();
     }
 
@@ -187,7 +193,6 @@ public class BundlerStressTest {
         stop();
     }
 
-
     protected Address pickRandomDestination() {
         if(channels == null) return null;
         int size=channels.length;
@@ -199,12 +204,13 @@ public class BundlerStressTest {
         sender_threads.clear();
         CountDownLatch latch=new CountDownLatch(1);
         LongAdder sent_msgs=new LongAdder();
+        Thread[] threads=new Thread[num_sender_threads];
         Sender[] senders=new Sender[num_sender_threads];
         for(int i=0; i < senders.length; i++) {
             senders[i]=new Sender(latch, sent_msgs);
-            senders[i].start();
+            threads[i]=thread_factory.newThread(senders[i], "sender-" + i);
+            threads[i].start();
         }
-
         if(is_warmup)
             System.out.printf("-- warmup for %d seconds\n", this.warmup);
         else
@@ -229,18 +235,20 @@ public class BundlerStressTest {
         }
 
         for(Sender sender: senders)
-            sender.stopThread();
-        for(Sender sender: senders)
-            sender.join();
+            sender.stop();
+        for(Thread thread: threads)
+            thread.join();
         if(is_warmup) {
             System.out.println();
             return;
         }
         long time_ns=System.nanoTime()-start;
         AverageMinMax send_avg=null;
-        for(Sender sender: senders) {
+        for(int i=0; i < num_sender_threads; i++) {
+            Sender sender=senders[i];
+            Thread thread=threads[i];
             if(details && !is_warmup)
-                System.out.printf("[%d] count=%d, send-time = %s\n", sender.getId(), sender.send.count(), sender.send);
+                System.out.printf("[%d] count=%d, send-time = %s\n", thread.getId(), sender.send.count(), sender.send);
             if(send_avg == null)
                 send_avg=sender.send;
             else
@@ -263,7 +271,7 @@ public class BundlerStressTest {
 
     public static void main(String[] args) throws Exception {
         String bundler="transfer-queue", props="tcp.xml";
-        int time=60, warmup=time/2, nodes=4, num_sender_threads=1, msg_size=1000;
+        int time=60, warmup=time/2, nodes=4, num_sender_threads=100, msg_size=1000;
         boolean interactive=true;
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-bundler")) {
@@ -308,7 +316,7 @@ public class BundlerStressTest {
     }
 
 
-    protected class Sender extends Thread {
+    protected class Sender implements Runnable {
         protected final CountDownLatch latch;
         protected final AverageMinMax  send=new AverageMinMax().unit(NANOSECONDS); // ns
         protected long                 thread_id;
@@ -321,7 +329,7 @@ public class BundlerStressTest {
             this.sent_msgs=sent_msgs;
         }
 
-        public void stopThread() {
+        public void stop() {
             running=false;
         }
 

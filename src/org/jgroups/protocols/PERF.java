@@ -1,6 +1,6 @@
 package org.jgroups.protocols;
 
-import org.jgroups.*;
+import org.jgroups.Message;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
@@ -9,11 +9,7 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.Average;
 import org.jgroups.util.MessageBatch;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
 /**
  * Protocol measuring latency between stacks. On {@link #down(org.jgroups.Message)}, a header is added to the
@@ -83,35 +79,5 @@ public class PERF extends Protocol {
         }
 
         super.up(batch);
-    }
-
-    protected static class PerfHeader extends Header {
-        protected long start_time; // in ns
-
-        public PerfHeader() {
-        }
-
-        public PerfHeader(long start_time) {
-            this.start_time=start_time;
-        }
-        public short getMagicId() {return 84;}
-        public Supplier<? extends Header> create() {
-            return PerfHeader::new;
-        }
-
-        @Override
-        public int serializedSize() {
-            return Global.LONG_SIZE;
-        }
-
-        @Override
-        public void writeTo(DataOutput out) throws IOException {
-            out.writeLong(start_time);
-        }
-
-        @Override
-        public void readFrom(DataInput in) throws IOException {
-            start_time=in.readLong();
-        }
     }
 }

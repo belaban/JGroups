@@ -3,12 +3,13 @@
 #!/bin/bash
 
 if [ $# -lt 2 ];
-    then echo "bm.sh classname byteman-script";
+    then echo "bm.sh byteman-script classname <args>";
          exit 1
 fi
 
-PGM=$1
-SCRIPT=$2
+SCRIPT=$1
+PGM=$2
+
 
 if [ ! -f $SCRIPT ]; then
    echo "** Script $SCRIPT not found **"
@@ -17,7 +18,7 @@ fi
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 LIB=`dirname $SCRIPT_DIR`/lib
-BM_OPTS="-Dorg.jboss.byteman.compile.to.bytecode=true -Dorg.jboss.byteman.verbose=true"
+BM_OPTS="-Dorg.jboss.byteman.compile.to.bytecode=true"
 
 shift
 shift

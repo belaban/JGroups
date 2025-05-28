@@ -12,7 +12,7 @@ PGM=BundlerStressTest
 rm -f $OUTPUT
 for i in $BUNDLERS;
   do for j in $THREADS;
-    do jt $PGM -props $PROPS -bundler $i -num_sender_threads $j -interactive false -time 30 -warmup 10 >> $OUTPUT;
+    do jt $PGM -props $PROPS -bundler $i -num_sender_threads $j -interactive false -time 60 -warmup 60 >> $OUTPUT;
     done;
   done;
 

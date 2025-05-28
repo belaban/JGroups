@@ -1,16 +1,11 @@
 package org.jgroups.protocols;
 
-import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
-import org.jgroups.util.AverageMinMax;
-import org.jgroups.util.ByteArrayDataOutputStream;
 import org.jgroups.util.RingBuffer;
 import org.jgroups.util.Runner;
-
-import java.util.List;
 
 /**
  * Bundler implementation which sends message batches (or single messages) as soon as the remove queue is full
@@ -31,22 +26,13 @@ public class RemoveQueueBundler extends BaseBundler {
     protected RingBuffer<Message>   rb;
     protected Runner                runner;
     protected Message[]             remove_queue;
-    protected final AverageMinMax   avg_batch_size=new AverageMinMax();
     protected static final String   THREAD_NAME="rq-bundler";
 
     @Property(name="remove_queue_size",description="The capacity of the remove queue",writable=false)
     protected int                   queue_size=1024;
 
-    @ManagedAttribute(description="Average batch length")
-    public String avgBatchSize() {return avg_batch_size.toString();}
-
     @ManagedAttribute(description="Current number of messages (to be sent) in the ring buffer")
     public int ringBufferSize() {return rb.size();}
-
-
-    public void resetStats() {
-        avg_batch_size.clear();
-    }
 
     public void init(TP transport) {
         super.init(transport);
@@ -102,11 +88,5 @@ public class RemoveQueueBundler extends BaseBundler {
     public int size() {
         return rb.size();
     }
-
-    protected void sendMessageList(Address dest, Address src, List<Message> list, ByteArrayDataOutputStream out) {
-        super.sendMessageList(dest, src, list, out);
-        avg_batch_size.add(list.size());
-    }
-
 
 }

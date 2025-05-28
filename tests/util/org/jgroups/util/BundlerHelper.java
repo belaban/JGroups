@@ -2,32 +2,32 @@ package org.jgroups.util;
 
 import org.jboss.byteman.rule.Rule;
 import org.jboss.byteman.rule.helper.Helper;
+import org.jgroups.Message;
+import org.jgroups.protocols.PerfHeader;
 import org.jgroups.stack.DiagnosticsHandler;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
- * Generic helper for profiling of methods. Other helper classes can subclass this one
+ * Helper for profiling of bundler methods. Other helper classes can subclass this one
  * @author Bela Ban
  * @since  5.2.7
  */
-public class ProfilingHelper extends Helper {
-    protected ProfilingHelper(Rule rule) {
+public class BundlerHelper extends Helper {
+    protected BundlerHelper(Rule rule) {
         super(rule);
     }
 
-    protected static DiagnosticsHandler diag_handler;
-
-    @SuppressWarnings("StaticCollection")
-    protected static final Map<String,Profiler> profilers=new ConcurrentHashMap<>();
-
-    protected static final ProfilingProbeHandler ph=new ProfilingProbeHandler();
+    protected static DiagnosticsHandler        diag_handler;
+    protected static final short               PROT=1567; // to get/add PerfHeaders
+    protected static final BundlerProbeHandler ph=new BundlerProbeHandler();
+    protected static final Map<String,Average> map=new ConcurrentHashMap<>();
 
     public static void activated() {
         if(diag_handler == null) {
@@ -57,16 +57,35 @@ public class ProfilingHelper extends Helper {
         }
     }
 
-    @SuppressWarnings("MethodMayBeStatic")
-    public void start(String profiler_name) {
-        Profiler p=profilers.computeIfAbsent(profiler_name, n -> new Profiler());
-        p.start();
+    public void setStartTime(Message msg) {
+        msg.putHeader(PROT, new PerfHeader(System.nanoTime()));
     }
 
-    @SuppressWarnings("MethodMayBeStatic")
-    public void stop(String profiler_name) {
-        Profiler p=profilers.computeIfAbsent(profiler_name, n -> new Profiler());
-        p.stop();
+    public void computeTime(String key, Message msg) {
+        PerfHeader hdr=msg.getHeader(PROT);
+        if(hdr == null) {
+            System.err.printf("PerfHeader not found in message %s\n", msg);
+            return;
+        }
+        long time=System.nanoTime() - hdr.startTime();
+        addToMap(key, time);
+    }
+
+    public void computeTime(String key, List<Message> list) {
+        for(Message msg: list)
+            computeTime(key, msg);
+    }
+
+    public void computeTime(String key, Message[] list) {
+        for(Message msg: list)
+            computeTime(key, msg);
+       }
+
+    protected static void addToMap(String key, long time) {
+        Average avg=map.get(key);
+        if(avg == null)
+            avg=map.computeIfAbsent(key, __ -> new AverageMinMax(1024).unit(TimeUnit.NANOSECONDS));
+        avg.add(time);
     }
 
     protected static DiagnosticsHandler createDiagHandler() throws Exception {
@@ -87,35 +106,27 @@ public class ProfilingHelper extends Helper {
     }
 
 
-    protected static class ProfilingProbeHandler implements DiagnosticsHandler.ProbeHandler {
+    protected static class BundlerProbeHandler implements DiagnosticsHandler.ProbeHandler {
 
-        public ProfilingProbeHandler() {
+        public BundlerProbeHandler() {
         }
 
         public Map<String,String> handleProbe(String... keys) {
             Map<String,String> m=new HashMap<>();
             for(String key: keys) {
-                if("prof".equals(key)) {
-                    for(Map.Entry<String,Profiler> e: profilers.entrySet())
+                if("bundler-perf".equals(key)) {
+                    for(Map.Entry<String,Average> e: map.entrySet())
                         m.put(e.getKey(), e.getValue().toString());
                     continue;
                 }
-                if("prof-reset".equals(key)) {
-                    profilers.clear();
-                    continue;
-                }
-                Profiler p=profilers.get(key);
-                if(p != null)
-                    m.put(key, p.toString());
+                if("bundler-perf-reset".equals(key))
+                    map.clear();
             }
             return m;
         }
 
         public String[] supportedKeys() {
-            List<String> keys=new ArrayList<>(profilers.keySet());
-            keys.add("prof");
-            keys.add("prof-reset");
-            return keys.toArray(new String[]{});
+            return new String[]{"bundler-perf", "bundler-perf-reset"};
         }
     }
 

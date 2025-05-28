@@ -42,7 +42,8 @@ public class TCP extends BasicTCP {
     protected int       buffered_input_stream_size=65536;
 
     @Property(description="Size of the buffer of the BufferedOutputStream in TcpConnection. Smaller messages are " +
-      " buffered until this size is exceeded or flush() is called. Bigger messages are sent immediately. 0: default size",
+      "buffered until this size is exceeded or flush() is called. Bigger messages are sent immediately. A value of " +
+      "0 skips creation of the BufferedOutputStream: messages are sent directly to the socket's output stream",
       type=AttributeType.BYTES)
     protected int       buffered_output_stream_size=65536;
 

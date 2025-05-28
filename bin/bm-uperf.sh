@@ -2,4 +2,4 @@
 
 #!/bin/bash
 
-bm.sh org.jgroups.tests.perf.UPerf conf/scripts/RttTest/rtt.btm
+bm.sh conf/scripts/RttTest/rtt.btm org.jgroups.tests.perf.UPerf $*
