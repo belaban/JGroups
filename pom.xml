@@ -121,8 +121,14 @@
         <dependency>
             <groupId>org.jboss.byteman</groupId>
             <artifactId>byteman-bmunit</artifactId>
-            <version>4.0.24</version>
+            <version>4.0.25</version>
             <scope>test</scope>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.byteman</groupId>
+            <artifactId>byteman</artifactId>
+            <version>4.0.25</version>
             <optional>true</optional>
         </dependency>
     </dependencies>
