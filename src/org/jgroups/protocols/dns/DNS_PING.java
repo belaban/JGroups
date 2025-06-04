@@ -63,23 +63,32 @@ public class DNS_PING extends Discovery {
         }
     }
 
-    public DNS_PING setDNSResolver(DNSResolver resolver) {
-        this.dns_resolver = resolver;
-        return this;
-    }
+    public DNSResolver dnsResolver() { return dns_resolver; }
+    public DNS_PING dnsResolver(DNSResolver r) { dns_resolver = r; return this; }
 
-    public DNS_PING setDNSQuery(String query) {
-        this.dns_query = query;
-        return this;
-    }
+    public DNS_PING setDNSResolver(DNSResolver r) { dns_resolver = r; return this; }
+    public DNSResolver getDNSResolver(DNSResolver r) { return dns_resolver; }
 
-    public String getDNSContextFactory() {
-        return this.dns_context_factory;
-    }
+    public String dnsQuery() { return dns_query; }
+    public DNS_PING dnsQuery(String q) { dns_query = q; return this; }
 
-    public String getDNSAddress() {
-        return this.dns_address;
-    }
+    public DNS_PING setDNSQuery(String q) { dns_query = q; return this; }
+    public String getDNSQuery() { return dns_query; }
+
+    public String dnsRecordType() { return dns_record_type; }
+    public DNS_PING dnsRecordType(String t) { dns_record_type = t; return this; }
+
+    public String dnsAddress() { return dns_address; }
+    public DNS_PING dnsAddress(String a) { dns_address = a; return this; }
+
+    public String getDNSAddress() { return this.dns_address; }
+    public DNS_PING setDNSAddress(String a) { dns_address = a; return this; }
+
+    public String dnsContextFactory() { return dns_context_factory; }
+    public DNS_PING dnsContextFactory(String f) { dns_context_factory = f; return this; }
+
+    public String getDNSContextFactory() { return dns_context_factory; }
+    public DNS_PING setDNSContextFactory(String f) { dns_context_factory = f; return this; }
 
     protected void validateProperties() {
         if (dns_query == null || dns_query.trim().isEmpty()) {
