@@ -22,14 +22,12 @@ public class ProfilingHelper extends Helper {
         super(rule);
     }
 
-    protected static DiagnosticsHandler diag_handler;
-
     @SuppressWarnings("StaticCollection")
     protected static final Map<String,Profiler> profilers=new ConcurrentHashMap<>();
 
     protected static final ProfilingProbeHandler ph=new ProfilingProbeHandler();
 
-    public static void activated() {
+    /*public static void activated() {
         if(diag_handler == null) {
             try {
                 diag_handler=createDiagHandler();
@@ -43,13 +41,10 @@ public class ProfilingHelper extends Helper {
             }
 
         }
-    }
+    }*/
 
     @SuppressWarnings("MethodMayBeStatic")
     public void diagCreated(DiagnosticsHandler diag) {
-        if(diag_handler != null)
-            diag_handler.stop();
-        diag_handler=diag;
         if(diag != null && diag.isEnabled()) {
             boolean already_present=diag.getProbeHandlers().contains(ph);
             if(!already_present)
