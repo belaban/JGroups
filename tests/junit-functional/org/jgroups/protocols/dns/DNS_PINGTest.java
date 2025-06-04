@@ -72,6 +72,34 @@ public class DNS_PINGTest {
    }
 
    @Test
+   public void test_get_members_aaaa() throws Exception {
+      //given
+      final DNS_PING ping = new DNS_PING();
+      final MockDirContext mockDirContext = MockDirContext.newDefault()
+              .addEntry("test-1", "1:2:3::0:1", DNSResolver.DNSRecordType.AAAA)
+              .addEntry("test-2", "1:2:3::0:2", DNSResolver.DNSRecordType.AAAA)
+              .addEntry("test-2", "1:2:3::1:1", DNSResolver.DNSRecordType.AAAA)
+              .addEntry("test-2", "1:2:3::1:2", DNSResolver.DNSRecordType.AAAA)
+              .addEntry("test-2", "1:2:3::1:3", DNSResolver.DNSRecordType.AAAA)
+              .addEntry("test-3", "1:2:3::2:1", DNSResolver.DNSRecordType.AAAA);
+
+      ping.dns_resolver = new AddressedDNSResolver(mockDirContext);
+
+      //when
+      final List<Address> addresses = ping.getMembers("test-1, test-2, test-3", DNSResolver.DNSRecordType.AAAA);
+
+      //then
+      final List<Address> expectedResults = Arrays.asList(
+              new IpAddress("1:2:3::0:1"),
+              new IpAddress("1:2:3::0:2"),
+              new IpAddress("1:2:3::1:1"),
+              new IpAddress("1:2:3::1:2"),
+              new IpAddress("1:2:3::1:3"),
+              new IpAddress("1:2:3::2:1"));
+      Assert.assertEquals(addresses, expectedResults);
+   }
+
+   @Test
    public void test_valid_dns_response() throws Exception {
       //given
       DNSDiscoveryTester dns_discovery_tester = new DNSDiscoveryTester(2, PORT_START, 10, TimeUnit.SECONDS)

@@ -59,6 +59,8 @@ public class DefaultDNSResolver implements DNSResolver {
         switch (recordType) {
             case A:
                 return resolveAEntries(dnsQuery);
+            case AAAA:
+                return resolveAAAAEntries(dnsQuery);
             case SRV:
                 return resolveSRVEntries(dnsQuery);
             default:
@@ -75,7 +77,7 @@ public class DefaultDNSResolver implements DNSResolver {
         try {
             // We are parsing this kind of structure:
             // {srv=SRV: 10 100 8888 9089f34a.jgroups-dns-ping.myproject.svc.cluster.local.}
-            // The frst attribute is the type of record. We are not interested in this. Next are addresses.
+            // The first attribute is the type of record. We are not interested in this. Next are addresses.
             Attributes attributes = dnsContext.getAttributes(dnsQuery, new String[] { DNSRecordType.SRV.toString() });
             if (attributes != null && attributes.getAll().hasMoreElements()) {
                 NamingEnumeration<?> namingEnumeration = attributes.get(DNSRecordType.SRV.toString()).getAll();
@@ -90,6 +92,28 @@ public class DefaultDNSResolver implements DNSResolver {
                             // extremely rarely, only when a fine grained discovery using ports is needed (ie: when using containers).
                             addresses.addAll(resolveAEntries(srcDNSRecord, srcPort));
                         }
+                    } catch (Exception e) {
+                        log.trace("non critical DNS resolution error", e);
+                    }
+                }
+            }
+        } catch (NamingException ex) {
+            log.trace("no DNS records for query %s, ex: %s", dnsQuery, ex.getMessage());
+        }
+
+        return addresses;
+    }
+
+    protected List<Address> resolveAAAAEntries(String dnsQuery) {
+        List<Address> addresses = new ArrayList<>();
+        try {
+            Attributes attributes = dnsContext.getAttributes(dnsQuery, new String[] { DNSRecordType.AAAA.toString() });
+            if (attributes != null && attributes.getAll().hasMoreElements()) {
+                NamingEnumeration<?> namingEnumeration = attributes.get(DNSRecordType.AAAA.toString()).getAll();
+                while (namingEnumeration.hasMoreElements()) {
+                    try {
+                        String address = namingEnumeration.nextElement().toString();
+                        addresses.add(new IpAddress(address, 0));
                     } catch (Exception e) {
                         log.trace("non critical DNS resolution error", e);
                     }
