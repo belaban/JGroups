@@ -90,12 +90,12 @@ public class DNS_PINGTest {
 
       //then
       final List<Address> expectedResults = Arrays.asList(
-              new IpAddress("1:2:3::0:1"),
-              new IpAddress("1:2:3::0:2"),
-              new IpAddress("1:2:3::1:1"),
-              new IpAddress("1:2:3::1:2"),
-              new IpAddress("1:2:3::1:3"),
-              new IpAddress("1:2:3::2:1"));
+              new IpAddress("1:2:3::0:1", 0),
+              new IpAddress("1:2:3::0:2", 0),
+              new IpAddress("1:2:3::1:1", 0),
+              new IpAddress("1:2:3::1:2", 0),
+              new IpAddress("1:2:3::1:3", 0),
+              new IpAddress("1:2:3::2:1", 0));
       Assert.assertEquals(addresses, expectedResults);
    }
 
