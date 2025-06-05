@@ -1,85 +1,112 @@
 
 package org.jgroups.protocols;
 
-import org.jgroups.Address;
 import org.jgroups.Message;
-import org.jgroups.annotations.Property;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
-import org.jgroups.util.Util;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.atomic.LongAdder;
+import java.util.stream.Collectors;
 
 
 /**
- * Protocol which prints out the real size of a message. Don't use this layer in
- * a production stack since the costs are high (just for debugging).
- * 
+ * Protocol which lists how many messages have been received by size: https://issues.redhat.com/browse/JGRP-2893
+ * <br/>
+ * Don't use this layer in a production stack since the costs are high; only use for debugging/diagnosis.
  * @author Bela Ban June 13 2001
+ * @author Bela Ban June 2025
  */
 public class SIZE extends Protocol {
-    protected final List<Address> members=new ArrayList<>();
-    @Property protected boolean   print_msg=false;
-    @Property protected boolean   raw_buffer=false; // just print the payload size of the message
+    protected final Map<Long,LongAdder> up_map=new ConcurrentHashMap<>();
+    protected final Map<Long,LongAdder> down_map=new ConcurrentHashMap<>();
 
-    /** Min size in bytes above which msgs should be printed */
-    @Property(type=AttributeType.BYTES)
-    protected long                min_size;
+    @ManagedAttribute(description="Number of down samples",type=AttributeType.SCALAR)
+    public long numDownSamples() {return count(down_map);}
+    @ManagedAttribute(description="Number of up samples",type=AttributeType.SCALAR)
+    public long numUpSamples()   {return count(up_map);}
 
+    public Map<Long,LongAdder> upMap()   {return up_map;}
+    public Map<Long,LongAdder> downMap() {return down_map;}
+
+    public Object down(Message msg) {
+        int len=msg.length();
+
+        String cmd=getInfo(msg, "command");
+
+        addSample(len, down_map);
+        return down_prot.down(msg);
+    }
 
     public Object up(Message msg) {
-        if(log.isTraceEnabled()) {
-            int size=raw_buffer? msg.getLength() : msg.size();
-            if(size >= min_size) {
-                StringBuilder sb=new StringBuilder(local_addr + ".up(): size of message buffer=");
-                sb.append(Util.printBytes(size)).append(", " + numHeaders(msg) + " headers");
-                if(print_msg)
-                    sb.append(", headers=" + msg.printHeaders());
-                log.trace(sb);
-            }
-        }
+        int len=msg.length();
+        addSample(len, up_map);
         return up_prot.up(msg);
     }
 
-
     public void up(MessageBatch batch) {
-        if(log.isTraceEnabled()) {
-            long size=raw_buffer? batch.length() : batch.totalSize();
-            if(size >= min_size) {
-                StringBuilder sb=new StringBuilder(local_addr + ".up(): size of message batch=");
-                sb.append(Util.printBytes(size)).append(", " + batch.size() + " messages, " + numHeaders(batch) + " headers");
-                log.trace(sb);
-            }
+        for(Message msg: batch) {
+            int len=msg.length();
+            addSample(len, up_map);
         }
         up_prot.up(batch);
     }
 
-
-    public Object down(Message msg) {
-        if(log.isTraceEnabled()) {
-            int size=raw_buffer? msg.getLength() : msg.size();
-            if(size >= min_size) {
-                StringBuilder sb=new StringBuilder(local_addr + ".down(): size of message buffer=");
-                sb.append(Util.printBytes(size)).append(", " + numHeaders(msg) + " headers");
-                if(print_msg)
-                    sb.append(", headers=" + msg.printHeaders());
-                log.trace(sb);
-            }
-        }
-        return down_prot.down(msg);
+    @ManagedOperation(description="Clears all samples")
+    public void clear() {
+        down_map.clear(); up_map.clear();
     }
 
-    protected static int numHeaders(Message msg) {
-        return msg == null? 0 : msg.getNumHeaders();
+    @ManagedOperation(description="Dumps the down samples")
+    public String dumpDownSamples() {
+        return "\n" +_dump(down_map);
     }
 
-    protected static int numHeaders(MessageBatch batch) {
-        int retval=0;
-        for(Message msg: batch)
-            retval+=numHeaders(msg);
-        return retval;
+    @ManagedOperation(description="Dumps the up samples")
+    public String dumpUpSamples() {
+        return "\n" + _dump(up_map);
     }
 
+    @ManagedOperation(description="Dumps all (down and up) samples")
+    public String dump() {
+        return String.format("down:\n%s\n\nup:\n%s\n", _dump(down_map), _dump(up_map));
+    }
+
+    @Override
+    public void resetStats() {
+        super.resetStats();
+        up_map.values().forEach(LongAdder::reset);
+        down_map.values().forEach(LongAdder::reset);
+    }
+
+    protected static void addSample(long size, Map<Long,LongAdder> map) {
+        LongAdder la=map.get(size);
+        if(la == null)
+            la=map.computeIfAbsent(size, __ -> new LongAdder());
+        la.increment();
+    }
+
+    protected static long count(Map<Long,LongAdder> m) {
+        long c=0;
+        for(LongAdder la: m.values())
+            c+=la.sum();
+        return c;
+    }
+
+    protected static String _dump(Map<Long,LongAdder> m) {
+        SortedMap<Long,LongAdder> sm=new ConcurrentSkipListMap<>(m);
+        return sm.entrySet().stream().map(e -> String.format("%,d: %,d", e.getKey(), e.getValue().sum()))
+          .collect(Collectors.joining("\n"));
+    }
+
+    protected static String getInfo(Message msg, String key) {
+        InfoHeader hdr=msg.getHeader(InfoHeader.ID);
+        return hdr != null? hdr.get(key) : null;
+    }
 }

@@ -152,6 +152,7 @@ public interface Message extends SizeStreamable, Constructable<Message> {
      * ({@link #hasArray()} is false), then the serialized size may be returned, or an implementation may choose
      * to throw an exception */
     int                  getLength();
+    default int          length() {return getLength();}
 
     /**
      * Sets the byte array in a message.<br/>

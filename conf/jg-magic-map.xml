@@ -63,6 +63,7 @@
     <class id="98"  name="org.jgroups.protocols.ProtPerfHeader"/>
     <class id="99"  name="org.jgroups.protocols.NakAckHeader"/>
     <class id="100" name="org.jgroups.protocols.UnicastHeader"/>
+    <class id="101" name="org.jgroups.protocols.InfoHeader"/>
 
 </magic-number-class-mapping>
 

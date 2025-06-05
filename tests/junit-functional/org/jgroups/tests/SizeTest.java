@@ -41,6 +41,15 @@ public class SizeTest {
         _testSize(new TpHeader("DemoChannel", (byte)2, 4));
     }
 
+    public void testInfoHeader() throws Exception {
+        InfoHeader hdr=new InfoHeader();
+        _testSize(hdr);
+        hdr.put("name", "Bela");
+        _testSize(hdr);
+        hdr.put("id", "322649");
+        _testSize(hdr);
+    }
+
     public void testByteArray() throws Exception {
         byte[] arr={};
         ByteArray ba=new ByteArray(arr);
@@ -690,7 +699,6 @@ public class SizeTest {
         _testWriteAddress(addr);
     }
 
-
     public void testWriteAddresses() throws Exception {
         List<Address> list=new ArrayList<>();
         for(int i=0; i < 3; i++)
@@ -703,7 +711,6 @@ public class SizeTest {
         list.add(new IpAddress("127.0.0.1", 5674));
         _testWriteAddresses(list);
     }
-
 
     public void testUUID() throws Exception {
         org.jgroups.util.UUID uuid=org.jgroups.util.UUID.randomUUID();
@@ -722,8 +729,6 @@ public class SizeTest {
         System.out.println("hash 2: " + hash2);
         assert hash1 == hash2;
     }
-
-
 
     public void testRequestCorrelatorHeader() throws Exception {
         RequestCorrelator.Header hdr;
@@ -747,10 +752,10 @@ public class SizeTest {
         hdr=new RequestCorrelator.Header();
         hdr.readFrom(in);
 
-        Assert.assertEquals(322649, hdr.req_id);
+        Assert.assertEquals(hdr.req_id, 322649);
         assert hdr.rspExpected();
-        Assert.assertEquals((short)356, hdr.corrId);
-        Assert.assertEquals(RequestCorrelator.Header.RSP, hdr.type);
+        Assert.assertEquals(hdr.corrId, (short)356);
+        Assert.assertEquals(hdr.type, RequestCorrelator.Header.RSP);
 
         hdr=new RequestCorrelator.Header(RequestCorrelator.Header.RSP, 322649, (short)356);
 
@@ -768,10 +773,10 @@ public class SizeTest {
         hdr=new RequestCorrelator.Header();
         hdr.readFrom(in);
 
-        Assert.assertEquals(322649, hdr.req_id);
+        Assert.assertEquals(hdr.req_id, 322649);
         assert hdr.rspExpected();
-        Assert.assertEquals(356, hdr.corrId);
-        Assert.assertEquals(RequestCorrelator.Header.RSP, hdr.type);
+        Assert.assertEquals(hdr.corrId, 356);
+        Assert.assertEquals(hdr.type, RequestCorrelator.Header.RSP);
 
         Address a=Util.createRandomAddress("A"), b=Util.createRandomAddress("B");
 
@@ -856,12 +861,10 @@ public class SizeTest {
         long size=hdr.serializedSize();
         byte[] serialized_form=Util.streamableToByteBuffer(hdr);
         System.out.println(hdr.getClass().getSimpleName() + ": size=" + size + ", serialized size=" + serialized_form.length);
-        Assert.assertEquals(serialized_form.length, size);
-
+        assert serialized_form.length == size;
         Header hdr2=Util.streamableFromByteBuffer(hdr.getClass(), serialized_form);
         assert hdr2.serializedSize() == hdr.serializedSize();
     }
-
 
     private static void _testSize(Address addr) throws Exception {
         long size=addr.serializedSize();
