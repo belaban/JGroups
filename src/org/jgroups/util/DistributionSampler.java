@@ -1,5 +1,6 @@
 package org.jgroups.util;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
@@ -19,30 +20,31 @@ public class DistributionSampler {
     /**
      * Creates a new sampler
      * @param buckets The buckets. Needs to be an even number. Each tuple defines min-max size. Needs to be in
-     *                ascending order of size.
+     *                ascending order of size and adjacent.
      */
     public DistributionSampler(long ... buckets) {
-        if(buckets.length % 2 != 0)
-            throw new IllegalArgumentException("min/max list of buckets needs to be even");
-        long curr_size=-1;
-        this.buckets=new Bucket[buckets.length/2];
-        for(int i=0,index=0; i < buckets.length; i++,index++) {
-            long min=buckets[i], max=buckets[++i];
-            if(min >= max)
-                throw new IllegalArgumentException(String.format("min (%,d) needs to be <= max (%,d)", min, max));
-            if(curr_size < 0)
-                curr_size=max;
-            else {
-                if(curr_size >= min)
-                    throw new IllegalArgumentException(String.format("buckets must be disjoint: prev.max=%,d, min=%,d", curr_size, min));
-                else
-                    curr_size=max;
+        if(buckets.length < 2)
+            throw new IllegalArgumentException("at least 2 numbers are required to create one bucket");
+        // sanity check: all numbers need to be in increasing order
+        sanityCheck(buckets);
+
+        long prev_value=-1;
+        List<Bucket> list=new ArrayList<>(buckets.length);
+        for(int i=0; i < buckets.length; i++) {
+            if(prev_value < 0) {
+                prev_value=buckets[i];
+                continue;
             }
+            long min=prev_value, max=buckets[i];
             Bucket b=new Bucket(min, max);
+            list.add(b);
+            prev_value=max+1;
             min_value=Math.min(min, min_value);
             max_value=Math.max(max, max_value);
-            this.buckets[index]=b;
         }
+        this.buckets=new Bucket[list.size()];
+        for(int i=0; i < list.size(); i++)
+            this.buckets[i]=list.get(i);
     }
 
     public DistributionSampler(List<Long> buckets) {
@@ -111,6 +113,17 @@ public class DistributionSampler {
         for(int i=0; i < buckets.size(); i++)
             tmp[i]=buckets.get(i);
         return tmp;
+    }
+
+    protected static void sanityCheck(long ... buckets) {
+        long prev_value=-1;
+        for(long i: buckets) {
+            if(prev_value >= 0) {
+                if(i <= prev_value)
+                    throw new IllegalArgumentException("values must be in increasing order");
+            }
+            prev_value=i;
+        }
     }
 
     public static class Bucket {

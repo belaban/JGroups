@@ -27,10 +27,13 @@ public class SIZE2 extends Protocol {
     @Property(description="List of up sizes (different buckets), e.g. \"1,100,101,500,501,1000,1001,100000\". " +
       "This example creates buckets for messages sizes 1-100, 101-500, 501-1000. The last buckets simply catches " +
       "all other samples, assuming a message can never be greater than  100'000 bytes")
-    protected String up_sizes;
+    protected String  up_sizes;
 
     @Property(description="List of down sizes. See description of up_sizes")
-    protected String down_sizes;
+    protected String  down_sizes;
+
+    @Property(description="Defines both up_sizes and down_sizes")
+    protected String  sizes;
 
     @Property(description="When true, use Message.size(), otherwise Message.length()")
     protected boolean use_size;
@@ -51,6 +54,12 @@ public class SIZE2 extends Protocol {
     @Override
     public void init() throws Exception {
         super.init();
+        if(sizes != null) {
+            if(up_sizes == null)
+                up_sizes=sizes;
+            if(down_sizes == null)
+                down_sizes=sizes;
+        }
         if(up_sizes != null) {
             List<String> list=Util.parseCommaDelimitedStrings(up_sizes);
             List<Long> l=new ArrayList<>(list.size());

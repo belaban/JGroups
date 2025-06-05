@@ -15,8 +15,30 @@ import java.util.concurrent.TimeUnit;
 public class DistributionSamplerTest {
 
     public void testConstructor() {
-        DistributionSampler d=new DistributionSampler(0,10,11,100,101,1000);
+        DistributionSampler d=new DistributionSampler(0,10,100,1000);
         assert d.size() == 3;
+        d=new DistributionSampler(100,500,1024,2048,4096);
+        assert d.size() == 4;
+        try {
+            d=new DistributionSampler(100);
+        }
+        catch(IllegalArgumentException iex) {
+            System.out.printf("received exception (as expected): %s\n", iex);
+        }
+
+        try {
+            d=new DistributionSampler(0, 10, 5, 6);
+        }
+        catch(IllegalArgumentException iex) {
+            System.out.printf("received exception (as expected): %s\n", iex);
+        }
+
+        try {
+            d=new DistributionSampler(0, 10, 15, 15);
+        }
+        catch(IllegalArgumentException iex) {
+            System.out.printf("received exception (as expected): %s\n", iex);
+        }
 
         try {
             d=new DistributionSampler(0, 10, 11);
