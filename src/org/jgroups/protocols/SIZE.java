@@ -37,9 +37,6 @@ public class SIZE extends Protocol {
 
     public Object down(Message msg) {
         int len=msg.length();
-
-        String cmd=getInfo(msg, "command");
-
         addSample(len, down_map);
         return down_prot.down(msg);
     }
@@ -105,8 +102,4 @@ public class SIZE extends Protocol {
           .collect(Collectors.joining("\n"));
     }
 
-    protected static String getInfo(Message msg, String key) {
-        InfoHeader hdr=msg.getHeader(InfoHeader.ID);
-        return hdr != null? hdr.get(key) : null;
-    }
 }
