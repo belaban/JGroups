@@ -2227,13 +2227,104 @@ validated can therefore not join or merge.
 [[STATS]]
 ==== Statistics
 
-STATS exposes various statistics, e.g. number of received multicast and unicast messages, number of
-                bytes sent etc. It should be placed directly over the transport
-            
+STATS exposes various statistics, e.g. number of received multicast and unicast messages, number of bytes sent etc.
+It should be placed directly over the transport
 
 ${STATS}
 
 
+[[SIZE]]
+==== SIZE
+`SIZE` records all received and sent messages per *message length*. It is typically placed towards the top
+of the stack, but can be placed lower, e.g. if internal messages need to be analyzed.
+
+A typical output looks like this (edited):
+----
+[mac] /Users/bela/JGroups$ probe SIZE.dumpUpSamples[]
+#1 (423 bytes):
+mac-54345(v=16.0.0) [ip=192.168.1.110:7803, 4 mbr(s), cluster=default, version=5.4.9.Final-SNAPSHOT (Alpe d'Huez) (java 24+36-3646)]
+SIZE.dumpUpSamples=
+
+...
+
+#4 (424 bytes):
+mac-33618(v=16.0.0) [ip=192.168.1.110:7800, 4 mbr(s), cluster=default, version=5.4.9.Final-SNAPSHOT (Alpe d'Huez) (java 24+36-3646)]
+SIZE.dumpUpSamples=
+1: 1’110’328
+29: 284’516
+30: 550’647
+31: 265’804
+37: 1’909
+38: 222’453
+39: 1’379’171
+40: 1’202’811
+1’026: 2’795’048
+1’126: 225
+1’127: 27’686
+1’128: 243’269
+1’129: 695’328
+1’130: 919’844
+1’131: 591’099
+1’132: 150’904
+
+4 responses (4 matches, 0 non matches)
+----
+
+Most received messages (`2’795’048`) had a length (`Message.getLength()`) of `1'026` bytes.
+
+${SIZE}
+
+==== SIZE2
+[[SIZE2]]
+Contrary to `SIZE`, `SIZE2` doesn't record every different size, but sizes are placed into _buckets_, e.g. from
+0-100, 101-1000, 1001-1500, 1501-2000, 2001-100000 etc. This can be configured as follows
+
+[source.xm]
+----
+ <SIZE2 sizes="0,100,1000,1500,2000,100000" />
+----
+This configures 4 buckets and all messages are recorded in one of them. A possible output might look like this (edited):
+----
+[mac] /Users/bela$ probe SIZE2.dumpUpSamples[]
+#1 (285 bytes):
+mac-1580(v=16.0.0) [ip=192.168.1.110:7803, 4 mbr(s), cluster=default, version=5.4.9.Final-SNAPSHOT (Alpe d'Huez) (java 24+36-3646)]
+SIZE2.dumpUpSamples=[0 .. 100]: 4’662’222
+[101 .. 1’000]: 6
+[1’001 .. 1’500]: 4’957’605
+[1’501 .. 2’000]: 6
+[2’001 .. 100’000]: 4
+
+#2 (287 bytes):
+mac-56987(v=16.0.0) [ip=192.168.1.110:7802, 4 mbr(s), cluster=default, version=5.4.9.Final-SNAPSHOT (Alpe d'Huez) (java 24+36-3646)]
+SIZE2.dumpUpSamples=[0 .. 100]: 4’634’174
+[101 .. 1’000]: 5
+[1’001 .. 1’500]: 4’867’320
+[1’501 .. 2’000]: 11
+[2’001 .. 100’000]: 7
+
+#3 (287 bytes):
+mac-8833(v=16.0.0) [ip=192.168.1.110:7801, 4 mbr(s), cluster=default, version=5.4.9.Final-SNAPSHOT (Alpe d'Huez) (java 24+36-3646)]
+SIZE2.dumpUpSamples=[0 .. 100]: 4’523’464
+[101 .. 1’000]: 6
+[1’001 .. 1’500]: 4’807’314
+[1’501 .. 2’000]: 12
+[2’001 .. 100’000]: 12
+
+#4 (286 bytes):
+mac-24327(v=16.0.0) [ip=192.168.1.110:7800, 4 mbr(s), cluster=default, version=5.4.9.Final-SNAPSHOT (Alpe d'Huez) (java 24+36-3646)]
+SIZE2.dumpUpSamples=[0 .. 100]: 4’613’013
+[101 .. 1’000]: 2
+[1’001 .. 1’500]: 4’778’180
+[1’501 .. 2’000]: 0
+[2’001 .. 100’000]: 0
+
+4 responses (4 matches, 0 non matches)
+[mac] /Users/bela$
+----
+
+We can see that `mac-24327` recorded `4’778’180` received messages of lengths between `1001-1500` bytes.
+
+${SIZE2}
 
 [[COMPRESS]]
 
