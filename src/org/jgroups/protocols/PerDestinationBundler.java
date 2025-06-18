@@ -5,8 +5,10 @@ import org.jgroups.Message;
 import org.jgroups.NullAddress;
 import org.jgroups.View;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
 import org.jgroups.util.ByteArrayDataOutputStream;
 import org.jgroups.util.FastArray;
+import org.jgroups.util.Runner;
 import org.jgroups.util.Util;
 
 import java.util.List;
@@ -14,6 +16,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
@@ -28,13 +32,30 @@ import static org.jgroups.protocols.TP.MSG_OVERHEAD;
  * @author Bela Ban
  * @since  5.2.7
  */
-public class PerDestinationBundler extends BaseBundler {
+public class PerDestinationBundler extends BaseBundler implements Runnable {
     protected Address                       local_addr;
     protected final Map<Address,SendBuffer> dests=Util.createConcurrentMap();
     protected static final Address          NULL=new NullAddress();
+    protected Runner                        single_thread_runner;
     protected static final String           THREAD_NAME="pd-bundler";
+    protected final Condition               not_empty=lock.newCondition();
+    protected final AtomicBoolean           msgs_available=new AtomicBoolean(true);
 
-    // todo: add SuppressLog to each Sender and make 'log' redirect to it
+    @Property(description="True: use a single thread for all destinationns. False: use a thread per destination")
+    protected boolean use_single_sender_thread;
+
+    public boolean isRunning() {
+        return single_thread_runner != null && single_thread_runner.isRunning();
+    }
+
+    public boolean useSingleSenderThread() {
+        return use_single_sender_thread;
+    }
+
+    public PerDestinationBundler useSingleSenderThread(boolean use_single_thread) {
+        this.use_single_sender_thread=use_single_thread;
+        return this;
+    }
 
     public int getQueueSize() {return -1;}
 
@@ -42,10 +63,17 @@ public class PerDestinationBundler extends BaseBundler {
         return dests.values().stream().map(SendBuffer::size).reduce(0, Integer::sum);
     }
 
-    @ManagedOperation
+    @ManagedOperation(description="Dumps all sendbuffers")
     public String dump() {
         return dests.entrySet().stream()
           .map(e -> String.format("%s: %s", e.getKey(), e.getValue().dump()))
+          .collect(Collectors.joining("\n"));
+    }
+
+    @ManagedOperation(description="Shows the active threads")
+    public String active() {
+        return dests.entrySet().stream()
+          .map(e -> String.format("dest: %s alive=%b", e.getKey(), e.getValue().isThreadAlive()))
           .collect(Collectors.joining("\n"));
     }
 
@@ -63,34 +91,117 @@ public class PerDestinationBundler extends BaseBundler {
     }
 
     public void start() {
+        super.start();
         local_addr=Objects.requireNonNull(transport.getAddress());
-        dests.values().forEach(SendBuffer::start);
+        if(use_single_sender_thread) {
+            if(single_thread_runner == null)
+                single_thread_runner=new Runner(transport.getThreadFactory(), THREAD_NAME, this, null).joinTimeout(0);
+            single_thread_runner.start();
+        }
     }
 
     public void stop() {
+        super.stop();
         dests.values().forEach(SendBuffer::stop);
+        dests.clear();
+        if(single_thread_runner != null) {
+            lock.lock();
+            try {
+                msgs_available.set(true);
+                not_empty.signal();
+            }
+            finally {
+                lock.unlock();
+            }
+            Util.close(single_thread_runner);
+        }
     }
 
     public void send(Message msg) throws Exception {
+        if(single_thread_runner != null && !single_thread_runner.isRunning())
+            return;
         if(msg.getSrc() == null)
             msg.setSrc(local_addr);
         Address dest=msg.dest() == null ? NULL : msg.dest();
         SendBuffer buf=dests.get(dest);
-        if(buf == null)
-            buf=dests.computeIfAbsent(dest, k -> new SendBuffer(msg.dest()).start());
-        buf.send(msg);
+        if(buf == null) {
+            buf=dests.computeIfAbsent(dest, k -> new SendBuffer(msg.dest()));
+            // start() needs to be called here (*not* above): the lambda might be called multiple times, and we'd
+            // have multiple zombie sender threads!
+            buf.start();
+        }
+        boolean success=buf.send(msg);
+        if(success && msgs_available.compareAndSet(false, true))
+            signalNotEmpty();
+    }
+
+    /**
+     * Iterates through the send buffers and sends when messages are available. When an iteration found no messages to
+     * send, the thread blocks on a condition that is signalled as soon as messages are available in any of the buffers
+     */
+    public void run() {
+        boolean msgs_removed=false;
+        for(SendBuffer buf: dests.values()) {
+            boolean rc=buf.removeAndSend(true);
+            msgs_removed=msgs_removed || rc;
+        }
+        // continue looping until no messages were removed in an iteration
+        if(msgs_removed)
+            return; // Runner will run another iteration
+        boolean success=msgs_available.compareAndSet(true, false);
+        if(success)
+            waitUntilMessagesAreAvailable();
     }
 
     public void viewChange(View view) {
         List<Address> mbrs=view.getMembers();
-        if(mbrs == null) return;
 
+        // add new members
         mbrs.stream().filter(dest -> !dests.containsKey(dest))
-          .forEach(dest -> dests.putIfAbsent(dest, new SendBuffer(dest).start()));
+          .forEach(dest -> {
+              SendBuffer buf=dests.get(dest);
+              if(buf == null) {
+                  buf=dests.computeIfAbsent(dest, k -> new SendBuffer(dest));
+                  // start() needs to be called here (*not* above): the lambda might be called multiple times, and we'd
+                  // have multiple zombie sender threads!
+                  buf.start();
+              }
+          });
 
         // remove left members
-        dests.keySet().stream().filter(dest -> !mbrs.contains(dest) && !(dest == NULL))
-          .forEach(dests::remove);
+        dests.entrySet().stream()
+          .filter(e -> e.getKey() != NULL && !mbrs.contains(e.getKey()))
+          .forEach(e -> {
+              e.getValue().stop();
+              dests.remove(e.getKey());
+          });
+    }
+
+    protected void signalNotEmpty() {
+        lock.lock();
+        try {
+            not_empty.signal();
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+    protected void waitUntilMessagesAreAvailable() {
+        lock.lock();
+        try {
+            if(!msgs_available.get()) {
+                try {
+                    //noinspection AwaitNotInLoop
+                    not_empty.await();
+                }
+                catch(InterruptedException e) {
+                }
+            }
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
 
@@ -101,8 +212,7 @@ public class PerDestinationBundler extends BaseBundler {
         private BlockingQueue<Message>          queue;
         private FastArray<Message>              remove_queue;
         private final ByteArrayDataOutputStream output=new ByteArrayDataOutputStream(max_size + MSG_OVERHEAD);
-        private Thread                          bundler_thread;
-        private boolean                         running=true;
+        private Runner                          sendbuf_runner;
         private long                            count;
 
 
@@ -110,56 +220,66 @@ public class PerDestinationBundler extends BaseBundler {
             return String.format("msgs cap: %,d, remove-q cap: %,d", msgs.capacity(), remove_queue.capacity());
         }
 
-        protected SendBuffer(Address dest) {
+        public SendBuffer(Address dest) {
             this.dest=dest;
         }
 
+        public boolean isRunning() {
+            return sendbuf_runner != null && sendbuf_runner.isRunning();
+        }
+
+        public boolean isThreadAlive() {return sendbuf_runner != null && sendbuf_runner.getThread().isAlive();}
+
         public SendBuffer start() {
-            if(running)
-                stop();
             queue=new ArrayBlockingQueue<>(capacity);
             if(remove_queue_capacity == 0)
                 remove_queue_capacity=Math.max(capacity/8, 1024);
             remove_queue=new FastArray<>(remove_queue_capacity);
-            bundler_thread=transport.getThreadFactory().newThread(this, THREAD_NAME);
-            running=true;
-            bundler_thread.start();
+
+            if(!use_single_sender_thread) {
+                if(sendbuf_runner == null)
+                    sendbuf_runner=new Runner(transport.getThreadFactory(), THREAD_NAME, this, null).setJoinTimeout(0);
+                sendbuf_runner.start();
+            }
             return this;
         }
 
         public void stop() {
-            running=false;
-            Thread tmp=bundler_thread;
-            if(tmp != null)
-                tmp.interrupt();
+            Util.close(sendbuf_runner);
         }
 
         public void run() {
-            int rq_cap=remove_queue.capacity();
-            while(running) {
-                Message msg=null;
-                try {
-                    if((msg=queue.take()) == null)
-                        continue;
-                    addAndSendIfSizeExceeded(msg);
-                    while(true) {
-                        remove_queue.clear(false);
-                        int num_msgs=queue.drainTo(remove_queue, rq_cap);
-                        if(num_msgs <= 0)
-                            break;
-                        avg_remove_queue_size.add(num_msgs);
-                        remove_queue.forEach(this::addAndSendIfSizeExceeded); // forEach() avoids array bounds check
-                    }
-                    if(count > 0) {
-                        if(transport.statsEnabled())
-                            avg_fill_count.add(count);
-                        sendBundledMessages();
-                        num_sends_because_no_msgs.increment();
-                    }
-                }
-                catch(Throwable t) {
-                }
+            try {
+                Message msg=queue.take();
+                if(msg == null)
+                    return;
+                addAndSendIfSizeExceeded(msg);
+                removeAndSend(false); // loops until no more msgs available or size exceeded
             }
+            catch(Throwable t) {
+            }
+        }
+
+        protected boolean removeAndSend(boolean execute_only_once) {
+            boolean were_msgs_removed=false;
+            while(true) {
+                remove_queue.clear(false);
+                int num_msgs=queue.drainTo(remove_queue, remove_queue_capacity);
+                if(num_msgs <= 0)
+                    break;
+                were_msgs_removed=true;
+                avg_remove_queue_size.add(num_msgs);
+                remove_queue.forEach(this::addAndSendIfSizeExceeded); // forEach() avoids array bounds check
+                if(execute_only_once)
+                    break;
+            }
+            if(count > 0) {
+                if(transport.statsEnabled())
+                    avg_fill_count.add(count);
+                sendBundledMessages();
+                num_sends_because_no_msgs.increment();
+            }
+            return were_msgs_removed;
         }
 
         protected void addAndSendIfSizeExceeded(Message msg) {
@@ -178,15 +298,18 @@ public class PerDestinationBundler extends BaseBundler {
             count+=size;
         }
 
-        protected void send(Message msg) throws Exception {
-            if(!running)
-                return;
+        protected boolean send(Message msg) throws Exception {
+            if(sendbuf_runner != null && !sendbuf_runner.isRunning())
+                return false;
             if(drop_when_full || msg.isFlagSet(Message.TransientFlag.DONT_BLOCK)) {
-                if(!queue.offer(msg))
+                if(!queue.offer(msg)) {
                     num_drops_on_full_queue.increment();
+                    return false;
+                }
             }
             else
                 queue.put(msg);
+            return true;
         }
 
         protected void sendBundledMessages() {

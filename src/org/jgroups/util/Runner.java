@@ -38,6 +38,7 @@ public class Runner implements Runnable, Closeable {
     public Runner  threadName(String n)   {thread_name=n; if(thread != null) thread.setName(n); return this;}
     public long    getJoinTimeout()       {return join_timeout;}
     public Runner  setJoinTimeout(long t) {join_timeout=t; return this;}
+    public Runner  joinTimeout(long t)    {return setJoinTimeout(t);}
 
 
     public synchronized Runner start() {
@@ -60,7 +61,7 @@ public class Runner implements Runnable, Closeable {
         thread=null;
         if(tmp != null) {
             tmp.interrupt();
-            if(tmp.isAlive()) {
+            if(join_timeout > 0 && tmp.isAlive()) {
                 try {tmp.join(join_timeout);} catch(InterruptedException e) {}
             }
         }

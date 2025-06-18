@@ -817,6 +817,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             logical_addr_cache_reaper=null;
         }
         thread_pool.destroy();
+        bundler.destroy();
     }
 
 

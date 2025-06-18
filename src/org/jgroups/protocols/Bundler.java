@@ -19,6 +19,7 @@ public interface Bundler {
     /** Called after {@link #init(TP)} */
     void start();
     void stop();
+    default void destroy() {}
     void send(Message msg) throws Exception;
     @SuppressWarnings("UnusedParameters")
     default void viewChange(View view) {}

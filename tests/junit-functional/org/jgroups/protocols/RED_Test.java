@@ -106,12 +106,14 @@ public class RED_Test {
         protected long   getBatches()      {return batches.sum();}
         protected double getAvgBatchSize() {return avg_batch_size.average();}
 
-        protected void sendSingleMessage(Message msg, ByteArrayDataOutputStream out) {
+        @Override
+        protected void sendSingleMessage(final Address dest, final Message msg, ByteArrayDataOutputStream out) {
             sent.increment();
             single.increment();
             Util.sleepRandom(5, 100);
         }
 
+        @Override
         protected void sendMessageList(Address dest, Address src, List<Message> list, ByteArrayDataOutputStream out) {
             if(list != null) {
                 int size=list.size();
