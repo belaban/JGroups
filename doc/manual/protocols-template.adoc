@@ -192,8 +192,8 @@ defined here are inherited by the subclasses. The properties for `TP` are:
 
 ${TP}
 
-`bind_addr` can be set to the address of a network interface, e.g. +192.168.1.5+.
-It can also be set for the entire stack using system property +$$-Djgroups.bind_addr$$+, which
+`bind_addr` can be set to the address of a network interface, e.g. `192.168.1.5`.
+It can also be set for the entire stack using system property `-Djgroups.bind_addr`, which
 provides a value for `bind_addr` unless it has already been set in the XML config.
         
 
@@ -202,24 +202,25 @@ The following special values are also recognized for `bind_addr`:
 
 GLOBAL:: Picks a global IP address if available. If not, falls back to a SITE_LOCAL IP address.
 
-SITE_LOCAL:: Picks a site local (non-routable) IP address, e.g. from the +192.168.0.0+ or
-             +10.0.0.0+ address range.
+SITE_LOCAL:: Picks a site local (non-routable) IP address, e.g. from the `192.168.0.0` or
+             `10.0.0.0` address range.
 
-LINK_LOCAL:: Picks a link-local IP address, from +169.254.1.0+ through
-             +169.254.254.255+.
+LOCALHOST:: Returns the result of calling `InetAddress.getLocalHost()`.
+
+LINK_LOCAL:: Picks a link-local IP address, from `169.254.1.0` through `169.254.254.255`.
 
 NON_LOOPBACK:: Picks _any_ non loopback address.
                     
-LOOPBACK:: Pick a loopback address, e.g. +127.0.0.1+.
+LOOPBACK:: Pick a loopback address, e.g. `127.0.0.1`.
 
 match-interface:: Pick an address which matches a pattern against the interface name,
-                  e.g. +match-interface:eth.\*+
+                  e.g. `match-interface:eth.\*`
 
 match-address:: Pick an address which matches a pattern against the host address,
-                e.g. +match-address:192.168.\*+
+                e.g. `match-address:192.168.\*`
 
 match-host:: Pick an address which matches a pattern against the host name,
-             e.g. +match-host:linux.\*+
+             e.g. `match-host:linux.\*`
 
 custom:: Use custom code to pick the bind address. The value after `custom` needs to be the fully qualified name
          of a class implementing `Supplier<InetAddress>`, e.g. bind_addr="custom:com.acme.BindAddressPicker".

@@ -1553,7 +1553,6 @@ public class UtilTest {
         assert addr instanceof Inet6Address || addr == null;
     }
 
-
     public void testGetAddressByScope() throws SocketException {
         for(Util.AddressScope scope: Util.AddressScope.values()) {
             for(StackType type: StackType.values()) {
@@ -1562,6 +1561,13 @@ public class UtilTest {
                 assert addr == null || addr.getClass() == (type == StackType.IPv6? Inet6Address.class : Inet4Address.class);
             }
         }
+    }
+
+    // Tests JGRP-2897
+    public void testGetAddress() throws Exception {
+        InetAddress local=InetAddress.getLocalHost();
+        InetAddress tmp=Util.getAddress("localhost", StackType.IPv4);
+        assert local.equals(tmp);
     }
 
     public void testEnumeration() {

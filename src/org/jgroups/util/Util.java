@@ -4622,7 +4622,9 @@ public class Util {
         }
         catch(Throwable ignored) {
         }
-
+        // https://issues.redhat.com/browse/JGRP-2897
+        if(value.toUpperCase().startsWith("LOCALHOST"))
+            return InetAddress.getLocalHost();
         if(value.startsWith("match"))
             return Util.getAddressByPatternMatch(value, ip_version);
         if(value.startsWith("custom:"))
