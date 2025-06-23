@@ -2672,6 +2672,9 @@ public class Util {
         return t.isAlive();
     }
 
+    public static String printTime(double time) {
+        return printTime(time, TimeUnit.NANOSECONDS);
+    }
 
     public static String printTime(double time, TimeUnit unit) {
         switch(unit) {
