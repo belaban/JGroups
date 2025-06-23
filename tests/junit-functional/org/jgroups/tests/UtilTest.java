@@ -1566,7 +1566,7 @@ public class UtilTest {
     // Tests JGRP-2897
     public void testGetAddress() throws Exception {
         InetAddress local=InetAddress.getLocalHost();
-        InetAddress tmp=Util.getAddress("localhost", StackType.IPv4);
+        InetAddress tmp=Util.getAddress("use-localhost", StackType.IPv4);
         assert local.equals(tmp);
     }
 

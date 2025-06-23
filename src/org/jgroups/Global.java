@@ -70,6 +70,7 @@ public final class Global {
     public static final String MATCH_ADDR="match-address";
     public static final String MATCH_HOST="match-host";
     public static final String MATCH_INTF="match-interface";
+    public static final String USE_LOCALHOST="USE-LOCALHOST";
 
     // used to return all groups (https://issues.redhat.com/browse/JGRP-2693)
     public static final String ALL_GROUPS="<<all-groups>>";

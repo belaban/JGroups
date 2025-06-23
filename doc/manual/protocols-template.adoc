@@ -205,7 +205,7 @@ GLOBAL:: Picks a global IP address if available. If not, falls back to a SITE_LO
 SITE_LOCAL:: Picks a site local (non-routable) IP address, e.g. from the `192.168.0.0` or
              `10.0.0.0` address range.
 
-LOCALHOST:: Returns the result of calling `InetAddress.getLocalHost()`.
+use-localhost:: Returns the result of calling `InetAddress.getLocalHost()`.
 
 LINK_LOCAL:: Picks a link-local IP address, from `169.254.1.0` through `169.254.254.255`.
 
