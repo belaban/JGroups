@@ -50,7 +50,7 @@ public class DiscoveryTest2 extends ChannelTestBase {
         c.connect(CLUSTER);
         d.connect(CLUSTER);
         // don't connect E yet!
-        Util.waitUntilAllChannelsHaveSameView(5000, 500, a,b,c,d);
+        Util.waitUntilAllChannelsHaveSameView(5000, 100, a,b,c,d);
     }
 
     @AfterMethod void tearDown() throws Exception {
