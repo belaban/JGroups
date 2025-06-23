@@ -229,21 +229,15 @@ public class DuplicateTest extends ChannelTestBase {
         a.connect("DuplicateTest");
         b.connect("DuplicateTest");
         c.connect("DuplicateTest");
-        Util.waitUntilAllChannelsHaveSameView(20000, 1000, a, b, c);
+        Util.waitUntilAllChannelsHaveSameView(20000, 100, a, b, c);
     }
 
 
     @SafeVarargs
     private final void check(MyReceiver receiver, int expected_size, boolean oob, Tuple<Address,Integer>... vals) {
         Map<Address, Collection<Long>> msgs=receiver.getMsgs();
-
-        for(int i=0; i < 10; i++) {
-            if(msgs.size() >= expected_size)
-                break;
-            Util.sleep(500);
-        }
+        Util.waitUntilTrue(5000, 100, () -> msgs.size() >= expected_size);
         assert msgs.size() == expected_size : "expected size=" + expected_size + ", msgs: " + msgs.keySet();
-
 
         for(Tuple<Address,Integer> tuple: vals) {
             Address addr=tuple.getVal1();
@@ -251,10 +245,10 @@ public class DuplicateTest extends ChannelTestBase {
             assert list != null : "no list available for " + addr;
 
             int expected_values=tuple.getVal2();
-            for(int i=0; i < 10; i++) {
+            for(int i=0; i < 50; i++) {
                 if(list.size() >= expected_values)
                     break;
-                Util.sleep(500);
+                Util.sleep(100);
                 sendStableMessages(a,b,c);
             }
 
