@@ -32,7 +32,7 @@ public class BundlerTest extends ChannelTestBase {
         makeUnique(a,b);
         a.connect("BundlerTest");
         b.connect("BundlerTest");
-        Util.waitUntilAllChannelsHaveSameView(5000, 500, a,b);
+        Util.waitUntilAllChannelsHaveSameView(5000, 100, a,b);
         a.setReceiver(ra.reset());
         b.setReceiver(rb.reset());
         for(JChannel ch: List.of(a, b)) {
@@ -97,7 +97,7 @@ public class BundlerTest extends ChannelTestBase {
                 msg.setFlag(Message.TransientFlag.DONT_LOOPBACK);
             a.send(msg);
         }
-        Util.waitUntil(2000, 100, () -> ra.size() == expected_a && rb.size() == expected_b, () -> print(a,b));
+        Util.waitUntil(2000, 50, () -> ra.size() == expected_a && rb.size() == expected_b, () -> print(a,b));
         System.out.printf("%s\n", print(a,b));
         assert expected_a <= 0 || ra.list().equals(EXPECTED);
         assert expected_b <= 0 || rb.list().equals(EXPECTED);
