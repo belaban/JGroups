@@ -39,7 +39,7 @@ public class OOBTest extends ChannelTestBase {
         setStableGossip(a,b);
         a.connect("OOBTest");
         b.connect("OOBTest");
-        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b);
+        Util.waitUntilAllChannelsHaveSameView(10000, 100, a, b);
     }
 
 
