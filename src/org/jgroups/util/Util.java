@@ -121,7 +121,7 @@ public class Util {
     private static final StackType                  ip_stack_type;
     private static volatile List<NetworkInterface>  CACHED_INTERFACES=null;
     private static volatile Collection<InetAddress> CACHED_ADDRESSES=null;
-
+    private static InetAddress                      LOCALHOST=null;
     public static final boolean                     can_bind_to_mcast_addr;
     protected static ResourceBundle                 resource_bundle;
     static DateTimeFormatter                        UTF_FORMAT=DateTimeFormatter.ofPattern("E MMM d H:m:s 'UTC' y");
@@ -146,7 +146,11 @@ public class Util {
         }
         ip_stack_type=_getIpStackType();
 
-        String tmp;
+        try {
+            LOCALHOST=IpAddress.getLocalHost();
+        }
+        catch(Throwable ex) {
+        }
         resource_bundle=ResourceBundle.getBundle("jg-messages",Locale.getDefault(),Util.class.getClassLoader());
 
         add(TYPE_NULL, Void.class);
@@ -197,6 +201,7 @@ public class Util {
         catch(SecurityException ignored) {
         }
 
+        String tmp;
         try {
             tmp=SecurityActions.getProperty(Global.MAX_LIST_PRINT_SIZE);
             if(tmp != null)
@@ -4248,7 +4253,8 @@ public class Util {
     public static String generateLocalName() {
         String retval=null;
         try {
-            retval=shortName(InetAddress.getLocalHost().getHostName());
+            InetAddress host=LOCALHOST != null? LOCALHOST : InetAddress.getLocalHost();
+            retval=shortName(host.getHostName());
         }
         catch(Throwable ignored) {
         }
@@ -4627,7 +4633,7 @@ public class Util {
         }
         // https://issues.redhat.com/browse/JGRP-2897
         if(value.toUpperCase().startsWith("LOCALHOST"))
-            return InetAddress.getLocalHost();
+            return LOCALHOST;
         if(value.startsWith("match"))
             return Util.getAddressByPatternMatch(value, ip_version);
         if(value.startsWith("custom:"))
@@ -4866,7 +4872,7 @@ public class Util {
         return CACHED_INTERFACES=retval;
     }
 
-    public static void resetCacheAddresses(boolean reset_interfaces, boolean reset_addresses) {
+    public static void resetCachedAddresses(boolean reset_interfaces, boolean reset_addresses) {
         if(reset_interfaces)
             CACHED_INTERFACES=null;
         if(reset_addresses)
@@ -4877,7 +4883,7 @@ public class Util {
      * This will allow for setting in android via the conectivity manager without needing to pass in the context.
      * Also will allow android to update as connectivity changes.
      */
-    public static void setCacheAddresses(List<NetworkInterface> interfaces, List<InetAddress> addresses) {
+    public static void setCachedAddresses(List<NetworkInterface> interfaces, List<InetAddress> addresses) {
         CACHED_INTERFACES=interfaces;
         CACHED_ADDRESSES=addresses;
     }
