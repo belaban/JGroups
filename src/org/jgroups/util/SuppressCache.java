@@ -85,12 +85,12 @@ public class SuppressCache<T> {
             this.count=1;
         }
 
-        protected final long timestamp; // time of last update
-        protected int        count;     // number of accesses since last update
+        private final long timestamp; // time of last update
+        private int        count;     // number of accesses since last update
 
         public long               age()    {return System.currentTimeMillis() - timestamp;}
         public synchronized Value update() {count++; return this;}
-        public int count()                 {return count;}
+        public int                count()  {return count;}
 
         public String toString() {return count + " update(s) in " + age() + " ms";}
     }
