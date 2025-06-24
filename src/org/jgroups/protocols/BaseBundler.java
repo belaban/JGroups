@@ -65,7 +65,8 @@ public abstract class BaseBundler implements Bundler {
     protected int                                   remove_queue_capacity;
 
     @Property(description="When true, when there's no space to queue a message, senders will drop the message rather" +
-      "than wait until space is available (https://issues.redhat.com/browse/JGRP-2765)")
+      "than wait until space is available (https://issues.redhat.com/browse/JGRP-2765)",deprecatedMessage="ignored")
+    @Deprecated(since="5.4.9",forRemoval=true)
     protected boolean                               drop_when_full=true;
 
     @ManagedAttribute(description="Average fill size of the queue (in bytes) when messages are sent")
@@ -108,8 +109,8 @@ public abstract class BaseBundler implements Bundler {
     public Bundler               removeQueueCapacity(int c) {this.remove_queue_capacity=c; return this;}
     public int                   getMaxSize()               {return max_size;}
     public Bundler               setMaxSize(int s)          {max_size=s; return this;}
-    public boolean               dropWhenFull()             {return drop_when_full;}
-    public <T extends Bundler> T dropWhenFull(boolean d)    {this.drop_when_full=d; return (T)this;}
+    public boolean               dropWhenFull()             {return true;}
+    public <T extends Bundler> T dropWhenFull(boolean d)    {return (T)this;}
 
     @ManagedAttribute(description="Average number of messages in an BatchMessage")
     public double avgBatchSize() {

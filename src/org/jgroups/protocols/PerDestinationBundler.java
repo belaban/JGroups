@@ -42,7 +42,7 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
     protected final AtomicBoolean           msgs_available=new AtomicBoolean(true);
 
     @Property(description="True: use a single thread for all destinationns. False: use a thread per destination")
-    protected boolean use_single_sender_thread;
+    protected boolean                       use_single_sender_thread;
 
     public boolean isRunning() {
         return single_thread_runner != null && single_thread_runner.isRunning();
@@ -301,15 +301,10 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
         protected boolean send(Message msg) throws Exception {
             if(sendbuf_runner != null && !sendbuf_runner.isRunning())
                 return false;
-            if(drop_when_full || msg.isFlagSet(Message.TransientFlag.DONT_BLOCK)) {
-                if(!queue.offer(msg)) {
-                    num_drops_on_full_queue.increment();
-                    return false;
-                }
-            }
-            else
-                queue.put(msg);
-            return true;
+            if(queue.offer(msg))
+                return true;
+            num_drops_on_full_queue.increment();
+            return false;
         }
 
         protected void sendBundledMessages() {
