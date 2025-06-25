@@ -2,10 +2,10 @@ package org.jgroups.protocols;
 
 import org.jgroups.Message;
 import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.util.ConcurrentLinkedBlockingQueue;
 import org.jgroups.util.FastArray;
 
 import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 /**
@@ -36,8 +36,8 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
     public synchronized void start() {
         if(running)
             stop();
-        // todo: replace with LinkedBlockingQueue and measure impact (if any) on perf
-        queue=new ArrayBlockingQueue<>(capacity);
+        // queue blocks on consumer when empty; producers simply drop the message when full
+        queue=new ConcurrentLinkedBlockingQueue<>(capacity, true, false);
         if(remove_queue_capacity == 0)
             remove_queue_capacity=Math.max(capacity/4, 1024);
         remove_queue=new FastArray<>(remove_queue_capacity);

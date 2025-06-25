@@ -4,19 +4,16 @@ import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.NullAddress;
 import org.jgroups.View;
+import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
-import org.jgroups.util.ByteArrayDataOutputStream;
-import org.jgroups.util.FastArray;
-import org.jgroups.util.Runner;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -39,7 +36,9 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
     protected Runner                        single_thread_runner;
     protected static final String           THREAD_NAME="pd-bundler";
     protected final Condition               not_empty=lock.newCondition();
-    protected final AtomicBoolean           msgs_available=new AtomicBoolean(true);
+
+    @ManagedAttribute(description="Total number of messages in all queues")
+    protected final AtomicInteger           msgs_available=new AtomicInteger();
 
     @Property(description="True: use a single thread for all destinationns. False: use a thread per destination")
     protected boolean                       use_single_sender_thread;
@@ -107,7 +106,7 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
         if(single_thread_runner != null) {
             lock.lock();
             try {
-                msgs_available.set(true);
+                msgs_available.set(1); // ???
                 not_empty.signal();
             }
             finally {
@@ -131,25 +130,30 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
             buf.start();
         }
         boolean success=buf.send(msg);
-        if(success && msgs_available.compareAndSet(false, true))
-            signalNotEmpty();
+        if(success && use_single_sender_thread) {
+            int old_val=msgs_available.getAndIncrement();
+            if(old_val == 0)
+                signalNotEmpty();
+        }
     }
 
     /**
      * Iterates through the send buffers and sends when messages are available. When an iteration found no messages to
-     * send, the thread blocks on a condition that is signalled as soon as messages are available in any of the buffers
+     * send, the thread blocks on a condition that is signalled as soon as messages are available in any of the buffers.
+     * This is the single_sender_thread (use_single_sender_thread=true)
      */
     public void run() {
-        boolean msgs_removed=false;
+        int removed_msgs=0;
         for(SendBuffer buf: dests.values()) {
-            boolean rc=buf.removeAndSend(true);
-            msgs_removed=msgs_removed || rc;
+            int removed=buf.removeAndSend(true);
+            removed_msgs+=removed;
         }
         // continue looping until no messages were removed in an iteration
-        if(msgs_removed)
+        if(removed_msgs > 0) {
+            msgs_available.addAndGet(-removed_msgs);
             return; // Runner will run another iteration
-        boolean success=msgs_available.compareAndSet(true, false);
-        if(success)
+        }
+        if(msgs_available.get() == 0)
             waitUntilMessagesAreAvailable();
     }
 
@@ -190,9 +194,8 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
     protected void waitUntilMessagesAreAvailable() {
         lock.lock();
         try {
-            if(!msgs_available.get()) {
+            while(msgs_available.get() == 0) {
                 try {
-                    //noinspection AwaitNotInLoop
                     not_empty.await();
                 }
                 catch(InterruptedException e) {
@@ -231,7 +234,8 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
         public boolean isThreadAlive() {return sendbuf_runner != null && sendbuf_runner.getThread().isAlive();}
 
         public SendBuffer start() {
-            queue=new ArrayBlockingQueue<>(capacity);
+            boolean block_on_empty=!use_single_sender_thread;
+            queue=new ConcurrentLinkedBlockingQueue<>(capacity, block_on_empty, false);
             if(remove_queue_capacity == 0)
                 remove_queue_capacity=Math.max(capacity/8, 1024);
             remove_queue=new FastArray<>(remove_queue_capacity);
@@ -260,14 +264,14 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
             }
         }
 
-        protected boolean removeAndSend(boolean execute_only_once) {
-            boolean were_msgs_removed=false;
+        protected int removeAndSend(boolean execute_only_once) {
+            int removed_msgs=0;
             while(true) {
                 remove_queue.clear(false);
                 int num_msgs=queue.drainTo(remove_queue, remove_queue_capacity);
                 if(num_msgs <= 0)
                     break;
-                were_msgs_removed=true;
+                removed_msgs+=num_msgs;
                 avg_remove_queue_size.add(num_msgs);
                 remove_queue.forEach(this::addAndSendIfSizeExceeded); // forEach() avoids array bounds check
                 if(execute_only_once)
@@ -279,7 +283,7 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
                 sendBundledMessages();
                 num_sends_because_no_msgs.increment();
             }
-            return were_msgs_removed;
+            return removed_msgs;
         }
 
         protected void addAndSendIfSizeExceeded(Message msg) {
