@@ -3422,25 +3422,13 @@ public class Util {
     public static Field[] getAllDeclaredFieldsWithAnnotations(final Class<?> clazz, Class<? extends Annotation>... annotations) {
         List<Field> list=new ArrayList<>(30);
         for(Class<?> curr=clazz; curr != null; curr=curr.getSuperclass()) {
-            Field[] fields=curr.getDeclaredFields();
-            if(fields != null) {
-                for(Field field: fields) {
-                    if(annotations != null && annotations.length > 0) {
-                        for(Class<? extends Annotation> annotation : annotations) {
-                            if(field.isAnnotationPresent(annotation))
-                                list.add(field);
-                        }
-                    }
-                    else
-                        list.add(field);
+            for(Field field: curr.getDeclaredFields()) {
+                if(annotations == null || annotations.length == 0 || hasAnyAnnotation(field, annotations)) {
+                    list.add(field);
                 }
             }
         }
-
-        Field[] retval=new Field[list.size()];
-        for(int i=0; i < list.size(); i++)
-            retval[i]=list.get(i);
-        return retval;
+        return list.toArray(Field[]::new);
     }
 
 
@@ -3482,28 +3470,25 @@ public class Util {
     @SafeVarargs
     public static Method[] getAllDeclaredMethodsWithAnnotations(final Class<?> clazz, Class<? extends Annotation>... annotations) {
         List<Method> list=new ArrayList<>(30);
+        Set<String> added=new HashSet<>(30);
         for(Class<?> curr=clazz; curr != null; curr=curr.getSuperclass()) {
-            Method[] methods=curr.getDeclaredMethods();
-            if(methods != null) {
-                for(Method method : methods) {
-                    if(annotations != null && annotations.length > 0) {
-                        for(Class<? extends Annotation> annotation : annotations) {
-                            if(method.isAnnotationPresent(annotation))
-                                list.add(method);
-                        }
-                    }
-                    else
+            for(Method method : curr.getDeclaredMethods()) {
+                if(annotations == null || annotations.length == 0 || hasAnyAnnotation(method, annotations)) {
+                    if (added.add(method.getName() + Arrays.toString(method.getParameterTypes())))
                         list.add(method);
                 }
             }
         }
-
-        Method[] retval=new Method[list.size()];
-        for(int i=0; i < list.size(); i++)
-            retval[i]=list.get(i);
-        return retval;
+        return list.toArray(Method[]::new);
     }
 
+    private static boolean hasAnyAnnotation(AnnotatedElement element, Class<? extends Annotation>[] annotations) {
+        for(Class<? extends Annotation> annotation : annotations) {
+            if(element.isAnnotationPresent(annotation))
+                return true;
+        }
+        return false;
+    }
 
     public static <A extends Annotation> A getAnnotation(Class<?> clazz, Class<A> annotationClass) {
         for(Class<?> curr=clazz; curr != null; curr=curr.getSuperclass()) {
