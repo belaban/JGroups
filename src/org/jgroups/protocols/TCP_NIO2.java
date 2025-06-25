@@ -78,7 +78,7 @@ public class TCP_NIO2 extends BasicTCP {
     @ManagedAttribute(description="Number of partial writes for all connections (not all bytes were written)")
     public int     numPartialWrites() {return server.numPartialWrites();}
 
-    @ManagedAttribute(description="Number of ms a reader thread on a given connection can be idle (not receiving any messages) " +
+    @ManagedOperation(description="Number of ms a reader thread on a given connection can be idle (not receiving any messages) " +
       "until it terminates. New messages will start a new reader")
     public void readerIdleTime(long t) {
         this.reader_idle_time=t;
