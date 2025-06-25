@@ -213,7 +213,7 @@ public class SequencerFailoverTest extends BMNGRunner {
         b.setReceiver(rb); c.setReceiver(rc);
 
         new Thread(() -> {
-            Util.sleep(3000);
+            Util.sleep(500);
             System.out.println("** killing A");
             try {
                 Util.shutdown(a);
@@ -228,11 +228,11 @@ public class SequencerFailoverTest extends BMNGRunner {
 
         final Address sender=channel.getAddress();
         for(int i=1; i <= NUM_MSGS; i++) {
-            Util.sleep(300);
+            Util.sleep(50);
             channel.send(new BytesMessage(null, i));
             System.out.print("[" + sender + "] -- messages sent: " + i + "/" + NUM_MSGS + "\r");
         }
-        System.out.println("");
+        System.out.println();
         View v2=b.getView();
         View v3=c.getView();
         System.out.println("B's view: " + v2 + "\nC's view: " + v3);
