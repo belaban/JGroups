@@ -1,9 +1,7 @@
 package org.jgroups.blocks.cs;
 
 import org.jgroups.Address;
-import org.jgroups.util.ByteArray;
-import org.jgroups.util.ThreadFactory;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLHandshakeException;
@@ -12,7 +10,6 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.LongAdder;
 
@@ -24,43 +21,44 @@ import java.util.concurrent.atomic.LongAdder;
  * @author Bela Ban
  * @since  5.3.3
  */
-public class TcpConnectionNonBlocking extends TcpConnection {
+public class TcpConnectionNonBlocking extends TcpConnection implements Runnable {
     protected final BlockingQueue<ByteArray> queue;
-    protected int                            max_size=128;
-    protected volatile Sender                sender;
+    protected int                            max_size=1024;
+    protected final Runner                   sender;
     protected final LongAdder                dropped_msgs=new LongAdder();
+    protected final FastArray<ByteArray>     remove_queue;
+    protected int                            rq_capacity;  // by default 20% of max_size
 
 
     public TcpConnectionNonBlocking(Address peer_addr, TcpBaseServer server, int max_size) throws Exception {
         super(peer_addr, server);
         this.max_size=max_size;
-        queue=new ArrayBlockingQueue<>(max_size);
+        queue=new ConcurrentLinkedBlockingQueue<>(max_size, true, false);
+        remove_queue=new FastArray<>(rq_capacity=max_size/5);
+        sender=new Runner(server.factory, String.format("sender to %s", peer_addr), this, null);
     }
 
     public TcpConnectionNonBlocking(Socket s, TcpServer server, int max_size) throws Exception {
         super(s, server);
         this.max_size=max_size;
-        queue=new ArrayBlockingQueue<>(max_size);
+        queue=new ConcurrentLinkedBlockingQueue<>(max_size, true, false);
+        remove_queue=new FastArray<>(rq_capacity=max_size/5);
+        sender=new Runner(server.factory, String.format("sender to %s", peer_addr), this, null);
     }
 
-    public int                      maxSize()         {return max_size;}
-    public long                     droppedMessages() {return dropped_msgs.sum();}
-    public int                      queueSize()       {return queue != null? queue.size() : 0;}
-
+    public int     maxSize()         {return max_size;}
+    public long    droppedMessages() {return dropped_msgs.sum();}
+    public int     queueSize()       {return queue != null? queue.size() : 0;}
+    public boolean senderRunning()   {return sender.isRunning();}
 
     @Override public void start() {
         super.start();
-        if(sender != null)
-            sender.stop();
-        sender=new Sender(server.factory).start();
+        sender.start();
     }
 
     @Override public void close() throws IOException {
         super.close();
-        if(sender != null) {
-            sender.stop();
-            sender=null;
-        }
+        sender.stop();
     }
 
     @Override
@@ -73,6 +71,46 @@ public class TcpConnectionNonBlocking extends TcpConnection {
         boolean added=queue.offer(buf);
         if(!added)
             dropped_msgs.increment();
+    }
+
+    public void run() {
+        try {
+            if(!isConnected())
+                return;
+            do {
+                remove_queue.clear(false);
+                remove_queue.add(queue.take());
+                queue.drainTo(remove_queue, rq_capacity - 1);
+                for(ByteArray data: remove_queue) {
+                    // no synchronization needed as this thread is the only sender
+                    doSend(data.getArray(), data.getOffset(), data.getLength(), false);
+                }
+                flush();
+            }
+            while(!queue.isEmpty());
+        }
+        catch(InterruptedException iex) {
+            ;
+        }
+        catch(EOFException | SocketException ex) {
+            ; // regular use case when a peer closes its connection - we don't want to log this as exception
+        }
+        catch(Exception e) {
+            //noinspection StatementWithEmptyBody
+            if(e instanceof SSLException && e.getMessage().contains("Socket closed")) {
+                ; // regular use case when a peer closes its connection - we don't want to log this as exception
+            }
+            else if(e instanceof SSLHandshakeException && e.getCause() instanceof EOFException) {
+                ; // Ignore SSL handshakes closed early (usually liveness probes)
+            }
+            else {
+                if(server.logDetails())
+                    server.log.warn("failed sending message", e);
+                else
+                    server.log.warn("failed sending message: " + e);
+                server.notifyConnectionClosed(TcpConnectionNonBlocking.this);
+            }
+        }
     }
 
     @Override
@@ -88,77 +126,4 @@ public class TcpConnectionNonBlocking extends TcpConnection {
         return String.format("Connection.Sender [%s:%s-%s:%s]", l, sock.getLocalPort(), r, sock.getPort());
     }
 
-
-
-    protected boolean senderRunning() {
-        final Sender tmp=sender;
-        return tmp != null && tmp.running();
-    }
-
-
-    protected class Sender implements Runnable {
-        protected final Thread     thread;
-        protected volatile boolean running=true;
-
-        public Sender(ThreadFactory f) {
-            String name=name();
-            thread=f != null? f.newThread(this, name) : new Thread(this, name);
-        }
-
-        public Sender start() {
-            running=true;
-            thread.start();
-            return this;
-        }
-
-        public Sender stop() {
-            running=false;
-            Thread t=thread;
-            if(t != null && t.isAlive())
-                t.interrupt();
-            return this;
-        }
-
-        public boolean running() {
-            return running && isConnected();
-        }
-
-        @Override public void run() {
-            try {
-                while(running()) {
-                    ByteArray data;
-                    try {
-                        data=queue.take();
-                    }
-                    catch(InterruptedException iex) {
-                        continue;
-                    }
-
-                    // no synchronization needed as this thread is the only sender
-                    doSend(data.getArray(), data.getOffset(), data.getLength(), true); // flush
-                }
-            }
-            catch(EOFException | SocketException ex) {
-                ; // regular use case when a peer closes its connection - we don't want to log this as exception
-            }
-            catch(Exception e) {
-                //noinspection StatementWithEmptyBody
-                if (e instanceof SSLException && e.getMessage().contains("Socket closed")) {
-                    ; // regular use case when a peer closes its connection - we don't want to log this as exception
-                }
-                else if (e instanceof SSLHandshakeException && e.getCause() instanceof EOFException) {
-                    ; // Ignore SSL handshakes closed early (usually liveness probes)
-                }
-                else {
-                    if(server.logDetails())
-                        server.log.warn("failed sending message", e);
-                    else
-                        server.log.warn("failed sending message: " + e);
-                }
-            }
-            finally {
-                server.notifyConnectionClosed(TcpConnectionNonBlocking.this);
-            }
-        }
-    }
 }

@@ -59,7 +59,7 @@ public class Runner implements Runnable, Closeable {
         running=false;
         Thread tmp=thread;
         thread=null;
-        if(tmp != null) {
+        if(tmp != null && tmp.isAlive()) {
             tmp.interrupt();
             if(join_timeout > 0 && tmp.isAlive()) {
                 try {tmp.join(join_timeout);} catch(InterruptedException e) {}

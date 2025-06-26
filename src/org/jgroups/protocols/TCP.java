@@ -57,7 +57,7 @@ public class TCP extends BasicTCP {
     protected boolean   non_blocking_sends;
 
     @Property(description="when sending and non_blocking, how many messages to queue max")
-    protected int       max_send_queue=128;
+    protected int       max_send_queue=1024;
 
     public int getBufferedInputStreamSize() {
         return buffered_input_stream_size;
