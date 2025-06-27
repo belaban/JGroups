@@ -37,6 +37,7 @@ public class Metrics {
         }
         return false;
     };
+    public static final Predicate<AccessibleObject> IS_MANAGED_ATTRIBUTE=obj -> obj.getAnnotation(ManagedAttribute.class) != null;
 
 
     public static class Entry<T> {
@@ -136,28 +137,15 @@ public class Metrics {
             Entry<Object> en=e.getValue();
             AccessibleObject type=en.type();
             Class<? extends Object> cl=(type instanceof Field)? ((Field)type).getType() : ((Method)type).getReturnType();
-            if(Number.class.isAssignableFrom(cl)) {
+            if(Number.class.isAssignableFrom(cl)
+                    || int.class.isAssignableFrom(cl) || long.class.isAssignableFrom(cl)
+                    || float.class.isAssignableFrom(cl) || double.class.isAssignableFrom(cl)) {
                 Entry<Number> tmp=new Entry<>(en.type(), en.description(), () -> (Number)en.supplier().get());
                 retval.put(e.getKey(), tmp);
                 continue;
             }
-            if(int.class.isAssignableFrom(cl)) {
-                Entry<Number> tmp=new Entry<>(en.type(), en.description(), () -> (Integer)en.supplier().get());
-                retval.put(e.getKey(), tmp);
-                continue;
-            }
-            if(long.class.isAssignableFrom(cl)) {
-                Entry<Number> tmp=new Entry<>(en.type(), en.description(), () -> (Long)en.supplier().get());
-                retval.put(e.getKey(), tmp);
-                continue;
-            }
-            if(double.class.isAssignableFrom(cl)) {
-                Entry<Number> tmp=new Entry<>(en.type(), en.description(), () -> (Double)en.supplier().get());
-                retval.put(e.getKey(), tmp);
-                continue;
-            }
-            if(float.class.isAssignableFrom(cl)) {
-                Entry<Number> tmp=new Entry<>(en.type(), en.description(), () -> (Float)en.supplier().get());
+            if(boolean.class.isAssignableFrom(cl) || Boolean.class.isAssignableFrom(cl)) {
+                Entry<Number> tmp=new Entry<>(en.type(), en.description(), () -> (Boolean)en.supplier().get() ? 1 : 0);
                 retval.put(e.getKey(), tmp);
                 continue;
             }
