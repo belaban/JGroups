@@ -376,7 +376,7 @@ public class JDBC_PING2 extends FILE_PING {
             ps.executeUpdate();
             log.debug("%s: inserted %s for cluster %s", local_addr, address, clustername);
         } finally {
-            lock.lock();
+            lock.unlock();
         }
     }
 

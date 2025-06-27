@@ -525,7 +525,7 @@ public class Merger {
                 return;
             }
 
-            log.debug("%s: merge task %s started with %d participants", gms.getAddress(), merge_id, coords.keySet().size());
+            log.debug("%s: merge task %s started with %d participants", gms.getAddress(), merge_id, coords.size());
 
             // Fetch the current views and digests from all subgroup coordinators into merge_rsps
             success=getMergeDataFromSubgroupCoordinators(coords, new_merge_id, gms.merge_timeout);
@@ -534,7 +534,7 @@ public class Merger {
                 missing=merge_rsps.getMissing();
                 log.debug("%s: merge leader %s did not get responses from all %d partition coordinators; " +
                             "missing responses from %d members, removing them from the merge",
-                          gms.getAddress(), gms.getAddress(), coords.keySet().size(), missing.size());
+                          gms.getAddress(), gms.getAddress(), coords.size(), missing.size());
                 merge_rsps.remove(missing);
             }
 
