@@ -88,7 +88,6 @@ public class ConcurrentLinkedBlockingQueueTest {
 
         Thread t=new Thread(() -> {
             try {
-                // Integer ignored=
                 q.take();
                 assert false : "take() should throw an InterruptedException";
             }
@@ -107,7 +106,6 @@ public class ConcurrentLinkedBlockingQueueTest {
     public void testTakeOnNonBlockingQueue() throws InterruptedException {
         q=new ConcurrentLinkedBlockingQueue<>(10, false, false);
         try {
-            // Integer ignored=
             q.take();
             assert false : "take() cannot be called on non-blocking queue";
         }
