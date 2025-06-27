@@ -1,7 +1,7 @@
-
 package org.jgroups.tests;
 
-import java.io.DataInputStream;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -26,7 +26,7 @@ public class McastSenderTest {
         String tmp;
         int ttl=32;
         String line;
-        DataInputStream in;
+        BufferedReader in;
         AckReceiver ack_receiver=null;
         int port=5555;
 
@@ -100,7 +100,7 @@ public class McastSenderTest {
                         ", ttl=" + sock.getTimeToLive() + ", bind interface=" + sock.getNetworkInterface());
             }
 
-            in=new DataInputStream(System.in);
+            in=new BufferedReader(new InputStreamReader(System.in));
             while(true) {
                 System.out.print("> ");
                 line=in.readLine();
@@ -171,17 +171,6 @@ public class McastSenderTest {
         void start() {
             t=new Thread(this, "McastSenderTest.AckReceiver thread");
             t.start();
-        }
-
-        void stop() {
-            if(t != null && t.isAlive()) {
-                t=null;
-                try {
-                    sock.close();
-                }
-                catch(Exception e) {
-                }
-            }
         }
     }
 

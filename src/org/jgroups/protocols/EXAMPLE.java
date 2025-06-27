@@ -61,6 +61,8 @@ public class EXAMPLE extends Protocol {
     public void up(MessageBatch batch) {
         for(Message msg: batch) {
             // do something; perhaps check for the presence of a header
+            if (msg != null)
+                msg.toString();
         }
         if(!batch.isEmpty())
             up_prot.up(batch);

@@ -406,12 +406,12 @@ public class FD_HOST extends Protocol {
         }
 
         public boolean isAlive(InetAddress host, long timeout) throws Exception {
-            return CommandExecutor2.execute(cmd + " " + host.getHostAddress()) == 0;
+            return CommandExecutor2.execute(cmd, host.getHostAddress()) == 0;
         }
     }
 
     public static class CommandExecutor2 {
-        public static int execute(String command) throws Exception {
+        public static int execute(String... command) throws Exception {
             Process p=Runtime.getRuntime().exec(command);
             return p.waitFor();
         }

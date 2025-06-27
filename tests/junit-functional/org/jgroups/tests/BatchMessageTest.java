@@ -1,13 +1,10 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.util.ByteArray;
-import org.jgroups.util.ByteArrayDataInputStream;
 import org.jgroups.util.MyReceiver;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
-import java.io.DataInput;
 import java.nio.ByteBuffer;
 
 /**

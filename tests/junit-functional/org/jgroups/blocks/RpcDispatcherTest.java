@@ -113,6 +113,7 @@ public class RpcDispatcherTest {
 
 
             Object server_object=new Object() {
+                @SuppressWarnings("unused")
                 public long foobar() {
                     return System.currentTimeMillis();
                 }
@@ -923,7 +924,7 @@ public class RpcDispatcherTest {
         public static void bar() {;}
         
         public long sleep(long timeout) {
-            @SuppressWarnings("deprecation") long id=Thread.currentThread().getId();
+            long id=Thread.currentThread().getId();
             System.out.printf("-- [%d] [%s] %s: sleeping for %d ms\n", id, new Date(), name, timeout);
             long start=System.currentTimeMillis();
             Util.sleep(timeout);
@@ -933,7 +934,7 @@ public class RpcDispatcherTest {
         }
 
         public long sleep(int invocation_id, long timeout) {
-            @SuppressWarnings("deprecation") long id=Thread.currentThread().getId();
+            long id=Thread.currentThread().getId();
             System.out.printf("-- [%d] [%s] [#%d] %s: sleeping for %d ms\n", id, new Date(), invocation_id, name, timeout);
             long start=System.currentTimeMillis();
             Util.sleep(timeout);

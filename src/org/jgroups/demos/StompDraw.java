@@ -1,7 +1,4 @@
-
-
 package org.jgroups.demos;
-
 
 import org.jgroups.client.StompConnection;
 import org.jgroups.util.Util;
@@ -9,7 +6,6 @@ import org.jgroups.util.Util;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.io.*;
 import java.util.*;
 import java.util.List;
 
@@ -326,48 +322,6 @@ public class StompDraw implements StompConnection.Listener, ActionListener {
                     createOffscreenImage(false);
                 }
             });
-        }
-
-
-
-        public void writeState(OutputStream outstream) throws IOException {
-            if(state == null)
-                return;
-            synchronized(state) {
-                DataOutputStream dos = new DataOutputStream(outstream);
-                dos.writeInt(state.size());
-                Point point;
-                Color col;
-                for (Map.Entry<Point, Color> entry : state.entrySet()) {
-                    point = entry.getKey();
-                    col = entry.getValue();
-                    dos.writeInt(point.x);
-                    dos.writeInt(point.y);
-                    dos.writeInt(col.getRGB());
-                }
-                dos.flush();
-            }
-        }
-
-
-        public void readState(InputStream instream) throws IOException {
-            DataInputStream in=new DataInputStream(instream);
-            Map<Point,Color> new_state=new HashMap<>();
-            int num=in.readInt();
-            Point point;
-            Color col;
-            for(int i=0; i < num; i++) {
-                point=new Point(in.readInt(), in.readInt());
-                col=new Color(in.readInt());
-                new_state.put(point, col);
-            }
-
-            synchronized(state) {
-                state.clear();
-                state.putAll(new_state);
-                System.out.println("read state: " + state.size() + " entries");
-                createOffscreenImage(true);
-            }
         }
 
 

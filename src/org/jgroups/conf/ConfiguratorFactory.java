@@ -7,6 +7,7 @@ import org.w3c.dom.Element;
 
 import java.io.*;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.Objects;
 
@@ -87,9 +88,9 @@ public class ConfiguratorFactory {
         // Check to see if the properties string is a URL.
         if(configStream == null) {
             try {
-                configStream=new URL(properties).openStream();
+                configStream=URI.create(properties).toURL().openStream();
             }
-            catch (MalformedURLException mre) {
+            catch (IllegalArgumentException | MalformedURLException mre) {
                 // the properties string is not a URL
             }
         }

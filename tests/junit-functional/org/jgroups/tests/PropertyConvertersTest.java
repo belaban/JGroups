@@ -9,7 +9,6 @@ import org.testng.annotations.Test;
 
 import java.net.NetworkInterface;
 import java.net.SocketException;
-import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
 
@@ -52,15 +51,6 @@ public class PropertyConvertersTest {
     private static void check(Protocol protocol, Class<?> type, String prop, Object result, PropertyConverter converter) throws Exception {
         Object tmp=converter.convert(protocol, type, "bela", prop, false, Util.getIpStackType());
         assert tmp.equals(result) : " conversion result: " + tmp + " (" + tmp.getClass() + ")" +
-                ", expected result: " + result + " (" + result.getClass() + ")";
-
-        String output=converter.toString(tmp);
-        assert output.equals(prop) : "output=" + output + ", prop=" + prop;
-    }
-
-    private static void checkArray(Protocol protocol, Class<?> type, String prop, Object result, PropertyConverter converter) throws Exception {
-        Object tmp=converter.convert(protocol, type, "bela", prop, false, Util.getIpStackType());
-        assert Arrays.equals((long[])tmp, (long[])result) : " conversion result: " + tmp + " (" + tmp.getClass() + ")" +
                 ", expected result: " + result + " (" + result.getClass() + ")";
 
         String output=converter.toString(tmp);

@@ -178,7 +178,7 @@ public class Util {
           || Util.checkForSolaris() || Util.checkForHp() || Util.checkForMac();
 
         try {
-            String cchm_initial_capacity=SecurityActions.getProperty(Global.CCHM_INITIAL_CAPACITY);
+            String cchm_initial_capacity=System.getProperty(Global.CCHM_INITIAL_CAPACITY);
             if(cchm_initial_capacity != null)
                 CCHM_INITIAL_CAPACITY=Integer.parseInt(cchm_initial_capacity);
         }
@@ -186,7 +186,7 @@ public class Util {
         }
 
         try {
-            String cchm_load_factor=SecurityActions.getProperty(Global.CCHM_LOAD_FACTOR);
+            String cchm_load_factor=System.getProperty(Global.CCHM_LOAD_FACTOR);
             if(cchm_load_factor != null)
                 CCHM_LOAD_FACTOR=Float.parseFloat(cchm_load_factor);
         }
@@ -194,7 +194,7 @@ public class Util {
         }
 
         try {
-            String cchm_concurrency_level=SecurityActions.getProperty(Global.CCHM_CONCURRENCY_LEVEL);
+            String cchm_concurrency_level=System.getProperty(Global.CCHM_CONCURRENCY_LEVEL);
             if(cchm_concurrency_level != null)
                 CCHM_CONCURRENCY_LEVEL=Integer.parseInt(cchm_concurrency_level);
         }
@@ -203,7 +203,7 @@ public class Util {
 
         String tmp;
         try {
-            tmp=SecurityActions.getProperty(Global.MAX_LIST_PRINT_SIZE);
+            tmp=System.getProperty(Global.MAX_LIST_PRINT_SIZE);
             if(tmp != null)
                 MAX_LIST_PRINT_SIZE=Integer.parseInt(tmp);
         }
@@ -211,7 +211,7 @@ public class Util {
         }
 
         try {
-            tmp=SecurityActions.getProperty(Global.DEFAULT_HEADERS);
+            tmp=System.getProperty(Global.DEFAULT_HEADERS);
             DEFAULT_HEADERS=tmp != null? Integer.parseInt(tmp) : 4;
         }
         catch(Throwable t) {
@@ -330,8 +330,6 @@ public class Util {
     public static void waitUntilAllChannelsHaveSameView(long timeout, long interval,
                                                         Collection<JChannel> channels) throws TimeoutException {
         JChannel[] tmp=new JChannel[channels != null? channels.size() : 0];
-        if(tmp == null)
-            return;
         int index=0;
         for(Iterator<JChannel> it=channels.iterator(); it.hasNext();)
             tmp[index++]=it.next();
@@ -1181,8 +1179,7 @@ public class Util {
         try {
             ctor=clazz.getDeclaredConstructor(String.class);
             if(ctor != null) {
-                if(!ctor.isAccessible())
-                    ctor.setAccessible(true);
+                ctor.setAccessible(true);
                 retval=ctor.newInstance(message);
             }
         }
@@ -4533,7 +4530,7 @@ public class Util {
 
     private static boolean checkForPresence(String key,String value) {
         try {
-            String tmp=SecurityActions.getProperty(key);
+            String tmp=System.getProperty(key);
             return tmp != null && tmp.trim().toLowerCase().startsWith(value);
         }
         catch(Throwable t) {
@@ -4543,7 +4540,7 @@ public class Util {
 
     private static boolean contains(String key,String value) {
         try {
-            String tmp=SecurityActions.getProperty(key);
+            String tmp=System.getProperty(key);
             return tmp != null && tmp.trim().toLowerCase().contains(value.trim().toLowerCase());
         }
         catch(Throwable t) {
@@ -4940,7 +4937,7 @@ public class Util {
                 prop=system_props[i];
                 if(prop != null) {
                     try {
-                        tmp=SecurityActions.getProperty(prop);
+                        tmp=System.getProperty(prop);
                         if(tmp != null)
                             return tmp;
                     }
@@ -5148,9 +5145,9 @@ public class Util {
             try {
                 if(p != null && (retval=p.getProperty(prop)) != null)
                     return retval;
-                if((retval=SecurityActions.getProperty(prop)) != null)
+                if((retval=System.getProperty(prop)) != null)
                     return retval;
-                if((retval=SecurityActions.getEnv(prop)) != null)
+                if((retval=System.getenv(prop)) != null)
                     return retval;
             }
             catch(Throwable ignored) {

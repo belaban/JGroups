@@ -66,7 +66,7 @@ public class StateTransferTest extends ChannelTestBase {
             Address self=ch.getAddress();
             assert self != null;
             ch.getState(self, 20000);
-            assert true : "getState() on self should return";
+            // "getState() on self should return";
         }
         finally {
             Util.close(ch);

@@ -1,9 +1,7 @@
 package org.jgroups.protocols;
 
-
 import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.conf.ProtocolStackConfigurator;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
@@ -498,11 +496,6 @@ public class GMS_MergeTest {
         applyViews(views, channels);
     }
 
-    private static void injectMergeEvent(JChannel[] channels, String leader, String ... coordinators) {
-        Address leader_addr=leader != null? findAddress(leader, channels) : determineLeader(channels);
-        injectMergeEvent(channels, leader_addr, coordinators);
-    }
-
     private static void injectMergeEvent(JChannel[] channels, Address leader_addr, String ... coordinators) {
         Map<Address,View> views=new HashMap<>();
         for(String tmp: coordinators) {
@@ -654,22 +647,6 @@ public class GMS_MergeTest {
 
     private static class MyChannel extends JChannel {
         protected int id=0;
-
-        private MyChannel() throws Exception {
-            super();
-        }
-
-        private MyChannel(String properties) throws Exception {
-            super(properties);
-        }
-
-        private MyChannel(ProtocolStackConfigurator configurator) throws Exception {
-            super(configurator);
-        }
-
-        public MyChannel(List<Protocol> protocols) throws Exception {
-            super(protocols);
-        }
 
         public MyChannel(Protocol... protocols) throws Exception {
             super(protocols);

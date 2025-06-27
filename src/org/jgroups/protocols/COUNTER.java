@@ -598,6 +598,7 @@ public class COUNTER extends Protocol {
         }
     }
 
+    @SuppressWarnings("deprecation")
     private static class SyncCounterImpl implements Counter {
 
         private final AsyncCounter counter;

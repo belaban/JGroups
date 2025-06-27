@@ -28,7 +28,6 @@ public class MulticastTest {
 
 
     public static void main(String[] args) throws Exception {
-        MulticastTest test=new MulticastTest();
         if(args.length > 0 && args[0].equalsIgnoreCase("-nio"))
             MulticastTest.testDatagramChannel();
         else

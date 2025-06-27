@@ -116,10 +116,8 @@ public class RingBufferLocklessStressTest {
             for(;;) {
                 List<Message> msgs=buf.removeMany(true, 100);
                 if(msgs != null) {
-                    for(Message msg: msgs) {
-                        cnt++;
-                        removed.incrementAndGet();
-                    }
+                    cnt+=msgs.size();
+                    removed.addAndGet(msgs.size());
                     continue;
                 }
                 if(cnt >= NUM_MSGS)

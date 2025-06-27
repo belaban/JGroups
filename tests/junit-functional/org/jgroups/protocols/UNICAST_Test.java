@@ -156,8 +156,7 @@ public class UNICAST_Test {
 
         public void receive(MessageBatch batch) {
             // System.out.printf("batch from %s: %d msgs:\n", batch.sender(), batch.size());
-            for(Message ignored: batch)
-                count++;
+            count+=batch.size();
         }
     }
 }

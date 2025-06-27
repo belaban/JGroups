@@ -188,10 +188,6 @@ public class MergerTest {
     }
 
 
-    private static <T> Collection<T> makeList(T ... elements) {
-        return new ArrayList<>(Arrays.asList(elements));
-    }
-
     private static View makeView(Address coord, Address ... members) {
         return View.create(coord, 1, members);
     }

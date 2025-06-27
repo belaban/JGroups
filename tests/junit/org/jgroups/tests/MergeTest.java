@@ -9,9 +9,7 @@ import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -107,10 +105,6 @@ public class MergeTest extends ChannelTestBase {
         return retval;
     }
 
-    private static void close(JChannel[] channels) {
-        Util.close(channels);
-    }
-
 
     private static void createPartitions(JChannel[] channels) throws Exception {
         long view_id=1; // find the highest view-id +1
@@ -123,12 +117,6 @@ public class MergeTest extends ChannelTestBase {
             GMS gms=ch.getProtocolStack().findProtocol(GMS.class);
             gms.installView(view);
         }
-    }
-
-
-    private static void injectMergeEvent(JChannel[] channels, String leader, String ... coordinators) {
-        Address leader_addr=leader != null? findAddress(leader, channels) : determineLeader(channels);
-        injectMergeEvent(channels, leader_addr, coordinators);
     }
 
     private static void injectMergeEvent(JChannel[] channels, Address leader_addr, String ... coordinators) {
@@ -189,20 +177,6 @@ public class MergeTest extends ChannelTestBase {
          }
          return null;
      }
-
-     private static void applyViews(List<View> views, JChannel[] channels) {
-         for(View view: views) {
-             Collection<Address> members=view.getMembers();
-             for(JChannel ch: channels) {
-                 Address addr=ch.getAddress();
-                 if(members.contains(addr)) {
-                     GMS gms=ch.getProtocolStack().findProtocol(GMS.class);
-                     gms.installView(view);
-                 }
-             }
-         }
-     }
-    
 
     private static void print(JChannel[] channels) {
         for(JChannel ch: channels) {

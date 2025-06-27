@@ -2,8 +2,8 @@ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.blocks.ReplicatedHashMap;
-import org.jgroups.blocks.atomic.Counter;
 import org.jgroups.blocks.atomic.CounterService;
+import org.jgroups.blocks.atomic.SyncCounter;
 import org.jgroups.fork.ForkChannel;
 import org.jgroups.fork.ForkProtocolStack;
 import org.jgroups.fork.UnknownForkHandler;
@@ -372,7 +372,7 @@ public class ForkChannelTest {
 
         CounterService cs1=new CounterService(fc1), cs2=new CounterService(fc2);
 
-        Counter c1=cs1.getOrCreateCounter("counter", 1), c2=cs2.getOrCreateCounter("counter", 1);
+        SyncCounter c1=cs1.getOrCreateSyncCounter("counter", 1), c2=cs2.getOrCreateSyncCounter("counter", 1);
         System.out.println("counter1=" + c1 + ", counter2=" + c2);
         assert c1.get() == 1 && c2.get() == 1;
 

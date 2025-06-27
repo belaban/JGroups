@@ -112,11 +112,9 @@ public class FifoOrderTest extends ChannelTestBase {
 
     private class Sender implements Runnable {
         final JChannel ch;
-        final Address local_addr;
 
         public Sender(JChannel ch) {
             this.ch=ch;
-            local_addr=ch.getAddress();
         }
 
         public void run() {

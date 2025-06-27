@@ -38,6 +38,7 @@ public class RED_Test {
 
     @AfterMethod protected void destroy() {Util.close(ch);}
 
+    @SuppressWarnings("deprecation")
     public void testNoMessageDrops() throws Exception {
         for(int i=1; i <= 10; i++)
             ch.send(TARGET, i);
@@ -47,6 +48,7 @@ public class RED_Test {
                                            bundler.getSentMessages(), red.getDroppedMessages(), 10));
     }
 
+    @SuppressWarnings("deprecation")
     public void testMessageDrops() throws TimeoutException {
         final Thread[] senders=new Thread[NUM_SENDERS];
         for(int i=0; i < senders.length; i++) {

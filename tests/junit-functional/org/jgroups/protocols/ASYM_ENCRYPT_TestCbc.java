@@ -1,7 +1,5 @@
 package org.jgroups.protocols;
 
-import org.testng.annotations.AfterMethod;
-
 /**
  * Exercise ASYM_ENCRYPT_Test with CBC mode cipher.
  */

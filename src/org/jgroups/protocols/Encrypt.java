@@ -112,7 +112,6 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
         }
         key_map=new BoundedHashMap<>(key_map_max_size);
         initSymCiphers(sym_algorithm, secret_key);
-        TP transport=getTransport();
     }
 
 

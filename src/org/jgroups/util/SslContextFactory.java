@@ -26,9 +26,6 @@ import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509ExtendedKeyManager;
 import javax.net.ssl.X509ExtendedTrustManager;
 
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
-
 /**
  * SslContextFactory.
  *
@@ -36,7 +33,6 @@ import org.jgroups.logging.LogFactory;
  * @since 5.3
  */
 public class SslContextFactory {
-   private static final Log log = LogFactory.getLog(SslContextFactory.class);
    private static final String DEFAULT_KEYSTORE_TYPE = "PKCS12";
    public static final String DEFAULT_SSL_PROTOCOL = "TLS";
    private static final String CLASSPATH_RESOURCE = "classpath:";

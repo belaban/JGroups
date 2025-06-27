@@ -12,6 +12,7 @@ import javax.script.*;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.ProtocolException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -73,7 +74,7 @@ public class SWIFT_PING extends FILE_PING {
                                                  + auth_type);
         }
 
-        URL authUrl = new URL(auth_url);
+        URL authUrl = URI.create(auth_url).toURL();
         Authenticator authenticator = null;
         switch (authType) {
             case KEYSTONE_V_2_0:
@@ -352,7 +353,7 @@ public class SWIFT_PING extends FILE_PING {
                 if (object != null) {
                     url = url + "/" + object;
                 }
-                con = (HttpURLConnection) new URL(url).openConnection();
+                con = (HttpURLConnection) URI.create(url).toURL().openConnection();
         }
 
         public ConnBuilder method(String method) throws ProtocolException {
@@ -376,14 +377,14 @@ public class SWIFT_PING extends FILE_PING {
     private static class HttpResponse {
 
         // For later use
-        private final Map<String, List<String>> headers;
+        // private final Map<String, List<String>> headers;
 
         private final int code;
 
         private final byte[] payload;
 
         HttpResponse(Map<String, List<String>> headers, int code, byte[] payload) {
-            this.headers = headers;
+            // this.headers = headers;
             this.code = code;
             this.payload = payload;
         }

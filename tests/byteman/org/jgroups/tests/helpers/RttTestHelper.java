@@ -7,7 +7,6 @@ import org.jgroups.protocols.RTTHeader;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.RpcStats;
 
-import java.util.Iterator;
 import java.util.List;
 
 /**

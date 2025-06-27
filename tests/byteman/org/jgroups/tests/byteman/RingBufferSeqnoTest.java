@@ -139,7 +139,8 @@ public class RingBufferSeqnoTest extends BMNGRunner {
         }
 
         public void run() {
-            boolean success=buf.add(seqno, seqno, block);
+            // boolean success=
+            buf.add(seqno, seqno, block);
             // System.out.println("Adder: added " + seqno + (success? " successfully" : " unsuccessfully"));
         }
     }

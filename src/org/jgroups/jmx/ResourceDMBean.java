@@ -624,8 +624,7 @@ public class ResourceDMBean implements DynamicMBean {
         public FieldAccessor(Field field, Object target) {
             this.field=field;
             this.target=target;
-            if(!field.isAccessible())
-                field.setAccessible(true);
+            field.setAccessible(true);
             try {
                 mh=LOOKUP.unreflectGetter(field);
             }

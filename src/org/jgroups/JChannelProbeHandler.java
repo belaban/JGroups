@@ -63,7 +63,6 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
                 for(Map.Entry<String,Map<String,Metrics.Entry<Number>>> e: metrics.entrySet()) {
                     sb.append(String.format("%s:\n", e.getKey()));
                     for(Map.Entry<String,Metrics.Entry<Number>> e2: e.getValue().entrySet()) {
-                        Metrics.Entry<Number> val=e2.getValue();
                         sb.append(String.format("   %s: %s\n", e2.getKey(), e2.getValue().supplier().get()));
                     }
                 }

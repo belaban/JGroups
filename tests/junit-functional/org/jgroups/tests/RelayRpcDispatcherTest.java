@@ -177,20 +177,6 @@ public class RelayRpcDispatcherTest {
         System.out.println("Route at sfo to lon: " + route);
         assert route != null;
     }
-
-    private static void checkMsgDelivery(MyReceiver... rl) {
-    	for(MyReceiver r : rl) {
-	    	List<Integer> list=r.getList();
-	        for(int i=0; i < 20; i++) {
-	            if(!list.isEmpty())
-	                break;
-	            Util.sleep(500);
-	        }
-	        System.out.println("list = " + list);
-	        assert list.size() == 1 && list.get(0) == 0;
-	        r.clear();
-    	}
-    }
     
     
     protected static JChannel createNode(Class<? extends RELAY> cl, String site_name, String node_name) throws Exception {

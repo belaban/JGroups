@@ -257,7 +257,6 @@ public class RELAY3 extends RELAY {
             // on the first view and as non site master -> fetch the cache from the site master
             if(old_view == null && !cease_site_master) {
                 topo.refresh(this.site, true);
-                // CompletableFuture.runAsync(() -> topo.refresh(this.site, true));
             }
         }
     }

@@ -115,8 +115,6 @@ public class SOS extends Protocol {
         InputStream input=Util.getResourceAsStream(name, getClass());
         if(input == null)
             input=new FileInputStream(name);
-        if(input == null)
-            throw new IllegalArgumentException(String.format("config file %s not found", name));
         return input;
     }
 

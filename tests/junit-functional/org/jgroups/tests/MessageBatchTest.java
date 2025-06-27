@@ -442,13 +442,13 @@ public class MessageBatchTest {
         List<Message> msgs=createMessages();
         MessageBatch batch=new MessageBatch(msgs);
         int count=0;
-        for(Message ignored : batch)
+        for(@SuppressWarnings("unused") Message ignored : batch)
             count++;
         assert count == msgs.size();
 
         remove(batch, 3, 5, 10);
         count=0;
-        for(Message ignored : batch)
+        for(@SuppressWarnings("unused") Message ignored : batch)
             count++;
         assert count == msgs.size() - 3;
     }
@@ -508,13 +508,13 @@ public class MessageBatchTest {
         remove(batch, 1, 2, 3, 10, msgs.size()-1);
         System.out.println("batch = " + batch);
         int count=0;
-        for(Message ignored : batch)
+        for(@SuppressWarnings("unused") Message ignored : batch)
             count++;
         assert count == msgs.size() - 5;
         count=0;
         batch.add(new EmptyMessage()).add(new EmptyMessage());
         System.out.println("batch = " + batch);
-        for(Message ignored : batch)
+        for(@SuppressWarnings("unused") Message ignored : batch)
             count++;
         assert count == msgs.size() - 5+2;
     }
@@ -522,7 +522,7 @@ public class MessageBatchTest {
     public void testIteratorOnEmptyBatch() {
         MessageBatch batch=new MessageBatch(3);
         int count=0;
-        for(Message ignored : batch)
+        for(@SuppressWarnings("unused") Message ignored : batch)
             count++;
         assert count == 0;
     }
@@ -560,7 +560,7 @@ public class MessageBatchTest {
         }
         System.out.println("batch = " + batch);
         int count=0;
-        for(Message ignored : batch)
+        for(@SuppressWarnings("unused") Message ignored : batch)
             count++;
         assert count == msgs.size() - 5;
     }
@@ -571,7 +571,7 @@ public class MessageBatchTest {
         MessageBatch batch=new MessageBatch(msgs);
 
         int count=0, added=0;
-        for(Message ignored : batch) {
+        for(@SuppressWarnings("unused") Message ignored : batch) {
             count++;
             if(count % 2 == 0) {
                 batch.add(new EmptyMessage());

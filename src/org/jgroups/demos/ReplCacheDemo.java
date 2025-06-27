@@ -116,9 +116,8 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
         if(tmp != null)
             num_puts=Integer.parseInt(tmp);
         tmp=perf_size.getText();
-        int size;
         if(tmp != null)
-            size=Integer.parseInt(tmp);
+            Integer.parseInt(tmp); // size
         tmp=perf_repl_count_field.getText();
         if(tmp != null)
             repl_count=Short.parseShort(tmp);

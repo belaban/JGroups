@@ -1,6 +1,5 @@
 package org.jgroups.protocols;
 
-import org.jgroups.Global;
 import org.jgroups.Header;
 import org.jgroups.util.Util;
 

@@ -325,14 +325,9 @@ public class ChannelTest extends ChannelTestBase {
     private static class ViewChecker implements Receiver {
         final JChannel channel;
         boolean success=true;
-        String reason="";
 
         public ViewChecker(JChannel channel) {
             this.channel=channel;
-        }
-
-        public String getReason() {
-            return reason;
         }
 
         public boolean isSuccess() {
@@ -341,11 +336,10 @@ public class ChannelTest extends ChannelTestBase {
 
         public void viewAccepted(View new_view) {
             View view=channel.getView();
-            String str="viewAccepted(): channel's view=" + view + "\nreceived view=" + new_view;
+            // String str="viewAccepted(): channel's view=" + view + "\nreceived view=" + new_view;
             // System.out.println(str);           
             if(view!= null && !view.equals(new_view)) {
                 success=false;
-                reason+=str + "\n";
             }
         }
     }

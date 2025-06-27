@@ -311,10 +311,10 @@ public class UDP extends TP {
                 try {
                     // if we have local members, we send the multicast through the local transport, and do *not* need
                     // to receive a copy on the local host
-                    sock.setLoopbackMode(true);
-                    mcast_sock.setLoopbackMode(true);
+                    sock.setOption(StandardSocketOptions.IP_MULTICAST_LOOP, false);
+                    mcast_sock.setOption(StandardSocketOptions.IP_MULTICAST_LOOP, false);
                 }
-                catch(SocketException e) {
+                catch(IOException e) {
                     log.error("failed enabling loopback-mode to", e);
                 }
             }
@@ -430,8 +430,8 @@ public class UDP extends TP {
                 mcast_sock=getSocketFactory().createMulticastSocket("jgroups.udp.mcast_sock", mcast_port);
 
             if(disable_loopback) {
-                mcast_sock.setLoopbackMode(true);
-                sock.setLoopbackMode(true);
+                mcast_sock.setOption(StandardSocketOptions.IP_MULTICAST_LOOP, false);
+                sock.setOption(StandardSocketOptions.IP_MULTICAST_LOOP, false);
             }
 
             mcast_addr=new IpAddress(mcast_group_addr, mcast_port);

@@ -310,10 +310,6 @@ public class DuplicateTest extends ChannelTestBase {
             list.add(val);
         }
 
-        public void clear() {
-            msgs.clear();
-        }
-
 
         public String toString() {
             StringBuilder sb=new StringBuilder();

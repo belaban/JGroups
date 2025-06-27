@@ -244,8 +244,8 @@ public class UnicastTestTcp {
 
 
     protected static final Message readMessage(DataInput in) throws Exception {
-        short ver=in.readShort();
-        byte flags=in.readByte();
+        in.readShort(); // ver
+        in.readByte(); // flags
         // final boolean multicast=(flags & (byte)2) == (byte)2;
         Message msg=new BytesMessage(); // don't create headers, readFrom() will do this
         msg.readFrom(in);

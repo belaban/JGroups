@@ -9,6 +9,7 @@ import org.jgroups.util.Util;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.ProtocolException;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,7 +50,7 @@ public class RACKSPACE_PING extends FILE_PING {
             throw new IllegalArgumentException("Invalid 'region', must be UK or US");
         }
 
-        URL authURL = new URL(region.equals("UK") ? UKService : USService);
+        URL authURL = URI.create(region.equals("UK") ? UKService : USService).toURL();
         rackspaceClient = new RackspaceClient(authURL, username, apiKey).log(log);
 
         super.init();
@@ -396,10 +397,10 @@ public class RACKSPACE_PING extends FILE_PING {
                     if (object != null) {
                         url = url + "/" + object;
                     }
-                    con = (HttpURLConnection) new URL(url).openConnection();
+                    con = (HttpURLConnection) URI.create(url).toURL().openConnection();
                     con.addRequestProperty(STORAGE_TOKEN_HEADER, credentials.authToken);
                     con.addRequestProperty(ACCEPT_HEADER, "*/*");
-                } catch (IOException e) {
+                } catch (IllegalArgumentException | IOException e) {
                     log.error(Util.getMessage("ErrorCreatingConnection"), e);
                 }
 

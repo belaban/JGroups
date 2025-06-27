@@ -104,11 +104,4 @@ public final class KeyStoreGenerator {
         keyGen.init(key_size);
         return keyGen.generateKey();
     }
-
-    private static String getAlgorithm(String s) {
-        int index=s.indexOf('/');
-        if(index == -1)
-            return s;
-        return s.substring(0, index);
-    }
 }

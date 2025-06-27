@@ -187,7 +187,7 @@ public class ExtendedUUIDTest {
         int size=uuid.serializedSize();
         byte[] buffer=Util.streamableToByteBuffer(uuid);
         assert size == buffer.length : "expected size of " + size + ", but got " + buffer.length;
-        ExtendedUUID uuid2=Util.streamableFromByteBuffer(ExtendedUUID::new, buffer);
+        Util.streamableFromByteBuffer(ExtendedUUID::new, buffer);
         for(int i=1; i <= 5; i++) {
             byte[] val=uuid.get(String.valueOf(i));
             boolean null_val=i % 2 != 0;

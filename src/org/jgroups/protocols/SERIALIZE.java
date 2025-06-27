@@ -3,7 +3,6 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.BytesMessage;
 import org.jgroups.Message;
-import org.jgroups.MessageFactory;
 import org.jgroups.annotations.MBean;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.pbcast.GMS;

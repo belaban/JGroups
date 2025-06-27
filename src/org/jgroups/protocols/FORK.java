@@ -18,7 +18,7 @@ import org.jgroups.util.*;
 
 import java.io.*;
 import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.URI;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -336,9 +336,9 @@ public class FORK extends Protocol {
         // Check to see if the properties string is a URL.
         if(configStream == null) {
             try {
-                configStream=new URL(config).openStream();
+                configStream=URI.create(config).toURL().openStream();
             }
-            catch (MalformedURLException ignored) {
+            catch (IllegalArgumentException | MalformedURLException ignored) {
             }
         }
 

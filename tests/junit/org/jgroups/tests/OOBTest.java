@@ -402,6 +402,7 @@ public class OOBTest extends ChannelTestBase {
 
     private static class MyReceiver implements Receiver {
         private final Collection<Integer> msgs=new ConcurrentLinkedQueue<>();
+        @SuppressWarnings("unused")
         final String name;
 
         public MyReceiver(String name) {this.name=name;}

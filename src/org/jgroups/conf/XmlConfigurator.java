@@ -85,16 +85,6 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
         }
     }
 
-    private static InputStream getAsInputStreamFromClassLoader(String filename) {
-        ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        InputStream is = cl == null ? null : cl.getResourceAsStream(filename);
-        if (is == null) {
-            // check system class loader
-            is = XmlConfigurator.class.getClassLoader().getResourceAsStream(filename);
-        }
-        return is;
-    }
-    
     protected static XmlConfigurator parse(XmlNode root) throws Exception {
         return new XmlConfigurator(parseProtocols(root));
     }
@@ -334,50 +324,6 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
         }
         else
             throw new Exception("no input file given");
-    }
-
-    
-    private static String dump(Collection<ProtocolConfiguration> configs) {
-        StringBuilder sb=new StringBuilder();
-        String indent="  ";
-        sb.append("<config>\n");
-
-        for(ProtocolConfiguration cfg: configs) {
-            sb.append(indent).append("<").append(cfg.getProtocolName());
-            Map<String,String> props=cfg.getProperties();
-            if(!props.isEmpty()) {
-                sb.append("\n").append(indent).append(indent);
-                for(Map.Entry<String,String> entry : props.entrySet()) {
-                    String key=entry.getKey();
-                    String val=entry.getValue();
-                    key=trim(key);
-                    val=trim(val);
-                    sb.append(key).append("=\"").append(val).append("\" ");
-                }
-            }
-            sb.append(" />\n");
-        }
-
-        sb.append("</config>\n");
-        return sb.toString();
-    }
-
-    private static String trim(String val) {
-        StringBuilder retval=new StringBuilder();
-        int index;
-
-        val=val.trim();
-        while(true) {
-            index=val.indexOf('\n');
-            if(index == -1) {
-                retval.append(val);
-                break;
-            }
-            retval.append(val, 0, index);
-            val=val.substring(index + 1);
-        }
-
-        return retval.toString();
     }
 
     static void help() {

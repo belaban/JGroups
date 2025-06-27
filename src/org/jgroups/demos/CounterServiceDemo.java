@@ -3,8 +3,8 @@ package org.jgroups.demos;
 import org.jgroups.JChannel;
 import org.jgroups.Receiver;
 import org.jgroups.View;
-import org.jgroups.blocks.atomic.Counter;
 import org.jgroups.blocks.atomic.CounterService;
+import org.jgroups.blocks.atomic.SyncCounter;
 import org.jgroups.util.Util;
 
 public class CounterServiceDemo {
@@ -40,7 +40,7 @@ public class CounterServiceDemo {
     void loop() throws Exception {
         CounterService counter_service=new CounterService(ch);
         ch.connect("counter-cluster");
-        Counter counter=counter_service.getOrCreateCounter("mycounter", 1);
+        SyncCounter counter=counter_service.getOrCreateSyncCounter("mycounter", 1);
 
         boolean looping=true;
         while(looping) {
@@ -71,7 +71,7 @@ public class CounterServiceDemo {
                         break;
                     case '4':
                         String counter_name=Util.readStringFromStdin("counter name: ");
-                        counter=counter_service.getOrCreateCounter(counter_name, 1);
+                        counter=counter_service.getOrCreateSyncCounter(counter_name, 1);
                         break;
                     case '5':
                         counter_name=Util.readStringFromStdin("counter name: ");

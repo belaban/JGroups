@@ -23,13 +23,12 @@ public class UnicastTestTcpRpc {
     private DataInputStream sock_in;
     private DataOutputStream sock_out;
 
-    private long sleep_time=0;
-    private boolean exit_on_end=false, busy_sleep=false, sync=false, oob=false;
+    private boolean exit_on_end=false, sync=false, oob=false;
     private int num_threads=1;
     private int num_msgs=50000, msg_size=1000;
 
     private InetAddress addr=null;
-    private int local_port=8000, dest_port=9000;
+    private int dest_port=9000;
 
     private boolean started=false;
     private long start=0, stop=0;
@@ -39,7 +38,6 @@ public class UnicastTestTcpRpc {
 
     private Thread acceptor;
 
-    private final byte[] buf=new byte[65535];
     long total_req_time=0, total_rsp_time=0, entire_req_time=0, num_entire_reqs=0;
     int num_reqs=0, num_rsps=0;
 
@@ -49,15 +47,12 @@ public class UnicastTestTcpRpc {
     static final byte ACK           = 10;
 
 
-    public void init(long sleep_time, boolean exit_on_end, boolean busy_sleep, boolean sync, boolean oob,
+    public void init(boolean exit_on_end, boolean sync, boolean oob,
                      String addr, int local_port, int dest_port) throws Exception {
-        this.sleep_time=sleep_time;
         this.exit_on_end=exit_on_end;
-        this.busy_sleep=busy_sleep;
         this.sync=sync;
         this.oob=oob;
         this.addr=InetAddress.getByName(addr);
-        this.local_port=local_port;
         this.dest_port=dest_port;
         srv_sock=new ServerSocket(local_port);
         System.out.println("Listening on " + srv_sock.getLocalSocketAddress());
@@ -411,9 +406,7 @@ public class UnicastTestTcpRpc {
 
 
     public static void main(String[] args) {
-        long sleep_time=0;
         boolean exit_on_end=false;
-        boolean busy_sleep=false;
         boolean sync=false;
         boolean oob=false;
 
@@ -422,16 +415,8 @@ public class UnicastTestTcpRpc {
 
 
         for(int i=0; i < args.length; i++) {
-            if("-sleep".equals(args[i])) {
-                sleep_time=Long.parseLong(args[++i]);
-                continue;
-            }
             if("-exit_on_end".equals(args[i])) {
                 exit_on_end=true;
-                continue;
-            }
-            if("-busy_sleep".equals(args[i])) {
-                busy_sleep=true;
                 continue;
             }
             if("-sync".equals(args[i])) {
@@ -461,7 +446,7 @@ public class UnicastTestTcpRpc {
         UnicastTestTcpRpc test=null;
         try {
             test=new UnicastTestTcpRpc();
-            test.init(sleep_time, exit_on_end, busy_sleep, sync, oob, addr, local_port, dest_port);
+            test.init(exit_on_end, sync, oob, addr, local_port, dest_port);
             test.eventLoop();
         }
         catch(Throwable ex) {

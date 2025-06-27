@@ -308,15 +308,11 @@ public class CacheTest {
 
     private static final class CacheState {
 
-        final long timestamp;
         final Set<Map.Entry> entries;
         final int size;
-        final boolean isReaping;
 
         public CacheState(Set<Map.Entry> entries, int size, boolean isReaping) {
-            this.timestamp = System.nanoTime();
             this.size = size;
-            this.isReaping = isReaping;
             this.entries = new HashSet<>(entries);
         }
     }

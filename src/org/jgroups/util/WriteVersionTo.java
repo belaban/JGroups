@@ -52,8 +52,6 @@ public class WriteVersionTo {
         InputStream in=Util.getResourceAsStream(input, (ClassLoader) null);
         if(in == null)
             in=new FileInputStream(input);
-        if(in == null)
-            throw new FileNotFoundException(input);
 
         Properties props=new Properties();
         props.load(in);

@@ -24,10 +24,10 @@ public final class ResourceManager {
 
         StackType type=Util.getIpStackType();
 
-        String tmp_addr = SecurityActions.getProperty(Global.INITIAL_MCAST_ADDR,
+        String tmp_addr = System.getProperty(Global.INITIAL_MCAST_ADDR,
                                              type == StackType.IPv6? "ff0e::9:9:9" : "224.8.8.8");
-        mcast_port = Short.parseShort(SecurityActions.getProperty(Global.INITIAL_MCAST_PORT, "7000"));
-		tcp_port = Short.parseShort(SecurityActions.getProperty(Global.INITIAL_TCP_PORT, "10000"));
+        mcast_port = Short.parseShort(System.getProperty(Global.INITIAL_MCAST_PORT, "7000"));
+		tcp_port = Short.parseShort(System.getProperty(Global.INITIAL_TCP_PORT, "10000"));
 		try {
 			InetAddress tmp = InetAddress.getByName(tmp_addr);
 			if (!tmp.isMulticastAddress())

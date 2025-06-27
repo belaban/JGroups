@@ -55,10 +55,12 @@ public class RpcDispatcherExceptionTest extends ChannelTestBase {
         }
     }
 
+    @SuppressWarnings("unused")
     private static class Pojo { // doesn't implement Serializable !
         int age; String name;
     }
 
+    @SuppressWarnings("unused")
     private static class Target {
         public static void foo(Pojo p) {
             System.out.println(p.toString());

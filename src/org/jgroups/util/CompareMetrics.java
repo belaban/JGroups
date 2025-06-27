@@ -90,7 +90,6 @@ public class CompareMetrics {
     protected static Map<String,Collection<String>> readOldMetrics(String from_file) throws IOException {
         Map<String,Collection<String>> map=new ConcurrentSkipListMap<>();
         try(InputStream in=new FileInputStream(from_file)) {
-            int i=1;
             for(;;) {
                 String line=Util.readLine(in);
                 if(line == null)
@@ -315,18 +314,6 @@ public class CompareMetrics {
                     sb.append((char)ch);
             }
         }
-    }
-
-    private static String fileToString(File f) throws Exception {
-        StringWriter output = new StringWriter();
-       try (FileReader input = new FileReader(f)) {
-          char[] buffer = new char[8 * 1024];
-          int n;
-          while (-1 != (n = input.read(buffer))) {
-             output.write(buffer, 0, n);
-          }
-       }
-       return output.toString();
     }
 
     public static int copy(Reader input, Writer output) throws IOException {

@@ -1,7 +1,4 @@
-
-
 package org.jgroups.tests;
-
 
 import org.jgroups.*;
 import org.jgroups.protocols.MPING;
@@ -17,7 +14,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.net.InetAddress;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -194,8 +191,9 @@ public class SequencerOrderTest {
     }
 
     private static class MyReceiver implements Receiver {
+        @SuppressWarnings("unused")
         final String name;
-        final List<String> msgs=new LinkedList<>();
+        final List<String> msgs=new ArrayList<>();
 
         private MyReceiver(String name) {
             this.name=name;

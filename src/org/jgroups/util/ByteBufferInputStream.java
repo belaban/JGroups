@@ -119,10 +119,6 @@ public class ByteBufferInputStream extends InputStream implements DataInput {
         char[] lineBuffer=new char[128];
         char[] buffer= lineBuffer;
 
-        if (buffer == null) {
-            buffer = lineBuffer = new char[128];
-        }
-
         int room = buffer.length;
         int offset = 0;
         int c;
