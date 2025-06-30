@@ -1,36 +1,49 @@
 package org.jgroups.tests;
 
 import org.jgroups.Global;
-import org.jgroups.util.ConcurrentLinkedBlockingQueue;
+import org.jgroups.util.ConcurrentBlockingRingBuffer;
 import org.jgroups.util.FastArray;
 import org.jgroups.util.Util;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.lang.reflect.Constructor;
 import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /**
  * Tests {@link org.jgroups.util.ConcurrentLinkedBlockingQueue}
  * @author Bela Ban
  * @since  5.4.9
  */
-@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
-public class ConcurrentLinkedBlockingQueueTest {
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true,dataProvider="createBlockingQueue")
+public class BlockingQueueTest {
     protected BlockingQueue<Integer> q;
 
 
-    public void testConstructor() {
-        q=new ConcurrentLinkedBlockingQueue<>(10, true, true);
+    @DataProvider
+    static Object[][] createBlockingQueue() {
+        return new Object[][]{
+          // {ConcurrentLinkedBlockingQueue.class},
+          {ConcurrentBlockingRingBuffer.class}
+        };
+    }
+
+
+
+    public void testConstructor(Class<? extends BlockingQueue<Integer>> clazz) throws Exception {
+        q=create(clazz, 10, true, true);
         assert q.isEmpty();
     }
 
-    public void testOffer() {
-        q=new ConcurrentLinkedBlockingQueue<>(10, false, false);
+    public void testOffer(Class<? extends BlockingQueue<Integer>> clazz) throws Exception {
+        q=create(clazz, 10, false, false);
         for(int i=1; i <= 15; i++) {
             boolean added=q.offer(i);
             assert (i <= 10) == added;
@@ -39,8 +52,8 @@ public class ConcurrentLinkedBlockingQueueTest {
         assert q.size() == 10;
     }
 
-    public void testPoll() {
-        q=new ConcurrentLinkedBlockingQueue<>(10, false, false);
+    public void testPoll(Class<? extends BlockingQueue<Integer>> clazz) throws Exception {
+        q=create(clazz, 10, false, false);
         Integer el=q.poll();
         assert el == null && q.isEmpty();
         add(q, 1, 10);
@@ -51,8 +64,8 @@ public class ConcurrentLinkedBlockingQueueTest {
         }
     }
 
-    public void testBlockingTake() throws InterruptedException {
-        q=new ConcurrentLinkedBlockingQueue<>(10, true, false);
+    public void testBlockingTake(Class<? extends BlockingQueue<Integer>> clazz) throws Exception {
+        q=create(clazz, 10, true, false);
         q.offer(1);
         assert q.size() == 1;
         Integer el=q.take();
@@ -67,8 +80,8 @@ public class ConcurrentLinkedBlockingQueueTest {
         assert el == 1 && q.isEmpty();
     }
 
-    public void testBlockingTake2() {
-        q=new ConcurrentLinkedBlockingQueue<>(10, true, false);
+    public void testBlockingTake2(Class<? extends BlockingQueue<Integer>> clazz) throws Exception {
+        q=create(clazz, 10, true, false);
         Taker2 taker=new Taker2();
         taker.start();
         assert q.isEmpty();
@@ -83,8 +96,8 @@ public class ConcurrentLinkedBlockingQueueTest {
         assert list.equals(expected);
     }
 
-    public void testBlockingTakeInterrupted() throws InterruptedException {
-        q=new ConcurrentLinkedBlockingQueue<>(10, true, false);
+    public void testBlockingTakeInterrupted(Class<? extends BlockingQueue<Integer>> clazz) throws Exception {
+        q=create(clazz, 10, true, false);
 
         Thread t=new Thread(() -> {
             try {
@@ -103,19 +116,19 @@ public class ConcurrentLinkedBlockingQueueTest {
         assert q.isEmpty();
     }
 
-    public void testTakeOnNonBlockingQueue() throws InterruptedException {
-        q=new ConcurrentLinkedBlockingQueue<>(10, false, false);
+    public void testTakeOnNonBlockingQueue(Class<? extends BlockingQueue<Integer>> clazz) throws Exception {
+        q=create(clazz, 10, false, false);
         try {
             q.take();
             assert false : "take() cannot be called on non-blocking queue";
         }
         catch(IllegalStateException ex) {
-            System.out.printf("received exception as expected: %s", ex);
+            System.out.printf("received exception as expected: %s\n", ex);
         }
     }
 
-    public void testDrainTo() {
-        q=new ConcurrentLinkedBlockingQueue<>(10, false, false);
+    public void testDrainTo(Class<? extends BlockingQueue<Integer>> clazz) throws Exception {
+        q=create(clazz, 10, false, false);
         List<Integer> l=new FastArray<>(10);
         int num=q.drainTo(l);
         assert num == 0;
@@ -143,16 +156,16 @@ public class ConcurrentLinkedBlockingQueueTest {
         assert l.equals(IntStream.rangeClosed(1,10).boxed().collect(Collectors.toList()));
     }
 
-    public void testClear() {
-        q=new ConcurrentLinkedBlockingQueue<>(100, false, false);
+    public void testClear(Class<? extends BlockingQueue<Integer>> clazz) throws Exception {
+        q=create(clazz, 100, false, false);
         add(q,1,100);
         assert q.size() == 100;
         q.clear();
         assert q.isEmpty();
     }
 
-    public void testRemainingCapacity() {
-        q=new ConcurrentLinkedBlockingQueue<>(10, false, false);
+    public void testRemainingCapacity(Class<? extends BlockingQueue<Integer>> clazz) throws Exception {
+        q=create(clazz, 10, false, false);
         add(q,1,10);
         for(int i=0; i < 10; i++) {
             int rem=q.remainingCapacity();
@@ -161,8 +174,8 @@ public class ConcurrentLinkedBlockingQueueTest {
         }
     }
 
-    public void testPut() throws InterruptedException, TimeoutException {
-        q=new ConcurrentLinkedBlockingQueue<>(10, true, true);
+    public void testPut(Class<? extends BlockingQueue<Integer>> clazz) throws Exception {
+        q=create(clazz, 10, true, true);
         for(int i=1; i <= 5; i++)
             q.put(i);
         assert q.size() == 5;
@@ -188,15 +201,55 @@ public class ConcurrentLinkedBlockingQueueTest {
         assert l.equals(IntStream.rangeClosed(6,15).boxed().collect(Collectors.toList()));
     }
 
-    public void testPutOnNonBlockingQueue() throws InterruptedException {
-        q=new ConcurrentLinkedBlockingQueue<>(10, false, false);
+    public void testPutOnNonBlockingQueue(Class<? extends BlockingQueue<Integer>> clazz) throws Exception {
+        q=create(clazz, 10, false, false);
         try {
             q.put(1);
             assert false : "put() cannot be called on non-blocking queue";
         }
         catch(IllegalStateException ex) {
-            System.out.printf("received exception as expected: %s", ex);
+            System.out.printf("received exception as expected: %s\n", ex);
         }
+    }
+
+    public void testPerf(Class<? extends BlockingQueue<Integer>> clazz) throws Exception {
+        q=create(clazz, 64, true, false);
+        final AtomicInteger count=new AtomicInteger();
+
+        final List<Integer> list=new FastArray<>(10);
+
+        int NUM=100_000;
+        Thread[] threads=new Thread[100];
+        for(int i=0; i < threads.length; i++) {
+            threads[i]=new Thread(() -> {
+                for(int j=1; j <= NUM; j++)
+                    q.offer(count.getAndIncrement());
+            });
+            threads[i].start();
+        }
+
+        int removed=0;
+        int num;
+        while(Stream.of(threads).anyMatch(Thread::isAlive)|| !q.isEmpty()) {
+            list.clear();
+            num=q.drainTo(list, 1024);
+            if(num > 0)
+                removed+=num;
+            else
+                Thread.yield();
+        }
+        list.clear();
+        num=q.drainTo(list, 1024);
+        if(num > 0)
+            removed+=num;
+        System.out.println("removed = " + removed);
+
+    }
+
+    protected static <T> BlockingQueue<T> create(Class<? extends BlockingQueue<T>> cl, int capacity, boolean block_on_empty,
+                                                 boolean block_on_full) throws Exception {
+        Constructor<? extends BlockingQueue<?>> ctor=cl.getConstructor(int.class, boolean.class, boolean.class);
+        return (BlockingQueue<T>)ctor.newInstance(capacity, block_on_empty, block_on_full);
     }
 
     protected static void add(Queue<Integer> q, int from, int to) {
