@@ -14,7 +14,7 @@ import java.util.function.Supplier;
 /**
  * Carries random bits of information
  * @author Bela Ban
- * @since  5.4.9
+ * @since  5.5.0
  */
 public class InfoHeader extends Header {
     protected Map<String,String> info=new HashMap<>();

@@ -3546,6 +3546,10 @@ public class Util {
         }
     }
 
+    public static Object getField(Object target, String fieldname) throws NoSuchFieldException {
+        Field field=getField(target.getClass(), fieldname, true);
+        return getField(field, target);
+    }
 
     public static Field findField(Object target,List<String> possible_names) {
         if(target == null)

@@ -2,6 +2,7 @@ package org.jgroups.tests;
 
 import org.jgroups.Global;
 import org.jgroups.util.ConcurrentBlockingRingBuffer;
+import org.jgroups.util.ConcurrentLinkedBlockingQueue;
 import org.jgroups.util.FastArray;
 import org.jgroups.util.Util;
 import org.testng.annotations.DataProvider;
@@ -30,7 +31,7 @@ public class BlockingQueueTest {
     @DataProvider
     static Object[][] createBlockingQueue() {
         return new Object[][]{
-          // {ConcurrentLinkedBlockingQueue.class},
+          {ConcurrentLinkedBlockingQueue.class},
           {ConcurrentBlockingRingBuffer.class}
         };
     }
@@ -213,11 +214,10 @@ public class BlockingQueueTest {
     }
 
     public void testPerf(Class<? extends BlockingQueue<Integer>> clazz) throws Exception {
-        q=create(clazz, 64, true, false);
+        q=create(clazz, 8192, true, false);
         final AtomicInteger count=new AtomicInteger();
 
-        final List<Integer> list=new FastArray<>(10);
-
+        final List<Integer> list=new FastArray<>(2048);
         int NUM=100_000;
         Thread[] threads=new Thread[100];
         for(int i=0; i < threads.length; i++) {
@@ -227,23 +227,21 @@ public class BlockingQueueTest {
             });
             threads[i].start();
         }
-
         int removed=0;
         int num;
         while(Stream.of(threads).anyMatch(Thread::isAlive)|| !q.isEmpty()) {
             list.clear();
-            num=q.drainTo(list, 1024);
+            num=q.drainTo(list, 2048);
             if(num > 0)
                 removed+=num;
             else
                 Thread.yield();
         }
         list.clear();
-        num=q.drainTo(list, 1024);
+        num=q.drainTo(list, 2048);
         if(num > 0)
             removed+=num;
         System.out.println("removed = " + removed);
-
     }
 
     protected static <T> BlockingQueue<T> create(Class<? extends BlockingQueue<T>> cl, int capacity, boolean block_on_empty,

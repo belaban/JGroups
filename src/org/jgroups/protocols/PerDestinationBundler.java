@@ -6,7 +6,6 @@ import org.jgroups.NullAddress;
 import org.jgroups.View;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
-import org.jgroups.annotations.Property;
 import org.jgroups.util.*;
 
 import java.util.List;
@@ -40,24 +39,15 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
     @ManagedAttribute(description="Total number of messages in all queues")
     protected final AtomicInteger           msgs_available=new AtomicInteger();
 
-    @Property(description="True: use a single thread for all destinationns. False: use a thread per destination")
-    protected boolean                       use_single_sender_thread;
-
     public boolean isRunning() {
         return single_thread_runner != null && single_thread_runner.isRunning();
     }
 
-    public boolean useSingleSenderThread() {
-        return use_single_sender_thread;
-    }
 
-    public PerDestinationBundler useSingleSenderThread(boolean use_single_thread) {
-        this.use_single_sender_thread=use_single_thread;
-        return this;
-    }
-
+    @ManagedAttribute(description="Size of the queue (if available")
     public int getQueueSize() {return -1;}
 
+    @ManagedAttribute(description="The number of unsent messages in the bundler")
     public int size() {
         return dests.values().stream().map(SendBuffer::size).reduce(0, Integer::sum);
     }
@@ -82,13 +72,6 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
           .collect(Collectors.joining("\n"));
     }
 
-    public void init(TP transport) {
-        this.transport=Objects.requireNonNull(transport);
-        msg_processing_policy=transport.msgProcessingPolicy();
-        msg_stats=transport.getMessageStats();
-        this.log=transport.getLog();
-    }
-
     public void start() {
         super.start();
         local_addr=Objects.requireNonNull(transport.getAddress());
@@ -103,17 +86,7 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
         super.stop();
         dests.values().forEach(SendBuffer::stop);
         dests.clear();
-        if(single_thread_runner != null) {
-            lock.lock();
-            try {
-                msgs_available.set(1); // ???
-                not_empty.signal();
-            }
-            finally {
-                lock.unlock();
-            }
-            Util.close(single_thread_runner);
-        }
+        Util.close(single_thread_runner);
     }
 
     public void send(Message msg) throws Exception {
@@ -199,6 +172,8 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
                     not_empty.await();
                 }
                 catch(InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
                 }
             }
         }
@@ -212,8 +187,8 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
         private final Address                   dest;
         protected final FastArray<Message>      msgs=new FastArray<Message>(32).increment(64);
         private final Lock                      lock=new ReentrantLock(false);
-        private BlockingQueue<Message>          queue;
-        private FastArray<Message>              remove_queue;
+        private final BlockingQueue<Message>    queue;
+        private final FastArray<Message>        remove_queue;
         private final ByteArrayDataOutputStream output=new ByteArrayDataOutputStream(max_size + MSG_OVERHEAD);
         private Runner                          sendbuf_runner;
         private long                            count;
@@ -225,6 +200,14 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
 
         public SendBuffer(Address dest) {
             this.dest=dest;
+            boolean block_on_empty=!use_single_sender_thread;
+            if(use_ringbuffer)
+                queue= new ConcurrentBlockingRingBuffer<>(capacity, block_on_empty, false);
+            else
+                queue=new ConcurrentLinkedBlockingQueue<>(capacity, block_on_empty, false);
+            if(remove_queue_capacity == 0)
+                remove_queue_capacity=Math.max(capacity/8, 1024);
+            remove_queue=new FastArray<>(remove_queue_capacity);
         }
 
         public boolean isRunning() {
@@ -234,12 +217,6 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
         public boolean isThreadAlive() {return sendbuf_runner != null && sendbuf_runner.getThread().isAlive();}
 
         public SendBuffer start() {
-            boolean block_on_empty=!use_single_sender_thread;
-            queue=new ConcurrentLinkedBlockingQueue<>(capacity, block_on_empty, false);
-            if(remove_queue_capacity == 0)
-                remove_queue_capacity=Math.max(capacity/8, 1024);
-            remove_queue=new FastArray<>(remove_queue_capacity);
-
             if(!use_single_sender_thread) {
                 if(sendbuf_runner == null)
                     sendbuf_runner=new Runner(transport.getThreadFactory(), THREAD_NAME, this, null).setJoinTimeout(0);

@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.LongAdder;
  * Unbatches OOB batches when enabled and virtual threads are available.<br/>
  * https://issues.redhat.com/browse/JGRP-2888
  * @author Bela Ban
- * @since  5.4.9
+ * @since  5.5.0
  */
 @MBean(description="Unbatches messages from an OOB batch and delivers them in separate threads")
 public class UNBATCH_OOB extends Protocol {

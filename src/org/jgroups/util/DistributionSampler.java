@@ -10,7 +10,7 @@ import java.util.stream.Stream;
  * Records samples (e.g. message sizes or times) by buckets, e.g. 0-10,11-100,101-1000 etc. All buckets are defined at
  * creation time.
  * @author Bela Ban
- * @since  5.4.9
+ * @since  5.5.0
  */
 public class DistributionSampler {
     protected final Bucket[] buckets;

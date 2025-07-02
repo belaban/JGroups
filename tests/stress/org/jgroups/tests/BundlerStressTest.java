@@ -236,8 +236,10 @@ public class BundlerStressTest {
 
         for(Sender sender: senders)
             sender.stop();
-        for(Thread thread: threads)
+        for(Thread thread: threads) {
+            thread.interrupt();
             thread.join();
+        }
         if(is_warmup) {
             System.out.println();
             return;
@@ -331,6 +333,7 @@ public class BundlerStressTest {
 
         public void stop() {
             running=false;
+            promise.setResult(0L);
         }
 
         public void run() {

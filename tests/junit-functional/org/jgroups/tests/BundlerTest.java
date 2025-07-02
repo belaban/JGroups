@@ -32,7 +32,7 @@ public class BundlerTest extends ChannelTestBase {
         makeUnique(a,b);
         a.connect("BundlerTest");
         b.connect("BundlerTest");
-        Util.waitUntilAllChannelsHaveSameView(5000, 100, a,b);
+        Util.waitUntilAllChannelsHaveSameView(5000, 50, a,b);
         a.setReceiver(ra.reset());
         b.setReceiver(rb.reset());
         for(JChannel ch: List.of(a, b)) {
@@ -86,6 +86,12 @@ public class BundlerTest extends ChannelTestBase {
 
     public void testUnicastToSelfNoLoopback(Class<Bundler> cl) throws Exception {
         send(cl, () -> a.address(), true, 0, 0);
+    }
+
+    public void testStop(Class<Bundler> cl) throws Exception {
+        setup(cl);
+        Util.sleep(500);
+        System.out.print("-- closing channels");
     }
 
     protected void send(Class<Bundler> cl, Supplier<Address> dest, boolean dont_loopback, int expected_a, int expected_b)

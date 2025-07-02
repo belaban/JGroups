@@ -2,6 +2,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.Message;
 import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.util.ConcurrentBlockingRingBuffer;
 import org.jgroups.util.ConcurrentLinkedBlockingQueue;
 import org.jgroups.util.FastArray;
 
@@ -37,7 +38,10 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
         if(running)
             stop();
         // queue blocks on consumer when empty; producers simply drop the message when full
-        queue=new ConcurrentLinkedBlockingQueue<>(capacity, true, false);
+        if(use_ringbuffer)
+            queue=new ConcurrentBlockingRingBuffer<>(capacity, true, false);
+        else
+            queue=new ConcurrentLinkedBlockingQueue<>(capacity, true, false);
         if(remove_queue_capacity == 0)
             remove_queue_capacity=Math.max(capacity/4, 1024);
         remove_queue=new FastArray<>(remove_queue_capacity);
@@ -68,6 +72,7 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
         transport.getThreadFactory().renameThread(THREAD_NAME, bundler_thread);
     }
 
+    @ManagedAttribute(description="The number of unsent messages in the bundler")
     public int size() {
         return super.size() + removeQueueSize() + getQueueSize();
     }

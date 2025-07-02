@@ -20,7 +20,7 @@ import java.util.function.Predicate;
  * <br/>
  * See https://issues.redhat.com/browse/JGRP-2890 for details
  * @author Bela Ban
- * @since 5.4.9
+ * @since 5.5.0
  */
 @SuppressWarnings("serial")
 public class ConcurrentLinkedBlockingQueue<T> extends ConcurrentLinkedQueue<T> implements BlockingQueue<T> {

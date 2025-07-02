@@ -64,9 +64,18 @@ public abstract class BaseBundler implements Bundler {
       "computed dynamically as a function of capacity")
     protected int                                   remove_queue_capacity;
 
+    @Property(description="True: the queues (e.g. TransferQueueBundler, PerDestinationBundler) use " +
+      "ConcurrentBlockingRingBuffer. False: they use ConcurrentLinkedBlockingQueue. Bundlers may ignore this attribute")
+    protected boolean                               use_ringbuffer=true;
+
+    @Property(description="True: use a single thread for all destinationns. False: use a thread per destination. " +
+      "This is currently only used by PerDestinationBundler, but was hoisted into the base class so the same " +
+      "configuration could be used when changing bundlers")
+    protected boolean                               use_single_sender_thread=true;
+
     @Property(description="When true, when there's no space to queue a message, senders will drop the message rather" +
       "than wait until space is available (https://issues.redhat.com/browse/JGRP-2765)",deprecatedMessage="ignored")
-    @Deprecated(since="5.4.9",forRemoval=true)
+    @Deprecated(since="5.5.0",forRemoval=true)
     protected boolean                               drop_when_full=true;
 
     @ManagedAttribute(description="Average fill size of the queue (in bytes) when messages are sent")
@@ -103,14 +112,18 @@ public abstract class BaseBundler implements Bundler {
           .collect(Collectors.joining("\n"));
     }
 
-    public int                   getCapacity()              {return capacity;}
-    public Bundler               setCapacity(int c)         {this.capacity=c; return this;}
-    public int                   removeQueueCapacity()      {return remove_queue_capacity;}
-    public Bundler               removeQueueCapacity(int c) {this.remove_queue_capacity=c; return this;}
-    public int                   getMaxSize()               {return max_size;}
-    public Bundler               setMaxSize(int s)          {max_size=s; return this;}
-    public boolean               dropWhenFull()             {return true;}
-    public <T extends Bundler> T dropWhenFull(boolean d)    {return (T)this;}
+    public int                   getCapacity()                    {return capacity;}
+    public Bundler               setCapacity(int c)               {this.capacity=c; return this;}
+    public int                   removeQueueCapacity()            {return remove_queue_capacity;}
+    public Bundler               removeQueueCapacity(int c)       {this.remove_queue_capacity=c; return this;}
+    public int                   getMaxSize()                     {return max_size;}
+    public Bundler               setMaxSize(int s)                {max_size=s; return this;}
+    public boolean               dropWhenFull()                   {return true;}
+    public Bundler               dropWhenFull(boolean ignored)    {return this;}
+    public boolean               useSingleSenderThread()          {return use_single_sender_thread;}
+    public Bundler               useSingleSenderThread(boolean u) {this.use_single_sender_thread=u; return this;}
+    public boolean               useRingBuffer()                  {return use_ringbuffer;}
+    public Bundler               useRingBuffer(boolean u)         {this.use_ringbuffer=u; return this;}
 
     @ManagedAttribute(description="Average number of messages in an BatchMessage")
     public double avgBatchSize() {

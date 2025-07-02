@@ -18,7 +18,7 @@ import java.util.concurrent.CompletableFuture;
 /**
  * Records number of messages sent/received based on size
  * @author Bela Ban
- * @since  5.4.9
+ * @since  5.5.0
  */
 @MBean(description="Records number of messages sent/received based on size")
 public class SIZE2 extends Protocol {
