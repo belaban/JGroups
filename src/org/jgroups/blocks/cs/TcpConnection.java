@@ -123,7 +123,7 @@ public class TcpConnection extends Connection {
         writers.incrementAndGet();
         send_lock.lock();
         try {
-            doSend(data, offset, length);
+            doSend(data, offset, length, false);
         }
         catch(InterruptedException iex) {
             Thread.currentThread().interrupt(); // set interrupt flag again
@@ -147,11 +147,6 @@ public class TcpConnection extends Connection {
             buf.get(tmp, 0, len);
             send(tmp, 0, len); // will get copied again if send-queues are enabled
         }
-    }
-
-    @GuardedBy("send_lock")
-    protected void doSend(byte[] data, int offset, int length) throws Exception {
-        doSend(data, offset, length, false);
     }
 
     @GuardedBy("send_lock")
