@@ -141,8 +141,6 @@ public class NioConnection extends Connection {
     /**
      * Sends a message. If the previous write didn't complete, tries to complete it. If this still doesn't complete,
      * the message is dropped (needs to be retransmitted, e.g. by UNICAST3 or NAKACK2).
-     * @param buf
-     * @throws Exception
      */
     @Override
     public void send(ByteBuffer buf) throws Exception {
