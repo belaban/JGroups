@@ -33,6 +33,12 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
     @ManagedAttribute(description="Capacity of the remove-queue")
     public int                   removeQueueCapacity() {return ((FastArray<Message>)remove_queue).capacity();}
 
+    @Override
+    public void init(TP transport) {
+        super.init(transport);
+        if(transport instanceof TCP)
+            ((TCP)transport).useLockToSend(false); // https://issues.redhat.com/browse/JGRP-2901
+    }
 
     public synchronized void start() {
         if(running)

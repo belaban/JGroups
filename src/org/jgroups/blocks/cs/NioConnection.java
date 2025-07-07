@@ -21,8 +21,6 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import static java.nio.channels.SelectionKey.*;
 
@@ -38,7 +36,6 @@ public class NioConnection extends Connection {
     protected final ByteBuffer    length_buf=ByteBuffer.allocate(Integer.BYTES); // reused: send the length of the next buf
     protected boolean             copy_on_partial_write=true;
     protected int                 partial_writes; // number of partial writes (write which did not write all bytes)
-    protected final Lock          send_lock=new ReentrantLock(); // serialize send()
     protected Buffers             recv_buf=new Buffers(4).add(ByteBuffer.allocate(cookie.length)); //new Buffers(2).add(ByteBuffer.allocate(cookie.length));
 
 

@@ -115,7 +115,7 @@ public class TcpClient extends TcpBaseServer implements Client, ConnectionListen
 
     protected void doStart() throws Exception {
         super.start();
-        conn=createConnection(remote_addr);
+        conn=createConnection(remote_addr).useLockToSend(use_lock_to_send);
         addConnectionListener(this);
         conn.connect(remote_addr, false);
         local_addr=conn.localAddress();

@@ -72,6 +72,13 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
           .collect(Collectors.joining("\n"));
     }
 
+    @Override
+    public void init(TP transport) {
+        super.init(transport);
+        if(transport instanceof TCP)
+            ((TCP)transport).useLockToSend(false); // https://issues.redhat.com/browse/JGRP-2901
+    }
+
     public void start() {
         super.start();
         local_addr=Objects.requireNonNull(transport.getAddress());

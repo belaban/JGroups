@@ -50,6 +50,10 @@ public class TCP extends BasicTCP {
     @Property(description="Log a warning (or not) when ServerSocket.accept() throws an exception")
     protected boolean   log_accept_error=true; // https://issues.redhat.com/browse/JGRP-2540
 
+    @Property(description="Acquire a lock, or not, when sending a message. A single sender thread such as in " +
+      "TransferQueueBundler or PerDestinationBundler can set this to false")
+    protected boolean   use_lock_to_send=true;
+
     @Component(name="tls",description="Contains the attributes for TLS (SSL sockets) when enabled=true")
     protected TLS       tls=new TLS();
 
@@ -84,6 +88,8 @@ public class TCP extends BasicTCP {
     public TCP     nonBlockingSends(boolean b) {this.non_blocking_sends=b; return this;}
     public int     maxSendQueue()              {return max_send_queue;}
     public TCP     maxSendQueue(int s)         {this.max_send_queue=s; return this;}
+    public boolean useLockToSend()             {return use_lock_to_send;}
+    public TCP     useLockToSend(boolean u)    {this.use_lock_to_send=u; return this;}
 
     @ManagedAttribute
     public int getOpenConnections() {
@@ -134,6 +140,7 @@ public class TCP extends BasicTCP {
           .clientBindAddress(client_bind_addr).clientBindPort(client_bind_port).deferClientBinding(defer_client_bind_addr)
           .log(this.log).logDetails(this.log_details)
           .addConnectionListener(this);
+        srv.useLockToSend(this.use_lock_to_send);
 
         if(send_buf_size > 0)
             srv.sendBufferSize(send_buf_size);

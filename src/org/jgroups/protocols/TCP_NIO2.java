@@ -85,7 +85,6 @@ public class TCP_NIO2 extends BasicTCP {
         server.readerIdleTime(t);
     }
 
-
     public void send(Address dest, byte[] data, int offset, int length) throws Exception {
         if(server != null) {
             try {

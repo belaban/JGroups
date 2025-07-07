@@ -117,7 +117,7 @@ public class TcpServer extends TcpBaseServer {
             try {
                 conn=non_blocking_sends? new TcpConnectionNonBlocking(client_sock, TcpServer.this, max_send_queue)
                   : new TcpConnection(client_sock, TcpServer.this);
-
+                conn.useLockToSend(use_lock_to_send);
                 Address peer_addr=conn.peerAddress();
                 boolean conn_exists=hasConnection(peer_addr),
                   replace=conn_exists && use_peer_connections && local_addr.compareTo(peer_addr) < 0; // bigger conn wins

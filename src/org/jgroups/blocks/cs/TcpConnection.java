@@ -17,7 +17,6 @@ import java.net.*;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantLock;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -30,13 +29,13 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  */
 public class TcpConnection extends Connection {
     protected final Socket        sock; // socket to/from peer (result of srv_sock.accept() or new Socket())
-    protected final ReentrantLock send_lock=new ReentrantLock(); // serialize send()
     protected OutputStream        out;
     protected DataInputStream     in;
     protected volatile Receiver   receiver;
     protected final AtomicInteger writers=new AtomicInteger(0); // to determine the last writer to flush
     protected volatile boolean    connected;
     protected final byte[]        length_buf=new byte[Integer.BYTES]; // used to write the length of the data
+    protected boolean             use_lock_to_send=true; // e.g. a single sender doesn't need to acquire the send_lock
 
     /** Creates a connection to a remote peer, use {@link #connect(Address)} to connect */
     public TcpConnection(Address peer_addr, TcpBaseServer server) throws Exception {
@@ -67,6 +66,9 @@ public class TcpConnection extends Connection {
         if(sock instanceof SSLSocket) // https://issues.redhat.com/browse/JGRP-2748
             sock.setSoLinger(true, 0);
     }
+
+    public boolean                  useLockToSend() {return use_lock_to_send;}
+    public <T extends Connection> T useLockToSend(boolean u) {this.use_lock_to_send=u; return (T)this;}
 
     public Address localAddress() {
         InetSocketAddress local_addr=sock != null? (InetSocketAddress)sock.getLocalSocketAddress() : null;
@@ -120,19 +122,26 @@ public class TcpConnection extends Connection {
     public void send(byte[] data, int offset, int length) throws Exception {
         if(out == null)
             return;
+        if(!use_lock_to_send) {
+            locklessSend(data, offset, length);
+            return;
+        }
         writers.incrementAndGet();
         send_lock.lock();
         try {
             doSend(data, offset, length, false);
-        }
-        catch(InterruptedException iex) {
-            Thread.currentThread().interrupt(); // set interrupt flag again
         }
         finally {
             send_lock.unlock();
             if(writers.decrementAndGet() == 0) // only the last active writer thread calls flush()
                 flush(); // won't throw an exception
         }
+    }
+
+    public void locklessSend(byte[] data, int offset, int length) throws Exception {
+        if(out == null)
+            return;
+        doSend(data, offset, length, true);
     }
 
     public void send(ByteBuffer buf) throws Exception {
@@ -321,8 +330,9 @@ public class TcpConnection extends Connection {
         InetAddress local=tmp_sock.getLocalAddress(), remote=tmp_sock.getInetAddress();
         String l=local != null? Util.shortName(local) : "<null>";
         String r=remote != null? Util.shortName(remote) : "<null>";
-        return String.format("%s:%s --> %s:%s (%d secs old) [%s]", l, tmp_sock.getLocalPort(), r, tmp_sock.getPort(),
-                             SECONDS.convert(getTimestamp() - last_access, NANOSECONDS), status());
+        return String.format("%s:%s --> %s:%s (%d secs old) [%s]%s", l, tmp_sock.getLocalPort(), r, tmp_sock.getPort(),
+                             SECONDS.convert(getTimestamp() - last_access, NANOSECONDS), status(),
+                             use_lock_to_send? "" : " [lockless]");
     }
 
     @Override
@@ -347,17 +357,11 @@ public class TcpConnection extends Connection {
 
     @Override public void close() throws IOException {
         Util.close(sock); // fix for https://issues.redhat.com/browse/JGRP-2350
-        send_lock.lock();
-        try {
-            if(receiver != null) {
-                receiver.stop();
-                receiver=null;
-            }
-            Util.close(out,in);
+        if(receiver != null) {
+            receiver.stop();
+            receiver=null;
         }
-        finally {
-            connected=false;
-            send_lock.unlock();
-        }
+        Util.close(out,in);
+        connected=false;
     }
 }
