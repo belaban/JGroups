@@ -148,7 +148,12 @@ public class BatchBundler extends BaseBundler {
 
     protected void _send(Message msg) {
         ByteArrayDataOutputStream buffer=new ByteArrayDataOutputStream(msg.size());
-        sendSingle(msg.dest(), msg, buffer);
+        try {
+            sendSingle(msg.dest(), msg, buffer);
+        }
+        catch(Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     protected void startFlushTask() {
@@ -174,7 +179,14 @@ public class BatchBundler extends BaseBundler {
     }
 
     public void flush() {
-        msgMap.forEach((k,v) -> v.sendBatch(true));
+        msgMap.forEach((k,v) -> {
+            try {
+                v.sendBatch(true);
+            }
+            catch(Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     protected class Buffer {
@@ -192,7 +204,7 @@ public class BatchBundler extends BaseBundler {
             output=new ByteArrayDataOutputStream(max_size + MSG_OVERHEAD);
         }
 
-        protected synchronized boolean addMessage(Message msg) {
+        protected synchronized boolean addMessage(Message msg) throws Exception {
             if (closed)
                 return false;
 
@@ -211,7 +223,7 @@ public class BatchBundler extends BaseBundler {
             return true;
         }
 
-        protected synchronized void sendBatch(boolean due_to_timeout) {
+        protected synchronized void sendBatch(boolean due_to_timeout) throws Exception {
             if (index == 0) {
                 return;
             }
@@ -238,7 +250,12 @@ public class BatchBundler extends BaseBundler {
 
         protected synchronized void close() {
             this.closed = true;
-            sendBatch(false);
+            try {
+                sendBatch(false);
+            }
+            catch(Exception e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

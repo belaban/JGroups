@@ -200,7 +200,7 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
 
     protected class SendBuffer implements Runnable {
         private final Address                   dest;
-        protected final FastArray<Message>      msgs=new FastArray<Message>(32).increment(64);
+        private final FastArray<Message>        msgs=new FastArray<Message>(32).increment(64);
         private final Lock                      lock=new ReentrantLock(false);
         private final BlockingQueue<Message>    queue;
         private final FastArray<Message>        remove_queue;
@@ -325,8 +325,11 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
                     avg_send_time.add(System.nanoTime()-start);
                 total_msgs_sent.add(size);
             }
-            catch(Throwable e) {
-                log.trace(Util.getMessage("FailureSendingMsgBundle"), transport.getAddress(), e);
+            catch(Throwable ex) {
+                if(suppress_log_timeout <= 0)
+                    log.trace(FMT, transport.getAddress(), dest, ex.getMessage());
+                else
+                    suppress_log.warn(dest, suppress_log_timeout, FMT, transport.getAddress(), dest, ex.getMessage());
             }
         }
 

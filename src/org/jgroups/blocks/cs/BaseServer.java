@@ -330,7 +330,6 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
                 conn.start();
             }
             catch(Exception connect_ex) {
-                log.trace("%s: failed connecting to %s: %s", local_addr, dest, connect_ex);
                 removeConnectionIfPresent(dest, conn); // removes and closes the conn
                 throw connect_ex;
             }

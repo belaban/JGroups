@@ -47,6 +47,8 @@ public abstract class BaseBundler implements Bundler {
     protected ByteArrayDataOutputStream             output;
     protected MsgStats                              msg_stats;
     protected Log                                   log;
+    protected SuppressLog<Address>                  suppress_log;
+    protected static final String                   FMT="%s: failed sending message to %s: %s";
 
     /**
      * Maximum number of bytes for messages to be queued until they are sent.
@@ -77,6 +79,10 @@ public abstract class BaseBundler implements Bundler {
       "than wait until space is available (https://issues.redhat.com/browse/JGRP-2765)",deprecatedMessage="ignored")
     @Deprecated(since="5.5.0",forRemoval=true)
     protected boolean                               drop_when_full=true;
+
+    @Property(description="Number of milliseconds duplicate warnings (e.g. connection/sending failed) should be " +
+      "suppressed. 0 disables the suppress log", type=AttributeType.TIME)
+    protected long                                  suppress_log_timeout;
 
     @ManagedAttribute(description="Average fill size of the queue (in bytes) when messages are sent")
     protected final AverageMinMax                   avg_fill_count=new AverageMinMax(512);
@@ -138,6 +144,7 @@ public abstract class BaseBundler implements Bundler {
         msg_processing_policy=transport.msgProcessingPolicy();
         msg_stats=transport.getMessageStats();
         log=transport.getLog();
+        suppress_log=new SuppressLog<>(log);
         output=new ByteArrayDataOutputStream(max_size + MSG_OVERHEAD);
     }
 
@@ -186,10 +193,18 @@ public abstract class BaseBundler implements Bundler {
                 continue;
             Address dst=entry.getKey();
             output.position(0);
-            if(list.size() == 1)
-                sendSingle(dst, list.get(0), output);
-            else
-                sendMultiple(dst, list.get(0).src(), list, output);
+            try {
+                if(list.size() == 1)
+                    sendSingle(dst, list.get(0), output);
+                else
+                    sendMultiple(dst, list.get(0).src(), list, output);
+            }
+            catch(Exception ex) {
+                if(suppress_log_timeout <= 0)
+                    log.trace(FMT, transport.getAddress(), dst, ex.getMessage());
+                else
+                    suppress_log.warn(dst, suppress_log_timeout, FMT, transport.getAddress(), dst, ex.getMessage());
+            }
             total_msgs_sent.add(list.size());
             list.clear();
         }
@@ -200,7 +215,7 @@ public abstract class BaseBundler implements Bundler {
         }
     }
 
-    protected void sendSingle(Address dst, Message msg, ByteArrayDataOutputStream out) {
+    protected void sendSingle(Address dst, Message msg, ByteArrayDataOutputStream out) throws Exception {
         if(dst == null) { // multicast
             sendSingleMessage(dst, msg, out);
             loopbackUnlessDontLoopbackIsSet(msg);
@@ -215,7 +230,7 @@ public abstract class BaseBundler implements Bundler {
         }
     }
 
-    protected void sendMultiple(Address dst, Address sender, List<Message> list, ByteArrayDataOutputStream out) {
+    protected void sendMultiple(Address dst, Address sender, List<Message> list, ByteArrayDataOutputStream out) throws Exception {
         if(dst == null) { // multicast
             sendMessageList(dst, sender, list, out);
             loopback(dst, transport.getAddress(), list, list.size());
@@ -285,29 +300,18 @@ public abstract class BaseBundler implements Bundler {
         loopback(dest, sender, fa, fa.size());
     }
 
-    protected void sendSingleMessage(final Address dest, final Message msg, ByteArrayDataOutputStream out) {
-        try {
-            Util.writeMessage(msg, out, dest == null);
-            transport.doSend(out.buffer(), 0, out.position(), dest);
-            transport.getMessageStats().incrNumSingleMsgsSent();
-            num_single_msgs_sent.increment();
-        }
-        catch(Throwable e) {
-            log.trace(Util.getMessage("SendFailure"),
-                      transport.getAddress(), (dest == null? "cluster" : dest), msg.size(), e.toString(), msg.printHeaders());
-        }
+    protected void sendSingleMessage(final Address dest, final Message msg, ByteArrayDataOutputStream out) throws Exception {
+        Util.writeMessage(msg, out, dest == null);
+        transport.doSend(out.buffer(), 0, out.position(), dest);
+        transport.getMessageStats().incrNumSingleMsgsSent();
+        num_single_msgs_sent.increment();
     }
 
-    protected void sendMessageList(Address dest, Address src, List<Message> list, ByteArrayDataOutputStream out) {
-        try {
-            Util.writeMessageList(dest, src, transport.cluster_name.chars(), list, out, dest == null);
-            transport.doSend(out.buffer(), 0, out.position(), dest);
-            transport.getMessageStats().incrNumBatchesSent();
-            num_batches_sent.increment();
-        }
-        catch(Throwable e) {
-            log.trace(Util.getMessage("FailureSendingMsgBundle"), transport.getAddress(), e);
-        }
+    protected void sendMessageList(Address dest, Address src, List<Message> list, ByteArrayDataOutputStream out) throws Exception {
+        Util.writeMessageList(dest, src, transport.cluster_name.chars(), list, out, dest == null);
+        transport.doSend(out.buffer(), 0, out.position(), dest);
+        transport.getMessageStats().incrNumBatchesSent();
+        num_batches_sent.increment();
     }
 
     protected void sendMessageListArray(final Address dest, final Address src, Message[] list, int len, ByteArrayDataOutputStream out) {

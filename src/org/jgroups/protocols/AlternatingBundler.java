@@ -5,10 +5,8 @@ import org.jgroups.Message;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.util.AverageMinMax;
+import org.jgroups.util.FastArray;
 import org.jgroups.util.Util;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Bundler implementation which sends message batches (or single messages) as soon as the target destination changes
@@ -22,9 +20,9 @@ import java.util.List;
  */
 @Experimental
 public class AlternatingBundler extends TransferQueueBundler {
-    protected         Address       target_dest; // the current destination
-    protected final   List<Message> target_list=new ArrayList<>(); // msgs for the current dest; flushed on dest change
-    protected final   AverageMinMax avg_batch_size=new AverageMinMax();
+    protected         Address            target_dest; // the current destination
+    protected final   FastArray<Message> target_list=new FastArray<>(256); // msgs for the current dest; flushed on dest change
+    protected final   AverageMinMax      avg_batch_size=new AverageMinMax();
 
     @ManagedAttribute(description="Average batch size")
     public String getAverageBatchSize() {return avg_batch_size.toString();}
@@ -64,7 +62,7 @@ public class AlternatingBundler extends TransferQueueBundler {
         }
     }
 
-    protected void _sendBundledMessages() {
+    protected void _sendBundledMessages() throws Exception {
         try {
             if(target_list.isEmpty())
                 return;
@@ -76,8 +74,14 @@ public class AlternatingBundler extends TransferQueueBundler {
                 sendMultiple(target_dest, target_list.get(0).getSrc(), target_list, output);
             }
         }
+        catch(Exception ex) {
+            if(suppress_log_timeout <= 0)
+                log.trace(FMT, transport.getAddress(), target_dest, ex.getMessage());
+            else
+                suppress_log.warn(target_dest, suppress_log_timeout, FMT, transport.getAddress(), target_dest, ex.getMessage());
+        }
         finally {
-            target_list.clear();
+            target_list.clear(false);
             count=0;
         }
     }

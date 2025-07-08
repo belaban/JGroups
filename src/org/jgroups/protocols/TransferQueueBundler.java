@@ -123,9 +123,6 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
             catch(InterruptedException iex) {
                 Thread.currentThread().interrupt();
             }
-            catch(Throwable t) {
-                log.trace("%s: failed sending message: %s", transport.addr(), t);
-            }
         }
     }
 
