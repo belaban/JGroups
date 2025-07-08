@@ -75,8 +75,16 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
     @Override
     public void init(TP transport) {
         super.init(transport);
-        if(transport instanceof TCP)
-            ((TCP)transport).useLockToSend(false); // https://issues.redhat.com/browse/JGRP-2901
+        if(transport instanceof TCP) {
+            TCP tcp=(TCP)transport;
+            tcp.useLockToSend(false); // https://issues.redhat.com/browse/JGRP-2901
+            int size=tcp.getBufferedOutputStreamSize();
+            if(size < max_size) { // https://issues.redhat.com/browse/JGRP-2903
+                int new_size=max_size + Integer.BYTES;
+                log.warn("buffered_output_stream_size adjusted from %,d -> %,d", size, new_size);
+                tcp.setBufferedOutputStreamSize(new_size);
+            }
+        }
     }
 
     public void start() {
