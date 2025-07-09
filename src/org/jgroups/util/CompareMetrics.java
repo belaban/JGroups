@@ -1,6 +1,7 @@
 package org.jgroups.util;
 
 import org.jgroups.annotations.Component;
+import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 
@@ -185,10 +186,11 @@ public class CompareMetrics {
         Collection<String> ret=new ConcurrentSkipListSet<>();
         Field[] fields=clazz.getDeclaredFields();
         for(Field field: fields) {
-            if(field.isAnnotationPresent(Property.class)) {
+            if(field.isAnnotationPresent(Property.class) || field.isAnnotationPresent(ManagedAttribute.class)) {
                 String property=field.getName();
-                Property annotation=field.getAnnotation(Property.class);
-                String name=annotation.name();
+                Property prop=field.getAnnotation(Property.class);
+                ManagedAttribute ma=field.getAnnotation(ManagedAttribute.class);
+                String name=prop != null? prop.name() : ma.name();
                 if(name != null && !name.trim().isEmpty())
                     property=name.trim();
                 if(prefix != null && !prefix.isEmpty())
