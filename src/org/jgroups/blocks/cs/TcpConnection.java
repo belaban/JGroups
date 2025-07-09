@@ -357,8 +357,9 @@ public class TcpConnection extends Connection {
 
     @Override public void close() throws IOException {
         Util.close(sock); // fix for https://issues.redhat.com/browse/JGRP-2350
-        if(receiver != null) {
-            receiver.stop();
+        Receiver r=receiver;
+        if(r != null) {
+            r.stop();
             receiver=null;
         }
         Util.close(out,in);
