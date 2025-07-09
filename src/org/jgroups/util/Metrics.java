@@ -146,7 +146,7 @@ public class Metrics {
             }
             else if(boolean.class.isAssignableFrom(cl) || Boolean.class.isAssignableFrom(cl)) {
                 Entry<Number> tmp=new Entry<>(en.type(), en.description(),
-                        () -> Boolean.TRUE.equals((Boolean)en.supplier().get()) ? 1 : 0);
+                        () -> Boolean.TRUE.equals(en.supplier().get()) ? 1 : 0);
                 retval.put(e.getKey(), tmp);
             }
             else if(AverageMinMax.class.isAssignableFrom(cl)) {
