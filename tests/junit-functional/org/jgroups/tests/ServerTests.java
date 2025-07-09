@@ -51,8 +51,8 @@ public class ServerTests {
     @DataProvider
     protected Object[][] configProvider() {
         return new Object[][] {
-          {create(false, PORT_A), create(false, PORT_B)},
-          {create(true, PORT_A), create(true, PORT_B)}
+          {create(true, PORT_A), create(true, PORT_B)},
+          {create(false, PORT_A), create(false, PORT_B)}
         };
     }
 
@@ -124,22 +124,17 @@ public class ServerTests {
         final CountDownLatch latch=new CountDownLatch(1);
         Sender[] senders=new Sender[NUM_SENDERS];
         for(int i=0; i < senders.length; i++) {
-            senders[i]=new Sender(latch, first, B, receiver_b.getList());
+            senders[i]=new Sender(latch, first, B, receiver_b.getList(), i+1);
             senders[i].start();
         }
         latch.countDown();
         for(Sender sender: senders)
             sender.join();
-        List<String> ids=Arrays.stream(senders).map(t -> String.valueOf(t.getId())).collect(Collectors.toList());
-        Util.waitUntil(3000, 100, () -> list.size() == NUM_SENDERS,
-                       () -> {
-                           list.sort(String::compareTo);
-                           return String.format("list (%d): %s", list.size(), list);
-                       });
-        list.sort(String::compareTo);
-        ids.sort(String::compareTo);
-        System.out.printf("list (%d elements): %s\n", list.size(), list);
-        assert ids.equals(list) : String.format("expected:\n%s\nactual:\n%s\n", ids, list);
+        List<Integer> ids=Arrays.stream(senders).map(Sender::id).collect(Collectors.toList());
+        Util.waitUntilTrue(3000, 100, () -> list.size() == NUM_SENDERS);
+        List<Integer> tmp_list=list.stream().map(Integer::valueOf).sorted(Integer::compareTo).collect(Collectors.toList());
+        System.out.printf("list (%d elements): %s\n", tmp_list.size(), tmp_list);
+        assert ids.equals(tmp_list) : String.format("expected:\n%s\nactual:\n%s\n", ids, tmp_list);
     }
 
 
@@ -199,18 +194,22 @@ public class ServerTests {
         protected final BaseServer     server;
         protected final Address        dest;
         protected final List<String>   receiver;
+        protected final int            id;
 
-        public Sender(CountDownLatch latch, BaseServer server, Address dest, List<String> r) {
+        public Sender(CountDownLatch latch, BaseServer server, Address dest, List<String> r, int id) {
             this.latch=latch;
             this.server=server;
             this.dest=dest;
             this.receiver=r;
+            this.id=id;
         }
+
+        public int id() {return id;}
 
         public void run() {
             try {
                 latch.await();
-                String payload=String.valueOf(Thread.currentThread().getId());
+                String payload=String.valueOf(id);
                 send(payload, server, dest);
             }
             catch(Exception ex) {

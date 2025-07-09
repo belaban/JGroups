@@ -34,14 +34,13 @@ import java.util.stream.Collectors;
  */
 @MBean(description="Server used to accept connections from other servers (or clients) and send data to servers")
 public abstract class BaseServer implements Closeable, ConnectionListener {
-    protected final Lock                      lock=new ReentrantLock();
     protected Address                         local_addr; // typically the address of the server socket or channel
     protected final List<ConnectionListener>  conn_listeners=new CopyOnWriteArrayList<>();
     protected final Map<Address,Connection>   conns=new ConcurrentHashMap<>();
     protected final ThreadFactory             factory;
     protected SocketFactory                   socket_factory=new DefaultSocketFactory();
     protected long                            reaperInterval;
-    protected Reaper                          reaper;
+    protected Reaper reaper;
     protected Receiver                        receiver;
     protected final AtomicBoolean             running=new AtomicBoolean(false);
     protected Log                             log=LogFactory.getLog(getClass());
@@ -74,6 +73,8 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     protected boolean                         tcp_nodelay=false;
     protected int                             linger=-1;
     protected TimeService                     time_service;
+    // to access the connection map, 1 lock / destination
+    protected final Map<Address,Lock>         locks=new ConcurrentHashMap<>();
 
 
     protected BaseServer(ThreadFactory f, SocketFactory sf, int recv_buf_size) {
@@ -139,7 +140,6 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         return retval;
     }
 
-
     /**
      * Starts accepting connections. Typically, socket handler or selectors thread are started here.
      */
@@ -157,15 +157,10 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     public void stop() {
         Util.close(reaper);
         reaper=null;
-
-        lock.lock();
-        try {
-            for(Connection c: conns.values())
-                Util.close(c);
-            conns.clear();
-        } finally {
-            lock.unlock();
-        }
+        for(Connection c: conns.values())
+            Util.close(c);
+        conns.clear();
+        locks.clear();
         conn_listeners.clear();
     }
 
@@ -175,29 +170,16 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
 
     public void flush(Address dest) {
         if(dest != null) {
-            lock.lock();
-            try {
-                Connection conn=conns.get(dest);
-                if(conn != null)
-                    conn.flush();
-            }
-            finally {
-                lock.unlock();
-            }
+            Connection conn=conns.get(dest);
+            if(conn != null)
+                conn.flush();
         }
     }
 
     public void flushAll() {
-        lock.lock();
-        try {
-            for(Connection c: conns.values())
-                c.flush();
-        }
-        finally {
-            lock.unlock();
-        }
+        for(Connection c: conns.values())
+            c.flush();
     }
-
 
     /**
      * Called by a {@link Connection} implementation when a message has been received. Note that data might be a
@@ -232,7 +214,6 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         }
     }
 
-
     public void send(Address dest, byte[] data, int offset, int length) throws Exception {
         if(!validateArgs(dest, data))
             return;
@@ -250,7 +231,7 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         // Get a connection (or create one if not yet existent) and send the data
         Connection conn=null;
         try {
-            conn=getConnection(dest);
+            conn=getConnection(dest); // dest is guaranteed not to be null
             conn.send(data, offset, length);
         }
         catch(Exception ex) {
@@ -258,7 +239,6 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
             throw ex;
         }
     }
-
 
     public void send(Address dest, ByteBuffer data) throws Exception {
         if(!validateArgs(dest, data))
@@ -285,7 +265,6 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
             throw ex;
         }
     }
-
 
     @Override
     public void connectionClosed(Connection conn) {
@@ -315,6 +294,9 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         if(connected(conn=conns.get(dest)))
             return conn;
 
+        // we acquire a separate lock for each destination, so that connection/send attempts to destination D2
+        // are not blocked by connection/send attempts to destination D1 (https://issues.redhat.com/browse/JGRP-2905)
+        Lock lock=getLock(dest);
         lock.lock();
         try {
             if(connected(conn=conns.get(dest)))
@@ -322,7 +304,6 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
             conn=createConnection(dest);
             replaceConnection(dest, conn);
 
-            // now connect to dest:
             try {
                 log.trace("%s: connecting to %s", local_addr, dest);
                 conn.connect(dest);
@@ -333,7 +314,8 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
                 removeConnectionIfPresent(dest, conn); // removes and closes the conn
                 throw connect_ex;
             }
-        } finally {
+        }
+        finally {
             lock.unlock();
         }
         return conn;
@@ -373,8 +355,8 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         return false;
     }
 
-
     public void addConnection(Address peer_addr, Connection conn) throws Exception {
+        Lock lock=getLock(peer_addr);
         lock.lock();
         try {
             boolean conn_exists=hasConnection(peer_addr),
@@ -393,7 +375,6 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
             lock.unlock();
         }
     }
-
 
     public BaseServer addConnectionListener(ConnectionListener cl) {
         if(cl == null)
@@ -414,7 +395,6 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         return this;
     }
     
-
     @ManagedOperation(description="Prints all connections")
     public String printConnections() {
         StringBuilder sb=new StringBuilder("\n");
@@ -423,19 +403,17 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         return sb.toString();
     }
 
-
     /** Only removes the connection if conns.get(address) == conn */
     public void removeConnectionIfPresent(Address address, Connection conn) {
         if(address == null || conn == null)
             return;
         Connection tmp=null;
-
+        Lock lock=getLock(address);
         lock.lock();
         try {
             Connection existing=conns.get(address);
-            if(conn == existing) {
+            if(conn == existing)
                 tmp=conns.remove(address);
-            }
         } finally {
             lock.unlock();
         }
@@ -447,14 +425,8 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
 
     /** Used only for testing ! */
     public void clearConnections() {
-        lock.lock();
-        try {
-            conns.values().forEach(Util::close);
-            conns.clear();
-        }
-        finally {
-            lock.unlock();
-        }
+        conns.values().forEach(Util::close);
+        conns.clear();
     }
 
     public void forAllConnections(BiConsumer<Address,Connection> c) {
@@ -465,18 +437,11 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     public void retainAll(Collection<Address> current_mbrs) {
         if(current_mbrs == null)
             return;
-
-        Map<Address,Connection> copy=null;
-        lock.lock();
-        try {
-            copy=new HashMap<>(conns);
-            conns.keySet().retainAll(current_mbrs);
-        } finally {
-            lock.unlock();
-        }
+        Map<Address,Connection> copy=new HashMap<>(conns);
+        conns.keySet().retainAll(current_mbrs);
+        locks.keySet().retainAll(current_mbrs);
         copy.keySet().removeAll(current_mbrs);
-        for(Map.Entry<Address,Connection> entry: copy.entrySet())
-            Util.close(entry.getValue());
+        copy.values().forEach(Util::close);
         copy.clear();
     }
 
@@ -502,7 +467,6 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         }
     }
 
-
     public String toString() {
         return toString(false);
     }
@@ -515,7 +479,6 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         }
         return s;
     }
-
 
     public void sendToAll(byte[] data, int offset, int length) {
         for(Map.Entry<Address,Connection> entry: conns.entrySet()) {
@@ -531,7 +494,6 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         }
     }
 
-
     public void sendToAll(ByteBuffer data) {
         for(Map.Entry<Address,Connection> entry: conns.entrySet()) {
             Connection conn=entry.getValue();
@@ -544,6 +506,11 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
                 log.error("failed sending data to %s: %s", dest, ex);
             }
         }
+    }
+
+    protected Lock getLock(Address dest) {
+        Lock l=locks.get(dest);
+        return l != null? l : locks.computeIfAbsent(dest, __ -> new ReentrantLock());
     }
 
     protected static boolean connected(Connection c) {
@@ -614,18 +581,13 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
 
         public void run() {
             while(!Thread.currentThread().isInterrupted()) {
-                lock.lock();
-                try {
-                    for(Iterator<Entry<Address,Connection>> it=conns.entrySet().iterator();it.hasNext();) {
-                        Entry<Address,Connection> entry=it.next();
-                        Connection c=entry.getValue();
-                        if(c.isExpired(System.nanoTime())) {
-                            Util.close(c);
-                            it.remove();                           
-                        }
+                for(Iterator<Entry<Address,Connection>> it=conns.entrySet().iterator();it.hasNext();) {
+                    Entry<Address,Connection> entry=it.next();
+                    Connection c=entry.getValue();
+                    if(c.isExpired(System.nanoTime())) {
+                        Util.close(c);
+                        it.remove();
                     }
-                } finally {
-                    lock.unlock();
                 }
                 Util.sleep(reaperInterval);
             }           
