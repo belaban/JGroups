@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 
 /**
  * Tools to (1) dump all protocols and the names of their attributes ({@link org.jgroups.annotations.ManagedAttribute})
- * and properties ({@link Property}) to file, (2) read from that file ('old) and compare whether old is a proper
+ * and properties ({@link Property}) to file, (2) read from that file (old) and compare whether old is a proper
  * subset of new, ie. if all protocols and attributes/properties still have the same names in new.<br/>
  * To be run before releasing a new version (mainly minor and micro).
  * @author Bela Ban
