@@ -334,7 +334,7 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
         }
 
         public String toString() {
-            return String.format("%d msgs", size());
+            return String.format("%d msgs", queue.size());
         }
 
         protected int size() {
