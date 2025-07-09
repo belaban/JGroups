@@ -12,6 +12,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -142,24 +143,26 @@ public class Metrics {
                     || float.class.isAssignableFrom(cl) || double.class.isAssignableFrom(cl)) {
                 Entry<Number> tmp=new Entry<>(en.type(), en.description(), () -> (Number)en.supplier().get());
                 retval.put(e.getKey(), tmp);
-                continue;
             }
-            if(boolean.class.isAssignableFrom(cl) || Boolean.class.isAssignableFrom(cl)) {
-                Entry<Number> tmp=new Entry<>(en.type(), en.description(), () -> (Boolean)en.supplier().get() ? 1 : 0);
+            else if(boolean.class.isAssignableFrom(cl) || Boolean.class.isAssignableFrom(cl)) {
+                Entry<Number> tmp=new Entry<>(en.type(), en.description(),
+                        () -> Boolean.TRUE.equals(en.supplier().get()) ? 1 : 0);
                 retval.put(e.getKey(), tmp);
-                continue;
             }
-            if(AverageMinMax.class.isAssignableFrom(cl)) {
-                Entry<Number> tmp=new Entry<>(en.type(), en.description(), () -> ((AverageMinMax)en.supplier().get()).min());
+            else if(AverageMinMax.class.isAssignableFrom(cl)) {
+                Entry<Number> tmp=new Entry<>(en.type(), en.description(), 
+                        () -> Optional.ofNullable((AverageMinMax)en.supplier().get()).map(AverageMinMax::min).orElse(null));
                 retval.put(e.getKey() + ".min", tmp);
-                tmp=new Entry<>(en.type(), en.description(), () -> ((AverageMinMax)en.supplier().get()).average());
+                tmp=new Entry<>(en.type(), en.description(),
+                        () -> Optional.ofNullable((AverageMinMax)en.supplier().get()).map(AverageMinMax::average).orElse(null));
                 retval.put(e.getKey(), tmp);
-                tmp=new Entry<>(en.type(), en.description(), () -> ((AverageMinMax)en.supplier().get()).max());
+                tmp=new Entry<>(en.type(), en.description(),
+                        () -> Optional.ofNullable((AverageMinMax)en.supplier().get()).map(AverageMinMax::max).orElse(null));
                 retval.put(e.getKey() + ".max", tmp);
-                continue;
             }
-            if(Average.class.isAssignableFrom(cl)) {
-                Entry<Number> tmp=new Entry<>(en.type(), en.description(), () -> ((Average)en.supplier()).average());
+            else if(Average.class.isAssignableFrom(cl)) {
+                Entry<Number> tmp=new Entry<>(en.type(), en.description(),
+                        () -> Optional.ofNullable((Average)en.supplier().get()).map(Average::average).orElse(null));
                 retval.put(e.getKey(), tmp);
             }
         }
