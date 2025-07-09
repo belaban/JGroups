@@ -69,9 +69,6 @@ public class CompareMetrics {
         // from_file was used to read the old metrics; compare with the current and then exit
         compareMetrics(new_metrics, old_metrics);
 
-        old_metrics.put("UDP", List.of("number_of_messages"));
-        new_metrics.put("UDP", List.of("num_msgs"));
-
         if(old_metrics.isEmpty() && new_metrics.isEmpty()) {
             System.out.println("\n** Success: both old and new metrics are the same");
             return;
