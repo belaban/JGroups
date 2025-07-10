@@ -50,7 +50,8 @@ public class MPerf implements Receiver {
     protected final Log                       log=LogFactory.getLog(getClass());
     protected Path                            out_file_path;
     protected boolean                         looping=true;
-    protected long                            sleep;
+    protected long                            sleep; // ms, after delivery of a message / batch
+    protected long                            sender_sleep; // ms, after sending a message
     protected final ResponseCollector<Result> results=new ResponseCollector<>();
     protected ThreadFactory                   thread_factory;
     protected static final short              ID=ClassConfigurator.getProtocolId(MPerf.class);
@@ -60,12 +61,12 @@ public class MPerf implements Receiver {
     }
 
     public MPerf(Path out_file_path) throws IOException {
-        if (out_file_path != null) {
-            if (Files.notExists(out_file_path)) {
+        if(out_file_path != null) {
+            if(Files.notExists(out_file_path)) {
                 Files.createDirectories(out_file_path.getParent());
                 Files.createFile(out_file_path);
             }
-            this.out_file_path = out_file_path;
+            this.out_file_path=out_file_path;
         }
     }
 
@@ -104,14 +105,14 @@ public class MPerf implements Receiver {
         final String INPUT=
           "[1] Start test [2] View [4] Threads (%d) [6] Time (%,ds) [7] Msg size (%s)\n" +
             "[8] Number of senders (%s) [o] Toggle OOB (%s) [l] Toggle measure local messages (%s)\n" +
-            "[s] Display message sources (%s) [9] sleep (%d ms)\n" +
+            "[s] Display message sources (%s) [9] sleep (%d ms) [0] sender sleep (%d ms)\n" +
             "[x] Exit this [X] Exit all";
 
         while(looping) {
             try {
                 int c=Util.keyPress(String.format(INPUT, num_threads, time, Util.printBytes(msg_size),
                                               num_senders <= 0? "all" : String.valueOf(num_senders),
-                                              oob, log_local, display_msg_src, sleep));
+                                              oob, log_local, display_msg_src, sleep, sender_sleep));
                 switch(c) {
                     case '1':
                         startTest();
@@ -133,6 +134,9 @@ public class MPerf implements Receiver {
                         break;
                     case '9':
                         configChange("sleep");
+                        break;
+                    case '0':
+                        configChange("sender_sleep");
                         break;
                     case 'o':
                         ConfigChange change=new ConfigChange("oob", !oob);
@@ -217,6 +221,7 @@ public class MPerf implements Receiver {
         sb.append("oob=").append(oob).append('\n');
         sb.append("log_local=").append(log_local).append('\n');
         sb.append("sleep=").append(sleep).append('\n');
+        sb.append("sender_sleep=").append(sender_sleep).append('\n');
         sb.append("display_msg_src=").append(display_msg_src).append('\n');
         return sb.toString();
     }
@@ -369,13 +374,14 @@ public class MPerf implements Receiver {
 
     protected void handleConfigRequest(Address sender) throws Exception {
         Configuration cfg=new Configuration();
-        cfg.addChange("time",        time);
-        cfg.addChange("msg_size",    msg_size);
-        cfg.addChange("num_threads", num_threads);
-        cfg.addChange("num_senders", num_senders);
-        cfg.addChange("oob",         oob);
-        cfg.addChange("log_local",   log_local);
-        cfg.addChange("sleep",       sleep);
+        cfg.addChange("time",         time);
+        cfg.addChange("msg_size",     msg_size);
+        cfg.addChange("num_threads",  num_threads);
+        cfg.addChange("num_senders",  num_senders);
+        cfg.addChange("oob",          oob);
+        cfg.addChange("log_local",    log_local);
+        cfg.addChange("sleep",        sleep);
+        cfg.addChange("sender_sleep", sender_sleep);
         send(sender,cfg,MPerfHeader.CONFIG_RSP);
     }
 
@@ -495,6 +501,8 @@ public class MPerf implements Receiver {
                     if(oob)
                         msg.setFlag(Message.Flag.OOB);
                     channel.send(msg);
+                    if(sender_sleep > 0)
+                        Util.sleep(sender_sleep);
                 }
                 catch(Exception e) {
                 }
