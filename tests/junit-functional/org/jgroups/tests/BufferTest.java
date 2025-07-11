@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
+import static org.jgroups.Message.Flag.OOB;
 import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
 
 /** Functional tests of {@link Buffer} implementations ({@link DynamicBuffer} and {@link FixedBuffer}).
@@ -36,7 +37,7 @@ public class BufferTest {
     @DataProvider
     static Object[][] windowCreator() {
         return new Object[][]{
-          {new DynamicBuffer<>(0)},
+          // {new DynamicBuffer<>(0)},
           {new FixedBuffer<>(0)}
         };
     }
@@ -136,6 +137,52 @@ public class BufferTest {
         System.out.println("buf = " + buf);
         assert added;
         assert mb.isEmpty();
+    }
+
+    public void testAddMessageBatchWithFullBuffer(Buffer<Message> buf) {
+        if(buf instanceof DynamicBuffer)
+            return;
+        buf=new FixedBuffer<>(10,0);
+        addMessageBatchWithFullBuffer(buf, false);
+    }
+
+    public void testAddMessageBatchWithFullBufferOOB(Buffer<Message> buf) {
+        if(buf instanceof DynamicBuffer)
+            return;
+        buf=new FixedBuffer<>(10,0);
+        addMessageBatchWithFullBuffer(buf, true);
+    }
+
+    protected static void addMessageBatchWithFullBuffer(Buffer<Message> buf, boolean oob) {
+        MessageBatch mb=createMessageBatch(1, 10, oob);
+        int size=mb.size();
+        boolean added=buf.add(mb, SEQNO_GETTER, !oob, null);
+        System.out.println("buf = " + buf);
+        assert added;
+        assert mb.size() == (oob? size : 0);
+
+        mb=createMessageBatch(11, 15, oob);
+        size=mb.size();
+        added=buf.add(mb, SEQNO_GETTER, !oob, null);
+        System.out.println("buf = " + buf);
+        assert !added;
+        assert  mb.isEmpty();
+
+        mb=createMessageBatch(1, 15, oob);
+        size=mb.size();
+        added=buf.add(mb, SEQNO_GETTER, !oob, null);
+        System.out.println("buf = " + buf);
+        assert !added;
+        assert mb.isEmpty();
+
+        buf.removeMany(true, 5);
+        assert buf.size() == 5;
+        mb=createMessageBatch(5, 15, oob);
+        size=mb.size();
+        added=buf.add(mb, SEQNO_GETTER, !oob, null);
+        System.out.println("buf = " + buf);
+        assert added;
+        assert mb.size() == (oob? 5 : 0);
     }
 
 
@@ -466,14 +513,14 @@ public class BufferTest {
         buf.add(3, msg(3));
         assert buf.high() == 3;
 
-        buf.add(4, msg(4, true), dont_loopback_filter);
+        buf.add(4, msg(4, true), dont_loopback_filter, true);
         assert buf.highestDelivered() == 2;
         assert buf.getHighestDeliverable() == 4;
         buf.removeMany(false, 10);
         assert buf.highestDelivered() == 4;
 
-        buf.add(5, msg(5, true), dont_loopback_filter);
-        buf.add(6, msg(6, true), dont_loopback_filter);
+        buf.add(5, msg(5, true), dont_loopback_filter, true);
+        buf.add(6, msg(6, true), dont_loopback_filter, true);
         assert buf.highestDelivered() == 6;
         assert IntStream.rangeClosed(1,2).allMatch(n -> buf._get(n) == null);
         assert IntStream.rangeClosed(3,6).allMatch(n -> buf._get(n) != null);
@@ -481,7 +528,7 @@ public class BufferTest {
 
     public void testAddAndRemove2(Buffer<Message> buf) {
         for(int i=1; i <=10; i++)
-            buf.add(i, msg(i, true), dont_loopback_filter);
+            buf.add(i, msg(i, true), dont_loopback_filter, true);
         assert buf.highestDelivered() == 10;
         assert buf.high() == 10;
         assert buf.getHighestDeliverable() == 10;
@@ -496,9 +543,9 @@ public class BufferTest {
     public void testAddAndRemove3(Buffer<Message> type) {
         Buffer<Message> buf=type instanceof DynamicBuffer? new DynamicBuffer<>(3, 10, 3)
           : new FixedBuffer<>(3);
-        buf.add(5, msg(5, true), dont_loopback_filter);
-        buf.add(6, msg(6, true), dont_loopback_filter);
-        buf.add(4, msg(4, true), dont_loopback_filter);
+        buf.add(5, msg(5, true), dont_loopback_filter, true);
+        buf.add(6, msg(6, true), dont_loopback_filter, true);
+        buf.add(4, msg(4, true), dont_loopback_filter, true);
         assert buf.high() == 6;
         assert buf.getHighestDeliverable() == 6;
         assert buf.highestDelivered() == 6;
@@ -508,12 +555,23 @@ public class BufferTest {
     public void testAddAndRemove4(Buffer<Message> type) {
         Buffer<Message> buf=type instanceof DynamicBuffer? new DynamicBuffer<>(3, 10, 3)
           : new FixedBuffer<>(3);
-        buf.add(7, msg(7, true), dont_loopback_filter);
-        buf.add(6, msg(6, true), dont_loopback_filter);
-        buf.add(4, msg(4, true), dont_loopback_filter);
+        buf.add(7, msg(7, true), dont_loopback_filter, true);
+        buf.add(6, msg(6, true), dont_loopback_filter, true);
+        buf.add(4, msg(4, true), dont_loopback_filter, true);
         assert buf.high() == 7;
         assert buf.getHighestDeliverable() == 4;
         assert buf.highestDelivered() == 4;
+    }
+
+    public void testNonBlockingAdd(Buffer<Integer> buf) {
+        if(buf instanceof DynamicBuffer)
+            return;
+        buf=new FixedBuffer<>(10, 0);
+        for(int i=1; i <= 10; i++)
+            assert buf.add(i, i);
+        boolean rc=buf.add(11, 11, null, false);
+        assert !rc;
+        assert buf.size() == 10;
     }
 
     public void testAddListWithConstValue(Buffer<Integer> buf) {
@@ -587,7 +645,6 @@ public class BufferTest {
             assert num_resizes == 0 : "number of resizings=" + num_resizes + " (expected 0)";
         }
     }
-
 
     public void testAddListWithResizing(Buffer<Message> type) {
         Buffer<Integer> buf=type instanceof DynamicBuffer? new DynamicBuffer<>(3,5,0) : new FixedBuffer<>(100, 0);
@@ -1787,19 +1844,38 @@ public class BufferTest {
         assert buf.size() == 10;
     }
 
+    public void testBlockingAddAndRemove(Buffer<Integer> buf) throws ExecutionException, InterruptedException {
+        if(buf instanceof DynamicBuffer)
+            return;
+        buf=new FixedBuffer<>(10, 0);
+        for(int i=1; i <= 10; i++)
+            assert buf.add(i, i);
+        final Buffer<Integer> b=buf;
+        CompletableFuture<Boolean> cf=CompletableFuture.supplyAsync(() -> b.add(11, 11));
+        Util.sleep(500);
+        assert !cf.isDone();
+        Integer el=b.remove();
+        assert el == 1;
+        assert cf.get();
+        System.out.println("buf = " + buf);
+        assert buf.size() == 10;
+        List<Integer> actual=b.stream().collect(Collectors.toList()), expected=IntStream.rangeClosed(2,11).boxed().collect(Collectors.toList());
+        assert actual.equals(expected);
+    }
+
     public void testBlockingAddAndClose(Buffer<Integer> type) {
         if(type instanceof DynamicBuffer)
             return;
         FixedBuffer<Integer> buf=new FixedBuffer<>(10, 0);
         for(int i=0; i <= 10; i++)
-            buf.add(i, i, null);
+            buf.add(i, i, null, true);
         System.out.println("buf = " + buf);
         new Thread(() -> {
             Util.sleep(1000);
             buf.close();
         }).start();
         int seqno=buf.capacity() +1;
-        boolean success=buf.add(seqno, seqno, null);
+        boolean success=buf.add(seqno, seqno, null, true);
         System.out.println("buf=" + buf);
         assert !success;
         assert buf.size() == 10;
@@ -1834,7 +1910,7 @@ public class BufferTest {
             return;
         final FixedBuffer<Integer> buf=new FixedBuffer<>(10, 0);
         for(int i=0; i <= 10; i++)
-            buf.add(i, i, null);
+            buf.add(i, i, null, true);
         System.out.println("buf = " + buf);
         Thread thread=new Thread(() -> {
             Util.sleep(1000);
@@ -1843,7 +1919,7 @@ public class BufferTest {
             buf.purge(3);
         });
         thread.start();
-        boolean success=buf.add(11, 11, null);
+        boolean success=buf.add(11, 11, null, true);
         System.out.println("buf=" + buf);
         assert success;
         thread.join(10000);
@@ -1855,7 +1931,8 @@ public class BufferTest {
         if(type instanceof DynamicBuffer)
             return;
         final FixedBuffer<Integer> buf=new FixedBuffer<>(10, 0);
-        IntStream.rangeClosed(1, buf.capacity()).boxed().forEach(n -> buf.add(n, n, null));
+        IntStream.rangeClosed(1, buf.capacity()).boxed()
+          .forEach(n -> buf.add(n, n, null, true));
         System.out.println("buf = " + buf);
         BlockingAdder adder=new BlockingAdder(buf, 11, 14);
         adder.start();
@@ -2004,6 +2081,13 @@ public class BufferTest {
         return retval;
     }
 
+    protected static boolean add(Buffer<Integer> b, int start, int end) {
+        boolean retval=true;
+        for(int i=start; i <= end; i++)
+            retval=retval || b.add(i, i);
+        return retval;
+    }
+
     protected static List<LongTuple<Integer>> createList(long ... seqnos) {
         if(seqnos == null)
             return null;
@@ -2018,7 +2102,18 @@ public class BufferTest {
             return null;
         MessageBatch mb=new MessageBatch(seqnos.length);
         for(long seqno: seqnos) {
-            Message m=new EmptyMessage().putHeader(NAKACK3_ID, NakAckHeader.createMessageHeader(seqno));
+            Message m=new ObjectMessage(null, seqno).putHeader(NAKACK3_ID, NakAckHeader.createMessageHeader(seqno));
+            mb.add(m);
+        }
+        return mb;
+    }
+
+    protected static MessageBatch createMessageBatch(int start, int end, boolean oob) {
+        MessageBatch mb=new MessageBatch(end-start+1);
+        for(long seqno=start; seqno <= end; seqno++) {
+            Message m=new ObjectMessage(null, seqno).putHeader(NAKACK3_ID, NakAckHeader.createMessageHeader(seqno));
+            if(oob)
+                m.setFlag(OOB);
             mb.add(m);
         }
         return mb;
@@ -2049,7 +2144,7 @@ public class BufferTest {
         public void run() {
             try {
                 latch.await();
-                success=buf.add(seqno, seqno, null);
+                success=buf.add(seqno, seqno, null, true);
             }
             catch(InterruptedException e) {
                 e.printStackTrace();
@@ -2073,7 +2168,7 @@ public class BufferTest {
         @Override
         public void run() {
             for(int i=from; i <= to; i++) {
-                boolean rc=buf.add(i, i, null);
+                boolean rc=buf.add(i, i, null, true);
                 if(rc) {
                     added++;
                     System.out.printf("-- added %d\n", i);

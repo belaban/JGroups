@@ -63,14 +63,14 @@ public class FixedBuffer<T> extends Buffer<T> {
     public long          numDroppedMessages() {return num_dropped_msgs.sum();}
 
     @Override
-    public boolean add(long seqno, T element, Predicate<T> remove_filter) {
+    public boolean add(long seqno, T element, Predicate<T> remove_filter, boolean block_if_full) {
         lock.lock();
         try {
             long dist=seqno - low;
             if(dist <= 0)
                 return false; // message already purged
 
-            if(dist > capacity() && !block(seqno)) { // no space for message
+            if(dist > capacity() && (!block_if_full || !block(seqno))) { // buffer is full
                 num_dropped_msgs.increment();
                 return false;
             }
@@ -118,7 +118,7 @@ public class FixedBuffer<T> extends Buffer<T> {
                 if(seqno < 0)
                     continue;
                 T element=const_value != null? const_value : msg;
-                boolean added=add(seqno, element, null);
+                boolean added=add(seqno, element, null, false);
                 retval=retval || added;
                 if(!added || remove_from_batch)
                     it.remove();
@@ -140,7 +140,7 @@ public class FixedBuffer<T> extends Buffer<T> {
                 LongTuple<T> tuple=it.next();
                 long seqno=tuple.getVal1();
                 T element=const_value != null? const_value : tuple.getVal2();
-                if(add(seqno, element, null))
+                if(add(seqno, element, null, false))
                     added=true;
                 else if(remove_added_elements)
                     it.remove();

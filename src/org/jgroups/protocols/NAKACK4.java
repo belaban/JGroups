@@ -10,6 +10,7 @@ import org.jgroups.util.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.IntBinaryOperator;
 import java.util.function.Predicate;
@@ -27,7 +28,7 @@ public class NAKACK4 extends ReliableMulticast {
     protected final AckTable          ack_table=new AckTable();
 
     @Property(description="Size of the send/receive buffers, in messages",writable=false)
-    protected int                     capacity=2048;
+    protected int                     capacity=16384;
 
     @Property(description="Number of ACKs to skip before one is sent. For example, a value of 500 means that only " +
       "every 500th ACk is sent; all others are dropped. If not set, defaulted to capacity/4",type=SCALAR)
@@ -61,8 +62,12 @@ public class NAKACK4 extends ReliableMulticast {
 
     @ManagedAttribute(description="Number of times sender threads were blocked on a full send window",type=SCALAR)
     public long getNumBlockings() {
-        FixedBuffer<Message> buf=(FixedBuffer<Message>)sendBuf();
-        return buf != null? buf.numBlockings() : -1;
+        long retval=0;
+        for(Entry e: xmit_table.values()) {
+            if(e.buf() instanceof FixedBuffer)
+                retval+=((FixedBuffer<?>)e.buf()).numBlockings();
+        }
+        return retval;
     }
 
     @ManagedAttribute(description="The number of received messages dropped due to full capacity of the buffer")
@@ -77,8 +82,15 @@ public class NAKACK4 extends ReliableMulticast {
 
     @ManagedAttribute(description="Average time blocked")
     public AverageMinMax getAvgTimeBlocked() {
-        FixedBuffer<Message> buf=(FixedBuffer<Message>)sendBuf();
-        return buf != null? buf.avgTimeBlocked() : null;
+        AverageMinMax avg=new AverageMinMax(1024).unit(TimeUnit.NANOSECONDS);
+        for(Entry e: xmit_table.values()) {
+            Buffer<Message> buf=e.buf();
+            if(buf instanceof FixedBuffer) {
+                AverageMinMax tmp=((FixedBuffer<Message>)buf).avgTimeBlocked();
+                avg.merge(tmp);
+            }
+        }
+        return avg;
     }
 
     @Override
@@ -95,9 +107,10 @@ public class NAKACK4 extends ReliableMulticast {
     public void resetStats() {
         super.resetStats();
         acks_received.reset();
-        Buffer<Message> buf=sendBuf();
-        if(buf != null)
+        for(Entry e: xmit_table.values()) {
+            Buffer<Message> buf=e.buf();
             buf.resetStats();
+        }
     }
 
     @Override
@@ -214,6 +227,6 @@ public class NAKACK4 extends ReliableMulticast {
 
     @Override
     protected boolean addToSendBuffer(Buffer<Message> win, long seq, Message msg, Predicate<Message> filter) {
-        return win.add(seq, msg, filter);
+        return win.add(seq, msg, filter, true);
     }
 }

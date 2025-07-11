@@ -262,9 +262,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
 
     /** Returns the receive window for sender; only used for testing. Do not use ! */
     public <T extends Buffer<Message>> T getBuf(Address sender) {
-        if(sender == null)
-            return null;
-        Entry entry=xmit_table.get(sender);
+        Entry entry=getEntry(sender);
         return entry != null? (T)entry.buf() : null;
     }
 
@@ -722,7 +720,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
         boolean rc=false;
         do {
             try {
-                rc=win.add(seq, msg, filter);
+                rc=win.add(seq, msg, filter, true);
                 break;
             }
             catch(Throwable t) {
@@ -759,7 +757,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
         // If the message was sent by myself, then it is already in the table and we don't need to add it. If not,
         // and the message is OOB, insert a dummy message (same msg, saving space), deliver it and drop it later on
         // removal. Else insert the real message
-        boolean added=loopback || win.add(hdr.seqno, msg.isFlagSet(OOB)? DUMMY_OOB_MSG : msg);
+        boolean added=loopback || win.add(hdr.seqno, msg.isFlagSet(OOB)? DUMMY_OOB_MSG : msg, null, false);
 
         // OOB msg is passed up. When removed, we discard it. Affects ordering: https://issues.redhat.com/browse/JGRP-379
         if(added && msg.isFlagSet(OOB)) {

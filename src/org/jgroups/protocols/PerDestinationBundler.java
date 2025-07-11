@@ -217,7 +217,7 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
             this.dest=dest;
             boolean block_on_empty=!use_single_sender_thread;
             if(use_ringbuffer)
-                queue= new ConcurrentBlockingRingBuffer<>(capacity, block_on_empty, false);
+                queue=new ConcurrentBlockingRingBuffer<>(capacity, block_on_empty, false);
             else
                 queue=new ConcurrentLinkedBlockingQueue<>(capacity, block_on_empty, false);
             if(remove_queue_capacity == 0)

@@ -136,7 +136,7 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
             down_prot.down(encrypt(msg));
         }
         catch(Exception e) {
-            log.warn("%s: unable to send message down", local_addr, e);
+            log.warn("%s: unable to send message down: %s", local_addr, e);
         }
         return null;
     }

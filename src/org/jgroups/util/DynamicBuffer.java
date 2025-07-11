@@ -116,7 +116,7 @@ public class DynamicBuffer<T> extends Buffer<T> {
      * @return True if the element at the computed index was null, else false
      */
     @Override
-    public boolean add(long seqno, T element, Predicate<T> remove_filter) {
+    public boolean add(long seqno, T element, Predicate<T> remove_filter, boolean ignored) {
         lock.lock();
         try {
             if(seqno - hd <= 0)
@@ -183,7 +183,7 @@ public class DynamicBuffer<T> extends Buffer<T> {
                 if(seqno < 0)
                     continue;
                 T element=const_value != null? const_value : msg;
-                boolean added=add(seqno, element, null);
+                boolean added=add(seqno, element, null, false);
                 retval=retval || added;
                 if(!added || remove_from_batch)
                     it.remove();
@@ -210,7 +210,7 @@ public class DynamicBuffer<T> extends Buffer<T> {
                 LongTuple<T> tuple=it.next();
                 long seqno=tuple.getVal1();
                 T element=const_value != null? const_value : tuple.getVal2();
-                if(add(seqno, element, null))
+                if(add(seqno, element, null, false))
                     added=true;
                 else if(remove_added_elements)
                     it.remove();

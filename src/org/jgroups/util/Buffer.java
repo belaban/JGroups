@@ -69,7 +69,7 @@ public abstract class Buffer<T> implements Iterable<T>, Closeable {
      */
     // used: single message received
     public boolean add(long seqno, T element) {
-        return add(seqno, element, null);
+        return add(seqno, element, null, true);
     }
 
     /**
@@ -81,10 +81,11 @@ public abstract class Buffer<T> implements Iterable<T>, Closeable {
      * @param remove_filter A filter used to remove all consecutive messages passing the filter (and non-null). This
      *                      doesn't necessarily null a removed message, but may simply advance an index
      *                      (e.g. highest delivered). Ignored if null.
+     * @param block_if_full If true: blocks when an element is to be added to the buffer, else drops the element
      * @return True if the element at the computed index was null, else false
      */
-    // used: send message
-    public abstract boolean add(long seqno, T element, Predicate<T> remove_filter);
+    // used: send / receive message
+    public abstract boolean add(long seqno, T element, Predicate<T> remove_filter, boolean block_if_full);
 
     // used: MessageBatch received
     public abstract boolean add(MessageBatch batch, Function<T,Long> seqno_getter, boolean remove_from_batch, T const_value);

@@ -1130,7 +1130,7 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
         boolean rc=false;
         do {
             try {
-                rc=win.add(seq, msg, filter);
+                rc=win.add(seq, msg, filter, true);
                 break;
             }
             catch(Throwable t) {
