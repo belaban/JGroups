@@ -550,16 +550,12 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         impl.handleViewChange(full_view, digest); // install the view locally first
         log.trace("%s: mcasting view %s", local_addr, new_view);
         if(thread_pool == null) {
-            down_prot.down(view_change_msg);
-            sendJoinResponses(jr, joiners);
+            sendViewChangeAndJoinResponse(view_change_msg, jr, joiners);
         }
         else {
             // If the mcast protocol can block, we need to send a view asynchronously. The views will still
             // be delivered in order, see https://issues.redhat.com/browse/JGRP-2875 for details
-            Runnable r=() -> {
-                down_prot.down(view_change_msg);
-                sendJoinResponses(jr, joiners);
-            };
+            Runnable r=() -> sendViewChangeAndJoinResponse(view_change_msg, jr, joiners);
             boolean rc=thread_pool.execute(r);
             if(!rc) { // https://issues.redhat.com/browse/JGRP-2880
                 Thread th=getThreadFactory().newThread(r);
@@ -579,6 +575,16 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 log.warn("%s: failed to collect all ACKs (expected=%d) for view %s after %d ms, missing %d ACKs from %s",
                          local_addr, ack_collector.expectedAcks(), new_view.getViewId(), System.currentTimeMillis()-start,
                          ack_collector.size(), ack_collector.printMissing());
+        }
+    }
+
+    protected void sendViewChangeAndJoinResponse(Message view_change_msg, JoinRsp jr, Collection<Address> joiners) {
+        try {
+            down_prot.down(view_change_msg);
+            sendJoinResponses(jr, joiners);
+        }
+        catch(Throwable t) {
+            log.error("%s: failed sending view and join response: %s", local_addr, t);
         }
     }
 
