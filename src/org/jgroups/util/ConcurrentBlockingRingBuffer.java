@@ -15,14 +15,14 @@ import java.util.function.Predicate;
 /**
  * MPSC queue, based on a ring buffer implementation which optionally blocks on adding or removing of elements.
  * <br/>
- * The main fields are read-index (ri), write-index (wi) and size. Producers change wi and size, the single consumer
- * changes ri and size.
+ * The main fields are read-index (ri), write-index (wi) and size (all AtomicIntegers). Producers change wi and size,
+ * the single consumer changes ri and size.
  * <br/>
  * A producer tries to increment size. If unsuccessful, it drops the message (or blocks). If successful, it increments
  * wi and writes the element to array[wi]. If size was incremented from 0 -> 1, a producer also wakes up the consumer.
  * <br/>
  * The single consumer tries to remove size elements (drainTo() or poll()), but returns when a null element is found
- * (see below). It then decrements size by the number of removed elements removed (N for drainTo() and 1 for a
+ * (see below). It then decrements size by the number of removed elements (N for drainTo() and 1 for a
  * successful poll()). If no elements are in the ring buffer, the consumer blocks (if configured), until it is woken
  * up by a producer adding the first element to the empty queue.
  * <br/>
@@ -33,7 +33,7 @@ import java.util.function.Predicate;
  * size from 1->2 and set wi=1, but didn't yet write to the array. P3 incremented size from 2->3 and set wi=2, but also
  * didn't write to the array yet. P1 woke up the consumer, but the consumer saw array[1]=null, array[2]=null,
  * array[3]=el3 (written by P3). The consumer therefore returns on the first element because it is null, but continues
- * looping because size=3. Only when P1 and P2 wrote their respective elements will the consumer be able to make
+ * looping because size=3. Only when P1 and P2 write their respective elements will the consumer be able to make
  * progress.
  * @author Bela Ban
  * @since  5.5.0
