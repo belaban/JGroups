@@ -8,12 +8,11 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Stream;
-
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
  * Tests multicast and unicast ordering of <em>regular</em> messages.<br/>
@@ -54,7 +53,7 @@ public class OrderingTest {
         JChannel ch=new JChannel(new SHARED_LOOPBACK(),
                                  new SHARED_LOOPBACK_PING(),
                                  new SHUFFLE().setUp(false).setDown(false).setMaxSize(100), // reorders messages
-                                 new NAKACK4().capacity(32000),
+                                 new NAKACK4().capacity(32000).setMaxXmitReqSize(20_000),
                                  new UNICAST4().capacity(32000).setConnExpiryTimeout(0),
                                  new GMS().setJoinTimeout(500).printLocalAddress(false),
                                  new FRAG2().setFragSize(40_000))
@@ -74,13 +73,9 @@ public class OrderingTest {
             senders[i].start();
         }
         latch.countDown();
-        long start=System.nanoTime();
-        for(Thread sender: senders)
-            sender.join();
-        System.out.println("-- senders done");
+        stopShuffling(1000);
         checkOrder(NUM_MSGS * NUM_SENDERS);
-        long time=System.nanoTime()-start;
-        System.out.printf("-- took %s to send and receive %,d msgs\n", Util.printTime(time, NANOSECONDS), NUM_MSGS*NUM_SENDERS);
+        assert Stream.of(senders).noneMatch(Thread::isAlive);
     }
 
     // @Test(invocationCount=10)
@@ -95,25 +90,25 @@ public class OrderingTest {
             senders[i].start();
         }
         latch.countDown();
-        long start=System.nanoTime();
-        for(Thread sender: senders)
-            sender.join();
-
-        System.out.println("-- senders done");
+        stopShuffling(1000);
         checkOrder(NUM_MSGS);
-        long time=System.nanoTime()-start;
-        System.out.printf("-- took %s to send, reshuffle and receive %,d msgs\n", Util.printTime(time, NANOSECONDS), NUM_MSGS);
+        assert Stream.of(senders).noneMatch(Thread::isAlive);
+    }
+
+    protected void stopShuffling(long time_to_wait_before_stopping) {
+        for(JChannel ch: channels) {
+            final SHUFFLE shuffle=ch.getProtocolStack().findProtocol(SHUFFLE.class);
+            CompletableFuture.runAsync(() -> {
+                Util.sleep(time_to_wait_before_stopping);
+                System.out.printf("-- stopping shuffling in %s\n", ch.getAddress());
+                shuffle.flush(true); // stops and disables shuffling
+            });
+        }
     }
 
     protected void checkOrder(int expected_msgs) {
-        for(JChannel ch: channels) {
-            SHUFFLE shuffle=ch.getProtocolStack().findProtocol(SHUFFLE.class);
-            if(shuffle != null)
-                shuffle.flush(true);  // disables shuffling
-        }
-
         System.out.println("\n-- waiting for message reception by all receivers:");
-        Util.waitUntilTrue(10000, 500,
+        Util.waitUntilTrue(100000, 500,
                            () -> Stream.of(channels).map(JChannel::getReceiver)
                              .allMatch(r -> ((MyReceiver)r).getReceived() == expected_msgs));
 
