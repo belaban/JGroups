@@ -25,5 +25,4 @@
     <!-- SEQUENCER could also be placed just under GMS, if messages and views need to be totally ordered -->
     <SEQUENCER />
     <FRAG2/>
-    <pbcast.STATE_TRANSFER />
 </config>

@@ -7,7 +7,6 @@ import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.TimeScheduler;
-import org.jgroups.util.Util;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -105,14 +104,8 @@ public class SHUFFLE extends Protocol {
             up_prot.up(batch);
             return;
         }
-
-        if(batch.size() > 1) {
-            shuffle(batch);
-            if(!batch.isEmpty())
-                up_prot.up(batch);
-        }
-        else
-            add(up_msgs, batch, up_lock, m -> up_prot.up(m));
+        for(Message msg: batch)
+            up(msg);
     }
 
     @ManagedOperation(description="Flushes all pending up and down messages. Optionally disables shuffling")
@@ -138,12 +131,6 @@ public class SHUFFLE extends Protocol {
         finally {
             down_lock.unlock();
         }
-    }
-
-    protected static void shuffle(MessageBatch batch) {
-        Message[] msgs=batch.stream().toArray(Message[]::new);
-        Util.shuffle(msgs, 0, msgs.length);
-        batch.array().set(msgs);
     }
 
     protected synchronized void startTask() {
@@ -175,25 +162,12 @@ public class SHUFFLE extends Protocol {
         }
     }
 
-    protected SHUFFLE add(List<Message> queue, MessageBatch batch, Lock lock, Consumer<Message> send_function) {
-        lock.lock();
-        try {
-            for(Message msg: batch)
-                queue.add(msg); // queue can become a bit larger as a result of adding the entire batch
-            if(queue.size() >= max_size)
-                reorderAndSend(queue, lock, send_function); // clears queue
-            else
-                startTask();
-            return this;
-        }
-        finally {
-            lock.unlock();
-        }
-    }
 
     protected SHUFFLE reorderAndSend(List<Message> list, final Lock lock, Consumer<Message> send_function) {
         lock.lock();
         try {
+            if(list.isEmpty())
+                return this;
             Collections.shuffle(list);
             list.forEach(send_function);
             list.clear();

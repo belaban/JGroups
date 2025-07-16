@@ -1,6 +1,9 @@
 package org.jgroups.tests;
 
-import org.jgroups.*;
+import org.jgroups.Global;
+import org.jgroups.JChannel;
+import org.jgroups.Message;
+import org.jgroups.Receiver;
 import org.jgroups.protocols.MPING;
 import org.jgroups.protocols.SHUFFLE;
 import org.jgroups.protocols.TP;
@@ -16,7 +19,9 @@ import org.testng.annotations.Test;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 
 /**
@@ -71,15 +76,9 @@ public class SequencerOrderTest {
         for(Sender sender: senders)
             sender.start();
 
-        for(Sender sender: senders)
-            sender.join(60000);
-        System.out.println("Ok, senders have completed");
-
-        for(int i=0; i < 10; i++) {
-            if(r1.size() == EXPECTED_MSGS && r2.size() == EXPECTED_MSGS && r3.size() == EXPECTED_MSGS)
-                break;
-            Util.sleep(1000);
-        }
+        stopShuffling(2000);
+        Util.waitUntilTrue(10_000, 100,
+                           () -> Stream.of(r1, r2, r3).allMatch(r -> r.size() == EXPECTED_MSGS));
 
         final List<String> l1=r1.getMsgs();
         final List<String> l2=r2.getMsgs();
@@ -90,7 +89,18 @@ public class SequencerOrderTest {
         verifySameOrder(EXPECTED_MSGS, l1, l2, l3);
     }
 
-    protected JChannel create(String props, String name, String mcast_addr) throws Exception {
+    protected void stopShuffling(long time_to_wait_before_stopping) {
+        for(JChannel ch: List.of(a,b,c)) {
+            final SHUFFLE shuffle=ch.getProtocolStack().findProtocol(SHUFFLE.class);
+            CompletableFuture.runAsync(() -> {
+                Util.sleep(time_to_wait_before_stopping);
+                System.out.printf("-- stopping shuffling in %s\n", ch.getAddress());
+                shuffle.flush(true); // stops and disables shuffling
+            });
+        }
+    }
+
+    protected static JChannel create(String props, String name, String mcast_addr) throws Exception {
         JChannel ch=new JChannel(props).name(name);
         TP tp=ch.getProtocolStack().getTransport();
         if(tp instanceof UDP)
@@ -103,13 +113,9 @@ public class SequencerOrderTest {
 
     protected static void insertShuffle(JChannel... channels) throws Exception {
         for(JChannel ch: channels) {
-            SHUFFLE shuffle=new SHUFFLE();
-            shuffle.setDown(false);
-            shuffle.setUp(true);
-            shuffle.setMaxSize(10);
-            shuffle.setMaxTime(1000);
+            SHUFFLE shuffle=new SHUFFLE().setDown(false).setUp(true).setMaxSize(10).setMaxTime(1000);
             ch.getProtocolStack().insertProtocol(shuffle, ProtocolStack.Position.BELOW, NAKACK2.class);
-            shuffle.init(); // starts the timer
+            shuffle.init();
             shuffle.start();
         }
     }
