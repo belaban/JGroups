@@ -128,6 +128,7 @@ public class Util {
     protected static final String                   UUID_PREFIX="uuid://";
     protected static final String                   SITE_UUID_PREFIX="site-addr://";
     protected static final String                   IP_PREFIX="ip://";
+    protected static final String                   OTHER_ADDR="other://";
     protected static final SplittableRandom         RANDOM=new SplittableRandom();
 
     protected static final Function<String,List<Address>> FUNC=__ -> new ArrayList<>();
@@ -1934,7 +1935,7 @@ public class Util {
             return String.format("%s%s", UUID_PREFIX, ((UUID)addr).toStringLong());
         if(IpAddress.class.equals(cl))
             return String.format("%s%s", IP_PREFIX, addr);
-        return null;
+        return String.format("%s%s/%s", OTHER_ADDR, cl.getName(), addr);
     }
 
     public static Address addressFromString(String s) throws Exception {
@@ -1954,6 +1955,17 @@ public class Util {
         index=s.indexOf(IP_PREFIX);
         if(index >= 0)
             return new IpAddress(s.substring(index + IP_PREFIX.length()));
+        index=s.indexOf(OTHER_ADDR);
+        if(index >= 0) {
+            int start=OTHER_ADDR.length() + index;
+            int end=s.indexOf('/', start);
+            if(end < 0)
+                throw new IllegalStateException(String.format("%s has no training '/'", OTHER_ADDR));
+            String classname=s.substring(start, end);
+            String data=s.substring(end+1);
+            Class<? extends Address> cl=(Class<? extends Address>)Util.loadClass(classname, Thread.currentThread().getContextClassLoader());
+            return cl.getConstructor(String.class).newInstance(data);
+        }
         return null;
 
 
