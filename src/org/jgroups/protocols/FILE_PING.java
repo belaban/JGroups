@@ -8,16 +8,10 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
-import org.jgroups.util.NameCache;
-import org.jgroups.util.Responses;
-import org.jgroups.util.TimeScheduler;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Future;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -63,6 +57,13 @@ public class FILE_PING extends Discovery {
     @Property(description="Change the backend store when the view changes. If off, then the file is only changed on " +
       "joins, but not on leaves. Enabling this will increase traffic to the backend store.")
     protected boolean update_store_on_view_change=true;
+
+    @Property(description="Number of loops to read files from directory. This reduces the risk of not finding any " +
+      "files when one file was removed but a new one hasn't yet been created")
+    protected int     num_read_loops=5;
+
+    @Property(description="Time to sleep (ms) between num_read_loops",type=AttributeType.TIME)
+    protected long    read_sleep=200;
 
     @ManagedAttribute(description="Number of writes to the file system or cloud store",type=AttributeType.SCALAR)
     protected int     writes;
@@ -248,26 +249,29 @@ public class FILE_PING extends Discovery {
         if(!dir.exists())
             dir.mkdir();
 
-        File[] files=dir.listFiles(filter); // finds all files ending with '.list'
-        for(File file: files) {
-            List<PingData> list=null;
-            // implementing a simple spin lock doing a few attempts to read the file
-            // this is done since the file may be written in concurrency and may therefore not be readable
-            for(int i=0; i < 3; i++) {
-                if(file.exists()) {
-                    try {
-                        if((list=read(file)) != null)
-                            break;
-                    }
-                    catch(Exception e) {
-                    }
-                }
-                Util.sleep(50);
+        List<File> files=new FastArray<>();
+        // implementing a simple spin lock doing a few attempts to read the file
+        // this is done since the file may be written concurrently and may therefore not be readable
+        for(int i=0; i < num_read_loops; i++) {
+            File[] tmp=dir.listFiles(filter); // finds all files ending with '.list'
+            if(tmp.length > 0) {
+                files.addAll(Arrays.asList(tmp));
+                break;
             }
+            Util.sleep(read_sleep);
+        }
 
-            if(list == null) {
-                log.warn("failed reading " + file.getAbsolutePath());
+        for(File file: files) {
+            if(!file.exists())
                 continue;
+            List<PingData> list=null;
+            try {
+                if((list=read(file)) == null) {
+                    log.warn("failed reading " + file.getAbsolutePath());
+                    continue;
+                }
+            }
+            catch(Exception e) {
             }
             for(PingData data: list) {
                 if(members == null || members.contains(data.getAddress()))
