@@ -1375,7 +1375,7 @@ public class Util {
     }
 
     public static byte[] collectionToByteBuffer(Collection<Address> c) throws IOException {
-        final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream((int)Util.size(c));
+        final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(Util.size(c));
         Util.writeAddresses(c,out);
         return Arrays.copyOf(out.buffer(), out.position());
     }
@@ -1906,7 +1906,7 @@ public class Util {
      * @param addrs Collection<Address>
      * @return long size
      */
-    public static long size(Collection<? extends Address> addrs) {
+    public static int size(Collection<? extends Address> addrs) {
         int retval=Global.SHORT_SIZE; // number of elements
         if(addrs != null && !addrs.isEmpty()) {
             Address addr=addrs.iterator().next();
@@ -1915,7 +1915,7 @@ public class Util {
         return retval;
     }
 
-    public static long size(Address[] addrs) {
+    public static int size(Address[] addrs) {
         int retval=Global.SHORT_SIZE; // number of elements
         if(addrs != null)
             for(Address addr : addrs)

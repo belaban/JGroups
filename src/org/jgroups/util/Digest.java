@@ -177,11 +177,11 @@ public class Digest implements SizeStreamable, Iterable<Digest.Entry>, Construct
 
     @Override
     public int serializedSize() {
-        return (int)serializedSize(true);
+        return serializedSize(true);
     }
 
-    public long serializedSize(boolean with_members) {
-        long retval=with_members? Util.size(members) : Global.SHORT_SIZE;
+    public int serializedSize(boolean with_members) {
+        int retval=with_members? Util.size(members) : Global.SHORT_SIZE;
         for(int i=0; i < members.length; i++)
             retval+=Bits.size(seqnos[i*2], seqnos[i*2+1]);
         return retval;

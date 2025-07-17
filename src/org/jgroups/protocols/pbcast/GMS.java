@@ -1107,7 +1107,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     protected static ByteArray marshal(Collection<? extends Address> mbrs) {
         try {
-            final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream((int)Util.size(mbrs));
+            final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(Util.size(mbrs));
             Util.writeAddresses(mbrs, out);
             return out.getBuffer();
         }

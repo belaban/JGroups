@@ -596,7 +596,7 @@ public class RequestCorrelator {
 
         @Override
         public int serializedSize() {
-            return (int)(super.serializedSize() + Util.size(exclusion_list));
+            return super.serializedSize() + Util.size(exclusion_list);
         }
 
         public String toString() {

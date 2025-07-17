@@ -213,7 +213,7 @@ public class View implements Comparable<View>, SizeStreamable, Iterable<Address>
 
     @Override
     public int serializedSize() {
-        return (int)(view_id.serializedSize() + Util.size(members));
+        return view_id.serializedSize() + Util.size(members);
     }
 
     /**

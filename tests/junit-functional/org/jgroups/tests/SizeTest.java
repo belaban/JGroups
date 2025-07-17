@@ -805,7 +805,7 @@ public class SizeTest {
     }
 
     private static void _testWriteAddresses(List<Address> list) throws Exception {
-        long len=Util.size(list);
+        int len=Util.size(list);
         ByteArrayOutputStream output=new ByteArrayOutputStream();
         DataOutputStream out=new DataOutputStream(output);
         Util.writeAddresses(list, out);
@@ -904,7 +904,7 @@ public class SizeTest {
     }
 
     private static void _testSize(Collection<Address> coll) throws Exception {
-        long size=Util.size(coll);
+        int size=Util.size(coll);
         byte[] serialized_form=Util.collectionToByteBuffer(coll);
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
         Assert.assertEquals(serialized_form.length, size);
