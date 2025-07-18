@@ -968,7 +968,7 @@ for the latter is transports such as `TCP` or `UDP`. These could be defined once
 configurations. For example, if we have optimized transport configurations `tcp-default.xml` (`TCP`) and
 `nio-default.xml` (`TCP_NIO2`), we could include them as follows:
 
-[source.xml]
+[source,xml]
 ----
 <config>
    <include file="${transport-config:tcp-default.xml}" />
@@ -993,7 +993,7 @@ NOTE: An include can configure *multiple protocols*: for example, we could defin
 discovery protocol
 
 We can also use multiple includes in the same configuration, e.g.:
-[source.xml]
+[source,xml]
 ----
 <config>
    <include file="${transport-config:tcp-default.xml}" />
