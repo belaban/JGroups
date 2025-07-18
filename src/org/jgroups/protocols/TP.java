@@ -127,7 +127,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected String  local_transport_class;
 
     @Property(description="If true, create virtual threads, otherwise create native threads")
-    protected boolean use_vthreads;
+    protected boolean use_vthreads=true;
 
     @Property(description="Thread naming pattern for threads in this channel. Valid values are \"cl\": " +
       "\"c\": includes the cluster name, e.g. \"MyCluster\", " +
