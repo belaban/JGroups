@@ -1,11 +1,6 @@
-<config xmlns="urn:org:jgroups"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd"
->
-    <UDP
-            thread_pool.min_threads="0"
-            thread_pool.max_threads="20"
-            thread_pool.keep_alive_time="30000"/>
+<config xmlns="urn:org:jgroups" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
+    <include file="${transport-config:udp-default.xml}" />
     <PING />
     <MERGE3 />
     <FD_SOCK/>

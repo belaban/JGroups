@@ -1,9 +1,7 @@
 
-<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xmlns="urn:org:jgroups"
-        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd"
-        >
-    <UDP />
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:org:jgroups"
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
+    <include file="${transport-config:udp-default.xml}" />
     <PING/>
     <MERGE3/>
     <FD_ALL3 timeout="8s" interval="3s"/>

@@ -1,0 +1,27 @@
+
+<!-- Default configuration for transport TCP_NIO2. Can be included by other configurations -->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="urn:org:jgroups"
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
+    <TCP_NIO2
+            bind_addr="match-interface:eth2,match-interface:eth0,site_local,loopback"
+            bind_port="7800"
+            recv_buf_size="0"
+            send_buf_size="0"
+            sock_conn_timeout="300ms"
+            tcp_nodelay="${tcp-nodelay:false}"
+            max_send_buffers="${max_send_buffers:10}"
+
+            bundler_type="${jgroups.bundler.type:pd}"
+            bundler.max_size="${jgroups.bundler.max_size:64K}"
+            bundler.capacity="${jgroups.bundler.capacity:16k}"
+            bundler.use_single_sender_thread="${jgroups.bundler.use_single_sender_thread:true}"
+            bundler.use_ringbuffer="${jgroups.bundler.use_ringbuffer:true}"
+
+            diag.enabled="true"
+            diag.enable_tcp="true"
+            thread_pool.min_threads="${jgroups.thread_pool.min_threads:0}"
+            thread_pool.max_threads="${jgroups.thread_pool.max_threads:200}"
+            thread_pool.keep_alive_time="60s"
+            use_virtual_threads="${vthreads:true}"/>
+</config>

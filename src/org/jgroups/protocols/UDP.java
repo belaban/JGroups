@@ -574,8 +574,8 @@ public class UDP extends TP {
 
         // Cannot listen at all, throw an Exception
         if(rcv_port >= max_port + 1) // +1 due to the increment above
-            throw new Exception(String.format("failed to open a port in range %d-%d (last exception: %s)",
-                                              bind_port, max_port, saved_exception));
+            throw new Exception(String.format("failed to open a port in range %d-%d (last exception: %s, bind_addr: %s)",
+                                              bind_port, max_port, saved_exception, bind_addr));
         return tmp;
     }
 

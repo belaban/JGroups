@@ -7,16 +7,8 @@
 -->
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xmlns="urn:org:jgroups"
-        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd"
-        >
-    <TCP bind_addr="${jgroups.bind_addr:site_local}"
-         bind_port="${jgroups.bind_port:7800}"
-         thread_pool.min_threads="0"
-         thread_pool.max_threads="200"
-         thread_pool.keep_alive_time="30000"/>
-    <NON_BLOCKING_SENDS/>
-    <!--RED/-->
-
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
+    <include file="${transport-config:tcp-default.xml}" />
     <TCPPING async_discovery="true"
              initial_hosts="${jgroups.tcpping.initial_hosts:localhost[7800],localhost[7801]}"
              return_entire_cache="${jgroups.tcpping.return_entire_cache:false}"
