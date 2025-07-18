@@ -16,9 +16,10 @@ public class XmlNode {
         this.name=Objects.requireNonNull(name);
     }
 
-    public String             getName()       {return name;}
-    public Map<String,String> getAttributes() {return attributes;}
-    public List<XmlNode>      getChildren()   {return children;}
+    public String             getName()                    {return name;}
+    public Map<String,String> getAttributes()              {return attributes;}
+    public List<XmlNode>      getChildren()                {return children;}
+    public XmlNode            setChildren(List<XmlNode> c) {children=c; return this;}
 
     public XmlNode setAttributes(Map<String,String> attrs) {
         this.attributes=attrs;
@@ -30,6 +31,12 @@ public class XmlNode {
             attributes=new HashMap<>();
         attributes.put(attr_name, val);
         return this;
+    }
+
+    public String getAttribute(String attr_name) {
+        if(attributes == null || attr_name == null)
+            return null;
+        return attributes.get(attr_name);
     }
 
     public XmlNode addChild(XmlNode n) {

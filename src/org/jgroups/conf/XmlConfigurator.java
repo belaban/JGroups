@@ -7,10 +7,7 @@ import org.jgroups.logging.LogFactory;
 import org.jgroups.util.Tuple;
 import org.jgroups.util.Util;
 
-import java.io.ByteArrayInputStream;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.*;
 
 import static org.jgroups.util.Util.readTillMatchingCharacter;
@@ -78,6 +75,30 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
     protected static XmlConfigurator parse(InputStream stream) throws java.io.IOException {
         try {
             XmlNode root=parseXmlDocument(stream);
+
+            // check if we have any include
+            boolean has_includes=root.getChildren().stream().anyMatch(c -> c.getName().equals("include"));
+            if(has_includes) {
+                List<XmlNode> children=root.getChildren(), new_children=new ArrayList<>(children.size() + 5);
+                for(XmlNode child: children) {
+                    if("include".equals(child.getName())) {
+                        String filename=child.getAttribute("file");
+                        filename=Util.substituteVariable(filename);
+                        try(InputStream input_stream=ConfiguratorFactory.getConfigStream(filename)) {
+                            if(input_stream == null)
+                                throw new FileNotFoundException(String.format(Util.getMessage("FileNotFound"), filename));
+                            XmlNode new_child=parseXmlDocument(input_stream);
+                            if(!new_child.getName().equals("config")) // no <config> tag present (optional)
+                                new_children.add(new_child);
+                            else
+                                new_children.addAll(new_child.getChildren());
+                        }
+                    }
+                    else
+                        new_children.add(child);
+                }
+                root.setChildren(new_children);
+            }
             return parse(root);
         }
         catch (Exception x) {
@@ -146,7 +167,10 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
             current=stack.peekFirst();
             switch(type) {
                 case COMPLETE:
-                    current.addChild(n);
+                    if(current == null)
+                        current=n;
+                    else
+                        current.addChild(n);
                     break;
                 case START:
                     if(current != null)

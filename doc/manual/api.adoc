@@ -890,18 +890,20 @@ argument, but were not found, or wrong parameters to protocols.
 For example, the Draw demo can be launched as follows:
 
 ----
-java org.javagroups.demos.Draw -props file:/home/bela/udp.xml
+java org.jgroups.demos.Draw -props file:/home/bela/udp.xml
 ----
 
 or
 
 ----
-java org.javagroups.demos.Draw -props http://www.jgroups.org/udp.xml
+java org.jgroups.demos.Draw -props http://www.jgroups.org/udp.xml
 ----
 
 In the latter case, an application downloads its protocol stack specification from a server, which
 allows for central administration of application properties.
-            
+
+==== Configuration
+
 A sample XML configuration looks like this (edited from `udp.xml`):
             
 
@@ -913,12 +915,11 @@ A sample XML configuration looks like this (edited from `udp.xml`):
     <UDP
          mcast_port="${jgroups.udp.mcast_port:45588}"
          ip_ttl="4"
-         max_bundle_size="64K"
-         enable_diagnostics="true"
+         bundler.max_size="64K"
+         diag.enabled="true"
          thread_pool.min_threads="2"
          thread_pool.max_threads="8"
          thread_pool.keep_alive_time="5000" />
-
     <PING />
     <MERGE3 max_interval="30000" min_interval="10000"/>
     <FD_SOCK/>
@@ -958,7 +959,58 @@ one of them being the IP multicast port (`mcast_port`) which is set to 45588, or
 the system property `jgroups.udp.mcast_port`, if set.
 
 NOTE: Note that all members in a group have to have the same protocol stack.
-            
+
+[[UsingIncludes]]
+===== Using includes
+
+Oftentimes different configurations have parts in common which change, but the rest is the same. An example
+for the latter is transports such as `TCP` or `UDP`. These could be defined once, and be included by various
+configurations. For example, if we have optimized transport configurations `tcp-default.xml` (`TCP`) and
+`nio-default.xml` (`TCP_NIO2`), we could include them as follows:
+
+[source.xml]
+----
+<config>
+   <include file="${transport-config:tcp-default.xml}" />
+   <MPING />
+   <MERGE3 max_interval="30000"
+           min_interval="${min:10000}"/>
+   ...
+</config>
+----
+
+This configuration by default includes the transport defined in `tcp-default.xml`. All the configurations which
+include this transport configuration will benefit from changes made to `tcp-default.xml`, which is better than
+copy-and-paste where there's a risk to forget to update all configurations.
+
+Note that we can pick the transport to be included *at run time*, by defining system (or environment) variable
+`transport-config` in the example above:
+
+* `-Dtransport-config=tcp-default.xml` uses a `TCP` transport
+* `-Dtransport-config=nio-default.xml` uses `TCP_NIO2` as transport
+
+NOTE: An include can configure *multiple protocols*: for example, we could define both a transport *and* a
+discovery protocol
+
+We can also use multiple includes in the same configuration, e.g.:
+[source.xml]
+----
+<config>
+   <include file="${transport-config:tcp-default.xml}" />
+   <include file="${discovery-config:mping-default.xml}" />
+   <MERGE3 max_interval="30000"
+           min_interval="${min:10000}"/>
+   ...
+</config>
+----
+
+This includes a transport, but also the discovery protocol to be used, in 2 separate includes. This allows us to
+tailor the stack to be run to the environment.
+
+To summarize: includes allow us to remove a lot of boilerplate code and customize the stack to the
+environment, even at run time.
+
+NOTE: includes were added in 5.5.0; prior versions will not recognize them and fail at startup
 
 [[ProgrammaticCreation]]
 ===== Programmatic creation
