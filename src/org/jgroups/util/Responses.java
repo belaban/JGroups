@@ -8,6 +8,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 
 /**
  * Manages responses for the discovery protocol. Moved from {@link org.jgroups.protocols.Discovery}
@@ -16,14 +17,15 @@ import java.util.concurrent.locks.ReentrantLock;
  * @since  3.5
  */
 public class Responses implements Iterable<PingData> {
-    protected PingData[]        ping_rsps;
-    protected int               index;
-    protected final Lock        lock=new ReentrantLock();
-    protected final CondVar     cond=new CondVar(lock);
-    protected final int         num_expected_rsps;
-    protected final boolean     break_on_coord_rsp;
+    protected PingData[]         ping_rsps;
+    protected int                index;
+    protected final Lock         lock=new ReentrantLock();
+    protected final CondVar      cond=new CondVar(lock);
+    protected final int          num_expected_rsps;
+    protected final boolean      break_on_coord_rsp;
+    protected Consumer<PingData> callback; // called when set and non-null on reception of PingData
     @GuardedBy("lock")
-    protected boolean           done=false; // successfully completed, or cancelled
+    protected boolean            done=false; // successfully completed, or cancelled
 
 
     public Responses(boolean break_on_coord_rsp) {
@@ -38,6 +40,11 @@ public class Responses implements Iterable<PingData> {
         this.num_expected_rsps=num_expected_rsps;
         this.break_on_coord_rsp=break_on_coord_rsp;
         ping_rsps=new PingData[Math.max(5, initial_capacity)];
+    }
+
+    public Responses callback(Consumer<PingData> c) {
+        callback=c;
+        return this;
     }
 
     public boolean isDone() {
@@ -68,6 +75,8 @@ public class Responses implements Iterable<PingData> {
         boolean is_coord_rsp=rsp.isCoord(), changed=false;
         lock.lock();
         try {
+            if(callback != null)
+                callback.accept(rsp);
             // https://issues.redhat.com/browse/JGRP-1179
             int ind=find(rsp);
             if(ind == -1) { // new addition

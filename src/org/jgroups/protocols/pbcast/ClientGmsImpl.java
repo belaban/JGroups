@@ -55,7 +55,7 @@ public class ClientGmsImpl extends GmsImpl {
      * @param mbr Our own address
      */
     protected void joinInternal(Address mbr, boolean joinWithStateTransfer) {
-        int  join_attempts=0;
+        int  join_attempts=1;
         join_promise.reset();
 
         Responses responses=null; // caches responses from all discovery runs (usually there's only 1 run)
@@ -64,12 +64,14 @@ public class ClientGmsImpl extends GmsImpl {
                 if(installViewIfValidJoinRsp(join_promise, false))
                     return;
 
-                long start=System.currentTimeMillis();
+                long start=System.nanoTime();
                 if(responses == null)
                     responses=(Responses)gms.getDownProtocol().down(new Event(Event.FIND_INITIAL_MBRS, gms.getJoinTimeout()));
                 else {
                     Responses tmp=(Responses)gms.getDownProtocol().down(new Event(Event.FIND_INITIAL_MBRS, gms.getJoinTimeout()));
                     if(tmp != null) {
+                        final Responses r=responses;
+                        tmp.callback(pd -> r.addResponse(pd, true));
                         responses.add(tmp, gms.getAddress());
                         tmp.done();
                     }
@@ -80,15 +82,15 @@ public class ClientGmsImpl extends GmsImpl {
                     return;
 
                 responses.waitFor(gms.join_timeout);
-                long diff=System.currentTimeMillis() - start;
+                long time=System.nanoTime() - start;
                 boolean empty;
                 if((empty=responses.isEmpty()) || responses.isCoord(gms.getAddress())) {
                     log.info("%s: %s: creating cluster as coordinator", gms.getAddress(),
-                             empty? String.format("no members discovered after %d ms", diff) : "I'm the first member");
+                             empty? String.format("no members discovered after %s", Util.printTime(time)) : "I'm the first member");
                     becomeSingletonMember(mbr);
                     return;
                 }
-                log.trace("%s: discovery took %d ms, members: %s", gms.getAddress(), diff, responses);
+                log.trace("%s: discovery took %s, members: %s", gms.getAddress(), Util.printTime(time), responses);
 
                 List<Address> coords=getCoords(responses);
 
@@ -103,7 +105,7 @@ public class ClientGmsImpl extends GmsImpl {
                         log.debug("%s: found multiple coords: %s", gms.getAddress(), coords);
                         Collections.shuffle(coords); // so the code below doesn't always pick the same coord
                     }
-                    for(Address coord : coords) {
+                    for(Address coord: coords) {
                         log.debug("%s: sending JOIN(%s) to %s", gms.getAddress(), mbr, coord);
                         sendJoinMessage(coord, mbr, joinWithStateTransfer);
                         if(installViewIfValidJoinRsp(join_promise, true))
@@ -112,8 +114,8 @@ public class ClientGmsImpl extends GmsImpl {
                                  gms.getAddress(), mbr, coord, gms.join_timeout, join_attempts);
                     }
                 }
-
-                if(gms.max_join_attempts > 0 && ++join_attempts >= gms.max_join_attempts) {
+                join_attempts++;
+                if(gms.max_join_attempts > 0 && join_attempts >= gms.max_join_attempts) {
                     log.warn("%s: too many JOIN attempts (%d): becoming singleton", gms.getAddress(), join_attempts);
                     becomeSingletonMember(mbr);
                     return;

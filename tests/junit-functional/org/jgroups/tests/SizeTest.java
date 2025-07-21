@@ -23,6 +23,7 @@ import org.testng.annotations.Test;
 import java.io.*;
 import java.net.InetAddress;
 import java.util.*;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 import static org.jgroups.protocols.relay.RelayHeader.DATA;
 
@@ -69,7 +70,7 @@ public class SizeTest {
     }
  
 
-    public static void testPingData() throws Exception {
+    public void testPingData() throws Exception {
         PingData data;
         final Address a=Util.createRandomAddress("A");
         final PhysicalAddress physical_addr=new IpAddress("127.0.0.1", 7500);
@@ -86,6 +87,25 @@ public class SizeTest {
         data=new PingData(a, true, "A", physical_addr).coord(true)
           .mbrs(Arrays.asList(Util.createRandomAddress("A"), Util.createRandomAddress("B")));
         _testSize(data);
+
+        // testing equals(), hashcode() and compareTo():
+        UUID u1=new UUID(1,1), u2=new UUID(2,2), u3=new UUID(1,1);
+        NameCache.add(u1, "U1"); NameCache.add(u2, "U2)"); NameCache.add(u3, "U3");
+        PingData p1=new PingData(u1, true), p2=new PingData(u2, true), p3=new PingData(u3, true);
+
+        //noinspection EqualsWithItself
+        assert p1.compareTo(p1) == 0;
+        assert p1.compareTo(p2) < 0;
+        assert p1.compareTo(p3) == 0;
+
+        Map<PingData,String> m=new HashMap<>(3);
+        m.put(p1, "p1");
+        m.put(p2, "p2");
+        m.put(p3, "p3");
+        assert m.size() == 2;
+
+        Set<PingData> s=new ConcurrentSkipListSet<>(List.of(p1, p2, p3));
+        assert s.size() == 2;
     }
 
     public static void testAuthHeader() throws Exception {
