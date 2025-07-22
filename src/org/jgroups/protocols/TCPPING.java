@@ -137,7 +137,6 @@ public class TCPPING extends Discovery {
 
     public void init() throws Exception {
         super.init();
-
         default_port=transport.getBindPort();
         InetAddress bind_addr=transport.getBindAddr();
         if(default_port == 0)
@@ -154,11 +153,18 @@ public class TCPPING extends Discovery {
                     initial_hosts_str=Util.readContents(input, '#');
                 }
             }
-
             boolean all_resolved=Util.parseCommaDelimitedHostsInto(initial_hosts, unresolved_hosts, initial_hosts_str,
                                                                    default_port, port_range, stack_type);
             if(!all_resolved)
                 log.warn("unable to resolve the following hostnames: %s", unresolved_hosts);
+
+            // Add bind_addr hosts to initial_hosts (https://issues.redhat.com/browse/JGRP-2910):
+            if(bind_addr != null) {
+                List<PhysicalAddress> l=new FastArray<>(initial_hosts.size());
+                for(PhysicalAddress ip: initial_hosts)
+                    l.add(new IpAddress(bind_addr, ip.getPort()));
+                initial_hosts.addAll(l);
+            }
         }
     }
 
