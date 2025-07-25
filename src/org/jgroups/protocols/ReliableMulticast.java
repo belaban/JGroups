@@ -207,7 +207,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
     /** Keeps a bounded list of the last N digest sets */
     protected final BoundedList<String>          digest_history=new BoundedList<>(10);
 
-    protected Queue<Message>                     become_server_queue=new ConcurrentLinkedQueue<>();
+    protected Queue<Message>                     become_server_queue; //=new ConcurrentBlockingRingBuffer<>(become_server_queue_size);
 
      /** Log to suppress identical warnings for messages from non-members */
     protected SuppressLog<Address>               suppress_log_non_member;
@@ -366,6 +366,12 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
     }
 
     public void init() throws Exception {
+        if(become_server_queue_size <= 0) {
+            log.warn("%s: %s.become_server_queue_size is <= 0; setting it to 50", local_addr, ReliableMulticast.class.getSimpleName());
+            become_server_queue_size=50;
+        }
+        become_server_queue=new ConcurrentBlockingRingBuffer<>(become_server_queue_size, false, false);
+
         if(xmit_from_random_member && discard_delivered_msgs) {
             discard_delivered_msgs=false;
             log.debug("%s: xmit_from_random_member set to true: changed discard_delivered_msgs to false", local_addr);
@@ -384,12 +390,6 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
                 use_mcast_xmit_req=false;
             }
         }
-
-        if(become_server_queue_size <= 0) {
-            log.warn("%s: %s.become_server_queue_size is <= 0; setting it to 10", local_addr, ReliableMulticast.class.getSimpleName());
-            become_server_queue_size=10;
-        }
-        become_server_queue=new ArrayBlockingQueue<>(become_server_queue_size);
 
         if(suppress_time_non_member_warnings > 0)
             suppress_log_non_member=new SuppressLog<>(log, "MsgDroppedNak");

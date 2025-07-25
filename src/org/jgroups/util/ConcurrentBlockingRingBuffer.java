@@ -55,6 +55,9 @@ public class ConcurrentBlockingRingBuffer<T> implements BlockingQueue<T> {
 
 
 
+    public ConcurrentBlockingRingBuffer(int capacity) {
+        this(capacity, false, false);
+    }
 
     public ConcurrentBlockingRingBuffer(int capacity, boolean block_on_empty, boolean block_on_full) {
         this.array=new AtomicReferenceArray<>(this.capacity=capacity);
@@ -65,6 +68,8 @@ public class ConcurrentBlockingRingBuffer<T> implements BlockingQueue<T> {
         INCR=x -> x >= capacity? x : x+1;
         INCR_INDEX=x -> x == (capacity-1)? 0 : x+1;
     }
+
+    public int capacity() {return array.length();}
 
     @Override
     public void put(T t) throws InterruptedException {
