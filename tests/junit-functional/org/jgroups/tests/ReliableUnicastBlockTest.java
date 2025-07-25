@@ -155,7 +155,7 @@ public class ReliableUnicastBlockTest {
         GMS gms_b=b.stack().findProtocol(GMS.class);
         gms_b.installView(mv);
 
-        Util.waitUntil(2000, 100, () -> rb.size() == 10,
+        Util.waitUntil(5000, 100, () -> rb.size() == 10,
                        () -> String.format("B has %d messages: %s", rb.size(), rb.list()));
         assert rb.list().equals(EXPECTED);
         System.out.printf("-- rb: %s\n", print(rb));

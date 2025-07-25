@@ -40,15 +40,27 @@ public class AckTable {
         }
     }
 
-    /** Adds an ACK from a sender to the map. Returns the old and new minimum */
     public long[] ack(Address sender, long seqno) {
+        return ack(sender, seqno, true);
+    }
+
+    /** Adds an ACK from a sender to the map. Returns the old and new minimum */
+    public long[] ack(Address sender, long seqno, boolean add_if_absent) {
         lock.lock();
         try {
             long[] retval={min,min};
             Long existing=acks.get(sender);
-            if(existing != null && existing >= seqno)
-                return retval;
-            acks.put(sender, seqno);
+            if(existing == null) {
+                if(add_if_absent)
+                    acks.put(sender, seqno);
+                else
+                    return null;
+            }
+            else {
+                if(existing >= seqno)
+                    return retval;
+                acks.put(sender, seqno);
+            }
             retval[1]=min=computeMin();
             return retval;
         }
