@@ -207,7 +207,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
     /** Keeps a bounded list of the last N digest sets */
     protected final BoundedList<String>          digest_history=new BoundedList<>(10);
 
-    protected Queue<Message>                     become_server_queue; //=new ConcurrentBlockingRingBuffer<>(become_server_queue_size);
+    protected Queue<Message>                     become_server_queue;
 
      /** Log to suppress identical warnings for messages from non-members */
     protected SuppressLog<Address>               suppress_log_non_member;
@@ -257,7 +257,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
 
     @ManagedAttribute(description="Actual size of the become_server_queue",type=SCALAR)
     public int getBecomeServerQueueSizeActual() {
-        return become_server_queue.size();
+        return becomeServerQueue().size();
     }
 
     /** Returns the receive window for sender; only used for testing. Do not use ! */
@@ -370,8 +370,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
             log.warn("%s: %s.become_server_queue_size is <= 0; setting it to 50", local_addr, ReliableMulticast.class.getSimpleName());
             become_server_queue_size=50;
         }
-        become_server_queue=new ConcurrentBlockingRingBuffer<>(become_server_queue_size, false, false);
-
+        become_server_queue=becomeServerQueue();
         if(xmit_from_random_member && discard_delivered_msgs) {
             discard_delivered_msgs=false;
             log.debug("%s: xmit_from_random_member set to true: changed discard_delivered_msgs to false", local_addr);
@@ -425,7 +424,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
     public void stop() {
         running=false;
         is_server=false;
-        become_server_queue.clear();
+        becomeServerQueue().clear();
         stopRetransmitTask();
         xmit_task_map.clear();
         stable_xmit_map.clear();
@@ -667,9 +666,13 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
 
 
     /* --------------------------------- Private Methods --------------------------------------- */
+    protected synchronized Queue<Message> becomeServerQueue() {
+        return become_server_queue != null? become_server_queue :
+          (become_server_queue=new ConcurrentBlockingRingBuffer<>(become_server_queue_size));
+    }
 
     protected void queueMessage(Message msg, long seqno) {
-        if(become_server_queue.offer(msg)) // discards item if queue is full
+        if(becomeServerQueue().offer(msg)) // discards item if queue is full
             log.trace("%s: message %s#%d was queued (not yet server)", local_addr, msg.getSrc(), seqno);
         else
             log.trace("%s: message %s#%d was discarded (not yet server, queue full)", local_addr, msg.getSrc(), seqno);
@@ -931,7 +934,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
      * {@link GMS#installView(View, Digest)} method (called when a view is installed).
      */
     protected void flushBecomeServerQueue() {
-        if(!become_server_queue.isEmpty()) {
+        if(!becomeServerQueue().isEmpty()) {
             log.trace("%s: flushing become_server_queue (%d elements)", local_addr, become_server_queue.size());
             TP transport=getTransport();
             for(;;) {
