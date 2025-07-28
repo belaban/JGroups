@@ -7,8 +7,8 @@ import org.jgroups.Message.TransientFlag;
 import org.jgroups.protocols.relay.SiteUUID;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.tests.perf.PerfUtil.AverageSummary;
-import org.jgroups.util.UUID;
 import org.jgroups.util.*;
+import org.jgroups.util.UUID;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -65,8 +65,57 @@ public class UtilTest {
         assert set.size() == permutations.size();
     }
 
+    /**
+     * This test fails due to some "java.net.BindException: No available port to bind to in range [10000 .. 10010]".
+     * The cause: The class {@link java.net.ServerSocket} has the following snippet:
+     * <pre>
+     * getImpl().bind(epoint.getAddress(), epoint.getPort());
+     * getImpl().listen(backlog);
+     * </pre>
+     * When calling this concurrently, the bind() might succeed for multiple sockets, but then the listen fails.
+     * When this happens, the socket implementation is already bound to the address and port, and this can't be changed in later calls.
+     * In all later calls that try to change the port, it will fail with "Already bound".
+     * A workaround could be to create a completely new socket, and discard the old one due to its inconsistent state.
+     */
+    public void testBindingToTwoPortsInRange() throws Exception {
+        SocketFactory factory = new DefaultSocketFactory();
+        AtomicInteger count = new AtomicInteger();
+        List<Thread> threads =new LinkedList<>();
+        List<ServerSocket> sockets=new FastArray<>(1000);
+        for (int i = 0; i < 1000; ++i) {
+            Thread thread = new Thread(() -> {
+                try {
+                    ServerSocket s=bindToPortInRange(factory);
+                    sockets.add(s);
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                    count.incrementAndGet();
+                }
+            }
+            );
+            threads.add(thread);
+            thread.start();
+        }
+        threads.forEach(thread -> {
+            try {
+                thread.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                count.incrementAndGet();
+            }
+        });
+        for(ServerSocket s: sockets)
+            s.close();
+        Assert.assertEquals(count.get(), 0);
+    }
 
-    public static void testGetProperty() {
+    private static ServerSocket bindToPortInRange(SocketFactory factory) throws Exception {
+        return Util.createServerSocket(factory, "service", InetAddress.getByName("0.0.0.0"), 10000, 11000, 100);
+    }
+
+
+    public void testGetProperty() {
         Properties props=new Properties();
         props.setProperty("name", "Bela");
         props.setProperty("key", "val");
