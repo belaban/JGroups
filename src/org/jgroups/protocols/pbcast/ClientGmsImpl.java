@@ -70,10 +70,15 @@ public class ClientGmsImpl extends GmsImpl {
                 else {
                     Responses tmp=(Responses)gms.getDownProtocol().down(new Event(Event.FIND_INITIAL_MBRS, gms.getJoinTimeout()));
                     if(tmp != null) {
-                        final Responses r=responses;
-                        tmp.callback(pd -> r.addResponse(pd, true));
-                        responses.add(tmp, gms.getAddress());
-                        tmp.done();
+                        try {
+                            final Responses r=responses;
+                            tmp.callback(pd -> r.addResponse(pd, true));
+                            responses.add(tmp, gms.getAddress());
+                            tmp.waitFor(gms.join_timeout);
+                        }
+                        finally {
+                            tmp.done();
+                        }
                     }
                 }
 
