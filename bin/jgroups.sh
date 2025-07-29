@@ -61,5 +61,5 @@ FLAGS="-server -Xmx1G -Xms500m -XX:+HeapDumpOnOutOfMemoryError -Djava.net.prefer
 # Dump when virtual threads are pinned on a carrier thread
 # FLAGS="$FLAGS -Djdk.tracePinnedThreads=full"
 
-java  $GC $DUMP_VTHREADS $Z1 -cp $CP $SSL_FLAGS $DEBUG $LOG $JG_FLAGS $FLAGS $JMX $JMC $*
+java  $JAVA_OPTS $GC $DUMP_VTHREADS $Z1 -cp $CP $SSL_FLAGS $DEBUG $LOG $JG_FLAGS $FLAGS $JMX $JMC $*
 
