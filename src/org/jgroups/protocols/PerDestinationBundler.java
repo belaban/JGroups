@@ -227,10 +227,6 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
             this.dest=dest;
         }
 
-        public boolean isRunning() {
-            return sendbuf_runner != null && sendbuf_runner.isRunning();
-        }
-
         public boolean isThreadAlive() {return sendbuf_runner != null && sendbuf_runner.getThread().isAlive();}
 
         public SendBuffer start() {
@@ -241,9 +237,15 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
             remove_queue=new FastArray<>(remove_queue_capacity);
 
             if(!use_single_sender_thread) {
-                if(sendbuf_runner == null)
-                    sendbuf_runner=new Runner(transport.getThreadFactory(), THREAD_NAME, this, null).setJoinTimeout(0);
-                sendbuf_runner.start();
+                lock.lock(); // https://issues.redhat.com/browse/JGRP-2915
+                try {
+                    if(sendbuf_runner == null)
+                        sendbuf_runner=new Runner(transport.getThreadFactory(), THREAD_NAME, this, null).setJoinTimeout(0);
+                    sendbuf_runner.start();
+                }
+                finally {
+                    lock.unlock();
+                }
             }
             return this;
         }
