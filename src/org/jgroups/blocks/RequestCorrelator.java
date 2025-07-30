@@ -346,7 +346,7 @@ public class RequestCorrelator {
     protected RequestCorrelator removeEntry(long req_id) {
         Request<?> req=requests.remove(req_id);
         if(req != null) {
-            long time_ns=req.start_time > 0? System.nanoTime() - req.start_time : 0;
+            long time_ns=rpc_stats.extendedStats()? System.nanoTime() - req.start_time : 0;
             if(req instanceof UnicastRequest) {
                 if(rpcstats)
                     rpc_stats.add(RpcStats.Type.UNICAST, ((UnicastRequest<?>)req).target, true, time_ns);
@@ -373,7 +373,7 @@ public class RequestCorrelator {
             case Header.REQ:
                 long start=rpcstats? System.nanoTime() : 0;
                 handleRequest(msg, hdr);
-                if(start > 0) {
+                if(rpcstats) {
                     long time=System.nanoTime() - start;
                     avg_req_delivery.add(time);
                 }
@@ -383,7 +383,7 @@ public class RequestCorrelator {
             case Header.EXC_RSP:
                 start=rpcstats? System.nanoTime() : 0;
                 handleResponse(msg, hdr);
-                if(start > 0) {
+                if(rpcstats) {
                     long time=System.nanoTime() - start;
                     avg_rsp_delivery.add(time);
                 }

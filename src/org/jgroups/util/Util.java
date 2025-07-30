@@ -51,7 +51,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static java.lang.System.nanoTime;
 import static org.jgroups.protocols.TP.LIST;
 import static org.jgroups.protocols.TP.MULTICAST;
 
@@ -2305,8 +2304,8 @@ public class Util {
         else {
             //this isn't a superb metronome either, but allows a granularity
             //with a reasonable precision in the order of 50ths of millisecond
-            long initialTime=nanoTime() - 200;
-            while(nanoTime() < initialTime + nanos) ;
+            long initialTime=System.nanoTime() - 200;
+            while(System.nanoTime() < initialTime + nanos) ;
         }
     }
 
@@ -2331,10 +2330,6 @@ public class Util {
         catch(Exception ex) {
             return 0;
         }
-    }
-
-    public static long micros() {
-        return nanoTime() / 1000;
     }
 
     public static int factorial(int n) {

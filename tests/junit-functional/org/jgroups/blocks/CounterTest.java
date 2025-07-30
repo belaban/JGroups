@@ -20,6 +20,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
@@ -75,52 +76,52 @@ public class CounterTest {
     }
 
     public void testAsyncIncrement() throws TimeoutException {
-        AverageMinMax avg=new AverageMinMax();
+        AverageMinMax avg=new AverageMinMax().unit(TimeUnit.NANOSECONDS);
         long[] values=new long[1000];
 
-        long total=System.currentTimeMillis();
+        long total=System.nanoTime();
         for(int i=1; i <= 1000; i++) {
-            long start=Util.micros();
+            long start=System.nanoTime();
             long val=cc.incrementAndGet();
             if(val < 1000)
                 values[(int)val]=val;
-            long time=Util.micros()-start;
+            long time=System.nanoTime()-start;
             avg.add(time);
         }
         Util.waitUntil(500, 1, () -> IntStream.rangeClosed(1, 999).allMatch(i -> values[i] > 0));
-        long total_time=System.currentTimeMillis()-total;
-        System.out.printf("sync: total time: %d ms, avg: %s us\n", total_time, avg);
+        long total_time=System.nanoTime()-total;
+        System.out.printf("sync: total time: %s, avg: %s us\n", Util.printTime(total_time), avg);
 
         Arrays.fill(values, 0L);
         cc.set(0);
         AsyncCounter async=cc.async();
         avg.clear();
 
-        total=System.currentTimeMillis();
+        total=System.nanoTime();
         for(int i=1; i <= 1000; i++) {
-            long start=Util.micros();
+            long start=System.nanoTime();
             async.incrementAndGet()
               .thenAccept(v -> {
                   values[(int)v.longValue()]=v;
-                  long time=Util.micros()-start;
+                  long time=System.nanoTime()-start;
                   avg.add(time);
               });
         }
         Util.waitUntil(50000, 1, () -> IntStream.rangeClosed(1, 999).allMatch(i -> values[i] > 0));
-        total_time=System.currentTimeMillis() - total;
-        System.out.printf("async: total time: %d ms, avg: %s us\n", total_time, avg);
+        total_time=System.nanoTime() - total;
+        System.out.printf("async: total time: %s, avg: %s us\n", Util.printTime(total_time), avg);
     }
 
     public void testAsyncIncrement2() throws TimeoutException {
         AsyncCounter async_c=cc.async();
         final int NUM=1000;
         final AtomicInteger val=new AtomicInteger(0);
-        long start=System.currentTimeMillis();
+        long start=System.nanoTime();
         for(int i=0; i < NUM; i++)
             async_c.incrementAndGet().thenAccept(v -> val.set(v.intValue()));
         Util.waitUntil(1000, 1, () -> val.get() == NUM);
-        long time=System.currentTimeMillis()-start;
-        System.out.printf("val=%d, time=%d ms\n", val.get(), time);
+        long time=System.nanoTime()-start;
+        System.out.printf("val=%d, time=%s\n", val.get(), Util.printTime(time));
     }
 
     public void testCompareAndSet() {

@@ -326,7 +326,7 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
                     sendSingle(dest, list.get(0), this.output);
                 else
                     sendMultiple(dest, src, list, this.output);
-                if(start > 0)
+                if(transport.statsEnabled())
                     avg_send_time.add(System.nanoTime()-start);
                 total_msgs_sent.add(size);
             }

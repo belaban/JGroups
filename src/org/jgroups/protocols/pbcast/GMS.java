@@ -546,7 +546,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
         ack_collector.reset(expected_acks, local_addr) // exclude self, as we'll install the view locally
           .suspect(suspected_mbrs.getMembers()); // exclude cached suspects (https://issues.redhat.com/browse/JGRP-2556)
-        long start=System.currentTimeMillis();
+        long start=System.nanoTime();
         impl.handleViewChange(full_view, digest); // install the view locally first
         log.trace("%s: mcasting view %s", local_addr, new_view);
         if(thread_pool == null) {
@@ -566,14 +566,14 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         try {
             if(ack_collector.size() > 0) {
                 ack_collector.waitForAllAcks(view_ack_collection_timeout);
-                log.trace("%s: got all ACKs (%d) for view %s in %d ms",
-                          local_addr, ack_collector.expectedAcks(), new_view.getViewId(), System.currentTimeMillis()-start);
+                log.trace("%s: got all ACKs (%d) for view %s in %s",
+                          local_addr, ack_collector.expectedAcks(), new_view.getViewId(), Util.printTime(System.nanoTime()-start));
             }
         }
         catch(TimeoutException e) {
             if(log_collect_msgs)
-                log.warn("%s: failed to collect all ACKs (expected=%d) for view %s after %d ms, missing %d ACKs from %s",
-                         local_addr, ack_collector.expectedAcks(), new_view.getViewId(), System.currentTimeMillis()-start,
+                log.warn("%s: failed to collect all ACKs (expected=%d) for view %s after %s, missing %d ACKs from %s",
+                         local_addr, ack_collector.expectedAcks(), new_view.getViewId(), Util.printTime(System.nanoTime()-start),
                          ack_collector.size(), ack_collector.printMissing());
         }
     }

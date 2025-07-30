@@ -185,7 +185,7 @@ public class RoundTrip implements RtReceiver {
         return String.format("round-trip min/avg/max = %d / %.2f / %d %s", avg.min(), avg.average(), avg.max(), unit());
     }
 
-    protected static long time(boolean use_ms) {return use_ms? System.currentTimeMillis() : Util.micros();}
+    protected static long time(boolean use_ms) {return use_ms? System.currentTimeMillis() : (long)(System.nanoTime() / 1000.0);}
     protected String unit() {return use_ms? "ms" : "us";}
 
 

@@ -37,7 +37,7 @@ public class RTT {
     protected boolean           oob;
 
     protected final Map<Address,AverageMinMax> rtts=Util.createConcurrentMap();
-    protected final Map<Address,long[]>        times=Util.createConcurrentMap(); // list of start times (us)
+    protected final Map<Address,long[]>        times=Util.createConcurrentMap(); // list of start times (ns)
 
     public boolean enabled()              {return enabled;}
     public RTT     enabled(boolean f)     {enabled=f; return this;}
@@ -83,7 +83,7 @@ public class RTT {
             return "RTT functionality is disabled";
         Map<Address,AverageMinMax> m=_rtt(num_reqs, size, exclude_self);
         return m.entrySet().stream()
-          .map(e -> String.format("%s: %s", e.getKey(), print(e.getValue(), details, TimeUnit.MICROSECONDS, num_reqs)))
+          .map(e -> String.format("%s: %s", e.getKey(), print(e.getValue(), details, TimeUnit.NANOSECONDS, num_reqs)))
           .collect(Collectors.joining("\n"));
     }
 
@@ -96,7 +96,7 @@ public class RTT {
         if(exclude_self)
             targets.remove(transport.addr());
         for(Address addr: targets) {
-            rtts.put(addr, new AverageMinMax(1024).usePercentiles(128).unit(TimeUnit.MICROSECONDS));
+            rtts.put(addr, new AverageMinMax(1024).usePercentiles(128).unit(TimeUnit.NANOSECONDS));
             times.put(addr, new long[num_reqs]);
         }
         AsciiString cluster=transport.getClusterNameAscii();
@@ -107,7 +107,7 @@ public class RTT {
                 if(oob)
                     msg.setFlag(Message.Flag.OOB);
                 long[] t=times.get(addr);
-                t[i]=Util.micros();
+                t[i]=System.nanoTime();
                 transport.down(msg);
             }
         }
@@ -139,7 +139,7 @@ public class RTT {
     protected void handleResponse(Address sender, int index) {
         long[] start_times=times.get(sender);
         if(start_times != null) {
-            long time=Util.micros() - start_times[index];
+            long time=System.nanoTime() - start_times[index];
             AverageMinMax avg=rtts.get(sender);
             if(avg != null)
                 avg.add(time);
