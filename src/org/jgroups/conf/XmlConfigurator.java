@@ -34,7 +34,6 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
     }
 
     /**
-     * 
      * @param convert If false: print old plain output, else print new XML format
      * @return String with protocol stack in specified format
      */
@@ -84,6 +83,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
                     if("include".equals(child.getName())) {
                         String filename=child.getAttribute("file");
                         filename=Util.substituteVariable(filename);
+                        child.removeAttribute("file");
                         try(InputStream input_stream=ConfiguratorFactory.getConfigStream(filename)) {
                             if(input_stream == null)
                                 throw new FileNotFoundException(String.format(Util.getMessage("FileNotFound"), filename));
@@ -92,6 +92,20 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
                                 new_children.add(new_child);
                             else
                                 new_children.addAll(new_child.getChildren());
+                        }
+
+                        // see if there are any overrides and process them
+                        for(Map.Entry<String,String> e: child.getAttributes().entrySet()) {
+                            String key=e.getKey(), val=e.getValue();
+                            for(XmlNode c: new_children) {
+                                Map<String,String> attrs=c.getAttributes();
+                                String existing_val=attrs.put(key, val);
+                                String prot=c.getName();
+                                if(existing_val != null)
+                                    log.debug("changed %s.%s: %s -> %s", prot, key, existing_val, val);
+                                else
+                                    log.debug("added %s.%s : %s", prot, key, val);
+                            }
                         }
                     }
                     else

@@ -963,8 +963,8 @@ NOTE: Note that all members in a group have to have the same protocol stack.
 [[UsingIncludes]]
 ===== Using includes
 
-Oftentimes different configurations have parts in common which change, but the rest is the same. An example
-for the latter is transports such as `TCP` or `UDP`. These could be defined once, and be included by various
+Oftentimes different configurations have parts in common which change, but the rest is the same. An example of the
+latter is transports such as `TCP` or `UDP`. These could be defined once, and be included by various
 configurations. For example, if we have optimized transport configurations `tcp-default.xml` (`TCP`) and
 `nio-default.xml` (`TCP_NIO2`), we could include them as follows:
 
@@ -989,8 +989,17 @@ Note that we can pick the transport to be included *at run time*, by defining sy
 * `-Dtransport-config=tcp-default.xml` uses a `TCP` transport
 * `-Dtransport-config=nio-default.xml` uses `TCP_NIO2` as transport
 
-NOTE: An include can configure *multiple protocols*: for example, we could define both a transport *and* a
-discovery protocol
+Includes allow us to override attributes:
+
+[source,xml]
+----
+  <include file="${transport-config:/Users/bela/tcp-default.xml}"
+           bundler.use_single_sender_thread="false"
+           sock_conn_timeout="${conn-timeout:500}" />
+----
+
+This includes a file `tcp-default.xml`, but overrides (or adds) attributes `bundler.use_single_sender_thread` and
+`sock_conn_timeout`.
 
 We can also use multiple includes in the same configuration, e.g.:
 [source,xml]

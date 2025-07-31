@@ -39,6 +39,11 @@ public class XmlNode {
         return attributes.get(attr_name);
     }
 
+    public void removeAttribute(String attr_name) {
+        if(attributes != null && attr_name != null)
+            attributes.remove(attr_name);
+    }
+
     public XmlNode addChild(XmlNode n) {
         if(children == null)
             children=new ArrayList<>();
