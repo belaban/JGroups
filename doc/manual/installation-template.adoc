@@ -29,9 +29,10 @@ In <<BuildingJGroups>> we'll show how to build JGroups from source.
 [[Requirements]]
 === Requirements
 
-* JGroups 3.6.x to (excluding) 4.0 requires JDK 7.
-* JGroups 4.x requires JDK 8.
-* JGroups 5.0.0.Final requires JDK 11 or higher
+* 3.6.x to (excluding) 4.0 requires JDK 7.
+* 4.x requires JDK 8.
+* 5.0.0.Final requires JDK 11 or higher
+* 5.5.0 requires JDK 17 or higher
 * There is no JNI code present so JGroups runs on all platforms.
 * Logging: by default, JGroups tries to use log4j2. If the classes are not found on the classpath, it
   resorts to log4j, and if still not found, it falls back to JDK logging (`java.util.logging logger`).
