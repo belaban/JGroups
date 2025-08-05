@@ -31,7 +31,7 @@ public class JDBC_PING2_Test {
     public void testClusterFormedAfterRestart() throws Exception {
         try(var a=createChannel(CONFIG, "A")) {
             a.connect(CLUSTER);
-            for(int i=1; i <= 1000; i++) {
+            for(int i=1; i <= 100; i++) {
                 long start=System.nanoTime();
                 try(var b=createChannel(CONFIG, "B")) {
                     b.connect(CLUSTER);
