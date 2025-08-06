@@ -16,7 +16,6 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -96,6 +95,7 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
     protected NioServer                      srv;
     protected final PingDest                 ping_dest=new PingDest(); // address of the member we monitor
     protected TimeScheduler                  timer;
+    protected ThreadPool                     thread_pool;
     protected final BroadcastTask            bcast_task=new BroadcastTask(); // to resend SUSPECT message (until view change)
     protected final ProcessingQueue<Request> req_handler=new ProcessingQueue<Request>().setHandler(this);
     protected final BoundedList<String>      suspect_history=new BoundedList<>(20);
@@ -160,6 +160,7 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
         timer=transport.getTimer();
         if(timer == null)
             throw new Exception("timer is null");
+        thread_pool=transport.getThreadPool();
         PhysicalAddress addr=transport.getPhysicalAddress();
         int actual_port=addr.getPort();
         int[] bind_ports=computeBindPorts(actual_port);
@@ -290,7 +291,10 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
                 pingable_mbrs.remove(dest);
                 // The reconnect might run on the NioConnection::acceptor's read() and thus block the CONNECT-RSP, and
                 // therefore has to be run in a separate thread: https://issues.redhat.com/browse/JGRP-2766
-                CompletableFuture.runAsync(() -> req_handler.add(new Request(Request.Type.ConnectToNextPingDest, dest)));
+                Runnable r=() -> req_handler.add(new Request(Request.Type.ConnectToNextPingDest, dest));
+                boolean rc=thread_pool.execute(r);
+                if(!rc)
+                    getThreadFactory().newThread(r).start();
             }
         }
     }
