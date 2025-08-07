@@ -1704,12 +1704,12 @@ public class UtilTest {
     }
 
     public void testToUUID() throws Exception {
-        Address uuid=UUID.randomUUID();
+        Address addr=UUID.randomUUID();
         String s=Util.addressToString(null);
         assert s == null;
-        s=Util.addressToString(uuid);
+        s=Util.addressToString(addr);
         Address uuid2=Util.addressFromString(s);
-        assert uuid2.equals(uuid);
+        assert uuid2.equals(addr);
 
         SiteUUID u1=new SiteUUID(UUID.randomUUID(), "lon", "X");
         s=Util.addressToString(u1);
@@ -1726,17 +1726,23 @@ public class UtilTest {
         ip2=Util.addressFromString(s);
         assertSame(ip1, ip2);
 
-        uuid=ExtendedUUID.randomUUID();
-        s=Util.addressToString(uuid);
+        addr=ExtendedUUID.randomUUID();
+        s=Util.addressToString(addr);
         assert s != null;
         ip2=Util.addressFromString(s);
-        assertSame(uuid, ip2);
+        assertSame(addr, ip2);
 
-        uuid=FlagsUUID.randomUUID().setFlag((short)22);
-        s=Util.addressToString(uuid);
+        addr=FlagsUUID.randomUUID().setFlag((short)22);
+        s=Util.addressToString(addr);
         assert s != null;
         ip2=Util.addressFromString(s);
-        assertSame(uuid, ip2);
+        assertSame(addr, ip2);
+
+        addr=new MillisAddress(1);
+        s=Util.addressToString(addr);
+        assert s != null;
+        Address addr2=Util.addressFromString(s);
+        assertSame(addr, addr2);
     }
 
     protected static void assertSame(Address u1, Address u2) {
