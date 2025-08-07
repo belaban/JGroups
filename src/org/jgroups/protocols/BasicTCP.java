@@ -209,7 +209,10 @@ public abstract class BasicTCP extends TP implements Receiver, ConnectionListene
                 log.debug("%s: connection closed by peer %s (IP=%s), sending up a suspect event",
                           local_addr, peer, peer_ip);
             Event suspect=new Event(Event.SUSPECT, List.of(peer));
-            up_prot.up(suspect);
+            Runnable r=() -> up_prot.up(suspect);
+            boolean rc=thread_pool.execute(r);
+            if(!rc)
+                getThreadFactory().newThread(r).start();
             num_suspect_events.increment();
         }
     }
