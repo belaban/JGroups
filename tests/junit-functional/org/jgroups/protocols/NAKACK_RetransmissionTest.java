@@ -149,7 +149,6 @@ public class NAKACK_RetransmissionTest {
         public void               clear() {xmit_requests.clear();}
         public void               init() throws Exception {
             super.init();
-            diag_handler=createDiagnosticsHandler();
             bundler=new NoBundler();
         }
         public boolean            supportsMulticasting() {return true;}

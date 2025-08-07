@@ -2,6 +2,7 @@ package org.jgroups.util;
 
 import org.jboss.byteman.rule.Rule;
 import org.jboss.byteman.rule.helper.Helper;
+import org.jgroups.stack.Configurator;
 import org.jgroups.stack.DiagnosticsHandler;
 
 import java.net.InetAddress;
@@ -66,6 +67,7 @@ public class ProfilingHelper extends Helper {
 
     protected static DiagnosticsHandler createDiagHandler() throws Exception {
         DiagnosticsHandler ret=new DiagnosticsHandler();
+        Configurator.setDefaultAddressValues(ret, Util.getIpStackType());
         ret.printHeaders(b -> String.format("%s [ip=%s, %s]\n", ret.getLocalAddress(),
                                             localAddress(),
                                             Util.JAVA_VERSION.isEmpty()? "" : String.format("java %s", Util.JAVA_VERSION)));
