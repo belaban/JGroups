@@ -21,7 +21,8 @@
     <class id="18" name="org.jgroups.blocks.MethodCall"/>
     <class id="19" name="org.jgroups.util.FlagsUUID"/>
     <class id="20" name="org.jgroups.util.ObjectWrapperSerializable"/>
-    <class id="21"  name="org.jgroups.util.ObjectWrapperPrimitive"/>
+    <class id="21" name="org.jgroups.util.ObjectWrapperPrimitive"/>
+    <class id="22" name="org.jgroups.util.MillisAddress"/>
 
     <!-- Headers -->
     <class id="51"  name="org.jgroups.protocols.FD_SOCK$FdHeader"/>

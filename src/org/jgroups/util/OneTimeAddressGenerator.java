@@ -13,6 +13,10 @@ public class OneTimeAddressGenerator implements AddressGenerator {
     protected final long initial_val;
     protected boolean    first=true;
 
+    public OneTimeAddressGenerator() {
+        initial_val=1;
+    }
+
     public OneTimeAddressGenerator(long initial_val) {
         this.initial_val=initial_val;
     }

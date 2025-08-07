@@ -1631,12 +1631,12 @@ public class UtilTest {
     }
 
     public void testToUUID() throws Exception {
-        Address uuid=UUID.randomUUID();
+        Address addr=UUID.randomUUID();
         String s=Util.addressToString(null);
         assert s == null;
-        s=Util.addressToString(uuid);
+        s=Util.addressToString(addr);
         Address uuid2=Util.addressFromString(s);
-        assert uuid2.equals(uuid);
+        assert uuid2.equals(addr);
 
         SiteUUID u1=new SiteUUID(UUID.randomUUID(), "lon", "X");
         s=Util.addressToString(u1);
@@ -1651,7 +1651,35 @@ public class UtilTest {
         ip1=new IpAddress("127.0.0.1", 7500);
         s=Util.addressToString(ip1);
         ip2=Util.addressFromString(s);
-        assert ip1.equals(ip2);
+        assertSame(ip1, ip2);
+
+        addr=ExtendedUUID.randomUUID();
+        s=Util.addressToString(addr);
+        assert s != null;
+        ip2=Util.addressFromString(s);
+        assertSame(addr, ip2);
+
+        addr=FlagsUUID.randomUUID().setFlag((short)22);
+        s=Util.addressToString(addr);
+        assert s != null;
+        ip2=Util.addressFromString(s);
+        assertSame(addr, ip2);
+
+        addr=new MillisAddress(1);
+        s=Util.addressToString(addr);
+        assert s != null;
+        Address addr2=Util.addressFromString(s);
+        assertSame(addr, addr2);
+    }
+
+    protected static void assertSame(Address u1, Address u2) {
+        assert u1.equals(u2);
+        assert u2.equals(u1);
+        assert u1.compareTo(u2) == 0;
+        assert u2.compareTo(u1) == 0;
+        Set<Address> s=new HashSet<>();
+        s.add(u1); s.add(u2);
+        assert s.size() == 1;
     }
 
     protected static void check(Enumeration<Integer> en, Integer[] expected) {
