@@ -22,7 +22,7 @@ import java.util.function.Function;
  * @since 3.0
  */
 
-public class DiagnosticsHandler extends ReceiverAdapter implements Closeable {
+public class DiagnosticsHandler extends ReceiverAdapter {
     public static final String         UDP_THREAD_NAME="UdpDiagHandler";
     public static final String         TCP_THREAD_NAME="TcpDiagHandler";
 
@@ -63,9 +63,9 @@ public class DiagnosticsHandler extends ReceiverAdapter implements Closeable {
     protected MulticastSocket          udp_mcast_sock;        // receiving of mcast packets when UDP is used
     protected DatagramSocket           udp_ucast_sock;        // sending of UDP responses
     protected final Set<ProbeHandler>  handlers=new CopyOnWriteArraySet<>();
-    protected final Log                log;
-    protected final SocketFactory      socket_factory;
-    protected final ThreadFactory      thread_factory;
+    protected Log                      log=LogFactory.getLog(DiagnosticsHandler.class);
+    protected SocketFactory            socket_factory=new DefaultSocketFactory();
+    protected ThreadFactory            thread_factory=new DefaultThreadFactory("diag", true, true);
     protected Function<Boolean,String> print_headers=b -> "";
     protected Function<String,Boolean> same_cluster=b -> true;
 
@@ -82,20 +82,10 @@ public class DiagnosticsHandler extends ReceiverAdapter implements Closeable {
         return this;
     }
 
-    /** Constructor used for standalone apps (without a JGroups stack) */
-    public DiagnosticsHandler() throws Exception {
-        this(LogFactory.getLog(DiagnosticsHandler.class), new DefaultSocketFactory(),
-             new DefaultThreadFactory("diag", true, true));
-        Configurator.setDefaultAddressValues(this, Util.getIpStackType());
-    }
 
-    public DiagnosticsHandler(Log log, SocketFactory socket_factory, ThreadFactory thread_factory) {
-        this.log=log;
-        this.socket_factory=socket_factory;
-        this.thread_factory=thread_factory;
-    }
-
-
+    public DiagnosticsHandler     log(Log l)                                  {log=l; return this;}
+    public DiagnosticsHandler     socketFactory(SocketFactory f)              {socket_factory=f; return this;}
+    public DiagnosticsHandler     threadFactory(ThreadFactory f)              {thread_factory=f; return this;}
     public boolean                isEnabled()                                 {return enabled;}
     public DiagnosticsHandler     setEnabled(boolean f)                       {enabled=f; return this;}
     public DiagnosticsHandler     setMcastAddress(InetAddress a)              {this.mcast_addr=a; return this;}
