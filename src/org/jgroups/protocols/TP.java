@@ -489,11 +489,12 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     /**
      * Sets a {@link DiagnosticsHandler}. Should be set before the stack is started
      */
-    public <T extends TP> T setDiagnosticsHandler(DiagnosticsHandler handler) throws Exception {
+    public <T extends TP> T setDiagnosticsHandler(DiagnosticsHandler handler) {
         if(handler != null && diag_handler != null) {
             diag_handler.stop();
             diag_handler=handler;
-            diag_handler.start();
+            initDiagnosticsHandler(diag_handler);
+            startDiagnostics();
         }
         return (T)this;
     }
@@ -725,7 +726,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         // local_addr is null when shared transport, channel_name is not used
         setInAllThreadFactories(cluster_name != null? cluster_name.toString() : null, local_addr, thread_naming_pattern);
 
-        diag_handler=createDiagnosticsHandler();
+        if (diag_handler == null) {
+            diag_handler=new DiagnosticsHandler();
+        }
+        initDiagnosticsHandler(diag_handler);
 
         who_has_cache=new ExpiryCache<>(who_has_cache_timeout);
 
@@ -833,12 +837,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @ManagedOperation(description="Enables diagnostics and starts DiagnosticsHandler (if not running)")
     public <T extends TP> T enableDiagnostics() {
         diag_handler.setEnabled(true);
-        try {
-            startDiagnostics();
-        }
-        catch(Exception e) {
-            log.error(Util.getMessage("FailedStartingDiagnostics"), e);
-        }
+        startDiagnostics();
         return (T)this;
     }
 
@@ -847,16 +846,19 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         stopDiagnostics();
     }
 
-    protected void startDiagnostics() throws Exception {
+    protected void startDiagnostics() {
         if(diag_handler != null) {
-            diag_handler.registerProbeHandler(this);
-            diag_handler.start();
+            try {
+                diag_handler.start();
+            }
+            catch(Exception e) {
+                log.error(Util.getMessage("FailedStartingDiagnostics"), e);
+            }
         }
     }
 
     protected void stopDiagnostics() {
         if(diag_handler != null) {
-            diag_handler.unregisterProbeHandler(this);
             diag_handler.stop();
         }
     }
@@ -1057,9 +1059,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     /* ------------------------------ Private Methods -------------------------------- */
 
-    protected DiagnosticsHandler createDiagnosticsHandler() {
-        return new DiagnosticsHandler(log, socket_factory, thread_factory)
-          .printHeaders(this::defaultHeaders).sameCluster(this::sameCluster);
+    protected void initDiagnosticsHandler(DiagnosticsHandler handler) {
+        handler
+            .log(log).socketFactory(socket_factory).threadFactory(thread_factory)
+            .registerProbeHandler(this)
+            .printHeaders(this::defaultHeaders).sameCluster(this::sameCluster);
     }
 
     public static Bundler createBundler(String type, Class<?> cl) throws Exception {
