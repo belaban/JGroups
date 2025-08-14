@@ -184,7 +184,8 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
     }
 
     public GossipRouter init() throws Exception {
-        diag=new DiagnosticsHandler(log, socket_factory, thread_factory)
+        diag=new DiagnosticsHandler()
+          .log(log).socketFactory(socket_factory).threadFactory(thread_factory)
           .registerProbeHandler(this)
           .printHeaders(b -> String.format("GossipRouter [addr=%s, cluster=GossipRouter, version=%s]\n",
                                            localAddress(), Version.description));
@@ -245,7 +246,8 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
         catch(Exception ex) {
             log.error(Util.getMessage("MBeanDeRegistrationFailed"), ex);
         }
-        Util.close(diag, server);
+        diag.stop();
+        Util.close(server);
         log.debug("router stopped");
     }
 
