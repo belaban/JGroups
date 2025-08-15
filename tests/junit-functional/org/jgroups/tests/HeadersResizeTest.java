@@ -2,7 +2,7 @@ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.protocols.SenderSendsBundler;
+import org.jgroups.protocols.BaseBundler;
 import org.jgroups.protocols.TP;
 import org.jgroups.util.MessageBatch;
 import org.jgroups.util.Util;
@@ -38,7 +38,7 @@ public class HeadersResizeTest {
     @AfterMethod protected void tearDown() {Util.close(b, a);}
 
     public void testResizing() throws Exception {
-        BatchingBundler bundler=new BatchingBundler();
+        TestBundler bundler=new TestBundler();
         a.getProtocolStack().getTransport().setBundler(bundler);
 
         MyReceiver receiver=new MyReceiver();
@@ -56,7 +56,7 @@ public class HeadersResizeTest {
     }
 
 
-    protected static class BatchingBundler extends SenderSendsBundler {
+    protected static class TestBundler extends BaseBundler {
         protected boolean             queue;
         protected final List<Message> list=new ArrayList<>(16);
 

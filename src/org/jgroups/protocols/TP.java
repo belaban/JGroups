@@ -1070,34 +1070,13 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             case "transfer-queue":
             case "tq":
                 return new TransferQueueBundler();
-            case "sender-sends":
-            case "ss":
-                return new SenderSendsBundler();
-            case "ring-buffer":
-            case "rb":
-                return new RingBufferBundler();
-            case "ring-buffer-lockless":
-            case "rbl":
-                return new RingBufferBundlerLockless();
-            case "ring-buffer-lockless2":
-            case "rbl2":
-                return new RingBufferBundlerLockless2();
             case "no-bundler":
             case "nb":
                 return new NoBundler();
-            case "async-no-bundler":
-            case "ab":
-            case "alternating-bundler":
-                return new AlternatingBundler();
-            case "rqb": case "rq":
-            case "remove-queue-bundler": case "remove-queue":
-                return new RemoveQueueBundler();
             case "pd":
             case "pdb":
             case "per-destination":
                 return new PerDestinationBundler();
-            case "bb":
-                return new BatchBundler();
         }
         Class<Bundler> clazz=(Class<Bundler>)Util.loadClass(type, cl);
         return clazz.getDeclaredConstructor().newInstance();

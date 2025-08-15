@@ -405,7 +405,7 @@ public class UPerf implements Receiver {
         long time_to_wait=(long)(time * 1000 * 1.2); // add 20% more
         results_coll.waitForAllResponses(time_to_wait);
         Map<Address,Results> results=results_coll.getResults();
-        AverageSummary avg_gets=new AverageSummary(), avg_puts=new AverageSummary();
+        AverageSummary avg_gets=new AverageSummary().unit(NANOSECONDS), avg_puts=new AverageSummary().unit(NANOSECONDS);
         List<AverageSummary> gets=new ArrayList<>(results.size()), puts=new ArrayList<>(results.size());
 
         System.out.println("\n======================= Results: ===========================");

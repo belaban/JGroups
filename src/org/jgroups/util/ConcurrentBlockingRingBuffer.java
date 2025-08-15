@@ -69,7 +69,14 @@ public class ConcurrentBlockingRingBuffer<T> implements BlockingQueue<T> {
         INCR_INDEX=x -> x == (capacity-1)? 0 : x+1;
     }
 
-    public int capacity() {return array.length();}
+    public static <T> ConcurrentBlockingRingBuffer<T> createBlocking(int capacity) {
+        return new ConcurrentBlockingRingBuffer<>(capacity, true, true);
+    }
+
+    public int capacity()   {return array.length();}
+    public int readIndex()  {return ri;}
+    public int writeIndex() {return wi.get();}
+
 
     @Override
     public void put(T t) throws InterruptedException {

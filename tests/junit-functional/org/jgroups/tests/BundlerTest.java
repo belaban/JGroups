@@ -51,16 +51,7 @@ public class BundlerTest extends ChannelTestBase {
         return new Object[][]{
           {TransferQueueBundler.class},
           {NoBundler.class},
-          {AlternatingBundler.class},
-          {BatchBundler.class},
-          {PerDestinationBundler.class},
-          {RingBufferBundler.class},
-          {SenderSendsBundler.class},
-          {RemoveQueueBundler.class},
-
-          // the 2 bundlers below have not yet beeen converted to support loopback
-          // {RingBufferBundlerLockless.class},
-          // {RingBufferBundlerLockless2.class}
+          {PerDestinationBundler.class}
         };
     }
 

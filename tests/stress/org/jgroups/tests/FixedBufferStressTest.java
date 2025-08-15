@@ -2,15 +2,16 @@ package org.jgroups.tests;
 
 import org.jgroups.EmptyMessage;
 import org.jgroups.Message;
-import org.jgroups.util.RingBufferSeqnoLockless;
+import org.jgroups.util.FixedBuffer;
 import org.jgroups.util.Util;
 
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
+//import org.jgroups.util.RingBufferLocked;
 
-public class RingBufferLocklessStressTest {
+public class FixedBufferStressTest {
     static int NUM_THREADS=10;
     static int NUM_MSGS=1000000;
 
@@ -23,7 +24,7 @@ public class RingBufferLocklessStressTest {
     public static void main(String[] args) throws InterruptedException {
         for(int i=0; i < args.length; i++) {
             if(args[i].startsWith("-h")) {
-                System.out.println("RingBufferStressTest [-num messages] [-adders <number of adder threads>]");
+                System.out.println("FixedBufferStressTest [-num messages] [-adders <number of adder threads>]");
                 return;
             }
             if(args[i].equals("-num")) {
@@ -35,7 +36,7 @@ public class RingBufferLocklessStressTest {
             }
         }
 
-        RingBufferSeqnoLockless<Message> buf=new RingBufferSeqnoLockless<>(NUM_MSGS, 0);
+        FixedBuffer<Message> buf=new FixedBuffer<>(NUM_MSGS, 0);
 
         final CountDownLatch latch=new CountDownLatch(1);
 
@@ -60,16 +61,16 @@ public class RingBufferLocklessStressTest {
 
         System.out.println("added messages: " + added + ", removed messages: " + removed);
         System.out.println("took " + diff + " ms to insert and remove " + NUM_MSGS + " messages");
-        buf.destroy();
+        buf.close();
     }
 
 
     protected static class Adder extends Thread {
-        protected final RingBufferSeqnoLockless<Message> buf;
+        protected final FixedBuffer<Message> buf;
         protected final AtomicInteger num;
         protected final CountDownLatch latch;
 
-        public Adder(RingBufferSeqnoLockless<Message> buf, CountDownLatch latch, AtomicInteger num) {
+        public Adder(FixedBuffer<Message> buf, CountDownLatch latch, AtomicInteger num) {
             this.buf=buf;
             this.num=num;
             this.latch=latch;
@@ -90,16 +91,16 @@ public class RingBufferLocklessStressTest {
                     num.decrementAndGet();
                     break;
                 }
-                buf.add(seqno, MSG, true);
+                buf.add(seqno, MSG, null, true);
             }
         }
     }
 
     protected static class Remover extends Thread {
-        protected final RingBufferSeqnoLockless<Message> buf;
+        protected final FixedBuffer<Message> buf;
         protected final CountDownLatch latch;
 
-        public Remover(RingBufferSeqnoLockless<Message> buf, CountDownLatch latch) {
+        public Remover(FixedBuffer<Message> buf, CountDownLatch latch) {
             this.buf=buf;
             this.latch=latch;
             setName("Remover");
@@ -114,7 +115,7 @@ public class RingBufferLocklessStressTest {
             }
             int cnt=0;
             for(;;) {
-                List<Message> msgs=buf.removeMany(true, 100);
+                List<Message> msgs=buf.removeMany(true,100);
                 if(msgs != null) {
                     cnt+=msgs.size();
                     removed.addAndGet(msgs.size());

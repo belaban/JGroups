@@ -272,7 +272,7 @@ public class BundlerStressTest {
 
 
     public static void main(String[] args) throws Exception {
-        String bundler="transfer-queue", props="tcp.xml";
+        String bundler="pd", props="tcp.xml";
         int time=60, warmup=time/2, nodes=4, num_sender_threads=100, msg_size=1000;
         boolean interactive=true;
         for(int i=0; i < args.length; i++) {
