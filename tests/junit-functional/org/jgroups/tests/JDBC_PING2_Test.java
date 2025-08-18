@@ -2,6 +2,7 @@ package org.jgroups.tests;
 
 import org.jgroups.Global;
 import org.jgroups.JChannel;
+import org.jgroups.protocols.MERGE3;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.Util;
@@ -61,6 +62,8 @@ public class JDBC_PING2_Test {
     protected static JChannel modify(JChannel ch) {
         GMS gms=ch.stack().findProtocol(GMS.class);
         gms.setJoinTimeout(3000).setMaxJoinAttempts(5);
+        MERGE3 merge=ch.stack().findProtocol(MERGE3.class);
+        merge.setMinInterval(2000).setMaxInterval(5000);
         return ch;
     }
 
