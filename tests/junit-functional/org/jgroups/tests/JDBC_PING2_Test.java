@@ -22,14 +22,16 @@ import java.util.stream.Stream;
 @Test(groups=Global.JDBC,singleThreaded=true)
 public class JDBC_PING2_Test {
     protected static final String CLUSTER="jdbc-test";
+    protected static final String CONFIG="jdbc-pg.xml";
     protected static final int NUM_NODES=8;
 
+
     public void testClusterFormedAfterRestart() throws Exception {
-        try(var a=createChannel("jdbc-pg.xml", "A")) {
+        try(var a=createChannel(CONFIG, "A")) {
             a.connect(CLUSTER);
             for(int i=1; i <= 1000; i++) {
                 long start=System.nanoTime();
-                try(var b=createChannel("jdbc-pg.xml", "B")) {
+                try(var b=createChannel(CONFIG, "B")) {
                     b.connect(CLUSTER);
                     Util.waitUntilAllChannelsHaveSameView(10000, 10, a,b);
                     long time=System.nanoTime()-start;
@@ -42,7 +44,7 @@ public class JDBC_PING2_Test {
     public void testConcurrentStartup() throws Exception {
         JChannel[] channels=new JChannel[NUM_NODES];
         for(int i=0; i < channels.length; i++)
-            channels[i]=createChannel("jdbc-pg.xml", String.valueOf(i+1));
+            channels[i]=createChannel(CONFIG, String.valueOf(i+1));
         CountDownLatch latch=new CountDownLatch(1);
         int index=1;
         for(JChannel ch: channels) {
@@ -50,13 +52,18 @@ public class JDBC_PING2_Test {
             Connector connector=new Connector(latch, ch);
             thread_factory.newThread(connector, "connector-" +index++).start();
         }
-        latch.countDown();
-        long start=System.nanoTime();
-        Util.waitUntilAllChannelsHaveSameView(30000, 100, channels);
-        long time=System.nanoTime()-start;
-        System.out.printf("-- cluster of %d formed in %s:\n%s", NUM_NODES, Util.printTime(time),
-                          Stream.of(channels).map(ch -> String.format("%s: %s", ch.address(), ch.view()))
-                            .collect(Collectors.joining("\n")));
+        try {
+            latch.countDown();
+            long start=System.nanoTime();
+            Util.waitUntilAllChannelsHaveSameView(30_000, 500, channels);
+            long time=System.nanoTime() - start;
+            System.out.printf("-- cluster of %d formed in %s:\n%s", NUM_NODES, Util.printTime(time),
+                              Stream.of(channels).map(ch -> String.format("%s: %s", ch.address(), ch.view()))
+                                .collect(Collectors.joining("\n")));
+        }
+        finally {
+            Util.close(channels);
+        }
     }
 
     protected static JChannel modify(JChannel ch) {
@@ -90,5 +97,10 @@ public class JDBC_PING2_Test {
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    public static void main(String[] args) throws Exception {
+        JDBC_PING2_Test test=new JDBC_PING2_Test();
+        test.testConcurrentStartup();
     }
 }
