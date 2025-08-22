@@ -72,6 +72,7 @@ public class Runner implements Runnable, Closeable {
                 try {tmp.join(join_timeout);} catch(InterruptedException e) {}
             }
         }
+        runStopFuntion();
         return this;
     }
 
@@ -92,15 +93,12 @@ public class Runner implements Runnable, Closeable {
                 switch(state) {
                     case stopped:
                     case stopping:
-                        if(state == State.stopping) {
-                            runStopFuntion();
+                        if(state == State.stopping)
                             state(State.stopped);
-                        }
                         return;
                 }
             }
         }
-
     }
 
     @Override
