@@ -10,8 +10,8 @@ import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.*;
-import org.jgroups.util.UUID;
 import org.jgroups.util.*;
+import org.jgroups.util.UUID;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -22,6 +22,8 @@ import java.net.InetAddress;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
 /**
@@ -73,6 +75,9 @@ public class JChannel implements Closeable {
 
     @ManagedAttribute(description="Whether or not to discard messages sent by this channel",writable=true)
     protected boolean                               discard_own_messages;
+
+    // https://issues.redhat.com/browse/JGRP-2922
+    protected final Lock                            lock=new ReentrantLock();
 
 
 
@@ -231,25 +236,45 @@ public class JChannel implements Closeable {
 
 
     /** Adds a ChannelListener that will be notified when a connect, disconnect or close occurs */
-    public synchronized JChannel addChannelListener(ChannelListener listener) {
+    public JChannel addChannelListener(ChannelListener listener) {
         if(listener == null)
             return this;
-        if(channel_listeners == null)
-            channel_listeners=new CopyOnWriteArraySet<>();
-        channel_listeners.add(listener);
-        return this;
+        lock.lock();
+        try {
+            if(channel_listeners == null)
+                channel_listeners=new CopyOnWriteArraySet<>();
+            channel_listeners.add(listener);
+            return this;
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
-    public synchronized JChannel removeChannelListener(ChannelListener listener) {
-        if(channel_listeners != null && listener != null)
-            channel_listeners.remove(listener);
-        return this;
+    public JChannel removeChannelListener(ChannelListener listener) {
+        if(listener == null)
+            return this;
+        lock.lock();
+        try {
+            if(channel_listeners != null)
+                channel_listeners.remove(listener);
+            return this;
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
-    public synchronized JChannel clearChannelListeners() {
-        if(channel_listeners != null)
-            channel_listeners.clear();
-        return this;
+    public JChannel clearChannelListeners() {
+        lock.lock();
+        try {
+            if(channel_listeners != null)
+                channel_listeners.clear();
+            return this;
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
     /**
@@ -312,14 +337,20 @@ public class JChannel implements Closeable {
      * @exception IllegalStateException The channel is closed
      */
     @ManagedOperation(description="Connects the channel to a group")
-    public synchronized JChannel connect(String cluster_name) throws Exception {
-        if(!_preConnect(cluster_name))
+    public JChannel connect(String cluster_name) throws Exception {
+        lock.lock();
+        try {
+            if(!_preConnect(cluster_name))
+                return this;
+            Event connect_event=new Event(Event.CONNECT, cluster_name);
+            _connect(connect_event);
+            state=State.CONNECTED;
+            notifyChannelConnected(this);
             return this;
-        Event connect_event=new Event(Event.CONNECT, cluster_name);
-        _connect(connect_event);
-        state=State.CONNECTED;
-        notifyChannelConnected(this);
-        return this;
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
 
@@ -333,18 +364,24 @@ public class JChannel implements Closeable {
      * @exception Exception Connecting to the cluster or state transfer was not successful
      * @exception IllegalStateException The channel is closed and therefore cannot be used
      */
-    public synchronized JChannel connect(String cluster_name, Address target, long timeout) throws Exception {
-        if(!_preConnect(cluster_name))
+    public JChannel connect(String cluster_name, Address target, long timeout) throws Exception {
+        lock.lock();
+        try {
+            if(!_preConnect(cluster_name))
+                return this;
+            boolean canFetchState=false;
+            Event connect_event=new Event(Event.CONNECT_WITH_STATE_TRANSFER, cluster_name);
+            _connect(connect_event);
+            state=State.CONNECTED;
+            notifyChannelConnected(this);
+            canFetchState=view != null && view.size() > 1;
+            if(canFetchState) // if I am not the only member in cluster then ...
+                getState(target, timeout); // fetch state from target
             return this;
-        boolean canFetchState=false;
-        Event connect_event=new Event(Event.CONNECT_WITH_STATE_TRANSFER, cluster_name);
-        _connect(connect_event);
-        state=State.CONNECTED;
-        notifyChannelConnected(this);
-        canFetchState=view != null && view.size() > 1;
-        if(canFetchState) // if I am not the only member in cluster then ...
-            getState(target, timeout); // fetch state from target
-        return this;
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
     
@@ -354,28 +391,36 @@ public class JChannel implements Closeable {
      * @see #connect(String)
      */
     @ManagedOperation(description="Disconnects the channel if connected")
-    public synchronized JChannel disconnect() {
-        switch(state) {
-            case OPEN: case CLOSED:
-                break;
-            case CONNECTING: case CONNECTED:
-                if(cluster_name != null) {
-                    try {
-                        down(new Event(Event.DISCONNECT, local_addr));   // DISCONNECT is handled by each layer
+    public JChannel disconnect() {
+        lock.lock();
+        try {
+            switch(state) {
+                case OPEN:
+                case CLOSED:
+                    break;
+                case CONNECTING:
+                case CONNECTED:
+                    if(cluster_name != null) {
+                        try {
+                            down(new Event(Event.DISCONNECT, local_addr));   // DISCONNECT is handled by each layer
+                        }
+                        catch(Throwable t) {
+                            log.error(Util.getMessage("DisconnectFailure"), local_addr, t);
+                        }
                     }
-                    catch(Throwable t) {
-                        log.error(Util.getMessage("DisconnectFailure"), local_addr, t);
-                    }
-                }
-                state=State.OPEN;
-                stopStack(true, false);
-                notifyChannelDisconnected(this);
-                init(); // sets local_addr=null; changed March 18 2003 (bela) -- prevented successful rejoining
-                break;
-            default:
-                throw new IllegalStateException("state " + state + " unknown");
+                    state=State.OPEN;
+                    stopStack(true, false);
+                    notifyChannelDisconnected(this);
+                    init(); // sets local_addr=null; changed March 18 2003 (bela) -- prevented successful rejoining
+                    break;
+                default:
+                    throw new IllegalStateException("state " + state + " unknown");
+            }
+            return this;
         }
-        return this;
+        finally {
+            lock.unlock();
+        }
     }
 
 
@@ -386,8 +431,14 @@ public class JChannel implements Closeable {
      * If the channel is connected to a cluster, {@code disconnect()} will be called first.
      */
     @ManagedOperation(description="Disconnects and destroys the channel")
-    public synchronized void close() {
-        _close(true); // by default disconnect before closing channel and close mq
+    public void close() {
+        lock.lock();
+        try {
+            _close(true); // by default disconnect before closing channel and close mq
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
 
