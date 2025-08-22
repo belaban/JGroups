@@ -3,7 +3,9 @@ package org.jgroups.tests;
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.protocols.MERGE3;
+import org.jgroups.protocols.TP;
 import org.jgroups.protocols.pbcast.GMS;
+import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
@@ -57,9 +59,10 @@ public class JDBC_PING2_Test {
             long start=System.nanoTime();
             Util.waitUntilAllChannelsHaveSameView(30_000, 500, channels);
             long time=System.nanoTime() - start;
-            System.out.printf("-- cluster of %d formed in %s:\n%s", NUM_NODES, Util.printTime(time),
+            System.out.printf("\n-- cluster of %d formed in %s:\n%s", NUM_NODES, Util.printTime(time),
                               Stream.of(channels).map(ch -> String.format("%s: %s", ch.address(), ch.view()))
                                 .collect(Collectors.joining("\n")));
+            System.out.println();
         }
         finally {
             Util.close(channels);
@@ -71,6 +74,9 @@ public class JDBC_PING2_Test {
         gms.setJoinTimeout(3000).setMaxJoinAttempts(5);
         MERGE3 merge=ch.stack().findProtocol(MERGE3.class);
         merge.setMinInterval(2000).setMaxInterval(5000);
+        TP transport=ch.stack().getTransport();
+        DiagnosticsHandler diag=transport.getDiagnosticsHandler();
+        diag.enableTcp(false);
         return ch;
     }
 
