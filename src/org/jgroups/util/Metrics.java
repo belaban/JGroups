@@ -30,36 +30,23 @@ import static org.jgroups.conf.AttributeType.SCALAR;
 public class Metrics {
     protected JChannel ch;
     public static final Predicate<AccessibleObject> IS_NUMBER=obj -> {
-        if(obj instanceof Field)
-            return isNumberAndScalar(obj, ((Field)obj).getType());
-        if(obj instanceof Method) {
-            Method m=(Method)obj;
+        if(obj instanceof Field f)
+            return isNumberAndScalar(obj, f.getType());
+        if(obj instanceof Method m)
             return isNumberAndScalar(obj, m.getReturnType());
-        }
         return false;
     };
     public static final Predicate<AccessibleObject> IS_MANAGED_ATTRIBUTE=obj -> obj.getAnnotation(ManagedAttribute.class) != null;
 
 
-    public static class Entry<T> {
-        protected final AccessibleObject type; // Field or Method
-        protected final String           description;
-        protected final Supplier<T>      supplier;
-
-        protected Entry(AccessibleObject type, String description, Supplier<T> method) {
-            this.type=type;
-            this.description=description;
-            this.supplier=method;
-        }
-
-        public AccessibleObject type()        {return type;}
-        public String           description() {return description;}
-        public Supplier<T>      supplier()    {return supplier;}
-
+    /**
+     * @param type Field or Method
+     */
+    public record Entry<T>(AccessibleObject type, String description, Supplier<T> supplier) {
         @Override
         public String toString() {
-            return String.format("  %s [%s]", supplier.get(), description);
-        }
+                return String.format("  %s [%s]", supplier.get(), description);
+            }
     }
 
     public static Map<String,Map<String,Entry<Object>>> extract(JChannel ch) {

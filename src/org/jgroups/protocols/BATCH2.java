@@ -207,8 +207,7 @@ public class BATCH2 extends Protocol {
             MessageBatch mb=new MessageBatch(len+1).setDest(batch.dest()).setSender(batch.getSender());
             for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
                 Message m=it.next();
-                if(m instanceof BatchMessage) {
-                    BatchMessage ebm=(BatchMessage)m;
+                if(m instanceof BatchMessage ebm) {
                     it.remove();
                     mb.add(ebm.getMessages(), ebm.getNumberOfMessages());
                 }

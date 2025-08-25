@@ -286,7 +286,7 @@ public class ReplCache<K,V> implements Receiver, Cache.ChangeListener {
                 Value<V> tmp=val.getValue();
                 if(tmp == null)
                     continue;
-                short repl_count=tmp.getReplicationCount();
+                short repl_count=tmp.replication_count();
                 if(repl_count != 1) // we only handle keys which are not replicated and which are stored by us
                     continue;
 
@@ -295,7 +295,7 @@ public class ReplCache<K,V> implements Receiver, Cache.ChangeListener {
                     continue;
                 if(!nodes.contains(local_addr)) {
                     Address dest=nodes.get(0); // should only have 1 element anyway
-                    move(dest, key, tmp.getVal(), repl_count, val.getTimeout(), true);
+                    move(dest, key, tmp.val(), repl_count, val.getTimeout(), true);
                     _remove(key);
                 }
             }
@@ -395,10 +395,10 @@ public class ReplCache<K,V> implements Receiver, Cache.ChangeListener {
         if(val != null) {
             tmp=val.getValue();
             if(tmp !=null) {
-                V real_value=tmp.getVal();
+                V real_value=tmp.val();
                 if(real_value != null && l1_cache != null && val.getTimeout() >= 0)
                     l1_cache.put(key, real_value, val.getTimeout());
-                return tmp.getVal();
+                return tmp.val();
             }
         }
 
@@ -415,7 +415,7 @@ public class ReplCache<K,V> implements Receiver, Cache.ChangeListener {
                 if(val != null) {
                     tmp=val.getValue();
                     if(tmp != null) {
-                        V real_value=tmp.getVal();
+                        V real_value=tmp.val();
                         if(real_value != null && l1_cache != null && val.getTimeout() >= 0)
                             l1_cache.put(key, real_value, val.getTimeout());
                         return real_value;
@@ -522,7 +522,7 @@ public class ReplCache<K,V> implements Receiver, Cache.ChangeListener {
 
         notifyChangeListeners();
 
-        return retval != null? retval.getVal() : null;
+        return retval != null? retval.val() : null;
     }
 
     public Cache.Value<Value<V>> _get(K key) {
@@ -538,7 +538,7 @@ public class ReplCache<K,V> implements Receiver, Cache.ChangeListener {
         if(l1_cache != null)
             l1_cache.remove(key);
         notifyChangeListeners();
-        return retval != null? retval.getVal() : null;
+        return retval != null? retval.val() : null;
     }
 
 
@@ -635,8 +635,8 @@ public class ReplCache<K,V> implements Receiver, Cache.ChangeListener {
                     log.warn(key + " has no value associated; ignoring");
                 continue;
             }
-            V real_value=tmp.getVal();
-            short repl_count=tmp.getReplicationCount();
+            V real_value=tmp.val();
+            short repl_count=tmp.replication_count();
             List<Address> new_mbrs=Util.newMembers(old_nodes, new_nodes);
 
             if(repl_count == -1) {
@@ -690,8 +690,8 @@ public class ReplCache<K,V> implements Receiver, Cache.ChangeListener {
                     log.warn(key + " has no value associated; ignoring");
                 continue;
             }
-            V real_value=tmp.getVal();
-            short repl_count=tmp.getReplicationCount();
+            V real_value=tmp.val();
+            short repl_count=tmp.replication_count();
 
             if(repl_count > 1) {
                 _remove(key);
@@ -797,28 +797,9 @@ public class ReplCache<K,V> implements Receiver, Cache.ChangeListener {
     }
 
 
-
-
-    public static class Value<V> implements Serializable {
-        private final V val;
-        private final short replication_count;
+    public record Value<V>(V val, short replication_count) implements Serializable {
+        @Serial
         private static final long serialVersionUID=-2892941069742740027L;
-
-
-        public Value(V val, short replication_count) {
-            this.val=val;
-            this.replication_count=replication_count;
-        }
-
-        public V getVal() {
-            return val;
-        }
-
-
-        public short getReplicationCount() {
-            return replication_count;
-        }
-
         public String toString() {
             return val + " (" + replication_count + ")";
         }

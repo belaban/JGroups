@@ -183,9 +183,8 @@ public class UUID implements Address, Constructable<UUID> {
             return true;
         if(obj == null)
             return false;
-        if(!(obj instanceof UUID))
+        if(!(obj instanceof UUID uuid))
             return false;
-        UUID uuid=(UUID)obj;
         return mostSigBits == uuid.mostSigBits && leastSigBits == uuid.leastSigBits;
     }
 

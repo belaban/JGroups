@@ -215,7 +215,7 @@ public class ByteArrayDataInputStream extends InputStream implements DataInput {
         while(true) {
             ch=read();
             if(ch == -1)
-                return sb.length() == 0? null : sb.toString();
+                return sb.isEmpty()? null : sb.toString();
             if(ch == '\r')
                 ;
             else {

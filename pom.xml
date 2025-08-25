@@ -10,7 +10,7 @@
 
     <properties>
         <codename>Alpe d'Huez</codename>
-        <maven.compiler.release>11</maven.compiler.release>
+        <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- nexus-staging-maven-plugin -->
         <autoReleaseAfterClose>true</autoReleaseAfterClose>
@@ -239,8 +239,8 @@
                             <bannedPluginRepositories>http://*</bannedPluginRepositories>
                         </bannedRepositories>
                         <requireJavaVersion>
-                            <!-- require Java 11 or higher -->
-                            <version>[11,)</version>
+                            <!-- require Java 17 or higher -->
+                            <version>[17,)</version>
                         </requireJavaVersion>
                         <requireMavenVersion>
                             <version>3.0.4</version>

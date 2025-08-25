@@ -69,7 +69,6 @@ public class NON_BLOCKING_SENDS extends Protocol {
     }
 
     protected static long threadId() {
-        //noinspection deprecation
         return Thread.currentThread().getId();
     }
 }

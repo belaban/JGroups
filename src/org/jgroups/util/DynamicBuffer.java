@@ -642,40 +642,5 @@ public class DynamicBuffer<T> extends Buffer<T> {
         }
     }
 
-
-    /*protected class Remover<R> implements Visitor<T> {
-        protected final int          max_results;
-        protected int                num_results;
-        protected final Predicate<T> filter;
-        protected R                  result;
-        protected Supplier<R>        result_creator;
-        protected BiConsumer<R,T>    result_accumulator;
-
-        public Remover(int max_results, Predicate<T> filter, Supplier<R> creator, BiConsumer<R,T> accumulator) {
-            this.max_results=max_results;
-            this.filter=filter;
-            this.result_creator=creator;
-            this.result_accumulator=accumulator;
-        }
-
-        public R getResult() {return result;}
-
-        @GuardedBy("lock")
-        public boolean visit(long seqno, T element) {
-            if(element == null)
-                return false;
-            if(filter == null || filter.test(element)) {
-                if(result == null)
-                    result=result_creator.get();
-                result_accumulator.accept(result, element);
-                num_results++;
-            }
-            size=Math.max(size-1, 0); // cannot be < 0 (well that would be a bug, but let's have this 2nd line of defense !)
-            if(seqno - hd > 0)
-                hd=seqno;
-            return max_results == 0 || num_results < max_results;
-        }
-    }
-*/
 }
 

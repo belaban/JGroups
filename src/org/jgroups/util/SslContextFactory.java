@@ -1,5 +1,6 @@
 package org.jgroups.util;
 
+import javax.net.ssl.*;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -11,20 +12,8 @@ import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.Provider;
 import java.security.Security;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.ServiceConfigurationError;
-import java.util.ServiceLoader;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509ExtendedKeyManager;
-import javax.net.ssl.X509ExtendedTrustManager;
 
 /**
  * SslContextFactory.
@@ -310,27 +299,6 @@ public class SslContextFactory {
       );
    }
 
-   public static class Context {
-      final SSLContext sslContext;
-      final KeyManager keyManager;
-      final TrustManager trustManager;
-
-      public Context(SSLContext sslContext, KeyManager keyManager, TrustManager trustManager) {
-         this.sslContext = sslContext;
-         this.keyManager = keyManager;
-         this.trustManager = trustManager;
-      }
-
-      public SSLContext sslContext() {
-         return sslContext;
-      }
-
-      public KeyManager keyManager() {
-         return keyManager;
-      }
-
-      public TrustManager trustManager() {
-         return trustManager;
-      }
+   public record Context(SSLContext sslContext, KeyManager keyManager, TrustManager trustManager) {
    }
 }

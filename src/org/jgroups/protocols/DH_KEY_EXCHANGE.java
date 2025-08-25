@@ -195,8 +195,8 @@ public class DH_KEY_EXCHANGE extends KeyExchange {
             encrypter.init(Cipher.ENCRYPT_MODE, hashed_session_key);
 
             Tuple<SecretKey,byte[]> tuple=(Tuple<SecretKey,byte[]>)up_prot.up(new Event(Event.GET_SECRET_KEY));
-            SecretKey secret_key=tuple.getVal1();
-            version=tuple.getVal2();
+            SecretKey secret_key=tuple.val1();
+            version=tuple.val2();
             encrypted_secret_key=encrypter.doFinal(secret_key.getEncoded());
         }
 

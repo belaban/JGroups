@@ -53,19 +53,12 @@ public class DefaultDNSResolver implements DNSResolver {
 
     @Override
     public List<Address> resolveIps(String dnsQuery, DNSRecordType recordType) {
-
         log.trace("resolving DNS query: %s of a type: %s", dnsQuery, recordType.toString());
-
-        switch (recordType) {
-            case A:
-                return resolveAEntries(dnsQuery);
-            case AAAA:
-                return resolveAAAAEntries(dnsQuery);
-            case SRV:
-                return resolveSRVEntries(dnsQuery);
-            default:
-                throw new IllegalStateException("Not implemented");
-        }
+        return switch(recordType) {
+            case A -> resolveAEntries(dnsQuery);
+            case AAAA -> resolveAAAAEntries(dnsQuery);
+            case SRV -> resolveSRVEntries(dnsQuery);
+        };
     }
 
     protected DirContext getDnsContext() {

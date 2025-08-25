@@ -293,7 +293,7 @@ public class MessageBatch implements Iterable<Message> {
             sb.append(", mode=" + mode);
         if(cluster_name != null)
             sb.append(", cluster=").append(cluster_name);
-        if(sb.length() > 0)
+        if(!sb.isEmpty())
             sb.append(", ");
         sb.append(size() + " messages [capacity=" + messages.capacity() + "]");
         return sb.toString();

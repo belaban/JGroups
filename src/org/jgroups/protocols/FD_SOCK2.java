@@ -640,27 +640,19 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
         }
 
         protected static String type2String(byte type) {
-            switch(type) {
-                case SUSPECT:     return "SUSPECT";
-                case UNSUSPECT:   return "UNSUSPECT";
-                case CONNECT:     return "CONNECT";
-                case CONNECT_RSP: return "CONNECT_RSP";
-                default:          return "unknown type (" + type + ')';
-            }
+            return switch(type) {
+                case SUSPECT ->     "SUSPECT";
+                case UNSUSPECT ->   "UNSUSPECT";
+                case CONNECT ->     "CONNECT";
+                case CONNECT_RSP -> "CONNECT_RSP";
+                default ->          "unknown type (" + type + ')';
+            };
         }
     }
 
 
-
-    protected static class Request {
+    protected record Request(Type type, Address suspect) {
         protected enum Type {ConnectToNextPingDest, CloseConnectionToPingDest};
-        protected final Type    type;
-        protected final Address suspect;
-
-        public Request(Type type, Address suspect) {
-            this.type=type;
-            this.suspect=suspect;
-        }
 
         public String toString() {
             return String.format("%s (suspect=%s)", type, suspect);

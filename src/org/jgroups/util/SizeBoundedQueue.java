@@ -173,17 +173,9 @@ public class SizeBoundedQueue<T> {
     }
 
 
-    protected static class El<T> {
-        protected final T   el;
-        protected final int size;
-
-        public El(T el, int size) {
-            this.el=el;
-            this.size=size;
-        }
-
+    protected record El<T>(T el, int size) {
         public String toString() {
-            return String.format("%s (%d bytes)", el, size);
-        }
+                return String.format("%s (%d bytes)", el, size);
+            }
     }
 }

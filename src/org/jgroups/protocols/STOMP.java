@@ -454,8 +454,8 @@ public class STOMP extends Protocol implements Runnable {
 
 
         protected void handleFrame(Frame frame) {
-            Map<String,String> headers=frame.getHeaders();
-            ClientVerb verb=ClientVerb.valueOf(frame.getVerb());
+            Map<String,String> headers=frame.headers();
+            ClientVerb verb=ClientVerb.valueOf(frame.verb());
             
             switch(verb) {
                 case CONNECT:
@@ -468,7 +468,7 @@ public class STOMP extends Protocol implements Runnable {
                         headers.put("sender", session_id.toString());
                     }
 
-                    Message msg=new BytesMessage(null, frame.getBody());
+                    Message msg=new BytesMessage(null, frame.body());
                     Header hdr=StompHeader.createHeader(StompHeader.Type.MESSAGE, headers);
                     msg.putHeader(id, hdr);
                     down_prot.down(msg);
@@ -504,7 +504,7 @@ public class STOMP extends Protocol implements Runnable {
                 case DISCONNECT:
                     break;
                 default:
-                    log.error("Verb " + frame.getVerb() + " is not handled");
+                    log.error("Verb " + frame.verb() + " is not handled");
                     break;
             }
         }
@@ -556,28 +556,7 @@ public class STOMP extends Protocol implements Runnable {
     }
 
 
-    public static class Frame {
-        final String             verb;
-        final Map<String,String> headers;
-        final byte[]             body;
-
-        public Frame(String verb, Map<String, String> headers, byte[] body) {
-            this.verb=verb;
-            this.headers=headers;
-            this.body=body;
-        }
-
-        public byte[] getBody() {
-            return body;
-        }
-
-        public Map<String, String> getHeaders() {
-            return headers;
-        }
-
-        public String getVerb() {
-            return verb;
-        }
+    public record Frame(String verb, Map<String,String> headers, byte[] body) {
 
         public String toString() {
             StringBuilder sb=new StringBuilder();

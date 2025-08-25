@@ -96,16 +96,12 @@ public class RELAY3 extends RELAY {
 
 
     public Object down(Message msg) {
-        //if(msg.isFlagSet(Flag.NO_RELAY))
-          //  return down_prot.down(msg);
         if(msg.src() == null)
             msg.src(local_addr);
         return process(true, msg);
     }
 
     public Object up(Message msg) {
-        // if(msg.isFlagSet(Flag.NO_RELAY))
-        //     return up_prot.up(msg);
         Message copy=msg;
         RelayHeader hdr=msg.getHeader(id);
         if(hdr != null) {
@@ -133,8 +129,6 @@ public class RELAY3 extends RELAY {
         Set<String> unreachable_sites=null;
         for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
             Message msg=it.next(), copy=msg;
-           // if(msg.isFlagSet(Flag.NO_RELAY))
-             //   continue;
             RelayHeader hdr=msg.getHeader(id);
             it.remove();
             if(hdr != null) {

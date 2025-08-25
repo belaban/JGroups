@@ -234,7 +234,7 @@ public class ReflectUtils {
                 Class<?> type=setter instanceof ResourceDMBean.FieldAccessor?
                   ((ResourceDMBean.FieldAccessor)setter).getField().getType() :
                   setter instanceof ResourceDMBean.MethodAccessor?
-                    ((ResourceDMBean.MethodAccessor)setter).getMethod().getParameterTypes()[0] : null;
+                    ((ResourceDMBean.MethodAccessor)setter).method().getParameterTypes()[0] : null;
                 Object converted_value=Util.convert(attr_value, type, null);
                 setter.invoke(converted_value);
                 return;

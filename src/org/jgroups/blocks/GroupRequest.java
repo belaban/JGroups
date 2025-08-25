@@ -127,9 +127,8 @@ public class GroupRequest<T> extends Request<RspList<T>> {
         try {
             for(Map.Entry<Address,Rsp<T>> entry : rsps.entrySet()) {
                 Address member=entry.getKey();
-                if(!(member instanceof SiteAddress))
+                if(!(member instanceof SiteAddress addr))
                     continue;
-                SiteAddress addr=(SiteAddress)member;
                 if(pred.test(addr)) {
                     Rsp<T> rsp=entry.getValue();
                     if(rsp != null && rsp.setUnreachable()) {
@@ -323,12 +322,11 @@ public class GroupRequest<T> extends Request<RspList<T>> {
         if(isDone())
             return true;
         final int num_total=rsps.size();
-        switch(options.mode()) {
-            case GET_FIRST: return num_valid >= 1 || num_received >= num_total;
-            case GET_ALL:   return num_valid >= num_total || num_received >= num_total;
-            case GET_NONE:  return true;
-        }
-        return false;
+        return switch(options.mode()) {
+            case GET_FIRST -> num_valid >= 1 || num_received >= num_total;
+            case GET_ALL -> num_valid >= num_total || num_received >= num_total;
+            case GET_NONE -> true;
+        };
     }
 
 

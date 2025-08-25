@@ -159,7 +159,7 @@ public class NonReflectiveProbeHandler extends JChannelProbeHandler {
         if(m != null) {
             ResourceDMBean.Accessor setter=m.get(attr_name);
             if(setter != null) {
-                Class<?> type=((ResourceDMBean.MethodAccessor)setter).getMethod().getParameterTypes()[0];
+                Class<?> type=((ResourceDMBean.MethodAccessor)setter).method().getParameterTypes()[0];
                 converted_value=Util.convert(attr_value, type, null);
                 invoke(protocol_name, setter, attr_name, converted_value);
                 return;
@@ -191,7 +191,7 @@ public class NonReflectiveProbeHandler extends JChannelProbeHandler {
             log.error("method %s not found", method_name);
             return null;
         }
-        return accessor.getMethod();
+        return accessor.method();
     }
 
     protected static void invoke(String protocol_name, ResourceDMBean.Accessor setter, String attr, Object value) {

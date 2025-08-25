@@ -218,21 +218,10 @@ public class RelayConfig {
      * connected to HF, it needs to have a ForwardConfig with to="HF" and gateway="NET1". This means that a message to
      * site HF will be forwarded to NET1, which then forwards it to HF.
      */
-    public static class ForwardConfig {
-        protected final String to;
-        protected final String gateway;
-
-        public ForwardConfig(String to, String gateway) {
-            this.to=to;
-            this.gateway=gateway;
-        }
-
-        public String gateway() {return gateway;}
-        public String to()      {return to;}
-
+    public record ForwardConfig(String to, String gateway) {
         public String toString() {
-            return "forward to=" + to + " gw=" + gateway;
-        }
+                return "forward to=" + to + " gw=" + gateway;
+            }
     }
 
     public static void main(String[] args) throws Exception {

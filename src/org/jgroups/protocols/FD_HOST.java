@@ -107,7 +107,7 @@ public class FD_HOST extends Protocol {
     public String printSuspectHistory() {
         StringBuilder sb=new StringBuilder();
         for(Tuple<InetAddress,Long> tmp: suspect_history) {
-            sb.append(Util.utcEpoch(tmp.getVal2())).append(": ").append(tmp.getVal1()).append("\n");
+            sb.append(Util.utcEpoch(tmp.val2())).append(": ").append(tmp.val1()).append("\n");
         }
         return sb.toString();
     }
@@ -398,12 +398,7 @@ public class FD_HOST extends Protocol {
         }
     }
 
-    protected static class ExternalPingCommand implements PingCommand {
-        protected final String cmd;
-
-        public ExternalPingCommand(String cmd) {
-            this.cmd=cmd;
-        }
+    protected record ExternalPingCommand(String cmd) implements PingCommand {
 
         public boolean isAlive(InetAddress host, long timeout) throws Exception {
             return CommandExecutor2.execute(cmd, host.getHostAddress()) == 0;

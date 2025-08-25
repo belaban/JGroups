@@ -86,7 +86,7 @@ public class ReplicatedHashMap<K, V> extends
     private final Set<Notification> notifs = new CopyOnWriteArraySet<>();
     private final List<Address> members = new ArrayList<>(); // keeps track of all DHTs
 
-    protected final RequestOptions call_options = new RequestOptions(ResponseMode.GET_NONE, 5000);
+    protected final RequestOptions call_options = new RequestOptions(ResponseMode.GET_NONE, 10000);
 
     protected final Log log = LogFactory.getLog(this.getClass());
 

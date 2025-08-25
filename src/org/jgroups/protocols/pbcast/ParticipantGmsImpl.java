@@ -116,8 +116,6 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
         leaver.coordChanged(to);
     }
 
-    /* ---------------------------------- Private Methods --------------------------------------- */
-
     /**
      * Determines whether this member is the new coordinator given a list of suspected members.  This is
      * computed as follows: the list of currently suspected members (suspected_mbrs) is removed from the current
@@ -132,13 +130,4 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
         Address new_coord=mbrs.get(0);
         return gms.getAddress().equals(new_coord);
     }
-
-
-   /* protected void sendLeaveMessage(Address coord, Address mbr) {
-        Message msg=new EmptyMessage(coord).setFlag(Message.Flag.OOB)
-          .putHeader(gms.getId(), new GMS.GmsHeader(GMS.GmsHeader.LEAVE_REQ, mbr));
-        gms.getDownProtocol().down(msg);
-    }*/
-    /* ------------------------------ End of Private Methods ------------------------------------ */
-
 }

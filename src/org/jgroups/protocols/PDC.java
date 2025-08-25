@@ -82,8 +82,8 @@ public class PDC extends Protocol {
             case Event.ADD_PHYSICAL_ADDRESS:
                 Tuple<Address,PhysicalAddress> new_val=evt.getArg();
                 if(new_val != null) {
-                    cache.put(new_val.getVal1(), new_val.getVal2());
-                    writeNodeToDisk(new_val.getVal1(), new_val.getVal2());
+                    cache.put(new_val.val1(), new_val.val2());
+                    writeNodeToDisk(new_val.val1(), new_val.val2());
                 }
                 break;
             case Event.REMOVE_ADDRESS:

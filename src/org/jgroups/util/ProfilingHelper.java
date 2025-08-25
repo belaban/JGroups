@@ -28,22 +28,6 @@ public class ProfilingHelper extends Helper {
 
     protected static final ProfilingProbeHandler ph=new ProfilingProbeHandler();
 
-    /*public static void activated() {
-        if(diag_handler == null) {
-            try {
-                diag_handler=createDiagHandler();
-                boolean already_present=diag_handler.getProbeHandlers().contains(ph);
-                if(!already_present)
-                    diag_handler.registerProbeHandler(ph);
-                diag_handler.start();
-            }
-            catch(Exception e) {
-                throw new RuntimeException(e);
-            }
-
-        }
-    }*/
-
     @SuppressWarnings("MethodMayBeStatic")
     public void diagCreated(DiagnosticsHandler diag) {
         if(diag != null && diag.isEnabled()) {

@@ -152,11 +152,4 @@ public class RED extends Protocol {
         return val;
     }
 
-   /* public static void main(String[] args) {
-        RED red=new RED();
-        for(int i=0; i <= 1030; i++) {
-            double p=red.computeDropProbability(i);
-            System.out.printf("i=%d, drop-p=%.2f\n", i, p);
-        }
-    }*/
 }

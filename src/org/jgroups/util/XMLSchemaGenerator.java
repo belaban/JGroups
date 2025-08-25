@@ -335,7 +335,7 @@ public class XMLSchemaGenerator {
         for (Method method : methods) {
             if (method.isAnnotationPresent(Property.class)) {
                 final Property ann = method.getAnnotation(Property.class);
-                String name=ann.name().length() < 1? Util.methodNameToAttributeName(method.getName()) : ann.name();
+                String name=ann.name().isEmpty()? Util.methodNameToAttributeName(method.getName()) : ann.name();
                 String tmp_name=prefix != null && !prefix.trim().isEmpty()? prefix + "." + name : name;
                 sortedElements.put(tmp_name, () -> {
                     Element attributeElement = xmldoc.createElement("xs:attribute");

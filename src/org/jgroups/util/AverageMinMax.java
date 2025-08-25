@@ -50,8 +50,7 @@ public class AverageMinMax extends Average {
         if(other.count() == 0)
             return (T)this;
         super.merge(other);
-        if(other instanceof AverageMinMax) {
-            AverageMinMax o=(AverageMinMax)other;
+        if(other instanceof AverageMinMax o) {
             this.min=Math.min(min, o.min());
             this.max=Math.max(max, o.max());
             if(this.values != null) {

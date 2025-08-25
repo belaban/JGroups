@@ -302,7 +302,6 @@ public class TcpConnection extends Connection {
                 ; // regular use case when a peer closes its connection - we don't want to log this as exception
             }
             catch(Exception e) {
-                //noinspection StatementWithEmptyBody
                 if (e instanceof SSLException && e.getMessage().contains("Socket closed")) {
                     ; // regular use case when a peer closes its connection - we don't want to log this as exception
                 }

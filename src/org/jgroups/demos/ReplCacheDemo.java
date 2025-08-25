@@ -429,9 +429,9 @@ public class ReplCacheDemo extends JPanel implements ActionListener {
                     switch(col) {
                         case 0:  return key;
                         case 1:
-                            V value=tmp.getVal();
+                            V value=tmp.val();
                             return value instanceof byte[]? ((byte[])value).length + " bytes" : value;
-                        case 2:  return tmp.getReplicationCount();
+                        case 2:  return tmp.replication_count();
                         case 3:  return val.getTimeout();
                         default: return "n/a";
                     }

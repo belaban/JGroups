@@ -96,8 +96,8 @@ public class SimpleTCP extends TP {
         switch(evt.type()) {
             case Event.ADD_PHYSICAL_ADDRESS:
                 Tuple<Address,PhysicalAddress> tuple=evt.arg();
-                PhysicalAddress val=tuple.getVal2();
-                addr_table.put(tuple.getVal1(), val.getSocketAddress());
+                PhysicalAddress val=tuple.val2();
+                addr_table.put(tuple.val1(), val.getSocketAddress());
                 break;
             case Event.VIEW_CHANGE:
                 for(Iterator<Map.Entry<Address,SocketAddress>> it=addr_table.entrySet().iterator(); it.hasNext();) {

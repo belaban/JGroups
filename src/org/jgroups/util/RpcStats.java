@@ -214,8 +214,15 @@ public class RpcStats {
         }
 
         public String toString() {
-            return String.format("  total: %s\n  down-req: %s\n  network req: %s\n  network rsp: %s\n" +
-                                   "  up-req: %s\n  up-rsp: %s\n  processing time: %s\n",
+            return String.format("""
+                                     total: %s
+                                     down-req: %s
+                                     network req: %s
+                                     network rsp: %s
+                                     up-req: %s
+                                     up-rsp: %s
+                                     processing time: %s
+                                   """,
                                  total_time.toString(NANOSECONDS),
                                  down_req_time.toString(NANOSECONDS),
                                  network_req_time.toString(NANOSECONDS), network_rsp_time.toString(NANOSECONDS),

@@ -236,9 +236,9 @@ public class MPING extends PING implements Runnable {
     protected void bindToInterfaces(List<NetworkInterface> interfaces, MulticastSocket s, InetAddress mcast_addr) throws IOException {
         SocketAddress tmp_mcast_addr=new InetSocketAddress(mcast_addr, mcast_port);
         for(Iterator<NetworkInterface> it=interfaces.iterator(); it.hasNext();) {
-            NetworkInterface i=(NetworkInterface)it.next();
+            NetworkInterface i=it.next();
             for(Enumeration<InetAddress> en2=i.getInetAddresses(); en2.hasMoreElements();) {
-                InetAddress addr=(InetAddress)en2.nextElement();
+                InetAddress addr=en2.nextElement();
                 if ((Util.getIpStackType() == StackType.IPv4 && addr instanceof Inet4Address)
                   || (Util.getIpStackType() == StackType.IPv6 && addr instanceof Inet6Address)) {
                     s.joinGroup(tmp_mcast_addr, i);

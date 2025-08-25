@@ -92,7 +92,7 @@ public class MFC_NB extends MFC {
             if(needToSendCreditRequest()) {
                 List<Tuple<Address,Long>> targets=credits.getMembersWithCreditsLessThan(min_credits);
                 for(Tuple<Address,Long> tuple: targets)
-                    sendCreditRequest(tuple.getVal1(), Math.min(max_credits, max_credits - tuple.getVal2()));
+                    sendCreditRequest(tuple.val1(), Math.min(max_credits, max_credits - tuple.val2()));
             }
             return null;
         }
@@ -107,7 +107,7 @@ public class MFC_NB extends MFC {
         if(credits.getMinCredits() < min_credits && needToSendCreditRequest()) {
             List<Tuple<Address,Long>> targets=credits.getMembersWithCreditsLessThan(min_credits);
             for(Tuple<Address,Long> tuple: targets)
-                sendCreditRequest(tuple.getVal1(), Math.min(max_credits, max_credits - tuple.getVal2()));
+                sendCreditRequest(tuple.val1(), Math.min(max_credits, max_credits - tuple.val2()));
         }
     }
 

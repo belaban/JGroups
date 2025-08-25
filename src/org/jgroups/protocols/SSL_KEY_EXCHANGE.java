@@ -376,8 +376,8 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
             Tuple<SecretKey,byte[]> tuple=(Tuple<SecretKey,byte[]>)up_prot.up(new Event(Event.GET_SECRET_KEY));
             if(tuple == null)
                 return;
-            byte[] version=tuple.getVal2();
-            byte[] secret_key=tuple.getVal1().getEncoded();
+            byte[] version=tuple.val2();
+            byte[] secret_key=tuple.val1().getEncoded();
 
             out.write(Type.SECRET_KEY_RSP.ordinal());
             out.writeInt(version.length);

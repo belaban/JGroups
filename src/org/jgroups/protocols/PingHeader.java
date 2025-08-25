@@ -49,11 +49,11 @@ public class PingHeader extends Header {
     }
 
     static String type2Str(byte t) {
-        switch(t) {
-            case GET_MBRS_REQ: return "GET_MBRS_REQ";
-            case GET_MBRS_RSP: return "GET_MBRS_RSP";
-            default:           return "<unkown type (" + t + ")>";
-        }
+        return switch(t) {
+            case GET_MBRS_REQ -> "GET_MBRS_REQ";
+            case GET_MBRS_RSP -> "GET_MBRS_RSP";
+            default ->           "<unkown type (" + t + ")>";
+        };
     }
 
     @Override

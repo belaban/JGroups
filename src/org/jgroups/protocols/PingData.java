@@ -92,10 +92,7 @@ public class PingData implements SizeStreamable, Constructable<PingData>, Compar
     }
 
     public boolean equals(Object obj) {
-        if(!(obj instanceof PingData))
-            return false;
-        PingData other=(PingData)obj;
-        return Objects.equals(sender, other.sender);
+        return obj instanceof PingData other && Objects.equals(sender, other.sender);
     }
 
     public int hashCode() {

@@ -457,8 +457,8 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
         Object      resource=null;
         try {
             Tuple<InputStream,Object> tuple=createStreamToProvider(provider, hdr); // tuple's 2nd arg is a handback object
-            in=tuple.getVal1();
-            resource=tuple.getVal2();
+            in=tuple.val1();
+            resource=tuple.val2();
         }
         catch(Throwable t) {
             handleException(t);

@@ -48,7 +48,7 @@ public class IntHashMap<T> {
         for(int i=0; i < table.length; i++) {
             T el=table[i];
             if(el != null)
-                sj.add(i + "=" + el.toString());
+                sj.add(i + "=" + el);
         }
         return sj.toString();
     }

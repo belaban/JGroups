@@ -109,7 +109,7 @@ public final class PropertyConverters {
         public Object convert(Object obj, Class<?> propertyFieldType, String propertyName, String propertyValue, boolean check_scope, StackType ip_version) throws Exception {
 
             // get the existing bind address - possibly null
-            InetAddress old_bind_addr=Configurator.getValueFromObject((Protocol)obj, "bind_addr");
+            InetAddress old_bind_addr=Configurator.getValueFromObject(obj, "bind_addr");
 
             // apply a bind interface constraint
             InetAddress new_bind_addr=Util.validateBindAddressFromInterface(old_bind_addr, propertyValue, ip_version);
@@ -208,9 +208,8 @@ public final class PropertyConverters {
                 else
                     retval=Util.getAddress(propValue, ip_version);
 
-                if(check_scope && retval instanceof Inet6Address && retval.isLinkLocalAddress()) {
+                if(check_scope && retval instanceof Inet6Address addr && retval.isLinkLocalAddress()) {
                     // check scope
-                    Inet6Address addr=(Inet6Address)retval;
                     int scope=addr.getScopeId();
                     if(scope == 0) {
                         // fix scope

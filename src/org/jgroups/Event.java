@@ -84,58 +84,56 @@ public class Event {
 
 
     public static String type2String(int t) {
-        switch(t) {
-            case CONNECT:	             return "CONNECT";
-            case DISCONNECT:	         return "DISCONNECT";
-            case VIEW_CHANGE:	         return "VIEW_CHANGE";
-            case SUSPECT:                return "SUSPECT";
-            case FIND_MBRS:              return "FIND_MBRS";
-            case FIND_INITIAL_MBRS:	     return "FIND_INITIAL_MBRS";
-            case FIND_MBRS_ASYNC:        return "FIND_MBRS_ASYNC";
-            case TMP_VIEW:	             return "TMP_VIEW";
-            case BECOME_SERVER:	         return "BECOME_SERVER";
-            case GET_APPLSTATE:          return "GET_APPLSTATE";
-            case GET_STATE:              return "GET_STATE";
-            case GET_STATE_OK:           return "GET_STATE_OK";
-            case STABLE:                 return "STABLE";
-            case GET_DIGEST:             return "GET_DIGEST";
-            case SET_DIGEST:             return "SET_DIGEST";
-            case OVERWRITE_DIGEST:       return "OVERWRITE_DIGEST";
-            case MERGE:                  return "MERGE";
-            case UNSUSPECT:              return "UNSUSPECT";
-            case MERGE_DIGEST:           return "MERGE_DIGEST";
-            case CONFIG:                 return "CONFIG";
-            case SUSPEND_STABLE:         return "SUSPEND_STABLE";
-            case RESUME_STABLE:          return "RESUME_STABLE";
-            case STATE_TRANSFER_INPUTSTREAM: return "STATE_TRANSFER_INPUTSTREAM";
-            case STATE_TRANSFER_OUTPUTSTREAM:return "STATE_TRANSFER_OUTPUTSTREAM";
-            case STATE_TRANSFER_INPUTSTREAM_CLOSED: return "STATE_TRANSFER_INPUTSTREAM_CLOSED";
-            case CLOSE_BARRIER:          return "CLOSE_BARRIER";
-            case OPEN_BARRIER:           return "OPEN_BARRIER";
-            case CONNECT_WITH_STATE_TRANSFER:    return "CONNECT_WITH_STATE_TRANSFER";
-            case GET_PHYSICAL_ADDRESS:   return "GET_PHYSICAL_ADDRESS";
-            case GET_LOGICAL_PHYSICAL_MAPPINGS: return "GET_LOGICAL_PHYSICAL_MAPPINGS";
-            case ADD_PHYSICAL_ADDRESS:   return "ADD_PHYSICAL_ADDRESS";
-            case REMOVE_ADDRESS:         return "REMOVE_ADDRESS";
-            case GET_LOCAL_ADDRESS:      return "GET_LOCAL_ADDRESS";
-            case IS_MERGE_IN_PROGRESS:   return "IS_MERGE_IN_PROGRESS";
-            case GET_PHYSICAL_ADDRESSES: return "GET_PHYSICAL_ADDRESSES";
-            case SITE_UNREACHABLE:       return "SITE_UNREACHABLE";
-            case MBR_UNREACHABLE:        return "MBR_UNREACHABLE";
-            case PUNCH_HOLE:             return "PUNCH_HOLE";
-            case CLOSE_HOLE:             return "CLOSE_HOLE";
-            case GET_VIEW_FROM_COORD:    return "GET_VIEW_FROM_COORD";
-            case GET_PING_DATA:          return "GET_PING_DATA";
-            case GET_SECRET_KEY:         return "GET_SECRET_KEY";
-            case SET_SECRET_KEY:         return "SET_SECRET_KEY";
-            case INSTALL_MERGE_VIEW:     return "INSTALL_MERGE_VIEW";
-            case IS_LOCAL_SITEMASTER:    return "IS_LOCAL_SITEMASTER";
-            case IS_LOCAL:               return "IS_LOCAL";
-
-            case USER_DEFINED:           return "USER_DEFINED";
-            default:                     return "UNDEFINED(" + t + ")";
-
-        }
+        return switch(t) {
+            case CONNECT -> "CONNECT";
+            case DISCONNECT -> "DISCONNECT";
+            case VIEW_CHANGE -> "VIEW_CHANGE";
+            case SUSPECT -> "SUSPECT";
+            case FIND_MBRS -> "FIND_MBRS";
+            case FIND_INITIAL_MBRS -> "FIND_INITIAL_MBRS";
+            case FIND_MBRS_ASYNC -> "FIND_MBRS_ASYNC";
+            case TMP_VIEW -> "TMP_VIEW";
+            case BECOME_SERVER -> "BECOME_SERVER";
+            case GET_APPLSTATE -> "GET_APPLSTATE";
+            case GET_STATE -> "GET_STATE";
+            case GET_STATE_OK -> "GET_STATE_OK";
+            case STABLE -> "STABLE";
+            case GET_DIGEST -> "GET_DIGEST";
+            case SET_DIGEST -> "SET_DIGEST";
+            case OVERWRITE_DIGEST -> "OVERWRITE_DIGEST";
+            case MERGE -> "MERGE";
+            case UNSUSPECT -> "UNSUSPECT";
+            case MERGE_DIGEST -> "MERGE_DIGEST";
+            case CONFIG -> "CONFIG";
+            case SUSPEND_STABLE -> "SUSPEND_STABLE";
+            case RESUME_STABLE -> "RESUME_STABLE";
+            case STATE_TRANSFER_INPUTSTREAM -> "STATE_TRANSFER_INPUTSTREAM";
+            case STATE_TRANSFER_OUTPUTSTREAM -> "STATE_TRANSFER_OUTPUTSTREAM";
+            case STATE_TRANSFER_INPUTSTREAM_CLOSED -> "STATE_TRANSFER_INPUTSTREAM_CLOSED";
+            case CLOSE_BARRIER -> "CLOSE_BARRIER";
+            case OPEN_BARRIER -> "OPEN_BARRIER";
+            case CONNECT_WITH_STATE_TRANSFER -> "CONNECT_WITH_STATE_TRANSFER";
+            case GET_PHYSICAL_ADDRESS -> "GET_PHYSICAL_ADDRESS";
+            case GET_LOGICAL_PHYSICAL_MAPPINGS -> "GET_LOGICAL_PHYSICAL_MAPPINGS";
+            case ADD_PHYSICAL_ADDRESS -> "ADD_PHYSICAL_ADDRESS";
+            case REMOVE_ADDRESS -> "REMOVE_ADDRESS";
+            case GET_LOCAL_ADDRESS -> "GET_LOCAL_ADDRESS";
+            case IS_MERGE_IN_PROGRESS -> "IS_MERGE_IN_PROGRESS";
+            case GET_PHYSICAL_ADDRESSES -> "GET_PHYSICAL_ADDRESSES";
+            case SITE_UNREACHABLE -> "SITE_UNREACHABLE";
+            case MBR_UNREACHABLE -> "MBR_UNREACHABLE";
+            case PUNCH_HOLE -> "PUNCH_HOLE";
+            case CLOSE_HOLE -> "CLOSE_HOLE";
+            case GET_VIEW_FROM_COORD -> "GET_VIEW_FROM_COORD";
+            case GET_PING_DATA -> "GET_PING_DATA";
+            case GET_SECRET_KEY -> "GET_SECRET_KEY";
+            case SET_SECRET_KEY -> "SET_SECRET_KEY";
+            case INSTALL_MERGE_VIEW -> "INSTALL_MERGE_VIEW";
+            case IS_LOCAL_SITEMASTER -> "IS_LOCAL_SITEMASTER";
+            case IS_LOCAL -> "IS_LOCAL";
+            case USER_DEFINED -> "USER_DEFINED";
+            default -> "UNDEFINED(" + t + ")";
+        };
     }
 
     public String toString() {return String.format("%s, arg=%s", type2String(type), arg);}

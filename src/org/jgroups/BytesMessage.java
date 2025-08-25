@@ -190,8 +190,7 @@ public class BytesMessage extends BaseMessage {
             return setArray((byte[])obj, 0, ((byte[])obj).length);
         if(obj instanceof ByteArray)
             return setArray((ByteArray)obj);
-        if(obj instanceof ByteBuffer) {
-            ByteBuffer bb=(ByteBuffer)obj;
+        if(obj instanceof ByteBuffer bb) {
             if(bb.hasArray())
                 return setArray(bb.array(), bb.arrayOffset()+bb.position(), bb.remaining());
             else

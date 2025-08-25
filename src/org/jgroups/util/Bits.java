@@ -623,7 +623,7 @@ public final class Bits {
         short length=(short)(s != null? s.length() : -1);
         buf.putShort(length);
         if(s != null)
-            buf.put(s.chars());
+            buf.put(s.val());
     }
 
     /**
@@ -635,7 +635,7 @@ public final class Bits {
         short length=(short)(s != null? s.length() : -1);
         out.writeShort(length);
         if(s != null)
-            out.write(s.chars());
+            out.write(s.val());
     }
 
     /**
@@ -647,9 +647,9 @@ public final class Bits {
         short len=buf.getShort();
         if(len < 0)
             return null;
-        AsciiString retval=new AsciiString(len);
-        buf.get(retval.chars());
-        return retval;
+        byte[] b=new byte[len];
+        buf.get(b);
+        return new AsciiString(b);
     }
 
     /**
@@ -661,9 +661,9 @@ public final class Bits {
         short len=in.readShort();
         if(len < 0)
             return null;
-        AsciiString retval=new AsciiString(len);
-        in.readFully(retval.chars());
-        return retval;
+        byte[] b=new byte[len];
+        in.readFully(b);
+        return new AsciiString(b);
     }
 
 
@@ -690,10 +690,6 @@ public final class Bits {
         retval |= (len1 << 4);
         return retval;
     }
-
-/*    protected static byte[] decodeLength(byte len) {
-        return new byte[]{(byte)((len & 0xff) >> 4),(byte)(len & ~0xf0)}; // 0xf0 is the first nibble set (11110000)
-    }*/
 
     protected static byte firstNibble(byte len) {
         return (byte)((len & 0xff) >> 4); // 0xf0 is the first nibble set (11110000)

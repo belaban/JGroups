@@ -134,7 +134,7 @@ public class Bridge implements Receiver {
         List<String> old_routes=Stream.of(old_view.getMembersRaw()).filter(a -> a instanceof SiteUUID)
           .map(s -> ((SiteUUID)s).getSite()).collect(Collectors.toList());
         List<String> new_routes=Stream.of(new_view.getMembersRaw()).filter(a -> a instanceof SiteUUID)
-          .map(s -> ((SiteUUID)s).getSite()).collect(Collectors.toList());
+          .map(s -> ((SiteUUID)s).getSite()).toList();
         old_routes.removeAll(new_routes);
         return old_routes;
     }

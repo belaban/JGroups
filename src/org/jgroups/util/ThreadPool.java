@@ -217,8 +217,7 @@ public class ThreadPool implements Lifecycle {
 
     @Override
     public void destroy() {
-        if(thread_pool instanceof ExecutorService) {
-            ExecutorService service=(ExecutorService)thread_pool;
+        if(thread_pool instanceof ExecutorService service) {
             service.shutdownNow();
             try {
                 service.awaitTermination(Global.THREADPOOL_SHUTDOWN_WAIT_TIME, TimeUnit.MILLISECONDS);

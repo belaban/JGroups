@@ -86,14 +86,14 @@ public class UnicastHeader3 extends Header {
     }
 
     public static String type2Str(byte t) {
-        switch(t) {
-            case DATA:             return "DATA";
-            case ACK:              return "ACK";
-            case SEND_FIRST_SEQNO: return "SEND_FIRST_SEQNO";
-            case XMIT_REQ:         return "XMIT_REQ";
-            case CLOSE:            return "CLOSE";
-            default:               return "<unknown>";
-        }
+        return switch(t) {
+            case DATA ->             "DATA";
+            case ACK ->              "ACK";
+            case SEND_FIRST_SEQNO -> "SEND_FIRST_SEQNO";
+            case XMIT_REQ ->         "XMIT_REQ";
+            case CLOSE ->            "CLOSE";
+            default ->               "<unknown>";
+        };
     }
 
     public final int serializedSize() {

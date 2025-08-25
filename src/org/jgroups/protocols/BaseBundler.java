@@ -130,6 +130,8 @@ public abstract class BaseBundler implements Bundler {
     public Bundler               useSingleSenderThread(boolean u) {this.use_single_sender_thread=u; return this;}
     public boolean               useRingBuffer()                  {return use_ringbuffer;}
     public Bundler               useRingBuffer(boolean u)         {this.use_ringbuffer=u; return this;}
+    public long                  suppressLogTimeout()             {return suppress_log_timeout;}
+    public void                  suppressLogTimeout(long s)       {this.suppress_log_timeout=s;}
 
     @ManagedAttribute(description="Average number of messages in an BatchMessage")
     public double avgBatchSize() {
@@ -308,7 +310,7 @@ public abstract class BaseBundler implements Bundler {
     }
 
     protected void sendMessageList(Address dest, Address src, List<Message> list, ByteArrayDataOutputStream out) throws Exception {
-        Util.writeMessageList(dest, src, transport.cluster_name.chars(), list, out, dest == null);
+        Util.writeMessageList(dest, src, transport.cluster_name.val(), list, out, dest == null);
         transport.doSend(out.buffer(), 0, out.position(), dest);
         transport.getMessageStats().incrNumBatchesSent();
         num_batches_sent.increment();
@@ -316,7 +318,7 @@ public abstract class BaseBundler implements Bundler {
 
     protected void sendMessageListArray(final Address dest, final Address src, Message[] list, int len, ByteArrayDataOutputStream out) {
         try {
-            Util.writeMessageList(dest, src, transport.cluster_name.chars(), list, 0, len, out, dest == null);
+            Util.writeMessageList(dest, src, transport.cluster_name.val(), list, 0, len, out, dest == null);
             transport.doSend(out.buffer(), 0, out.position(), dest);
             transport.getMessageStats().incrNumBatchesSent();
         }

@@ -11,22 +11,8 @@ import java.nio.ByteBuffer;
  * @author Bela Ban
  * @since  3.5
  */
-public class ByteBufferOutputStream implements DataOutput {
-    protected final ByteBuffer buf;
-
-
-    public ByteBufferOutputStream(ByteBuffer buf) {
-        this.buf=buf;
-    }
-
-    public void reset() {buf.clear();}
-
-    public ByteBuffer getBuffer() {return buf;}
-
-    public ByteArray getBufferAsBuffer() {
-        return new ByteArray(buf.array(), buf.arrayOffset(), buf.position());
-    }
-
+public record ByteBufferOutputStream(ByteBuffer buf) implements DataOutput {
+    public void       reset()             {buf.clear();}
 
     public void write(int b) throws IOException {
         buf.put((byte)b);

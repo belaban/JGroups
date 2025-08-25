@@ -144,7 +144,7 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
             case Event.SET_SECRET_KEY:
                 Tuple<SecretKey,byte[]> tuple=evt.arg();
                 try {
-                    installSharedGroupKey(null, tuple.getVal1(), tuple.getVal2());
+                    installSharedGroupKey(null, tuple.val1(), tuple.val2());
                 }
                 catch(Exception ex) {
                     log.error("failed setting group key", ex);
@@ -256,24 +256,18 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
             return false;
 
         EncryptHeader h=msg.getHeader(id);
-        switch(hdr.getType()) {
-            case GMS.GmsHeader.JOIN_REQ:
-            case GMS.GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER:
-            case GMS.GmsHeader.MERGE_RSP:
-                return processEncryptMessage(msg, h, true);
-            case GMS.GmsHeader.JOIN_RSP:
-            case GMS.GmsHeader.VIEW:
-            case GMS.GmsHeader.INSTALL_MERGE_VIEW:
+        return switch(hdr.getType()) {
+            case GMS.GmsHeader.JOIN_REQ, GMS.GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER, GMS.GmsHeader.MERGE_RSP ->
+              processEncryptMessage(msg, h, true);
+            case GMS.GmsHeader.JOIN_RSP, GMS.GmsHeader.VIEW, GMS.GmsHeader.INSTALL_MERGE_VIEW -> {
                 if(hdr.getType() == GMS.GmsHeader.INSTALL_MERGE_VIEW)
                     cacheServerAddress(h.server());
-                return processEncryptMessage(msg, h, false);
-            case GMS.GmsHeader.MERGE_REQ:
-            case GMS.GmsHeader.VIEW_ACK:
-            case GMS.GmsHeader.GET_DIGEST_REQ:
-            case GMS.GmsHeader.GET_DIGEST_RSP:
-                return true;
-        }
-        return false;
+                yield processEncryptMessage(msg, h, false);
+            }
+            case GMS.GmsHeader.MERGE_REQ, GMS.GmsHeader.VIEW_ACK, GMS.GmsHeader.GET_DIGEST_REQ,
+                 GMS.GmsHeader.GET_DIGEST_RSP -> true;
+            default -> false;
+        };
     }
 
     protected boolean processEncryptMessage(Message msg, EncryptHeader hdr, boolean retval) {
@@ -642,7 +636,7 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
             pubKey=KeyFac.generatePublic(x509KeySpec);
         }
         catch(Exception e) {
-            e.printStackTrace();
+            log.error("failed making public key: %s", e.getMessage());
         }
         return pubKey;
     }

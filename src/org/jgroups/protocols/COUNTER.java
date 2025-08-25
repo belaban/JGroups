@@ -599,18 +599,12 @@ public class COUNTER extends Protocol {
     }
 
     @SuppressWarnings("deprecation")
-    private static class SyncCounterImpl implements Counter {
-
-        private final AsyncCounter counter;
-
-        private SyncCounterImpl(AsyncCounter counter) {
-            this.counter = counter;
-        }
+    private record SyncCounterImpl(AsyncCounter counter) implements Counter {
 
         @Override
         public String getName() {
-            return counter.getName();
-        }
+                return counter.getName();
+            }
 
         @Override
         public long get() {
@@ -1398,22 +1392,11 @@ public class COUNTER extends Protocol {
         }
     }
 
-    private static class UpdateResult<T extends Streamable> {
-
-        final boolean updated;
-        final T result;
-        final long[] snapshot;
-
-        private UpdateResult(boolean updated, T result, long[] snapshot) {
-            this.updated = updated;
-            this.result = result;
-            this.snapshot = snapshot;
-        }
+    private record UpdateResult<T extends Streamable>(boolean updated, T result, long[] snapshot) {
     }
 
     protected class ReconciliationTask implements Runnable {
         protected ResponseCollector<ReconcileResponse> responses;
-
 
         public void run() {
             try {
@@ -1506,27 +1489,18 @@ public class COUNTER extends Protocol {
         }
     }
 
-    private static class ResponseData<T> implements BiFunction<String, VersionedValue, VersionedValue> {
-        private final String counterName;
-        private final long value;
-        private final long version;
-        private final T returnValue;
-
-        private ResponseData(String counterName, long value, long version, T returnValue) {
-            this.counterName = counterName;
-            this.value = value;
-            this.version = version;
-            this.returnValue = returnValue;
-        }
+    private record ResponseData<T>(String counterName, long value, long version,
+                                   T returnValue) implements BiFunction<String,VersionedValue,VersionedValue> {
 
         /**
          * Updates the VersionedValue if the version is bigger.
          */
         @Override
         public VersionedValue apply(String s, VersionedValue versionedValue) {
-            if (versionedValue == null) {
-                versionedValue = new VersionedValue(value, version);
-            } else {
+            if(versionedValue == null) {
+                versionedValue=new VersionedValue(value, version);
+            }
+            else {
                 versionedValue.updateIfBigger(value, version);
             }
             return versionedValue;

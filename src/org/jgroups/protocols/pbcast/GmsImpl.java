@@ -108,18 +108,11 @@ public abstract class GmsImpl {
             Request other=(Request)obj;
             if(type != other.type)
                 return false;
-            switch(type) {
-                case JOIN:
-                case JOIN_WITH_STATE_TRANSFER:
-                case LEAVE:
-                case COORD_LEAVE:
-                case SUSPECT:
-                    return Objects.equals(mbr, other.mbr);
-                case MERGE:
-                    return Objects.equals(views, other.views);
-                default:
-                    return false;
-            }
+            return switch(type) {
+                case JOIN, JOIN_WITH_STATE_TRANSFER, LEAVE, COORD_LEAVE, SUSPECT -> Objects.equals(mbr, other.mbr);
+                case MERGE -> Objects.equals(views, other.views);
+                default -> false;
+            };
         }
 
         public int hashCode() {
@@ -127,15 +120,15 @@ public abstract class GmsImpl {
         }
 
         public String toString() {
-            switch(type) {
-                case JOIN:                     return String.format("JOIN(%s)", mbr);
-                case JOIN_WITH_STATE_TRANSFER: return String.format("JOIN_WITH_STATE_TRANSFER(%s)", mbr);
-                case LEAVE:                    return String.format("LEAVE(%s)", mbr);
-                case COORD_LEAVE:              return "COORD_LEAVE";
-                case SUSPECT:                  return String.format("SUSPECT(%s)", mbr);
-                case MERGE:                    return String.format("MERGE(%d views)", views.size());
-                default:                       return String.format("<invalid (type=%d)", type);
-            }
+            return switch(type) {
+                case JOIN -> String.format("JOIN(%s)", mbr);
+                case JOIN_WITH_STATE_TRANSFER -> String.format("JOIN_WITH_STATE_TRANSFER(%s)", mbr);
+                case LEAVE -> String.format("LEAVE(%s)", mbr);
+                case COORD_LEAVE -> "COORD_LEAVE";
+                case SUSPECT -> String.format("SUSPECT(%s)", mbr);
+                case MERGE -> String.format("MERGE(%d views)", views.size());
+                default -> String.format("<invalid (type=%d)", type);
+            };
         }
 
         /**

@@ -129,7 +129,7 @@ public class RelayTests {
             for(String bridge_name: cfg.bridges)
                 site_cfg.addBridge(new RelayConfig.ProgrammaticBridgeConfig(bridge_name, defaultStack(null)));
             for(Tuple<String,String> t: cfg.forwards)
-                site_cfg.addForward(new RelayConfig.ForwardConfig(t.getVal1(), t.getVal2()));
+                site_cfg.addForward(new RelayConfig.ForwardConfig(t.val1(), t.val2()));
             relay.addSite(cfg.site, site_cfg);
         }
         return relay;

@@ -76,10 +76,7 @@ public class Krb5Token extends AuthToken {
             return false;
         }
         
-        if(token instanceof Krb5Token) {
-                
-            Krb5Token remoteToken = (Krb5Token)token;
-
+        if(token instanceof Krb5Token remoteToken) {
             try {
                 validateRemoteServiceTicket(remoteToken);
                 return true;
@@ -88,17 +85,6 @@ public class Krb5Token extends AuthToken {
                 log.error(Util.getMessage("Krb5TokenServiceTicketValidationFailed"), e);
                 return false;
             }
-                
-            /*
-	      if((remoteToken.fingerPrint != null) && 
-	      (this.fingerPrint.equalsIgnoreCase(remoteToken.fingerPrint))) {
-	      log.debug(" : Krb5Token authenticate match");
-	      return true;
-	      }else {
-	      log.debug(" : Krb5Token authenticate fail");
-	      return false;
-	      }
-            */
         }
         
         return false;

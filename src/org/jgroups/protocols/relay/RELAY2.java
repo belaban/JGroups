@@ -99,10 +99,9 @@ public class RELAY2 extends RELAY {
 
     public Object down(Message msg) {
         Address dest=msg.getDest();
-        if(!(dest instanceof SiteAddress))
+        if(!(dest instanceof SiteAddress target))
             return down_prot.down(msg);
 
-        SiteAddress target=(SiteAddress)dest;
         Address src=msg.getSrc();
         SiteAddress sender=src instanceof SiteMaster? new SiteMaster(((SiteMaster)src).getSite())
           : new SiteUUID((UUID)local_addr, NameCache.get(local_addr), site);
@@ -431,17 +430,15 @@ public class RELAY2 extends RELAY {
     protected void deliverLocally(SiteAddress dest, SiteAddress sender, Message msg) {
         Address local_dest;
         boolean send_to_coord=false;
-        if(dest instanceof SiteUUID) {
+        if(dest instanceof SiteUUID tmp) {
             if(dest instanceof SiteMaster) {
                 local_dest=pickSiteMaster(sender);
                 if(local_dest == null)
                     throw new IllegalStateException("site master was null");
                 send_to_coord=true;
             }
-            else {
-                SiteUUID tmp=(SiteUUID)dest;
+            else
                 local_dest=new UUID(tmp.getMostSignificantBits(), tmp.getLeastSignificantBits());
-            }
         }
         else
             local_dest=dest;

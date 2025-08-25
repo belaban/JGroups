@@ -4,6 +4,7 @@ package org.jgroups.util;
  * A tuple with a long (primitive) first value
  * @author Bela Ban
  */
+@SuppressWarnings("ClassCanBeRecord")
 public class LongTuple<V> {
     private final long val1;
     private final V    val2;

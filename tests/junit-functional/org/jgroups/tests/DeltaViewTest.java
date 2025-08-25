@@ -190,7 +190,7 @@ public class DeltaViewTest {
             for(Message msg: views) {
                 try {
                     Tuple<View,Digest> tuple=GMS._readViewAndDigest(msg.getArray(), msg.getOffset(), msg.getLength());
-                    System.out.printf("view #%d: %s\n", count++, tuple.getVal1());
+                    System.out.printf("view #%d: %s\n", count++, tuple.val1());
                 }
                 catch(Throwable t) {
                     log.error("failed unmarshalling view", t);

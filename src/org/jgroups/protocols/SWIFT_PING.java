@@ -207,19 +207,8 @@ public class SWIFT_PING extends FILE_PING {
 
     }
 
-    /**
-     * Result of a successfully authenticated session
-     */
-    private static class Credentials {
-
-        private final String authToken;
-
-        private final String storageUrl;
-
-        public Credentials(String authToken, String storageUrl) {
-            this.authToken = authToken;
-            this.storageUrl = storageUrl;
-        }
+    /** Result of a successfully authenticated session */
+    private record Credentials(String authToken, String storageUrl) {
     }
 
     /**
@@ -236,44 +225,29 @@ public class SWIFT_PING extends FILE_PING {
     }
 
     /**
-     * Openstack Keytsone v2.0 authentication provider. Thread safe
-     * implementation
-     */
-    private static class Keystone_V_2_0_Auth implements Authenticator {
+         * Openstack Keytsone v2.0 authentication provider. Thread safe
+         * implementation
+         */
+        private record Keystone_V_2_0_Auth(String tenant, URL authUrl, String username,
+                                           String password) implements Authenticator {
         // Using Java's built-in JavaScript engine to parse JSON response. We use
         // this approach to avoid introducing an external dependency on a JSON parser.
-        private final static String JSON_RESPONSE_PARSING_SCRIPT = 
-                "var response = JSON.parse(json);" + 
-                "var result = {};" + 
-                "result.id = response.access.token.id;" + 
-                "var serviceCatalog = response.access.serviceCatalog;" + 
-                "for (var i = 0; i < serviceCatalog.length; i++) {" + 
-                "    var service = serviceCatalog[i];" + 
-                "    if (service.type == \"object-store\") {" + 
-                "        result.url = service.endpoints[0].publicURL;" + 
-                "        break;" + 
-                "    }" + 
-                "}" + 
-                "result;";
-        
-        private static final Object scriptEngineLock = new Object();
+        private final static String JSON_RESPONSE_PARSING_SCRIPT=
+          "var response = JSON.parse(json);" +
+            "var result = {};" +
+            "result.id = response.access.token.id;" +
+            "var serviceCatalog = response.access.serviceCatalog;" +
+            "for (var i = 0; i < serviceCatalog.length; i++) {" +
+            "    var service = serviceCatalog[i];" +
+            "    if (service.type == \"object-store\") {" +
+            "        result.url = service.endpoints[0].publicURL;" +
+            "        break;" +
+            "    }" +
+            "}" +
+            "result;";
+
+        private static final Object scriptEngineLock=new Object();
         private static ScriptEngine scriptEngine;
-        
-        private final String tenant;
-
-        private final URL authUrl;
-
-        private final String username;
-
-        private final String password;
-
-        public Keystone_V_2_0_Auth(String tenant, URL authUrl, String username,
-                                   String password) {
-            this.tenant = tenant;
-            this.authUrl = authUrl;
-            this.username = username;
-            this.password = password;
-        }
 
         public void validateParams() {
             // All others params already validated
@@ -281,58 +255,55 @@ public class SWIFT_PING extends FILE_PING {
         }
 
         public Credentials authenticate() throws Exception {
-            HttpURLConnection urlConnection = new ConnBuilder(authUrl)
-                    .addHeader(HttpHeaders.CONTENT_TYPE_HEADER,
-                            "application/json")
-                    .addHeader(HttpHeaders.ACCEPT_HEADER, "application/json")
-                    .getConnection();
+            HttpURLConnection urlConnection=new ConnBuilder(authUrl)
+              .addHeader(HttpHeaders.CONTENT_TYPE_HEADER,
+                         "application/json")
+              .addHeader(HttpHeaders.ACCEPT_HEADER, "application/json")
+              .getConnection();
 
-            StringBuilder jsonBuilder = new StringBuilder();
+            StringBuilder jsonBuilder=new StringBuilder();
             jsonBuilder.append("{\"auth\": {\"tenantName\": \"").append(tenant)
-                    .append("\", \"passwordCredentials\": {\"username\": \"")
-                    .append(username).append("\", \"password\": \"")
-                    .append(password).append("\"}}}");
+              .append("\", \"passwordCredentials\": {\"username\": \"")
+              .append(username).append("\", \"password\": \"")
+              .append(password).append("\"}}}");
 
-            HttpResponse response = Utils.doOperation(urlConnection,
-                    jsonBuilder.toString().getBytes(), true);
+            HttpResponse response=Utils.doOperation(urlConnection,
+                                                    jsonBuilder.toString().getBytes(), true);
 
-            if (response.isSuccessCode()) {
-                Map<String, String> result = parseJsonResponse(new String(response.payload, StandardCharsets.UTF_8));
+            if(response.isSuccessCode()) {
+                Map<String,String> result=parseJsonResponse(new String(response.payload, StandardCharsets.UTF_8));
 
-                String authToken = result.get("id");
-                String storageUrl = result.get("url");
-                if (authToken == null)
-                {
+                String authToken=result.get("id");
+                String storageUrl=result.get("url");
+                if(authToken == null) {
                     throw new IllegalStateException("Missing token id in authentication response");
                 }
-                if (storageUrl == null) {
+                if(storageUrl == null) {
                     throw new IllegalStateException("Missing storage service URL in authentication response");
                 }
-                
+
                 return new Credentials(authToken, storageUrl);
-            } else {
+            }
+            else {
                 throw new IllegalStateException(
-                        "Error authenticating to the service. Please check your credentials. Code = "
-                                + response.code);
+                  "Error authenticating to the service. Please check your credentials. Code = "
+                    + response.code);
             }
         }
-        
-        protected static Map<String,String> parseJsonResponse(String json) throws ScriptException
-        {
-            synchronized (scriptEngineLock)
-            {
-                if (scriptEngine == null)
-                {
-                    scriptEngine = new ScriptEngineManager().getEngineByName("JavaScript");
-                    if (scriptEngine == null) {
+
+        protected static Map<String,String> parseJsonResponse(String json) throws ScriptException {
+            synchronized(scriptEngineLock) {
+                if(scriptEngine == null) {
+                    scriptEngine=new ScriptEngineManager().getEngineByName("JavaScript");
+                    if(scriptEngine == null) {
                         throw new RuntimeException("Failed to load JavaScript script engine");
                     }
-                 
+
                 }
-                Bindings bindings = new SimpleBindings();
+                Bindings bindings=new SimpleBindings();
                 bindings.put("json", json);
-                
-                return (Map<String, String>)scriptEngine.eval(JSON_RESPONSE_PARSING_SCRIPT, bindings);
+
+                return (Map<String,String>)scriptEngine.eval(JSON_RESPONSE_PARSING_SCRIPT, bindings);
             }
         }
     }

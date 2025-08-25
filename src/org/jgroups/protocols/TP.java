@@ -1013,7 +1013,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
             case Event.ADD_PHYSICAL_ADDRESS:
                 Tuple<Address,PhysicalAddress> tuple=evt.getArg();
-                return addPhysicalAddressToCache(tuple.getVal1(), tuple.getVal2());
+                return addPhysicalAddressToCache(tuple.val1(), tuple.val2());
 
             case Event.REMOVE_ADDRESS:
                 removeLogicalAddressFromCache(evt.getArg());

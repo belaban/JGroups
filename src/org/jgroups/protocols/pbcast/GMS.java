@@ -903,7 +903,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 break;
             case GmsHeader.VIEW:
                 Tuple<View,Digest> tuple=readViewAndDigest(msg.getArray(), msg.getOffset(), msg.getLength());
-                View new_view=tuple != null? tuple.getVal1() : null;
+                View new_view=tuple != null? tuple.val1() : null;
                 if(new_view == null)
                     return null;
 
@@ -929,10 +929,10 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 Address coord=msg.getSrc();
                 if(!new_view.containsMember(coord)) {
                     sendViewAck(coord); // we need to send the ack first, otherwise the connection is removed
-                    impl.handleViewChange(new_view, tuple.getVal2());
+                    impl.handleViewChange(new_view, tuple.val2());
                 }
                 else {
-                    impl.handleViewChange(new_view, tuple.getVal2());
+                    impl.handleViewChange(new_view, tuple.val2());
                     sendViewAck(coord); // send VIEW_ACK to sender of view
                 }
                 break;
@@ -952,7 +952,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 tuple=readViewAndDigest(msg.getArray(), msg.getOffset(), msg.getLength());
                 if(tuple == null)
                     return null;
-                MergeData merge_data=new MergeData(msg.getSrc(), tuple.getVal1(), tuple.getVal2(), hdr.merge_rejected);
+                MergeData merge_data=new MergeData(msg.getSrc(), tuple.val1(), tuple.val2(), hdr.merge_rejected);
                 log.trace("%s: got merge response from %s, merge_id=%s, merge data is %s",
                           local_addr, msg.getSrc(), hdr.merge_id, merge_data);
                 impl.handleMergeResponse(merge_data, hdr.merge_id);
@@ -961,14 +961,14 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
             case GmsHeader.INSTALL_MERGE_VIEW:
                 tuple=readViewAndDigest(msg.getArray(), msg.getOffset(), msg.getLength());
                 if(tuple != null)
-                    impl.handleMergeView(new MergeData(msg.getSrc(), tuple.getVal1(), tuple.getVal2()), hdr.merge_id);
+                    impl.handleMergeView(new MergeData(msg.getSrc(), tuple.val1(), tuple.val2()), hdr.merge_id);
                 break;
 
             case GmsHeader.INSTALL_DIGEST:
                 tuple=readViewAndDigest(msg.getArray(), msg.getOffset(), msg.getLength());
                 if(tuple == null)
                     return null;
-                Digest tmp=tuple.getVal2();
+                Digest tmp=tuple.val2();
                 down_prot.down(new Event(Event.MERGE_DIGEST, tmp));
                 break;
 
@@ -998,7 +998,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 tuple=readViewAndDigest(msg.getArray(), msg.getOffset(), msg.getLength());
                 if(tuple == null)
                     return null;
-                Digest digest_rsp=tuple.getVal2();
+                Digest digest_rsp=tuple.val2();
                 impl.handleDigestResponse(msg.getSrc(), digest_rsp);
                 break;
 
@@ -1080,7 +1080,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 expected_size+=view.serializedSize();
             boolean write_addrs=writeAddresses(view, digest);
             if(digest != null)
-                expected_size=(int)digest.serializedSize(write_addrs);
+                expected_size=digest.serializedSize(write_addrs);
             final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(expected_size +10);
             out.writeShort(determineFlags(view, digest));
             if(view != null)
@@ -1400,24 +1400,24 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
 
         public static String type2String(int type) {
-            switch(type) {
-                case JOIN_REQ:                     return "JOIN_REQ";
-                case JOIN_RSP:                     return "JOIN_RSP";
-                case LEAVE_REQ:                    return "LEAVE_REQ";
-                case LEAVE_RSP:                    return "LEAVE_RSP";
-                case VIEW:                         return "VIEW";
-                case MERGE_REQ:                    return "MERGE_REQ";
-                case MERGE_RSP:                    return "MERGE_RSP";
-                case INSTALL_MERGE_VIEW:           return "INSTALL_MERGE_VIEW";
-                case CANCEL_MERGE:                 return "CANCEL_MERGE";
-                case VIEW_ACK:                     return "VIEW_ACK";
-                case JOIN_REQ_WITH_STATE_TRANSFER: return "JOIN_REQ_WITH_STATE_TRANSFER";
-                case GET_DIGEST_REQ:               return "GET_DIGEST_REQ";
-                case GET_DIGEST_RSP:               return "GET_DIGEST_RSP";
-                case INSTALL_DIGEST:               return "INSTALL_DIGEST";
-                case GET_CURRENT_VIEW:             return "GET_CURRENT_VIEW";
-                default:                           return "<unknown>";
-            }
+            return switch(type) {
+                case JOIN_REQ ->                     "JOIN_REQ";
+                case JOIN_RSP ->                     "JOIN_RSP";
+                case LEAVE_REQ ->                    "LEAVE_REQ";
+                case LEAVE_RSP ->                    "LEAVE_RSP";
+                case VIEW ->                         "VIEW";
+                case MERGE_REQ ->                    "MERGE_REQ";
+                case MERGE_RSP ->                    "MERGE_RSP";
+                case INSTALL_MERGE_VIEW ->           "INSTALL_MERGE_VIEW";
+                case CANCEL_MERGE ->                 "CANCEL_MERGE";
+                case VIEW_ACK ->                     "VIEW_ACK";
+                case JOIN_REQ_WITH_STATE_TRANSFER -> "JOIN_REQ_WITH_STATE_TRANSFER";
+                case GET_DIGEST_REQ ->               "GET_DIGEST_REQ";
+                case GET_DIGEST_RSP ->               "GET_DIGEST_RSP";
+                case INSTALL_DIGEST ->               "INSTALL_DIGEST";
+                case GET_CURRENT_VIEW ->             "GET_CURRENT_VIEW";
+                default ->                           "<unknown>";
+            };
         }
 
     }

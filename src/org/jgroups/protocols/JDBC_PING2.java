@@ -1,25 +1,5 @@
 package org.jgroups.protocols;
 
-import static java.sql.ResultSet.CONCUR_UPDATABLE;
-import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
-
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
-import javax.sql.DataSource;
-
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.PhysicalAddress;
@@ -31,6 +11,21 @@ import org.jgroups.stack.IpAddress;
 import org.jgroups.util.NameCache;
 import org.jgroups.util.Responses;
 import org.jgroups.util.Util;
+
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.sql.DataSource;
+import java.sql.*;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static java.sql.ResultSet.CONCUR_UPDATABLE;
+import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 
 /**
  * New version of {@link JDBC_PING}. Has a new, better legible schema. plus some refactoring
@@ -571,29 +566,31 @@ public class JDBC_PING2 extends FILE_PING {
         String select="SELECT address, name, cluster, ip, coord FROM JGROUPS WHERE cluster=?";
 
         for(int i=0; i < args.length; i++) {
-            if(args[i].equals("-driver")) {
-                driver=args[++i];
-                continue;
-            }
-            if(args[i].equals("-conn")) {
-                conn=args[++i];
-                continue;
-            }
-            if(args[i].equals("-user")) {
-                user=args[++i];
-                continue;
-            }
-            if(args[i].equals("-pwd")) {
-                pwd=args[++i];
-                continue;
-            }
-            if(args[i].equals("-cluster")) {
-                cluster=args[++i];
-                continue;
-            }
-            if(args[i].equals("-select")) {
-                select=args[++i];
-                continue;
+            switch(args[i]) {
+                case "-driver" -> {
+                    driver=args[++i];
+                    continue;
+                }
+                case "-conn" -> {
+                    conn=args[++i];
+                    continue;
+                }
+                case "-user" -> {
+                    user=args[++i];
+                    continue;
+                }
+                case "-pwd" -> {
+                    pwd=args[++i];
+                    continue;
+                }
+                case "-cluster" -> {
+                    cluster=args[++i];
+                    continue;
+                }
+                case "-select" -> {
+                    select=args[++i];
+                    continue;
+                }
             }
             System.out.println("JDBC_PING2 [-driver driver] [-conn conn-url] [-user user] [-pwd password] " +
                                  "[-cluster cluster-name] [-select select-stmt]");

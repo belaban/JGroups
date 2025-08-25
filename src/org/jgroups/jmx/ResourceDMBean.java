@@ -597,22 +597,14 @@ public class ResourceDMBean implements DynamicMBean {
     }
 
 
-    public static class MethodAccessor implements Accessor {
-        protected final Method method;
-        protected final Object target;
-
-        public MethodAccessor(Method method, Object target) {
-            this.method=method;
-            this.target=target;
-        }
-
-        public Method getMethod() {return method;}
-
+    public record MethodAccessor(Method method, Object target) implements Accessor {
         public Object invoke(Object new_val) throws Exception {
             return new_val != null? method.invoke(target, new_val) : method.invoke(target);
         }
 
-        public String toString() {return "method[" + method.getName() + "()]";}
+        public String toString() {
+            return "method[" + method.getName() + "()]";
+        }
     }
 
     public static class FieldAccessor implements Accessor {

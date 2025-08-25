@@ -48,15 +48,10 @@ public class MessageBundlingTest extends ChannelTestBase {
 
         a.connect("MessageBundlingTest");
         b.connect("MessageBundlingTest");
-        Util.waitUntilAllChannelsHaveSameView(10000, 1000, a, b);
-    }
-
-    protected static JChannel create(String name) throws Exception {
-        return new JChannel(Util.getTestStack()).name(name);
+        Util.waitUntilAllChannelsHaveSameView(5000, 100, a, b);
     }
 
     @AfterMethod void tearDown() throws Exception {promise.reset(false); Util.close(b,a);}
-
 
     public void testSimple() throws Exception {
         long start=System.nanoTime();
@@ -129,18 +124,9 @@ public class MessageBundlingTest extends ChannelTestBase {
         transport.getBundler().setMaxSize(max_bytes);
         GMS gms=stack.findProtocol(GMS.class);
         gms.setViewAckCollectionTimeout(LATENCY * 2);
-        gms.setJoinTimeout(LATENCY * 2);
     }
 
-
-
-    protected static class SimpleReceiver implements Receiver {
-        protected final Promise<Boolean> promise;
-
-        public SimpleReceiver(Promise<Boolean> promise) {
-            this.promise=promise;
-        }
-
+    protected record SimpleReceiver(Promise<Boolean> promise) implements Receiver {
         public void receive(Message msg) {
             promise.setResult(true);
         }

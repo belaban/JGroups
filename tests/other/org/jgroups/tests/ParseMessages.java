@@ -196,7 +196,7 @@ public class ParseMessages {
         try {
             switch(hdr.getType()) {
                 case GMS.GmsHeader.VIEW:
-                    return GMS._readViewAndDigest(msg.getArray(), msg.getOffset(), msg.getLength()).getVal1();
+                    return GMS._readViewAndDigest(msg.getArray(), msg.getOffset(), msg.getLength()).val1();
                 case GMS.GmsHeader.JOIN_RSP:
                     return Util.streamableFromBuffer(JoinRsp::new, msg.getArray(), msg.getOffset(), msg.getLength()).getView();
             }

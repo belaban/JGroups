@@ -36,8 +36,7 @@ public class ExtendedUUID extends FlagsUUID {
 
     public <T extends FlagsUUID> ExtendedUUID(T o) {
         super(o);
-        if(o instanceof ExtendedUUID) {
-            ExtendedUUID other=(ExtendedUUID)o;
+        if(o instanceof ExtendedUUID other) {
             if(other.keys != null) {
                 keys=Arrays.copyOf(other.keys, other.keys.length);
                 values=Arrays.copyOf(other.values, other.values.length);
@@ -142,8 +141,7 @@ public class ExtendedUUID extends FlagsUUID {
     @Override
     public <T extends FlagsUUID> T addContents(T o) {
         super.addContents(o);
-        if(o instanceof ExtendedUUID) {
-            ExtendedUUID other=(ExtendedUUID)o;
+        if(o instanceof ExtendedUUID other) {
             if(other.keys != null) {
                 for(int i=0; i < other.keys.length; i++) {
                     byte[] key=other.keys[i];

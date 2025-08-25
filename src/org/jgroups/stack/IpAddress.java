@@ -88,10 +88,9 @@ public class IpAddress implements PhysicalAddress, Constructable<IpAddress> {
         int h1, h2, rc; // added Nov 7 2005, makes sense with canonical addresses
 
         if(this == o) return 0;
-        if(!(o instanceof IpAddress))
+        if(!(o instanceof IpAddress other))
             throw new ClassCastException("comparison between different classes: the other object is " +
                     (o != null? o.getClass() : o));
-        IpAddress other = (IpAddress) o;
         if(ip_addr == null)
             if (other.ip_addr == null) return Integer.compare(port, other.port);
             else return -1;
@@ -105,9 +104,8 @@ public class IpAddress implements PhysicalAddress, Constructable<IpAddress> {
     public boolean equals(Object obj) {
         if(this == obj) return true; // added Nov 7 2005, makes sense with canonical addresses
 
-        if(!(obj instanceof IpAddress))
+        if(!(obj instanceof IpAddress other))
             return false;
-        IpAddress other=(IpAddress)obj;
         boolean sameIP;
         if(this.ip_addr != null)
             sameIP=this.ip_addr.equals(other.ip_addr);

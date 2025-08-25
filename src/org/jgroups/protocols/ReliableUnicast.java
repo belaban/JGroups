@@ -539,8 +539,8 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
         if(msgs.size() > 1) { // more than 1 conn_id (this should not normally be the case)
             msgs.keySet().retainAll(List.of(highest_conn_id));
             Tuple<Long,Boolean> tuple=getLowestSeqno(id, list);
-            lowest_seqno=tuple.getVal1();
-            first_seqno=tuple.getVal2();
+            lowest_seqno=tuple.val1();
+            first_seqno=tuple.val2();
         }
 
         ReceiverEntry entry=getReceiverEntry(sender, lowest_seqno, first_seqno, highest_conn_id, batch.dest());

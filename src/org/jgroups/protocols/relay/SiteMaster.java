@@ -35,10 +35,8 @@ public class SiteMaster extends SiteUUID {
     @Override public boolean isSiteMaster() {return true;}
 
     public int compareTo(Address other) {
-        if(other instanceof SiteMaster) {
-            SiteMaster tmp=(SiteMaster)other;
+        if(other instanceof SiteMaster tmp) {
             String other_site=tmp.getSite();
-
             if(this.site == null) {
                 if(other_site == null)                  // (1) this.site == null && other.site == null
                     return 0;

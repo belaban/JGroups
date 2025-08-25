@@ -401,12 +401,12 @@ public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<
         }
 
         static String type2Str(int t) {
-            switch(t) {
-                case STATE_REQ: return "STATE_REQ";
-                case STATE_RSP: return "STATE_RSP";
-                case STATE_EX:  return "STATE_EX";
-                default:        return "<unknown>";
-            }
+            return switch(t) {
+                case STATE_REQ -> "STATE_REQ";
+                case STATE_RSP -> "STATE_RSP";
+                case STATE_EX ->  "STATE_EX";
+                default ->        "<unknown>";
+            };
         }
 
         @Override

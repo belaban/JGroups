@@ -215,19 +215,6 @@ public final class Headers {
         return retval;
     }
 
-    /*public static int size(Header[] hdrs, short... excluded_ids) {
-        int retval=0;
-        if(hdrs == null)
-            return retval;
-        for(Header hdr: hdrs) {
-            if(hdr == null)
-                break;
-            if(!Util.containsId(hdr.getProtId(), excluded_ids))
-                retval++;
-        }
-        return retval;
-    }*/
-
     private static void writeHeader(Header hdr, DataOutput out) throws IOException {
         short magic_number=hdr.getMagicId();
         out.writeShort(magic_number);

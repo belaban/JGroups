@@ -159,20 +159,14 @@ public class Log4J2LogImpl implements Log {
         if (level == null)
             return null;
         level = level.toLowerCase().trim();
-        if (level.equals("fatal"))
-            return Level.FATAL;
-        if (level.equals("error"))
-            return Level.ERROR;
-        if (level.equals("warn"))
-            return Level.WARN;
-        if (level.equals("warning"))
-            return Level.WARN;
-        if (level.equals("info"))
-            return Level.INFO;
-        if (level.equals("debug"))
-            return Level.DEBUG;
-        if (level.equals("trace"))
-            return Level.TRACE;
-        return null;
+        return switch(level) {
+            case "fatal" -> Level.FATAL;
+            case "error" -> Level.ERROR;
+            case "warn", "warning" -> Level.WARN;
+            case "info" -> Level.INFO;
+            case "debug" -> Level.DEBUG;
+            case "trace" -> Level.TRACE;
+            default -> null;
+        };
     }
 }

@@ -625,8 +625,8 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
         }
         if(emit_suspect_events && suspects != null && !suspects.isEmpty()) {
            for(Tuple<String,Address> suspect: suspects) {
-               String group=suspect.getVal1();
-               Address addr=suspect.getVal2();
+               String group=suspect.val1();
+               Address addr=suspect.val2();
                ConcurrentMap<Address,Entry> map=address_mappings.get(group);
                if(map == null)
                    continue;
@@ -759,21 +759,14 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
     }
 
 
-    protected static class Entry {
-        protected final PhysicalAddress phys_addr;
-        protected final String          logical_name;
-        protected final Address         client_addr; // address of the client which registered an item
-
-        public Entry(Address client_addr, PhysicalAddress phys_addr, String logical_name) {
-            this.phys_addr=phys_addr;
-            this.logical_name=logical_name;
-            this.client_addr=client_addr;
+    /**
+     * @param client_addr address of the client which registered an item
+     */
+    protected record Entry(Address client_addr, PhysicalAddress phys_addr, String logical_name) {
+        public String toString() {
+            return String.format("client=%s, name=%s, addr=%s", client_addr, logical_name, phys_addr);
         }
-
-        public String toString() {return String.format("client=%s, name=%s, addr=%s", client_addr, logical_name, phys_addr);}
     }
-
-
 
 
 

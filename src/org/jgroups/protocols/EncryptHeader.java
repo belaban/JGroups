@@ -83,10 +83,10 @@ public class EncryptHeader extends Header {
     }
 
     protected static String typeToString(byte type) {
-        switch(type) {
-            case INSTALL_KEYS:       return "INSTALL_KEYS";
-            case FETCH_SHARED_KEY:   return "FETCH_SHARED_KEY";
-            default:                 return EncryptHeader.class.getSimpleName();
-        }
+        return switch(type) {
+            case INSTALL_KEYS -> "INSTALL_KEYS";
+            case FETCH_SHARED_KEY -> "FETCH_SHARED_KEY";
+            default -> EncryptHeader.class.getSimpleName();
+        };
     }
 }

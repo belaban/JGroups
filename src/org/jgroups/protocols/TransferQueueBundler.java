@@ -36,8 +36,7 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
     @Override
     public void init(TP transport) {
         super.init(transport);
-        if(transport instanceof TCP) {
-            TCP tcp=(TCP)transport;
+        if(transport instanceof TCP tcp) {
             tcp.useLockToSend(false); // https://issues.redhat.com/browse/JGRP-2901
             int size=tcp.getBufferedOutputStreamSize();
             if(size < max_size) { // https://issues.redhat.com/browse/JGRP-2903

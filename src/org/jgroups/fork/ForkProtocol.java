@@ -20,14 +20,11 @@ public class ForkProtocol extends Protocol {
 
 
     public Object down(Event evt) {
-        switch(evt.getType()) {
-            case Event.VIEW_CHANGE:
-            case Event.CONNECT:
-            case Event.CONNECT_WITH_STATE_TRANSFER:
-            case Event.DISCONNECT:
-                return null; // don't propagate further down, this is only important for the main stack
-        }
-        return down_prot.down(evt);
+        return switch(evt.getType()) {
+            case Event.VIEW_CHANGE, Event.CONNECT, Event.CONNECT_WITH_STATE_TRANSFER, Event.DISCONNECT -> null;
+            default -> // don't propagate further down, this is only important for the main stack
+              down_prot.down(evt);
+        };
     }
 
     public Object down(Message msg) {

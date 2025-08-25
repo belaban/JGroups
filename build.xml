@@ -147,7 +147,7 @@
     </target>
 
     <target name="compile" depends="prepare" description="Compiles all Java files">
-        <javac destdir="${compile.dir}" release="11"
+        <javac destdir="${compile.dir}" release="17"
                classpathref="jg.classpath"
                modulepathref="jg.classpath"
                includeantruntime="false"
@@ -158,7 +158,7 @@
             <src path="${src.dir}"/>
         </javac>
 
-        <javac destdir="${compile.dir}" release="11"
+        <javac destdir="${compile.dir}" release="17"
                classpathref="jg.classpath"
                modulepathref="jg.classpath"
                includeantruntime="false"
@@ -179,13 +179,13 @@
     <target name="compile-plus-essential-unittests" depends="prepare"
             description="Compiles sources plus selected tests (e.g. perftests) shipped with JGroups">
         <javac srcdir="${src.dir}" destdir="${compile.dir}"
-               release="11" classpathref="jg.classpath"
+               release="17" classpathref="jg.classpath"
                modulepathref="jg.classpath"
                includeantruntime="false" debug="on"
                includes="org/jgroups/**">
             <compilerarg value="-proc:none"/>
         </javac>
-        <javac destdir="${compile.dir}" release="11"
+        <javac destdir="${compile.dir}" release="17"
                classpathref="jg.classpath"
                modulepathref="jg.classpath"
                includeantruntime="false" debug="on"
@@ -572,7 +572,7 @@
         <runtest suitename="functional"
                  groups="functional"
                  parallel="${parallel.classes}"
-                 threadcount="50" />
+                 threadcount="20" />
     </target>
 
     <target name="encrypt" depends="postcompile,define-testng-task" description="Runs encryption-related tests">

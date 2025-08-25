@@ -19,7 +19,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 
 /**
@@ -215,7 +214,7 @@ public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
             return false;
 
         long target_time=getCurrentTimeMillis();
-        List<Entry> tmp=list.stream().map(a -> new Entry(a, target_time)).collect(Collectors.toList());
+        List<Entry> tmp=list.stream().map(a -> new Entry(a, target_time)).toList();
         return suspects.addAll(tmp);
     }
 
@@ -272,19 +271,14 @@ public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
     }
     /* ----------------------------- End of Private Methods -------------------------------- */
 
-    protected static class Entry implements Comparable<Entry> {
-        protected final Address suspect;
-        protected final long    target_time; // millis
-
-        public Entry(Address suspect, long target_time) {
-            this.suspect=suspect;
-            this.target_time=target_time;
-        }
+    /**
+     * @param target_time millis
+     */
+    protected record Entry(Address suspect, long target_time) implements Comparable<Entry> {
 
         public boolean equals(Object obj) {
-            if(!(obj instanceof Entry))
+            if(!(obj instanceof Entry other))
                 return false;
-            Entry other=(Entry)obj;
             return Objects.equals(suspect, other.suspect);
         }
 
@@ -304,7 +298,6 @@ public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
             return suspect.compareTo(o.suspect);
         }
     }
-
 
 
     public static class VerifyHeader extends Header {
@@ -332,14 +325,11 @@ public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
         public Supplier<? extends Header> create() {return VerifyHeader::new;}
 
         public String toString() {
-            switch(type) {
-                case ARE_YOU_DEAD:
-                    return "[ARE_YOU_DEAD]";
-                case I_AM_NOT_DEAD:
-                    return "[I_AM_NOT_DEAD]";
-                default:
-                    return "[unknown type (" + type + ")]";
-            }
+            return switch(type) {
+                case ARE_YOU_DEAD  -> "[ARE_YOU_DEAD]";
+                case I_AM_NOT_DEAD -> "[I_AM_NOT_DEAD]";
+                default            -> "[unknown type (" + type + ")]";
+            };
         }
 
         @Override

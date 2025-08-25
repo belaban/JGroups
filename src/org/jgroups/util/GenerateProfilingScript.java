@@ -59,37 +59,44 @@ public class GenerateProfilingScript {
 
 
 
-    protected static final String PREFIX="# Byteman script to profile individual methods\n" +
-      "\n" +
-      "\n" +
-      "RULE DiagnosticHandler creation\n" +
-      "CLASS ^TP\n" +
-      "HELPER org.jgroups.util.ProfilingHelper\n" +
-      "METHOD handleConnect()\n" +
-      "AT ENTRY\n" +
-      "BIND tp=$this, diag=tp.getDiagnosticsHandler();\n" +
-      "IF TRUE\n" +
-      "   DO diagCreated(diag);\n" +
-      "ENDRULE\n\n";
+    protected static final String PREFIX="""
+      # Byteman script to profile individual methods
+      
+      RULE DiagnosticHandler creation
+      CLASS ^TP
+      HELPER org.jgroups.util.ProfilingHelper
+      METHOD handleConnect()
+      AT ENTRY
+      BIND tp=$this, diag=tp.getDiagnosticsHandler();
+      IF TRUE
+         DO diagCreated(diag);
+      ENDRULE
+      
+      """;
 
 
-    protected static final String START_RULE="RULE %s start\n" +
-      "%s %s\n" +
-      "HELPER org.jgroups.util.ProfilingHelper\n" +
-      "METHOD %s\n" +
-      "COMPILE\n" +
-      "AT ENTRY\n" +
-      "IF TRUE\n" +
-      "   DO start(\"%s\");\n" +
-      "ENDRULE\n\n";
+    protected static final String START_RULE="""
+      RULE %s start
+      %s %s
+      HELPER org.jgroups.util.ProfilingHelper
+      METHOD %s
+      COMPILE
+      AT ENTRY
+      IF TRUE
+         DO start("%s");
+      ENDRULE
+      
+      """;
 
-    protected static final String STOP_RULE="RULE %s stop\n" +
-      "%s %s\n" +
-      "HELPER org.jgroups.util.ProfilingHelper\n" +
-      "METHOD %s\n" +
-      "COMPILE\n" +
-      "AT EXIT\n" +
-      "IF TRUE\n" +
-      "   DO stop(\"%s\");\n" +
-      "ENDRULE\n\n";
+    protected static final String STOP_RULE="""
+      RULE %s stop
+      %s %s
+      HELPER org.jgroups.util.ProfilingHelper
+      METHOD %s
+      COMPILE
+      AT EXIT
+      IF TRUE
+         DO stop("%s");
+      ENDRULE
+      """;
 }

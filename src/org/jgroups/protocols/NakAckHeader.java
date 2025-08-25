@@ -107,18 +107,11 @@ public class NakAckHeader extends Header {
     @Override
     public int serializedSize() {
         int retval=Global.BYTE_SIZE; // type
-        switch(type) {
-            case MSG:
-            case XMIT_RSP:
-            case HIGHEST_SEQNO:
-            case ACK:
-                return retval + Bits.size(seqno);
-
-            case XMIT_REQ:
-                retval+=Util.size(sender);
-                return retval;
-        }
-        return retval;
+        return switch(type) {
+            case MSG, XMIT_RSP, HIGHEST_SEQNO, ACK -> retval + Bits.size(seqno);
+            case XMIT_REQ -> retval + Util.size(sender);
+            default -> retval;
+        };
     }
 
 
@@ -132,14 +125,14 @@ public class NakAckHeader extends Header {
 
 
     public static String type2Str(byte t) {
-        switch(t) {
-            case MSG:           return "MSG";
-            case XMIT_REQ:      return "XMIT_REQ";
-            case XMIT_RSP:      return "XMIT_RSP";
-            case HIGHEST_SEQNO: return "HIGHEST_SEQNO";
-            case ACK:           return "ACK";
-            default:            return "<undefined>";
-        }
+        return switch(t) {
+            case MSG ->           "MSG";
+            case XMIT_REQ ->      "XMIT_REQ";
+            case XMIT_RSP ->      "XMIT_RSP";
+            case HIGHEST_SEQNO -> "HIGHEST_SEQNO";
+            case ACK ->           "ACK";
+            default ->            "<undefined>";
+        };
     }
 
 

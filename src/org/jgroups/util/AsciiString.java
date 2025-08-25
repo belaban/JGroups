@@ -9,33 +9,19 @@ import java.util.Arrays;
  * @author Bela Ban
  * @since  3.5
  */
-public class AsciiString implements Comparable<AsciiString> {
-    protected final byte[] val;
-
-    public AsciiString() {
-        val=new byte[]{};
-    }
+public record AsciiString(byte[] val) implements Comparable<AsciiString> {
 
     public AsciiString(String str) {
-        int length=str != null? str.length() : 0;
-        this.val=new byte[length];
-        for(int i=0; i < length; i++)
-            val[i]=(byte)str.charAt(i);
+        this(fromString(str));
     }
 
     public AsciiString(AsciiString str) {
-        this.val=str.val;
+        this(str.val);
     }
 
     public AsciiString(byte[] val) {
         this.val=val != null? val : new byte[]{}; // mutable, used only for creation
     }
-
-    public AsciiString(int length) {
-        this.val=new byte[length];
-    }
-
-    public byte[] chars() {return val;} // mutable
 
     public int length() {
         return val.length;
@@ -43,7 +29,7 @@ public class AsciiString implements Comparable<AsciiString> {
 
     public int compareTo(AsciiString str) {
         if(str == null) return 1;
-        if(chars().hashCode() == str.val.hashCode())
+        if(this.val.hashCode() == str.val.hashCode())
             return 0;
 
         int len1=val.length;
@@ -61,16 +47,13 @@ public class AsciiString implements Comparable<AsciiString> {
         return Integer.compare(len1, len2);
     }
 
-
-
     public boolean equals(Object obj) {
-        return obj instanceof AsciiString && equals(((AsciiString)obj).val);
+        return obj instanceof AsciiString as && equals(as.val);
     }
 
     public boolean equals(byte[] other) {
         return Arrays.equals(val, other);
     }
-
 
     public int hashCode() {
         int h=0;
@@ -84,8 +67,12 @@ public class AsciiString implements Comparable<AsciiString> {
         return new String(val);
     }
 
-
-
-
+    private static byte[] fromString(String str) {
+        int length=str != null? str.length() : 0;
+        byte[] b=new byte[length];
+        for(int i=0; i < length; i++)
+            b[i]=(byte)str.charAt(i);
+        return b;
+    }
 
 }

@@ -50,7 +50,7 @@ public class SNIFF extends Protocol {
             printPayload(msg, sb);
             sb.append("\n");
         }
-        System.out.println(sb.toString());
+        System.out.println(sb);
     }
 
     protected static void printPayload(Message msg, final StringBuilder sb) {

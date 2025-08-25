@@ -75,8 +75,7 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
     @Override
     public void init(TP transport) {
         super.init(transport);
-        if(transport instanceof TCP) {
-            TCP tcp=(TCP)transport;
+        if(transport instanceof TCP tcp) {
             int size=tcp.getBufferedOutputStreamSize();
             if(size < max_size) { // https://issues.redhat.com/browse/JGRP-2903
                 int new_size=max_size + Integer.BYTES;
@@ -89,10 +88,8 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
     public void start() {
         super.start();
         local_addr=Objects.requireNonNull(transport.getAddress());
-        if(transport instanceof TCP) {
-            TCP tcp=(TCP)transport;
+        if(transport instanceof TCP tcp)
             tcp.useLockToSend(!use_single_sender_thread); // https://issues.redhat.com/browse/JGRP-2901
-        }
         if(use_single_sender_thread) {
             if(single_thread_runner == null)
                 single_thread_runner=new Runner(transport.getThreadFactory(), THREAD_NAME, this, null).joinTimeout(0);

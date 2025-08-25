@@ -17,8 +17,8 @@ public class TupleTest {
     public static void testCreation() {
         Tuple<String,Integer> tuple=new Tuple<>("Bela", 322649);
         System.out.println("tuple: " + tuple);
-        Assert.assertEquals("Bela", tuple.getVal1());
-        Assert.assertEquals(322649, tuple.getVal2().intValue());
+        Assert.assertEquals("Bela", tuple.val1());
+        Assert.assertEquals(322649, tuple.val2().intValue());
     }
 
 
@@ -28,9 +28,9 @@ public class TupleTest {
         map.put(1, new Tuple<>("one",1));
         map.put(2, new Tuple<>("two", 2));
         System.out.println("map: " + map);
-        Assert.assertEquals("one", map.get(1).getVal1());
-        Assert.assertEquals(1, map.get(1).getVal2().intValue());
-        Assert.assertEquals("two", map.get(2).getVal1());
-        Assert.assertEquals(2, map.get(2).getVal2().intValue());
+        Assert.assertEquals("one", map.get(1).val1());
+        Assert.assertEquals(1, map.get(1).val2().intValue());
+        Assert.assertEquals("two", map.get(2).val1());
+        Assert.assertEquals(2, map.get(2).val2().intValue());
     }
 }

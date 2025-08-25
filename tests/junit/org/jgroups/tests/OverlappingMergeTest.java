@@ -487,10 +487,10 @@ public class OverlappingMergeTest extends ChannelTestBase {
         for(int i=0; i < 10; i++) {
             boolean all_received=true;
             for(Tuple<MyReceiver,Integer> tuple: expected_messages) {
-                MyReceiver receiver=tuple.getVal1();
+                MyReceiver receiver=tuple.val1();
                 List<Message> mcasts=receiver.getMulticasts();
                 int mcasts_received=mcasts.size();
-                int expected_mcasts=tuple.getVal2();
+                int expected_mcasts=tuple.val2();
                 if(mcasts_received != expected_mcasts) {
                     all_received=false;
                     break;
@@ -503,17 +503,17 @@ public class OverlappingMergeTest extends ChannelTestBase {
         }
 
         for(Tuple<MyReceiver,Integer> tuple: expected_messages) {
-            MyReceiver receiver=tuple.getVal1();
+            MyReceiver receiver=tuple.val1();
             List<Message> mcasts=receiver.getMulticasts();
             int mcasts_received=mcasts.size();
             System.out.println("receiver " + receiver + ": mcasts=" + mcasts_received);
         }
 
         for(Tuple<MyReceiver,Integer> tuple: expected_messages) {
-            MyReceiver receiver=tuple.getVal1();
+            MyReceiver receiver=tuple.val1();
             List<Message> mcasts=receiver.getMulticasts();
             int mcasts_received=mcasts.size();
-            int expected_mcasts=tuple.getVal2();
+            int expected_mcasts=tuple.val2();
             assert mcasts_received == expected_mcasts : "(" + receiver.name + ") num_mcasts=" + print(mcasts) +
               " expected: " + expected_mcasts + ")";
         }

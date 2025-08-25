@@ -99,7 +99,7 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
 
     @ManagedOperation(description="Prints the versions of the shared group keys cached in the key map")
     public String printCachedGroupKeys() {
-        return key_map.keySet().stream().map(v -> Util.byteArrayToHexString(v.chars()))
+        return key_map.keySet().stream().map(v -> Util.byteArrayToHexString(v.val()))
           .collect(Collectors.joining(", "));
     }
 

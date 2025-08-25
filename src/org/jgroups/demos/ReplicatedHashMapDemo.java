@@ -81,7 +81,7 @@ public class ReplicatedHashMapDemo extends Frame implements WindowListener, Acti
             val=entry.getValue();
             if(val == null)
                 continue;
-            listbox.add(key + ": " + val.toString());
+            listbox.add(key + ": " + val);
         }
     }
 

@@ -369,24 +369,12 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
     }
 
 
-    protected static class ThreadEntry {
-        protected final Thread.State state;
-        protected final String       thread_name;
-        protected final long         blocks, waits;
-        protected final double       block_time, wait_time;  // ms
-        protected final double       cpu_time, user_time;    // ms
-
-        public ThreadEntry(Thread.State state, String thread_name, long blocks, long waits, double block_time, double wait_time,
-                           double cpu_time, double user_time) {
-            this.state=state;
-            this.thread_name=thread_name;
-            this.blocks=blocks;
-            this.waits=waits;
-            this.block_time=block_time;
-            this.wait_time=wait_time;
-            this.cpu_time=cpu_time;
-            this.user_time=user_time;
-        }
+    /**
+     * @param wait_time ms
+     * @param user_time ms
+     */
+    protected record ThreadEntry(Thread.State state, String thread_name, long blocks, long waits, double block_time,
+                                 double wait_time, double cpu_time, double user_time) {
 
         public String toString() {
             return String.format("[%s] %s: blocks=%d (%.2f ms) waits=%d (%.2f ms) sys=%.2f ms user=%.2f ms\n",
@@ -396,8 +384,6 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
         protected String print(String format) {
             return String.format(format, state, thread_name, cpu_time, user_time, blocks, block_time, waits, wait_time);
         }
-
-
     }
 
 }

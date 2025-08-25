@@ -99,8 +99,7 @@ public class FORK extends Protocol {
         super.setAddress(addr);
 
         for(Protocol prot: fork_stacks.values()) {
-            if(prot instanceof ForkProtocol) {
-                ForkProtocol fp=(ForkProtocol)prot;
+            if(prot instanceof ForkProtocol fp) {
                 ProtocolStack st=fp.getProtocolStack();
                 for(Protocol p: st.getProtocols())
                     p.setAddress(local_addr);

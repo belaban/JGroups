@@ -75,13 +75,20 @@ public class CompareMetrics {
             return;
         }
         if(!old_metrics.isEmpty()) {
-            System.out.printf("\n** Failure: the following protocols/attributes are only found in old " +
-                                "metrics, but not in new:\n%s\n", print(old_metrics));
+            System.out.printf("""
+                                
+                                ** Failure: the following protocols/attributes are only found in old \
+                                metrics, but not in new:
+                                %s
+                                """, print(old_metrics));
         }
         if(!new_metrics.isEmpty()) {
-            System.out.printf("\n** The following protocols/attributes are only found in new, but not in old " +
-                                "(this may not be an error, e.g. when new protocols or attributes have been added):\n" +
-                                "%s\n", print(new_metrics));
+            System.out.printf("""
+                                
+                                ** The following protocols/attributes are only found in new, but not in old \
+                                (this may not be an error, e.g. when new protocols or attributes have been added):
+                                %s
+                                """, print(new_metrics));
         }
     }
 

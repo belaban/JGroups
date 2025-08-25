@@ -871,11 +871,11 @@ public class FD_SOCK extends Protocol implements Runnable {
 
 
     protected static String signalToString(int signal) {
-        switch(signal) {
-            case NORMAL_TERMINATION: return "NORMAL_TERMINATION";
-            case ABNORMAL_TERMINATION: return "ABNORMAL_TERMINATION";
-            default: return "n/a";
-        }
+        return switch(signal) {
+            case NORMAL_TERMINATION -> "NORMAL_TERMINATION";
+            case ABNORMAL_TERMINATION -> "ABNORMAL_TERMINATION";
+            default -> "n/a";
+        };
     }
 
 
@@ -942,15 +942,15 @@ public class FD_SOCK extends Protocol implements Runnable {
 
 
         public static String type2String(byte type) {
-            switch(type) {
-                case SUSPECT:       return "SUSPECT";
-                case UNSUSPECT:     return "UNSUSPECT";
-                case WHO_HAS_SOCK:  return "WHO_HAS_SOCK";
-                case I_HAVE_SOCK:   return "I_HAVE_SOCK";
-                case GET_CACHE:     return "GET_CACHE";
-                case GET_CACHE_RSP: return "GET_CACHE_RSP";
-                default:            return "unknown type (" + type + ')';
-            }
+            return switch(type) {
+                case SUSPECT ->       "SUSPECT";
+                case UNSUSPECT ->     "UNSUSPECT";
+                case WHO_HAS_SOCK ->  "WHO_HAS_SOCK";
+                case I_HAVE_SOCK ->   "I_HAVE_SOCK";
+                case GET_CACHE ->     "GET_CACHE";
+                case GET_CACHE_RSP -> "GET_CACHE_RSP";
+                default ->            "unknown type (" + type + ')';
+            };
         }
 
         @Override

@@ -74,9 +74,8 @@ public class AUTH extends Protocol {
     }
 
     public void start() throws Exception {
-        if(auth_token instanceof X509Token) {
+        if(auth_token instanceof X509Token tmp) {
             log.debug("X509Token detected. Initializing certificates");
-            X509Token tmp=(X509Token)auth_token;
             tmp.setCertificate();
         }
 

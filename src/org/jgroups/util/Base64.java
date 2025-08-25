@@ -409,7 +409,7 @@ public final class Base64
      * in which case one of them will be picked, though there is
      * no guarantee as to which one will be picked.
      */
-    private final static byte[] getAlphabet( int options ) {
+    private static byte[] getAlphabet(int options) {
         if ((options & URL_SAFE) == URL_SAFE) {
             return _URL_SAFE_ALPHABET;
         } else if ((options & ORDERED) == ORDERED) {
@@ -427,7 +427,7 @@ public final class Base64
      * in which case one of them will be picked, though there is
      * no guarantee as to which one will be picked.
      */
-    private final static byte[] getDecodabet( int options ) {
+    private static byte[] getDecodabet(int options) {
         if( (options & URL_SAFE) == URL_SAFE) {
             return _URL_SAFE_DECODABET;
         } else if ((options & ORDERED) == ORDERED) {
@@ -676,12 +676,7 @@ public final class Base64
                 oos = new java.io.ObjectOutputStream( b64os );
             }
             oos.writeObject( serializableObject );
-        }   // end try
-        catch( java.io.IOException e ) {
-            // Catch it and then throw it immediately so that
-            // the finally{} block is called for cleanup.
-            throw e;
-        }   // end catch
+        }
         finally {
             try{ oos.close();   } catch( Exception e ){}
             try{ gzos.close();  } catch( Exception e ){}
@@ -918,18 +913,12 @@ public final class Base64
 
                 gzos.write( source, off, len );
                 gzos.close();
-            }   // end try
-            catch( java.io.IOException e ) {
-                // Catch it and then throw it immediately so that
-                // the finally{} block is called for cleanup.
-                throw e;
-            }   // end catch
+            }
             finally {
                 try{ gzos.close();  } catch( Exception e ){}
                 try{ b64os.close(); } catch( Exception e ){}
                 try{ baos.close();  } catch( Exception e ){}
-            }   // end finally
-
+            }
             return baos.toByteArray();
         }   // end if: compress
 
@@ -1370,11 +1359,7 @@ public final class Base64
             }   // end else: no custom class loader
         
             obj = ois.readObject();
-        }   // end try
-        catch( java.io.IOException | ClassNotFoundException e ) {
-            throw e;    // Catch and throw in order to execute finally{}
-        }   // end catch
-        // end catch
+        }
         finally {
             try{ bais.close(); } catch( Exception e ){}
             try{ ois.close();  } catch( Exception e ){}
@@ -1405,23 +1390,16 @@ public final class Base64
         if( dataToEncode == null ){
             throw new NullPointerException( "Data to encode was null." );
         }   // end iff
-        
-        Base64.OutputStream bos = null;
-        try {
-            bos = new Base64.OutputStream( 
-                  new java.io.FileOutputStream( filename ), Base64.ENCODE );
-            bos.write( dataToEncode );
-        }   // end try
-        catch( java.io.IOException e ) {
-            throw e; // Catch and throw to execute finally{} block
-        }   // end catch: java.io.IOException
-        finally {
-            try{ bos.close(); } catch( Exception e ){}
-        }   // end finally
-        
-    }   // end encodeToFile
-    
-    
+
+        try(OutputStream bos=new OutputStream(
+          new java.io.FileOutputStream(filename), Base64.ENCODE)) {
+            bos.write(dataToEncode);
+        }
+        catch(Exception e) {
+        }
+
+    }
+
     /**
      * Convenience method for decoding data to a file.
      *
@@ -1437,24 +1415,16 @@ public final class Base64
      */
     public static void decodeToFile( String dataToDecode, String filename )
     throws java.io.IOException {
-        
-        Base64.OutputStream bos = null;
-        try{
-            bos = new Base64.OutputStream( 
-                      new java.io.FileOutputStream( filename ), Base64.DECODE );
-            bos.write( dataToDecode.getBytes( PREFERRED_ENCODING ) );
-        }   // end try
-        catch( java.io.IOException e ) {
-            throw e; // Catch and throw to execute finally{} block
-        }   // end catch: java.io.IOException
-        finally {
-                try{ bos.close(); } catch( Exception e ){}
-        }   // end finally
-        
-    }   // end decodeToFile
-    
-    
-    
+
+        try(OutputStream bos=new OutputStream(
+          new java.io.FileOutputStream(filename), Base64.DECODE)) {
+            bos.write(dataToDecode.getBytes(PREFERRED_ENCODING));
+        }
+        catch(Exception e) {
+        }
+
+    }
+
     
     /**
      * Convenience method for reading a base64-encoded
@@ -1504,19 +1474,13 @@ public final class Base64
             decodedData = new byte[ length ];
             System.arraycopy( buffer, 0, decodedData, 0, length );
             
-        }   // end try
-        catch( java.io.IOException e ) {
-            throw e; // Catch and release to execute finally{}
-        }   // end catch: java.io.IOException
+        }
         finally {
             try{ bis.close(); } catch( Exception e) {}
-        }   // end finally
-        
+        }
         return decodedData;
-    }   // end decodeFromFile
-    
-    
-    
+    }
+
     /**
      * Convenience method for reading a binary file
      * and base64-encoding it.
@@ -1557,17 +1521,13 @@ public final class Base64
             // Save in a variable to return
             encodedData = new String( buffer, 0, length, Base64.PREFERRED_ENCODING );
                 
-        }   // end try
-        catch( java.io.IOException e ) {
-            throw e; // Catch and release to execute finally{}
-        }   // end catch: java.io.IOException
+        }
         finally {
             try{ bis.close(); } catch( Exception e) {}
-        }   // end finally
-        
+        }
         return encodedData;
-        }   // end encodeFromFile
-    
+        }
+
     /**
      * Reads <tt>infile</tt> and encodes it to <tt>outfile</tt>.
      *
@@ -1580,21 +1540,13 @@ public final class Base64
     throws java.io.IOException {
         
         String encoded = Base64.encodeFromFile( infile );
-        java.io.OutputStream out = null;
-        try{
-            out = new java.io.BufferedOutputStream(
-                  new java.io.FileOutputStream( outfile ) );
-            out.write( encoded.getBytes("US-ASCII") ); // Strict, 7-bit output.
-        }   // end try
-        catch( java.io.IOException e ) {
-            throw e; // Catch and release to execute finally{}
-        }   // end catch
-        finally {
-            try { out.close(); }
-            catch( Exception ex ){}
-        }   // end finally    
-    }   // end encodeFileToFile
-
+        try(java.io.OutputStream out=new java.io.BufferedOutputStream(
+          new java.io.FileOutputStream(outfile))) {
+            out.write(encoded.getBytes("US-ASCII")); // Strict, 7-bit output.
+        }
+        catch(Exception ex) {
+        }
+    }
 
     /**
      * Reads <tt>infile</tt> and decodes it to <tt>outfile</tt>.
@@ -1608,25 +1560,16 @@ public final class Base64
     throws java.io.IOException {
         
         byte[] decoded = Base64.decodeFromFile( infile );
-        java.io.OutputStream out = null;
-        try{
-            out = new java.io.BufferedOutputStream(
-                  new java.io.FileOutputStream( outfile ) );
-            out.write( decoded );
-        }   // end try
-        catch( java.io.IOException e ) {
-            throw e; // Catch and release to execute finally{}
-        }   // end catch
-        finally {
-            try { out.close(); }
-            catch( Exception ex ){}
-        }   // end finally    
-    }   // end decodeFileToFile
-    
-    
+        try(java.io.OutputStream out=new java.io.BufferedOutputStream(
+          new java.io.FileOutputStream(outfile))) {
+            out.write(decoded);
+        }
+        catch(Exception ex) {
+        }
+    }
+
     /* ********  I N N E R   C L A S S   I N P U T S T R E A M  ******** */
-    
-    
+
     
     /**
      * A {@link Base64.InputStream} will read data from another

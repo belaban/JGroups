@@ -110,34 +110,33 @@ public class Runner implements Runnable, Closeable {
     protected boolean state(State new_state) {
         switch(this.state) {
             case stopped:
-                switch(new_state) {
-                    case stopped:  return false;
-                    case stopping: return false; // not a valid transition
-                    case running:
+                return switch(new_state) {
+                    case stopped, stopping -> false;
+                    case running -> {
                         state=new_state; // called by start() - starts the worker thread
-                        return true;
-                }
+                        yield true;
+                    }
+                };
             case stopping:
-                switch(new_state) {
-                    case stopped:
+                return switch(new_state) {
+                    case stopped -> {
                         state=new_state; // called by run(), when the worker thread terminates
-                        return false;
-                    case stopping:
-                        return false; // spurious stop(); is ignored
-                    case running:
+                        yield false; // called by run(), when the worker thread terminates
+                    }
+                    case stopping -> false; // spurious stop(); is ignored
+                    case running -> {
                         state=new_state; // stop() - start() sequence; the run() loop will continue
-                        return false; // don't start a new worker thread!
-                }
+                        yield false;
+                    }
+                };
             case running:
-                switch(new_state) {
-                    case stopped:
-                        return false; // invalid transition; we can't go directly from running -> stopped
-                    case stopping:
+                return switch(new_state) {
+                    case stopped, running -> false; // invalid transition; we can't go directly from running -> stopped
+                    case stopping -> {
                         state=new_state; // called by stop()
-                        return true;
-                    case running:
-                        return false;
-                }
+                        yield true; // called by stop()
+                    }
+                };
         }
         throw new IllegalStateException(String.format("illegal transition from %s -> %s", state, new_state));
     }

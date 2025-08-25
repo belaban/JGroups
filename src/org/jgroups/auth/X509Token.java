@@ -101,9 +101,8 @@ public class X509Token extends AuthToken {
             return false;
         }
 
-        if (token instanceof X509Token) {
+        if (token instanceof X509Token serverToken) {
             // got a valid X509 token object
-            X509Token serverToken = (X509Token) token;
             if (!serverToken.valueSet) {
                 log.error(Util.getMessage("X509TokenReceivedTokenNotValid"));
                 return false;

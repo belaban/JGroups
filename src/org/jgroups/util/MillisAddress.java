@@ -57,9 +57,8 @@ public class MillisAddress implements Address, Constructable<MillisAddress> {
             return true;
         if(obj == null)
             return false;
-        if(!(obj instanceof MillisAddress))
+        if(!(obj instanceof MillisAddress m))
             return false;
-        MillisAddress m=(MillisAddress)obj;
         return millis == m.millis;
     }
 

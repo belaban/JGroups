@@ -400,7 +400,7 @@ public class FixedBuffer<T> extends Buffer<T> {
         Visitor<T> v=(seqno,el) -> list.add(new Tuple<>(seqno, el));
         forEach(v, false);
         this.buf=(T[])new Object[new_cap];
-        list.forEach(t -> add(t.getVal1(), t.getVal2()));
+        list.forEach(t -> add(t.val1(), t.val2()));
         size=computeSize();
     }
 

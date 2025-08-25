@@ -350,8 +350,8 @@ public class STABLE extends Protocol {
               .append(printDigest(digest)).append("\nsender: ").append(printDigest(d));
 
         for(Digest.Entry entry: d) {
-            Address mbr=entry.getMember();
-            long hd=entry.getHighestDeliveredSeqno(), hr=entry.getHighestReceivedSeqno();
+            Address mbr=entry.member();
+            long hd=entry.hd(), hr=entry.hr();
 
             // compute the minimum of the highest seqnos deliverable (for garbage collection)
             long[] seqnos=digest.get(mbr);
@@ -684,11 +684,11 @@ public class STABLE extends Protocol {
         public Supplier<? extends Header> create() {return StableHeader::new;}
 
         static String type2String(byte t) {
-            switch(t) {
-                case STABLE_GOSSIP: return "STABLE_GOSSIP";
-                case STABILITY:     return "STABILITY";
-                default:            return "<unknown>";
-            }
+            return switch(t) {
+                case STABLE_GOSSIP -> "STABLE_GOSSIP";
+                case STABILITY ->     "STABILITY";
+                default ->            "<unknown>";
+            };
         }
 
         public String toString() {

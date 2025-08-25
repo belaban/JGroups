@@ -181,7 +181,7 @@ public class TCPPING extends Discovery {
                 break;
             case Event.ADD_PHYSICAL_ADDRESS:
                 Tuple<Address,PhysicalAddress> tuple=evt.getArg();
-                PhysicalAddress physical_addr=tuple.getVal2();
+                PhysicalAddress physical_addr=tuple.val2();
                 if(physical_addr != null && !initial_hosts.contains(physical_addr))
                     dynamic_hosts.addIfAbsent(physical_addr);
                 break;

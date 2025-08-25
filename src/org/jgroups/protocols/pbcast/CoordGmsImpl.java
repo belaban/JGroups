@@ -128,7 +128,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
                 log.trace("%s: %s already present; returning existing view %s", gms.getAddress(), mbr, gms.view);
                 Tuple<View,Digest> tuple=gms.getViewAndDigest();
                 if(tuple != null)
-                    gms.sendJoinResponse(new JoinRsp(tuple.getVal1(), tuple.getVal2()), mbr);
+                    gms.sendJoinResponse(new JoinRsp(tuple.val1(), tuple.val2()), mbr);
                 else
                     log.warn("%s: did not find a digest matching view %s; dropping JOIN-RSP", gms.getAddress(), gms.view);
                 it.remove(); // remove it anyway, even if we didn't find a digest matching the view (joiner will retry)

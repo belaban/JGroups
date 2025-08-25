@@ -288,16 +288,16 @@ public class StompConnection implements Runnable {
 
                 STOMP.Frame frame=STOMP.readFrame(in);
                 if(frame != null) {
-                    STOMP.ServerVerb verb=STOMP.ServerVerb.valueOf(frame.getVerb());
+                    STOMP.ServerVerb verb=STOMP.ServerVerb.valueOf(frame.verb());
                     if(log.isTraceEnabled())
                         log.trace("frame: " + frame);
                     switch(verb) {
                         case MESSAGE:
-                            byte[] buf=frame.getBody();
-                            notifyListeners(frame.getHeaders(), buf, 0, buf != null? buf.length : 0);
+                            byte[] buf=frame.body();
+                            notifyListeners(frame.headers(), buf, 0, buf != null? buf.length : 0);
                             break;
                         case CONNECTED:
-                            String sess_id=frame.getHeaders().get("session-id");
+                            String sess_id=frame.headers().get("session-id");
                             if(sess_id != null) {
                                 this.session_id=sess_id;
                             }
@@ -305,8 +305,8 @@ public class StompConnection implements Runnable {
                         case ERROR:
                             break;
                         case INFO:
-                            notifyListeners(frame.getHeaders());
-                            String endpoints=frame.getHeaders().get("endpoints");
+                            notifyListeners(frame.headers());
+                            String endpoints=frame.headers().get("endpoints");
                             if(endpoints != null) {
                                 List<String> list=Util.parseCommaDelimitedStrings(endpoints);
                                 if(list != null) {

@@ -498,11 +498,9 @@ public class Util {
     public static void connect(Socket sock,SocketAddress dest,int sock_conn_timeout) throws IOException {
         if(dest instanceof InetSocketAddress) {
             InetAddress addr=((InetSocketAddress)dest).getAddress();
-            if(addr instanceof Inet6Address) {
-                Inet6Address tmp=(Inet6Address)addr;
-                if(tmp.getScopeId() != 0) {
+            if(addr instanceof Inet6Address tmp) {
+                if(tmp.getScopeId() != 0)
                     dest=new InetSocketAddress(InetAddress.getByAddress(tmp.getAddress()),((InetSocketAddress)dest).getPort());
-                }
             }
         }
         sock.connect(dest, sock_conn_timeout);
@@ -511,11 +509,9 @@ public class Util {
     public static boolean connect(SocketChannel ch, SocketAddress dest) throws IOException {
         if(dest instanceof InetSocketAddress) {
             InetAddress addr=((InetSocketAddress)dest).getAddress();
-            if(addr instanceof Inet6Address) {
-                Inet6Address tmp=(Inet6Address)addr;
-                if(tmp.getScopeId() != 0) {
+            if(addr instanceof Inet6Address tmp) {
+                if(tmp.getScopeId() != 0)
                     dest=new InetSocketAddress(InetAddress.getByAddress(tmp.getAddress()),((InetSocketAddress)dest).getPort());
-                }
             }
         }
         return ch.connect(dest);
@@ -2166,7 +2162,7 @@ public class Util {
             try {
                 ch=in.read();
                 if(ch == -1)
-                    return sb.length() > 0? sb.toString() : null;
+                    return !sb.isEmpty()? sb.toString() : null;
                 if(Character.isWhitespace(ch)) {
                     if(first)
                         continue;
@@ -2179,7 +2175,7 @@ public class Util {
                 break;
             }
         }
-        return sb.length() > 0? sb.toString() : null;
+        return !sb.isEmpty()? sb.toString() : null;
     }
 
     /** Returns all characters read from the current position until the next occurrence of 'c' has been read
@@ -2386,7 +2382,7 @@ public class Util {
     public static <E> E[] combine(E[] ... arrays) {
         if(arrays == null)
             return null;
-        int size=(int)Stream.of(arrays).flatMap(Stream::of).map(Objects::nonNull).count();
+        int size=(int)Stream.of(arrays).flatMap(Stream::of).count();
         E[] retval=(E[])Array.newInstance(arrays[0].getClass().getComponentType(), size);
         AtomicInteger index=new AtomicInteger();
         Stream.of(arrays).flatMap(Stream::of).forEach(el -> retval[index.getAndIncrement()]=el);
@@ -2497,7 +2493,7 @@ public class Util {
         if(array == null)
             return;
         for(int i=from; i < to; i++) {
-            int random=(int)random(to);
+            int random=random(to);
             int other=random -1 + from;
             // int other=(int)(random(to)-1 + from);
             if(i != other) {
@@ -2686,40 +2682,46 @@ public class Util {
     }
 
     public static String printTime(double time, TimeUnit unit) {
-        switch(unit) {
-            case NANOSECONDS:
-                if(time < 1000) return print(time, unit);
-                return printTime(time / 1000.0, TimeUnit.MICROSECONDS);
-            case MICROSECONDS:
-                if(time < 1000) return print(time, unit);
-                return printTime(time / 1000.0, TimeUnit.MILLISECONDS);
-            case MILLISECONDS:
-                if(time < 1000) return print(time, unit);
-                return printTime(time / 1000.0, TimeUnit.SECONDS);
-            case SECONDS:
-                if(time < 60) return print(time, unit);
-                return printTime(time / 60.0, TimeUnit.MINUTES);
-            case MINUTES:
-                if(time < 60) return print(time, unit);
-                return printTime(time / 60.0, TimeUnit.HOURS);
-            case HOURS:
-                if(time < 24) return print(time, unit);
-                return printTime(time / 24.0, TimeUnit.DAYS);
-            default:           return print(time, unit);
-        }
+        return switch(unit) {
+            case NANOSECONDS -> {
+                if(time < 1000) yield print(time, unit);
+                yield printTime(time / 1000.0, TimeUnit.MICROSECONDS);
+            }
+            case MICROSECONDS -> {
+                if(time < 1000) yield print(time, unit);
+                yield printTime(time / 1000.0, TimeUnit.MILLISECONDS);
+            }
+            case MILLISECONDS -> {
+                if(time < 1000) yield print(time, unit);
+                yield printTime(time / 1000.0, TimeUnit.SECONDS);
+            }
+            case SECONDS -> {
+                if(time < 60) yield print(time, unit);
+                yield printTime(time / 60.0, TimeUnit.MINUTES);
+            }
+            case MINUTES -> {
+                if(time < 60) yield print(time, unit);
+                yield printTime(time / 60.0, TimeUnit.HOURS);
+            }
+            case HOURS -> {
+                if(time < 24) yield print(time, unit);
+                yield printTime(time / 24.0, TimeUnit.DAYS);
+            }
+            default -> print(time, unit);
+        };
     }
 
     public static String suffix(TimeUnit u) {
-        switch(u) {
-            case NANOSECONDS:  return "ns";
-            case MICROSECONDS: return "us";
-            case MILLISECONDS: return "ms";
-            case SECONDS:      return "s";
-            case MINUTES:      return "m";
-            case HOURS:        return "h";
-            case DAYS:         return "d";
-            default:           return u.toString();
-        }
+        return switch(u) {
+            case NANOSECONDS  -> "ns";
+            case MICROSECONDS -> "us";
+            case MILLISECONDS -> "ms";
+            case SECONDS      -> "s";
+            case MINUTES      -> "m";
+            case HOURS        -> "h";
+            case DAYS         -> "d";
+            default -> u.toString();
+        };
     }
 
     public static String print(double time, TimeUnit unit) {
@@ -2729,20 +2731,20 @@ public class Util {
 
     public static long readBytesLong(String input) {
         Tuple<String,Long> tuple=readBytes(input);
-        double num=Double.parseDouble(tuple.getVal1());
-        return (long)(num * tuple.getVal2());
+        double num=Double.parseDouble(tuple.val1());
+        return (long)(num * tuple.val2());
     }
 
     public static int readBytesInteger(String input) {
         Tuple<String,Long> tuple=readBytes(input);
-        double num=Double.parseDouble(tuple.getVal1());
-        return (int)(num * tuple.getVal2());
+        double num=Double.parseDouble(tuple.val1());
+        return (int)(num * tuple.val2());
     }
 
     public static double readBytesDouble(String input) {
         Tuple<String,Long> tuple=readBytes(input);
-        double num=Double.parseDouble(tuple.getVal1());
-        return num * tuple.getVal2();
+        double num=Double.parseDouble(tuple.val1());
+        return num * tuple.val2();
     }
 
     private static Tuple<String,Long> readBytes(String input) {
@@ -2777,14 +2779,14 @@ public class Util {
 
     public static long readDurationLong(String input, TimeUnit unit) {
         Tuple<String,Long> tuple=readDuration(input);
-        BigDecimal num = new BigDecimal(tuple.getVal1());
-        return unit.convert(num.multiply(new BigDecimal(tuple.getVal2())).longValue(), TimeUnit.MILLISECONDS);
+        BigDecimal num = new BigDecimal(tuple.val1());
+        return unit.convert(num.multiply(new BigDecimal(tuple.val2())).longValue(), TimeUnit.MILLISECONDS);
     }
 
     public static int readDurationInt(String input, TimeUnit unit) {
         Tuple<String,Long> tuple=readDuration(input);
-        BigDecimal num = new BigDecimal(tuple.getVal1());
-        return (int)unit.convert(num.multiply(new BigDecimal(tuple.getVal2())).longValue(), TimeUnit.MILLISECONDS);
+        BigDecimal num = new BigDecimal(tuple.val1());
+        return (int)unit.convert(num.multiply(new BigDecimal(tuple.val2())).longValue(), TimeUnit.MILLISECONDS);
     }
 
     private static Tuple<String,Long> readDuration(String input) {
@@ -3180,14 +3182,14 @@ public class Util {
     public static <T> T pickRandomElement(List<T> list) {
         if(list == null || list.isEmpty()) return null;
         int size=list.size();
-        int index=(int)Util.random(size)-1;
+        int index=Util.random(size) -1;
         return list.get(index);
     }
 
     public static <T> T pickRandomElement(Collection<T> set) {
         if(set == null || set.isEmpty()) return null;
         int size=set.size();
-        int random=(int)Util.random(size)-1;
+        int random=Util.random(size) -1;
         for(Iterator<T> it=set.iterator(); it.hasNext();) {
             T el=it.next();
             if(random-- <= 0)
@@ -3199,7 +3201,7 @@ public class Util {
     public static <T> T pickRandomElement(T[] array) {
         if(array == null) return null;
         int size=array.length;
-        int index=(int)Util.random(size)-1;
+        int index=Util.random(size) -1;
         return array[index];
     }
 
@@ -3394,8 +3396,7 @@ public class Util {
     public static Class<?> loadClass(String classname, ClassLoader preferredLoader) throws ClassNotFoundException {
         ClassNotFoundException exception = null;
         List<ClassLoader> list = Stream.of(preferredLoader, Thread.currentThread().getContextClassLoader(), ClassLoader.getSystemClassLoader())
-              .filter(Objects::nonNull)
-              .collect(Collectors.toList());
+              .filter(Objects::nonNull).toList();
         for(ClassLoader loader: list) {
             try {
                 return loader.loadClass(classname);
@@ -4135,7 +4136,7 @@ public class Util {
         if(s == null || s.isEmpty())
             return new String[]{};
         String[] list=s.split(separator != null? separator : ",");
-        List<String> tmp=Stream.of(list).map(String::trim).filter(Objects::nonNull).collect(Collectors.toList());
+        List<String> tmp=Stream.of(list).map(String::trim).filter(Objects::nonNull).toList();
         String[] retval=new String[tmp.size()];
         for(int i=0; i < tmp.size(); i++)
             retval[i]=tmp.get(i);
@@ -4156,7 +4157,7 @@ public class Util {
         while(true) {
             ch=in.read();
             if(ch == -1)
-                return sb.length() == 0? null : sb.toString();
+                return sb.isEmpty()? null : sb.toString();
             if(ch == '\r')
                 ;
             else {
@@ -4177,8 +4178,6 @@ public class Util {
         while(true) {
             int ch=in.read();
             switch(ch) {
-                //case '\r':
-                  //  break;
                 case '\n':
                 case -1:
                     return new ByteArray(retval, 0, index);
@@ -4642,12 +4641,10 @@ public class Util {
     public static InetAddress getAddress(AddressScope scope, StackType ip_version) throws SocketException {
         Collection<InetAddress> all_addrs=getAllAvailableAddresses(scope != null? a -> match(a, scope) : null);
         if(scope != null) {
-            switch(ip_version) {
-                case IPv6:
-                    return all_addrs.stream().filter(a -> a instanceof Inet6Address).findFirst().orElse(null);
-                case IPv4: case Dual:
-                    return all_addrs.stream().filter(a -> a instanceof Inet4Address).findFirst().orElse(null);
-            }
+            return switch(ip_version) {
+                case IPv6 -> all_addrs.stream().filter(a -> a instanceof Inet6Address).findFirst().orElse(null);
+                case IPv4, Dual -> all_addrs.stream().filter(a -> a instanceof Inet4Address).findFirst().orElse(null);
+            };
         }
         return all_addrs.stream().findFirst().orElse(null);
     }
@@ -4674,20 +4671,13 @@ public class Util {
     public static boolean match(InetAddress addr, AddressScope scope) {
         if(scope == null)
             return true;
-        switch(scope) {
-            case GLOBAL:
-                return !addr.isLoopbackAddress() && !addr.isLinkLocalAddress() && !addr.isSiteLocalAddress();
-            case SITE_LOCAL:
-                return addr.isSiteLocalAddress();
-            case LINK_LOCAL:
-                return addr.isLinkLocalAddress();
-            case LOOPBACK:
-                return addr.isLoopbackAddress();
-            case NON_LOOPBACK:
-                return !addr.isLoopbackAddress();
-            default:
-                throw new IllegalArgumentException("scope " + scope + " is unknown");
-        }
+        return switch(scope) {
+            case GLOBAL -> !addr.isLoopbackAddress() && !addr.isLinkLocalAddress() && !addr.isSiteLocalAddress();
+            case SITE_LOCAL -> addr.isSiteLocalAddress();
+            case LINK_LOCAL -> addr.isLinkLocalAddress();
+            case LOOPBACK -> addr.isLoopbackAddress();
+            case NON_LOOPBACK -> !addr.isLoopbackAddress();
+        };
     }
 
     /**
@@ -5091,7 +5081,7 @@ public class Util {
         }
         if(cache != null)
             sb.append(cache);
-        return sb.length() == 0? null : sb.toString();
+        return sb.isEmpty()? null : sb.toString();
     }
 
     protected static char nextChar(String s, int index) {
@@ -5200,7 +5190,7 @@ public class Util {
         // m.appendTail(sb); // https://issues.redhat.com/browse/JGRP-2670
         sb.append(name, end, name.length());
 
-        return sb.length() > 0? sb.toString() : methodName;
+        return !sb.isEmpty()? sb.toString() : methodName;
     }
 
     /**

@@ -32,29 +32,16 @@ import java.util.stream.Collectors;
  * a reference to the top layer (Protocol).<p>
  * Future functionality will include the capability to dynamically modify the layering
  * of the protocol stack and the properties of each layer.
+ *
  * @author Bela Ban
  * @author Richard Achmatowicz
  */
-public class Configurator {
-    protected static final Log    log=LogFactory.getLog(Configurator.class);
-    protected static boolean      skip_setting_default_values=false;
-    protected final ProtocolStack stack;
+public record Configurator(ProtocolStack stack) {
+    private static final Log log=LogFactory.getLog(Configurator.class);
+    private static boolean   skip_setting_default_values=false;
 
-
-    public Configurator() {
-        stack=null;
-    }
-    public Configurator(ProtocolStack protocolStack) {
-        stack=protocolStack;
-    }
-
-    public static boolean skipSettingDefaultValues()              {return skip_setting_default_values;}
-    public static void    skipSettingDefaultValues(boolean f)     {skip_setting_default_values=f;}
-
-    public Protocol setupProtocolStack(List<ProtocolConfiguration> config) throws Exception {
-        return setupProtocolStack(config, stack);
-    }
-
+    public static boolean skipSettingDefaultValues()          {return skip_setting_default_values;}
+    public static void    skipSettingDefaultValues(boolean f) {skip_setting_default_values=f;}
 
     /**
      * Sets up the protocol stack. Each {@link ProtocolConfiguration} has the protocol name and a map of attribute
@@ -77,6 +64,7 @@ public class Configurator {
     /**
      * Creates a new protocol given the protocol specification. Initializes the properties and starts the
      * up and down handler threads.
+     *
      * @param prot_spec The specification of the protocol. Same convention as for specifying a protocol stack.
      *                  An exception will be thrown if the class cannot be created. Example:
      *                  <pre>"VERIFY_SUSPECT(timeout=1500)"</pre> Note that no colons (:) have to be
@@ -130,12 +118,11 @@ public class Configurator {
         return protocols;
     }
 
-
-
     /**
      * Creates a protocol stack by iterating through the protocol list and connecting
      * adjacent layers. The list starts with the topmost layer and has the bottommost
      * layer at the tail.
+     *
      * @param protocol_list List of Protocol elements (from top to bottom)
      * @return Protocol stack
      */
@@ -156,12 +143,12 @@ public class Configurator {
     }
 
 
-
     /**
      * Takes a list of configurations, creates a protocol for each and returns all protocols in a list.
+     *
      * @param protocol_configs A list of ProtocolConfigurations
      * @param stack            The protocol stack
-     * @return List of Protocols
+     * @return                 List of Protocols
      */
     public static List<Protocol> createProtocols(List<ProtocolConfiguration> protocol_configs, ProtocolStack stack) throws Exception {
         List<Protocol> retval=new LinkedList<>();
@@ -176,7 +163,7 @@ public class Configurator {
     }
 
 
-    protected static Protocol createLayer(ProtocolStack stack, ProtocolConfiguration config) throws Exception {
+    private static Protocol createLayer(ProtocolStack stack, ProtocolConfiguration config) throws Exception {
         String protocol_name=config.getProtocolName();
         if(protocol_name == null)
             return null;
@@ -198,7 +185,9 @@ public class Configurator {
         }
     }
 
-    /** Sets the attributes in a given protocol from properties */
+    /**
+     * Sets the attributes in a given protocol from properties
+     */
     public static void initializeAttrs(Protocol prot, ProtocolConfiguration config, StackType ip_version) throws Exception {
         String protocol_name=config.getProtocolName();
         if(protocol_name == null)
@@ -220,7 +209,7 @@ public class Configurator {
         // if we have protocol-specific XML configuration, pass it to the protocol
         List<XmlNode> subtrees=config.getSubtrees();
         if(subtrees != null) {
-            for(XmlNode node : subtrees)
+            for(XmlNode node: subtrees)
                 prot.parse(node);
         }
     }
@@ -228,7 +217,7 @@ public class Configurator {
     public static void initializeAttrs(Object obj, Map<String,String> properties, StackType ip_version) throws Exception {
         // before processing field and method based props, take dependencies specified by @Property.dependsUpon into account
         AccessibleObject[] dependencyOrderedFieldsAndMethods=computePropertyDependencies(obj, properties);
-        for(AccessibleObject ordered : dependencyOrderedFieldsAndMethods) {
+        for(AccessibleObject ordered: dependencyOrderedFieldsAndMethods) {
             if(ordered instanceof Field)
                 resolveAndAssignField(obj, (Field)ordered, properties, ip_version);
             else if(ordered instanceof Method)
@@ -236,13 +225,12 @@ public class Configurator {
         }
     }
 
-
     /**
      * Throws an exception if sanity check fails. Possible sanity check is uniqueness of all protocol names
      */
     public static void sanityCheck(List<Protocol> protocols) throws Exception {
         Set<Short> ids=new HashSet<>();
-        for(Protocol protocol : protocols) {
+        for(Protocol protocol: protocols) {
             short id=protocol.getId();
             String name=protocol.getName();
             if(id > 0 && !ids.add(id))
@@ -250,7 +238,7 @@ public class Configurator {
         }
 
         // For each protocol, get its required up and down services and check (if available) if they're satisfied
-        for(Protocol protocol : protocols) {
+        for(Protocol protocol: protocols) {
             List<Integer> required_down_services=protocol.requiredDownServices();
             List<Integer> required_up_services=protocol.requiredUpServices();
 
@@ -274,16 +262,14 @@ public class Configurator {
         }
     }
 
-    protected static String printEvents(List<Integer> events) {
+    private static String printEvents(List<Integer> events) {
         return events.stream().map(Event::type2String).collect(Collectors.joining(" ", "[", "]"));
     }
 
     /**
      * Removes all events provided by the protocol below protocol from events
-     * @param protocol
-     * @param events
      */
-    protected static void removeProvidedUpServices(Protocol protocol, List<Integer> events) {
+    private static void removeProvidedUpServices(Protocol protocol, List<Integer> events) {
         if(protocol == null || events == null)
             return;
         for(Protocol prot=protocol.getDownProtocol(); prot != null && !events.isEmpty(); prot=prot.getDownProtocol()) {
@@ -295,10 +281,8 @@ public class Configurator {
 
     /**
      * Removes all events provided by the protocol above protocol from events
-     * @param protocol
-     * @param events
      */
-    protected static void removeProvidedDownServices(Protocol protocol, List<Integer> events) {
+    private static void removeProvidedDownServices(Protocol protocol, List<Integer> events) {
         if(protocol == null || events == null)
             return;
         for(Protocol prot=protocol.getUpProtocol(); prot != null && !events.isEmpty(); prot=prot.getUpProtocol()) {
@@ -309,12 +293,13 @@ public class Configurator {
     }
 
 
-    /** Returns all inet addresses found */
+    /**
+     * Returns all inet addresses found
+     */
     public static Collection<InetAddress> getAddresses(Map<String,Map<String,InetAddressInfo>> map) throws Exception {
         return map.values().stream().flatMap(m -> m.values().stream())
           .flatMap(i -> i.getInetAddresses().stream()).filter(Objects::nonNull).collect(Collectors.toSet());
     }
-
 
 
     /*
@@ -394,13 +379,11 @@ public class Configurator {
         return inetAddressMap;
     }
 
-
-
     public static List<InetAddress> getInetAddresses(List<Protocol> protocols) throws Exception {
         List<InetAddress> retval=new LinkedList<>();
 
         // collect InetAddressInfo
-        for(Protocol protocol : protocols) {
+        for(Protocol protocol: protocols) {
             //traverse class hierarchy and find all annotated fields and add them to the list if annotated
             for(Class<?> clazz=protocol.getClass(); clazz != null; clazz=clazz.getSuperclass()) {
                 Field[] fields=clazz.getDeclaredFields();
@@ -422,7 +405,9 @@ public class Configurator {
         return retval;
     }
 
-    /** Returns a map of protocol.attr/InetAddress tuples */
+    /**
+     * Returns a map of protocol.attr/InetAddress tuples
+     */
     public static Map<String,InetAddress> getInetAddresses2(List<Protocol> protocols) {
         Map<String,InetAddress> map=new HashMap<>();
         if(protocols != null) {
@@ -444,7 +429,6 @@ public class Configurator {
     }
 
 
-
     public static boolean isInetAddressOrCompatibleType(Class<?> c) {
         return InetAddress.class.isAssignableFrom(c)
           || SocketAddress.class.isAssignableFrom(c)
@@ -462,7 +446,7 @@ public class Configurator {
     public static void setDefaultAddressValues(List<Protocol> protocols, StackType ip_version) throws Exception {
         if(skip_setting_default_values) {
             log.trace("skipped setting default address values in protocols as skip_setting_default_values=%b",
-                     skip_setting_default_values);
+                      skip_setting_default_values);
             return;
         }
         for(Protocol prot: protocols)
@@ -485,8 +469,8 @@ public class Configurator {
     }
 
 
-    protected static void setDefaultAddressValuesMethods(Object obj, StackType ip_version,
-                                                         InetAddress default_ip_address) throws Exception {
+    private static void setDefaultAddressValuesMethods(Object obj, StackType ip_version,
+                                                       InetAddress default_ip_address) throws Exception {
         Map<String,String> properties=new HashMap<>(); // dummy properties
         Method[] methods=Util.getAllDeclaredMethodsWithAnnotations(obj.getClass(), Property.class);
         for(Method method: methods) {
@@ -518,9 +502,8 @@ public class Configurator {
         }
     }
 
-
-    protected static void setDefaultAddressValuesFields(Object obj, StackType ip_version,
-                                                        InetAddress default_ip_address) throws Exception {
+    private static void setDefaultAddressValuesFields(Object obj, StackType ip_version,
+                                                      InetAddress default_ip_address) throws Exception {
         Map<String,String> properties=new HashMap<>(); // dummy properties
         Field[] fields=Util.getAllDeclaredFieldsWithAnnotations(obj.getClass(), Property.class);
         for(Field field: fields) {
@@ -560,7 +543,7 @@ public class Configurator {
      * local network interface
      */
     public static void ensureValidBindAddresses(List<Protocol> protocols) throws Exception {
-        for(Protocol protocol : protocols) {
+        for(Protocol protocol: protocols) {
             String protocolName=protocol.getName();
 
             //traverse class hierarchy and find all annotated fields and add them to the list if annotated
@@ -576,12 +559,10 @@ public class Configurator {
         }
     }
 
-
     public static <T extends Object> T getValueFromObject(Object obj, Field field) throws IllegalAccessException {
         if(obj == null || field == null) return null;
         return (T)Util.getField(field, obj);
     }
-
 
     public static <T extends Object> T getValueFromObject(Object obj, String field_name) throws IllegalAccessException {
         if(obj == null || field_name == null) return null;
@@ -724,7 +705,7 @@ public class Configurator {
 
     public static void resolveAndInvokePropertyMethods(Object obj, Map<String,String> props, StackType ip_version) throws Exception {
         Method[] methods=obj.getClass().getMethods();
-        for(Method method : methods) {
+        for(Method method: methods) {
             resolveAndInvokePropertyMethod(obj, method, props, ip_version);
         }
     }
@@ -771,7 +752,7 @@ public class Configurator {
         //traverse class hierarchy and find all annotated fields
         for(Class<?> clazz=obj.getClass(); clazz != null; clazz=clazz.getSuperclass()) {
             Field[] fields=clazz.getDeclaredFields();
-            for(Field field : fields)
+            for(Field field: fields)
                 resolveAndAssignField(obj, field, props, ip_version);
         }
     }
@@ -817,9 +798,8 @@ public class Configurator {
     }
 
 
-
     public static boolean isSetPropertyMethod(Method method, Class<?> enclosing_clazz) {
-        return (method.getReturnType() == java.lang.Void.TYPE || method.getReturnType().isAssignableFrom(enclosing_clazz))
+        return (method.getReturnType() == Void.TYPE || method.getReturnType().isAssignableFrom(enclosing_clazz))
           && method.getParameterTypes().length == 1;
     }
 
@@ -828,7 +808,7 @@ public class Configurator {
         String[] system_property_names=annotation.systemProperty();
         String retval=null;
 
-        for(String system_property_name : system_property_names) {
+        for(String system_property_name: system_property_names) {
             if(system_property_name != null && !system_property_name.isEmpty()) {
                 try {
                     retval=System.getProperty(system_property_name);
@@ -1011,7 +991,6 @@ public class Configurator {
         }
 
 
-
         /*
          * Check if the parameterized type represents one of:
          * List<InetAddress>, List<IpAddress>, List<InetSocketAddress>
@@ -1043,7 +1022,7 @@ public class Configurator {
             // if we take only an InetAddress argument
             if(!isParameterized())
                 addresses.add(getInetAddress(getConvertedValue()));
-            // if we take a List<InetAddress> or similar
+                // if we take a List<InetAddress> or similar
             else {
                 List<?> values=(List<?>)getConvertedValue();
                 if(values.isEmpty())

@@ -37,7 +37,7 @@ public class RpcDispatcher extends MessageDispatcher {
 
     public Object        getServerObject()                    {return server_obj;}
     public RpcDispatcher setServerObject(Object obj)          {this.server_obj=obj; return this;}
-    public RpcDispatcher setReceiver(Receiver r)              {return (RpcDispatcher)super.setReceiver(r);}
+    public RpcDispatcher setReceiver(Receiver r)              {return super.setReceiver(r);}
     public MethodLookup  getMethodLookup()                    {return method_lookup;}
     public RpcDispatcher setMethodLookup(MethodLookup ml)     {this.method_lookup=ml; return this;}
     public MethodInvoker getMethodInvoker()                   {return method_invoker;}
@@ -127,7 +127,7 @@ public class RpcDispatcher extends MessageDispatcher {
      */
     public <T> T callRemoteMethod(Address dest, String meth, Object[] args, Class<?>[] types, RequestOptions opts) throws Exception {
         MethodCall method_call=new MethodCall(meth, args, types);
-        return (T)callRemoteMethod(dest, method_call, opts);
+        return callRemoteMethod(dest, method_call, opts);
     }
 
 

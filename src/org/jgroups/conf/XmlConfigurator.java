@@ -175,7 +175,7 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
                 Tuple<String,String> tuple=readAttribute(input);
                 if(tuple == null)
                     break;
-                n.addAttribute(tuple.getVal1(), tuple.getVal2());
+                n.addAttribute(tuple.val1(), tuple.val2());
             }
 
             current=stack.peekFirst();

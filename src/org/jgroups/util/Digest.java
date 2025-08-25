@@ -11,8 +11,6 @@ import java.io.IOException;
 import java.util.*;
 import java.util.function.Supplier;
 
-import static java.lang.Math.max;
-
 
 /**
  * A message digest containing - for each member - the highest seqno delivered (hd) and the highest seqno received (hr).
@@ -249,13 +247,11 @@ public class Digest implements SizeStreamable, Iterable<Digest.Entry>, Construct
         }
     }
 
-
     protected void checkPostcondition() {
         int size=members.length;
         if(size*2 != seqnos.length)
             throw new IllegalArgumentException("seqnos.length (" + seqnos.length + ") is not twice the members size (" + size + ")");
     }
-
 
     protected class MyIterator implements Iterator<Entry> {
         protected int index;
@@ -279,34 +275,12 @@ public class Digest implements SizeStreamable, Iterable<Digest.Entry>, Construct
         }
     }
 
-
-    /** Keeps track of one members plus its highest delivered and received seqnos */
+    /**
+     * Keeps track of one members plus its highest delivered and received seqnos
+     */
     @Immutable
-    public static class Entry {
-        protected final Address member;
-        protected final long    hd;
-        protected final long    hr;
-
-        public Entry(Address member, long highest_delivered, long highest_received) {
-            this.member=member;
-            this.hd=highest_delivered;
-            this.hr=highest_received;
-        }
-
-        public Address getMember()                {return member;}
-        public long    getHighestDeliveredSeqno() {return hd;}
-        public long    getHighestReceivedSeqno()  {return hr;}
-        public long    getHighest()               {return max(hd,hr);}
-
-        public boolean equals(Object obj) {
-            Entry other=(Entry)obj;
-            return member.equals(other.member) && hd == other.hd && hr == other.hr;
-        }
-
-        public String toString() {
-            return member + ": [" + hd + " (" + hr + ")]";
-        }
+    public record Entry(Address member, long hd, long hr) {
+        public String toString() {return member + ": [" + hd + " (" + hr + ")]";}
     }
-
 
 }

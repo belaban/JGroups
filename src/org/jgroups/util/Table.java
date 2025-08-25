@@ -828,8 +828,6 @@ public class Table<T> implements Iterable<T> {
         }
 
         protected TableIterator(final long from, final long to) {
-            //if(from - to > 0) // same as if(from > to), but prevents long overflow
-              //  throw new IllegalArgumentException(String.format("range [%d .. %d] invalid", from, to));
             this.from=from;
             this.to=to;
             row=computeRow(from);

@@ -8,8 +8,8 @@ import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.UUID;
 import org.jgroups.util.*;
+import org.jgroups.util.UUID;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -19,7 +19,6 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 
 /**
@@ -367,9 +366,7 @@ public class MERGE3 extends Protocol {
             for(Map.Entry<Address,ViewId> entry : views.entrySet()) {
                 Address key=entry.getKey();
                 ViewId view_id=entry.getValue();
-                Set<Address> existing=retval.get(view_id);
-                if(existing == null)
-                    retval.put(view_id, existing=new ConcurrentSkipListSet<>());
+                Set<Address> existing=retval.computeIfAbsent(view_id, k -> new ConcurrentSkipListSet<>());
                 existing.add(key);
             }
         }
@@ -458,7 +455,7 @@ public class MERGE3 extends Protocol {
 
             // add merge participants
             coords.addAll(converted_views.values().stream().filter(set -> !set.isEmpty())
-                            .map(set -> set.iterator().next()).collect(Collectors.toList()));
+                            .map(set -> set.iterator().next()).toList());
 
             if(coords.size() <= 1) {
                 log.trace("%s: cancelling merge as we only have 1 coordinator: %s", local_addr, coords);

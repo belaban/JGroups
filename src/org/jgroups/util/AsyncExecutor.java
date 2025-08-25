@@ -99,14 +99,7 @@ public class AsyncExecutor<T> implements Lifecycle {
     }
 
 
-    protected static class Task<T> implements Runnable {
-        protected final Supplier<T>        task;
-        protected final CompletableFuture<T> cf;
-
-        protected Task(Supplier<T> task, CompletableFuture<T> cf) {
-            this.task=task;
-            this.cf=cf;
-        }
+    protected record Task<T>(Supplier<T> task, CompletableFuture<T> cf) implements Runnable {
 
         protected Task<T> completeExceptionally(Throwable t) {
             cf.completeExceptionally(t);
@@ -124,7 +117,5 @@ public class AsyncExecutor<T> implements Lifecycle {
             }
         }
     }
-
-
 
 }

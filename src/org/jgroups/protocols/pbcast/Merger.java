@@ -644,7 +644,7 @@ public class Merger {
                 Digest digest=tmp_data.getDigest();
                 if(digest != null)
                     for(Digest.Entry entry: digest)
-                        digest_membership.add(entry.getMember());
+                        digest_membership.add(entry.member());
             }
 
             // remove all members from the new view for which we didn't get a digest, e.g. new view={A,B,C,D,E,F},

@@ -63,7 +63,7 @@ public class MutableDigest extends Digest {
         if(digest == null)
             return this;
         for(Entry entry: digest)
-            set(entry.getMember(), entry.getHighestDeliveredSeqno(), entry.getHighestReceivedSeqno());
+            set(entry.member(), entry.hd(), entry.hr());
         return this;
     }
 
@@ -75,7 +75,7 @@ public class MutableDigest extends Digest {
         if(digest == null)
             return this;
         for(Entry entry: digest)
-            merge(entry.getMember(), entry.getHighestDeliveredSeqno(), entry.getHighestReceivedSeqno());
+            merge(entry.member(), entry.hd(), entry.hr());
         return this;
     }
 

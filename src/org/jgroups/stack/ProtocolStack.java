@@ -436,7 +436,7 @@ public class ProtocolStack extends Protocol {
 
     public void setup(List<ProtocolConfiguration> configs, ProtocolHook afterCreationHook) throws Exception {
         if(top_prot == null) {
-            top_prot=new Configurator(this).setupProtocolStack(configs);
+            top_prot=Configurator.setupProtocolStack(configs, this);
             top_prot.setUpProtocol(this);
             this.setDownProtocol(top_prot);
             bottom_prot=getBottomProtocol();

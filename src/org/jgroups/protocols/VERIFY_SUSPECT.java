@@ -346,14 +346,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     }
     /* ----------------------------- End of Private Methods -------------------------------- */
 
-    protected static class Entry implements Delayed {
-        protected final Address suspect;
-        protected final long    target_time;
-
-        public Entry(Address suspect, long target_time) {
-            this.suspect=suspect;
-            this.target_time=target_time;
-        }
+    protected record Entry(Address suspect, long target_time) implements Delayed {
 
         public int compareTo(Delayed o) {
             Entry other=(Entry)o;
@@ -370,7 +363,6 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
             return suspect + ": " + target_time;
         }
     }
-
 
 
     public static class VerifyHeader extends Header {
@@ -398,14 +390,11 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         public Supplier<? extends Header> create() {return VerifyHeader::new;}
 
         public String toString() {
-            switch(type) {
-                case ARE_YOU_DEAD:
-                    return "[VERIFY_SUSPECT: ARE_YOU_DEAD]";
-                case I_AM_NOT_DEAD:
-                    return "[VERIFY_SUSPECT: I_AM_NOT_DEAD]";
-                default:
-                    return "[VERIFY_SUSPECT: unknown type (" + type + ")]";
-            }
+            return switch(type) {
+                case ARE_YOU_DEAD  -> "[VERIFY_SUSPECT: ARE_YOU_DEAD]";
+                case I_AM_NOT_DEAD -> "[VERIFY_SUSPECT: I_AM_NOT_DEAD]";
+                default            -> "[VERIFY_SUSPECT: unknown type (" + type + ")]";
+            };
         }
 
         @Override

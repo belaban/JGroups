@@ -43,11 +43,11 @@ public class TpHeader extends Header {
     }
 
     public TpHeader(AsciiString n) {
-        cluster_name=n != null? n.chars() : null;
+        cluster_name=n != null? n.val() : null;
     }
 
     public TpHeader(AsciiString n, byte flag, int index) {
-        cluster_name=n != null? n.chars() : null;
+        cluster_name=n != null? n.val() : null;
         this.flag=flag;
         this.index=index;
     }

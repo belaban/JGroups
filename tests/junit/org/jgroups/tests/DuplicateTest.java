@@ -240,11 +240,11 @@ public class DuplicateTest extends ChannelTestBase {
         assert msgs.size() == expected_size : "expected size=" + expected_size + ", msgs: " + msgs.keySet();
 
         for(Tuple<Address,Integer> tuple: vals) {
-            Address addr=tuple.getVal1();
+            Address addr=tuple.val1();
             Collection<Long> list=msgs.get(addr);
             assert list != null : "no list available for " + addr;
 
-            int expected_values=tuple.getVal2();
+            int expected_values=tuple.val2();
             for(int i=0; i < 50; i++) {
                 if(list.size() >= expected_values)
                     break;
@@ -253,7 +253,7 @@ public class DuplicateTest extends ChannelTestBase {
             }
 
             System.out.println("[" + receiver.getName() + "]: " + addr + ": " + list);
-            assert list.size() == expected_values : addr + "'s list's size is not " + tuple.getVal2() +
+            assert list.size() == expected_values : addr + "'s list's size is not " + tuple.val2() +
                     ", list: " + list + " (size=" + list.size() + ")";
             if(!oob) // if OOB messages, ordering is not guaranteed
                 check(addr, list);

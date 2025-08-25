@@ -31,7 +31,7 @@ public class AsciiStringTest {
         assert str2.length() == str.length();
 
         assert str.equals(tmp);
-        assert str.equals(str.chars());
+        assert str.equals(str.val());
 
         tmp=null;
         assert !str.equals(tmp);

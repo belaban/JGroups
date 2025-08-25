@@ -8,10 +8,10 @@ import java.util.concurrent.*;
  * @author Bela Ban
  */
 public class AgeOutCache<K> {
-    private final TimeScheduler           timer;
-    private long                          timeout;
-    private final ConcurrentMap<K,Future> map=new ConcurrentHashMap<>();
-    private Handler                       handler;
+    private final TimeScheduler              timer;
+    private long                             timeout;
+    private final ConcurrentMap<K,Future<?>> map=new ConcurrentHashMap<>();
+    private Handler<K>                       handler;
 
     public interface Handler<K> {
         void expired(K key);
@@ -23,7 +23,7 @@ public class AgeOutCache<K> {
         this.timeout=timeout;
     }
 
-    public AgeOutCache(TimeScheduler timer, long timeout, Handler handler) {
+    public AgeOutCache(TimeScheduler timer, long timeout, Handler<K> handler) {
         this(timer, timeout);
         this.handler=handler;
     }
@@ -36,11 +36,11 @@ public class AgeOutCache<K> {
         this.timeout=timeout;
     }
 
-    public Handler getHandler() {
+    public Handler<K> getHandler() {
         return handler;
     }
 
-    public void setHandler(Handler handler) {
+    public void setHandler(Handler<K> handler) {
         this.handler=handler;
     }
 
@@ -96,7 +96,7 @@ public class AgeOutCache<K> {
 
     public String toString() {
         StringBuilder sb=new StringBuilder();
-        for(Map.Entry<K,Future> entry: map.entrySet()) {
+        for(Map.Entry<K,Future<?>> entry: map.entrySet()) {
             sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
         }
         return sb.toString();

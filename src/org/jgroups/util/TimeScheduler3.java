@@ -171,8 +171,7 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
             }
         }
 
-        if(pool instanceof ThreadPoolExecutor && shut_down_pool) {
-            ThreadPoolExecutor p=(ThreadPoolExecutor)pool;
+        if(pool instanceof ThreadPoolExecutor p && shut_down_pool) {
             List<Runnable> remaining_tasks=p.shutdownNow();
             remaining_tasks.stream().filter(task -> task instanceof Future).forEach(task -> ((Future)task).cancel(true));
             p.getQueue().clear();

@@ -205,14 +205,14 @@ public class JDKLogImpl implements Log {
     protected static Level strToLevel(String level) {
         if(level == null) return null;
         level=level.toLowerCase().trim();
-        if(level.equals("fatal"))   return Level.SEVERE;
-        if(level.equals("error"))   return Level.SEVERE;
-        if(level.equals("warn"))    return Level.WARNING;
-        if(level.equals("warning")) return Level.WARNING;
-        if(level.equals("info"))    return Level.INFO;
-        if(level.equals("debug"))   return Level.FINE;
-        if(level.equals("trace"))   return Level.FINER;
-        return null;
+        return switch(level) {
+            case "fatal", "error" -> Level.SEVERE;
+            case "warn", "warning" -> Level.WARNING;
+            case "info" -> Level.INFO;
+            case "debug" -> Level.FINE;
+            case "trace" -> Level.FINER;
+            default -> null;
+        };
     }
 
     private static final String THIS_CLASS_NAME = JDKLogImpl.class.getName();

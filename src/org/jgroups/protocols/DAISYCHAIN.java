@@ -111,32 +111,6 @@ public class DAISYCHAIN extends Protocol {
         return up_prot.up(msg);
     }
 
-    /*public void up(MessageBatch batch) {
-        for(Message msg: batch) {
-            DaisyHeader hdr=msg.getHeader(getId());
-            if(hdr != null) {
-                // 1. forward the message to the next in line if ttl > 0
-                short ttl=hdr.getTTL();
-                if(log.isTraceEnabled())
-                    log.trace("%s: received message from %s with ttl=%d", local_addr, msg.getSrc(), ttl);
-                if(--ttl > 0) {
-                    Message copy=msg.copy(true, true)
-                      .setDest(next).putHeader(getId(), new DaisyHeader(ttl));
-                    msgs_forwarded++;
-                    if(log.isTraceEnabled())
-                        log.trace("%s: forwarding message to %s with ttl=%d", local_addr, next, ttl);
-                    down_prot.down(copy);
-                }
-
-                // 2. Pass up
-                msg.setDest(null);
-            }
-        }
-
-        if(!batch.isEmpty())
-            up_prot.up(batch);
-    }*/
-
     protected void handleView(View view) {
         this.view=view;
         Address tmp=Util.pickNext(view.getMembers(), local_addr);

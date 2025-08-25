@@ -161,8 +161,16 @@ public abstract class Discovery extends Protocol {
     public <T extends Discovery> T discoveryRspExpiryTime(long t)     {this.discovery_rsp_expiry_time=t; return (T)this;}
     public boolean                 sendCacheOnJoin()                  {return send_cache_on_join;}
     public <T extends Discovery> T sendCacheOnJoin(boolean b)         {this.send_cache_on_join=b; return (T)this;}
+    public int                     maxRankToReply()                   {return max_rank_to_reply;}
+    public void                    maxRankToReply(int m)              {this.max_rank_to_reply=m;}
+    public boolean                 transportSupportsMulticasting()    {return transport_supports_multicasting;}
+    public boolean                 asyncDiscovery()                   {return async_discovery;}
+    public void                    asyncDiscovery(boolean ad)         {this.async_discovery=ad;}
+    public boolean                 asyncDiscoveryUseSeparateThread()  {return async_discovery_use_separate_thread_per_request;}
 
-
+    public void                    asyncDiscoveryUseSeparateThread(boolean a) {
+        this.async_discovery_use_separate_thread_per_request=a;
+    }
 
     @ManagedAttribute
     public String getView() {return view != null? view.getViewId().toString() : "null";}
@@ -366,7 +374,7 @@ public abstract class Discovery extends Protocol {
                     List<? extends Address> list=data.stream()
                       .map(PingData::mbrs)
                       .filter(Objects::nonNull)
-                      .flatMap(Collection::stream).collect(Collectors.toList());
+                      .flatMap(Collection::stream).toList();
                     if(!list.isEmpty() && !list.contains(local_addr))
                         return null;
                 }

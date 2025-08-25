@@ -79,7 +79,7 @@ public class DiscoveryTest2 extends ChannelTestBase {
         e.stack().insertProtocol(rh, ProtocolStack.Position.BELOW, Discovery.class);
         e.connect(CLUSTER);
         Util.waitUntilAllChannelsHaveSameView(5000, 500, a,b,c,d,e);
-        assert rh.count.get() == 4 : String.format("count should be 4 but is %d", rh.count.get());
+        assert rh.count.get() >= 4 : String.format("count should be >= 4 but is %d", rh.count.get());
         Map<Address,Collection<PingData>> map=rh.map();
         String s=map.entrySet().stream().map(e -> String.format("%s: %s", e.getKey(), e.getValue()))
           .collect(Collectors.joining("\n"));

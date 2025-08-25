@@ -121,9 +121,7 @@ public class Leaver {
         else {
             // If the mcast protocol can block, we need to send a view asynchronously. The views will still
             // be delivered in order, see https://issues.redhat.com/browse/JGRP-2875 for details
-            Runnable r=() -> {
-                gms.getDownProtocol().down(msg);
-            };
+            Runnable r=() -> gms.getDownProtocol().down(msg);
             boolean rc=gms.thread_pool.execute(r);
             if(!rc) { // https://issues.redhat.com/browse/JGRP-2880
                 Thread th=gms.getThreadFactory().newThread(r);

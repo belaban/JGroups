@@ -14,7 +14,6 @@ import org.jgroups.util.Util;
 import java.net.InetAddress;
 import java.util.*;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 
 /**
@@ -67,7 +66,7 @@ public class SHARED_LOOPBACK extends TP {
                 return;
             }
             targets=dests.entrySet().stream().filter(e -> !Objects.equals(local_addr, e.getKey()))
-              .map(Map.Entry::getValue).collect(Collectors.toList());
+              .map(Map.Entry::getValue).toList();
         }
 
         targets.forEach(target -> {

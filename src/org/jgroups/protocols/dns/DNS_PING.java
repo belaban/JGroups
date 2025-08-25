@@ -67,7 +67,7 @@ public class DNS_PING extends Discovery {
     public DNS_PING dnsResolver(DNSResolver r) { dns_resolver = r; return this; }
 
     public DNS_PING setDNSResolver(DNSResolver r) { dns_resolver = r; return this; }
-    public DNSResolver getDNSResolver(DNSResolver r) { return dns_resolver; }
+    public DNSResolver getDNSResolver(DNSResolver ignored) { return dns_resolver; }
 
     public String dnsQuery() { return dns_query; }
     public DNS_PING dnsQuery(String q) { dns_query = q; return this; }
@@ -166,8 +166,7 @@ public class DNS_PING extends Discovery {
         boolean ports_found=false;
         if (dns_discovery_members != null) {
             for (Address address : dns_discovery_members) {
-                if(address instanceof IpAddress) {
-                    IpAddress ip = ((IpAddress) address);
+                if(address instanceof IpAddress ip) {
                     if(record_type == DNSResolver.DNSRecordType.SRV && ip.getPort() > 0) {
                         ports_found=true;
                         cluster_members.add(ip);

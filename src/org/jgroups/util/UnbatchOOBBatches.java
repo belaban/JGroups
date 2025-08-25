@@ -22,7 +22,7 @@ public class UnbatchOOBBatches extends MaxOneThreadPerSender {
         if(max_size > 0 && batch.size() <= max_size)
             return super.process(batch, oob);
         AsciiString tmp=batch.clusterName();
-        byte[] cname=tmp != null? tmp.chars() : null;
+        byte[] cname=tmp != null? tmp.val() : null;
         for(Message msg: batch)
             tp.getThreadPool().execute(new SingleMessageHandlerWithClusterName(msg, cname));
         batch.clear();
