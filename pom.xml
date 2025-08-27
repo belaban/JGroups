@@ -4,7 +4,7 @@
     <artifactId>jgroups</artifactId>
     <packaging>jar</packaging>
     <name>JGroups</name>
-    <version>5.3.19.Final-SNAPSHOT</version>
+    <version>5.3.19.Final</version>
     <description>Reliable cluster communication toolkit</description>
     <url>http://www.jgroups.org</url>
 
@@ -192,19 +192,17 @@
             <plugin>
                 <groupId>org.sonatype.plugins</groupId>
                 <artifactId>nxrm3-maven-plugin</artifactId>
-                <!-- replace plugin version with the latest available -->
-                <!-- https://search.maven.org/search?q=a:nxrm3-maven-plugin -->
                 <version>1.0.7</version>
                 <extensions>true</extensions>
                 <configuration>
                     <!-- After Nexus migration https://repository.jboss.org will be here instead -->
-                    <nexusUrl>https://repository.jboss.org/nexus3/</nexusUrl>
+                    <nexusUrl>https://repository.jboss.org</nexusUrl>
 
                     <!-- The server "id" element from settings to use authentication from settings.xml-->
                     <serverId>jboss-releases-repository</serverId>
 
                     <!-- Change to repository you will be deploying to -->
-                    <!--repository>testing</repository-->
+                    <repository>jboss-releases-repository</repository>
 
                     <!-- Skip the staging deploy mojo -->
                     <skipNexusStagingDeployMojo>true</skipNexusStagingDeployMojo>
