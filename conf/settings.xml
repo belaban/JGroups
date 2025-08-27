@@ -1,132 +1,152 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!-- Example of Maven settings.xml file
--->
-<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<settings xmlns="http://maven.apache.org/settings/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
           xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
 
-    <localRepository>/home/bela/.m2/jboss-repository</localRepository>
+  <servers>
 
-    <servers>
-        <server>
-            <id>jboss-releases-repository</id>
-            <username>USERNAME</username>
-            <password>PASSWORD</password>
-        </server>
-        <server>
-            <id>jboss-snapshots-repository</id>
-            <username>USERNAME</username>
-            <password>PASSWORD</password>
-        </server>
-    </servers>
+    <server>
+      <id>jboss-developer-repository-group</id>
+      <username>userid</username>
+      <password>password</password>
+    </server>
 
+    <server>
+	<id>${server}</id>
+	<username>userid</username>
+	<password>password</password>
+    </server>
+    
+    <server>
+      <id>jboss-snapshots-repository</id>
+      <username>userid</username>
+      <password>password</password>
+    </server>
+    
+    <server>
+      <id>jboss-releases-repository</id>
+      <username>userid</username>
+      <password>password</password>
+    </server>
 
-    <profiles>
-        <profile>
-            <id>jboss-releases-repository</id>
-            <repositories>
-                <repository>
-                    <id>jboss-releases-repository</id>
-                    <name>JBoss Public Maven Repository Staging</name>
-                    <url>https://repository.jboss.org/nexus/repository/releases/</url>
-                    <layout>default</layout>
-                    <releases>
-                        <enabled>true</enabled>
-                        <updatePolicy>never</updatePolicy>
-                    </releases>
-                    <snapshots>
-                        <enabled>true</enabled>
-                        <updatePolicy>interval:120</updatePolicy>
-                    </snapshots>
-                </repository>
-            </repositories>
-        </profile>
+  </servers>
 
+  <profiles>
 
-        <profile>
-            <id>jboss-snapshots-repository</id>
-            <repositories>
-                <repository>
-                    <id>jboss-snapshots-repository</id>
-                    <name>JBoss Nexus snapshots repository</name>
-                    <url>https://repository.jboss.org/nexus/repository/snapshots/</url>
-                    <layout>default</layout>
-                    <releases>
-                        <enabled>false</enabled>
-                        <updatePolicy>never</updatePolicy>
-                    </releases>
-                    <snapshots>
-                        <enabled>true</enabled>
-                        <updatePolicy>interval:120</updatePolicy>
-                    </snapshots>
-                </repository>
-            </repositories>
-        </profile>
+  <profile>
+      <id>jboss-releases-repository</id>
+      <repositories>
+        <repository>
+          <id>jboss-releases-repository</id>
+          <name>JBoss Public Maven Repository Staging</name>
+          <url>https://repository.jboss.org/nexus/repository/releases/</url>
+          <layout>default</layout>
+          <releases>
+            <enabled>true</enabled>
+            <updatePolicy>never</updatePolicy>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+            <updatePolicy>never</updatePolicy>
+          </snapshots>
+        </repository>
+      </repositories>
+    </profile>
 
-
-        <profile>
-            <id>jboss-public-repository</id>
-            <repositories>
-                <repository>
-                    <id>jboss-public-repository-group</id>
-                    <name>JBoss Public Maven Repository Group</name>
-                    <url>https://repository.jboss.org/nexus/content/groups/public/</url>
-                    <layout>default</layout>
-                    <releases>
-                        <enabled>true</enabled>
-                        <updatePolicy>never</updatePolicy>
-                    </releases>
-                    <snapshots>
-                        <enabled>true</enabled>
-                        <updatePolicy>never</updatePolicy>
-                    </snapshots>
-                </repository>
-            </repositories>
-            <pluginRepositories>
-                <pluginRepository>
-                    <id>jboss-public-repository-group</id>
-                    <name>JBoss Public Maven Repository Group</name>
-                    <url>https://repository.jboss.org/nexus/content/groups/public/</url>
-                    <layout>default</layout>
-                    <releases>
-                        <enabled>true</enabled>
-                        <updatePolicy>never</updatePolicy>
-                    </releases>
-                    <snapshots>
-                        <enabled>true</enabled>
-                        <updatePolicy>never</updatePolicy>
-                    </snapshots>
-                </pluginRepository>
-            </pluginRepositories>
-        </profile>
+    <profile>
+        <id>jboss-snapshots-repository</id>
+        <repositories>
+            <repository>
+                <id>jboss-snapshots-repository</id>
+                <name>JBoss Nexus snapshots repository</name>
+                <url>https://repository.jboss.org/nexus/repository/snapshots/</url>
+                <layout>default</layout>
+                <releases>
+                     <enabled>false</enabled>
+                     <updatePolicy>never</updatePolicy>
+                </releases>
+                <snapshots>
+                    <enabled>true</enabled>
+                    <updatePolicy>never</updatePolicy>
+                </snapshots>
+            </repository>
+        </repositories>
+    </profile>
 
 
-        <profile>
-            <id>jboss-deprecated-repository</id>
-            <repositories>
-                <repository>
-                    <id>jboss-deprecated-repository</id>
-                    <name>JBoss Deprecated Maven Repository</name>
-                    <url>https://repository.jboss.org/nexus/content/repositories/deprecated/</url>
-                    <layout>default</layout>
-                    <releases>
-                        <enabled>true</enabled>
-                        <updatePolicy>never</updatePolicy>
-                    </releases>
-                    <snapshots>
-                        <enabled>false</enabled>
-                        <updatePolicy>never</updatePolicy>
-                    </snapshots>
-                </repository>
-            </repositories>
-        </profile>
+  <profile>
+      <id>jboss-public-repository</id>
+      <repositories>
+        <repository>
+          <id>jboss-public-repository-group</id>
+          <name>JBoss Public Maven Repository Group</name>
+           <url>https://repository.jboss.org/nexus/repository/releases/</url>
+           <layout>default</layout>
+          <releases>
+            <enabled>true</enabled>
+            <updatePolicy>never</updatePolicy>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+            <updatePolicy>never</updatePolicy>
+          </snapshots>
+        </repository>
+      </repositories>
+      <pluginRepositories>
+        <pluginRepository>
+          <id>jboss-public-repository-group</id>
+          <name>JBoss Public Maven Repository Group</name>
+           <url>https://repository.jboss.org/nexus/repository/releases/</url>
+           <layout>default</layout>
+          <releases>
+            <enabled>true</enabled>
+            <updatePolicy>never</updatePolicy>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+            <updatePolicy>never</updatePolicy>
+          </snapshots>
+        </pluginRepository>
+      </pluginRepositories>
+    </profile>
 
+    <profile>
+      <id>jboss-nexus</id>
+      <repositories>
+        <repository>
+          <id>central</id>
+          <name>Central repository proxy</name>
+          <url>replaced by mirror settings</url>
+          <layout>default</layout>
+          <releases>
+            <enabled>true</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+            <updatePolicy>never</updatePolicy>
+          </snapshots>
+        </repository>
+      </repositories>
+      <pluginRepositories>
+        <pluginRepository>
+          <id>central</id>
+          <url>replaced by mirror settings</url>
+          <releases>
+            <enabled>true</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+        </pluginRepository>
+      </pluginRepositories>
+    </profile>
 
-    </profiles>
+  </profiles>
 
-    <activeProfiles>
-        <activeProfile>jboss-public-repository</activeProfile>
-    </activeProfiles>
+ <activeProfiles>
+    <!--activeProfile>jboss-public-repository</activeProfile-->
+    <activeProfile>jboss-releases-repository</activeProfile>
+  </activeProfiles>
 
-
-</settings>
+ </settings>
