@@ -22,16 +22,13 @@
 
 
     <profiles>
-
-
-
         <profile>
             <id>jboss-releases-repository</id>
             <repositories>
                 <repository>
                     <id>jboss-releases-repository</id>
                     <name>JBoss Public Maven Repository Staging</name>
-                    <url>https://repository.jboss.org/nexus/service/local/staging/deploy/maven2</url>
+                    <url>https://repository.jboss.org/nexus/repository/releases/</url>
                     <layout>default</layout>
                     <releases>
                         <enabled>true</enabled>
@@ -52,7 +49,7 @@
                 <repository>
                     <id>jboss-snapshots-repository</id>
                     <name>JBoss Nexus snapshots repository</name>
-                    <url>https://repository.jboss.org/nexus/content/repositories/snapshots/</url>
+                    <url>https://repository.jboss.org/nexus/repository/snapshots/</url>
                     <layout>default</layout>
                     <releases>
                         <enabled>false</enabled>
