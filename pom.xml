@@ -190,6 +190,38 @@
                 </configuration>
             </plugin>
             <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nxrm3-maven-plugin</artifactId>
+                <!-- replace plugin version with the latest available -->
+                <!-- https://search.maven.org/search?q=a:nxrm3-maven-plugin -->
+                <version>1.0.7</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <!-- After Nexus migration https://repository.jboss.org will be here instead -->
+                    <nexusUrl>https://repository.jboss.org/nexus3/</nexusUrl>
+
+                    <!-- The server "id" element from settings to use authentication from settings.xml-->
+                    <serverId>jboss-releases-repository</serverId>
+
+                    <!-- Change to repository you will be deploying to -->
+                    <!--repository>testing</repository-->
+
+                    <!-- Skip the staging deploy mojo -->
+                    <skipNexusStagingDeployMojo>true</skipNexusStagingDeployMojo>
+                </configuration>
+
+                <!-- replacing the standard Maven Deployment Plugin -->
+                <executions>
+                    <execution>
+                        <id>default-deploy</id>
+                        <phase>deploy</phase>
+                        <goals>
+                            <goal>deploy</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.10.1</version>
