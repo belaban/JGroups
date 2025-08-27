@@ -177,17 +177,37 @@
             </testResource>
         </testResources>
         <plugins>
+
             <plugin>
                 <groupId>org.sonatype.plugins</groupId>
-                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <artifactId>nxrm3-maven-plugin</artifactId>
+                <version>1.0.7</version>
                 <extensions>true</extensions>
                 <configuration>
-                    <!-- See configuration details at http://books.sonatype.com/nexus-book/reference/staging-deployment.html -->
-                    <nexusUrl>${nexus.server.url}</nexusUrl>
-                    <serverId>${nexus.server.id}</serverId>
-                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                    <nexusUrl>https://repository.jboss.org/nexus</nexusUrl>
+
+                    <!-- The server "id" element from settings to use authentication from settings.xml-->
+                    <serverId>jboss-releases-repository</serverId>
+
+                    <!-- Change to repository you will be deploying to -->
+                    <repository>releases</repository>
+
+                    <!-- Skip the staging deploy mojo -->
+                    <skipNexusStagingDeployMojo>true</skipNexusStagingDeployMojo>
                 </configuration>
+
+                <!-- replacing the standard Maven Deployment Plugin -->
+                <executions>
+                    <execution>
+                        <id>default-deploy</id>
+                        <phase>deploy</phase>
+                        <goals>
+                            <goal>deploy</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
