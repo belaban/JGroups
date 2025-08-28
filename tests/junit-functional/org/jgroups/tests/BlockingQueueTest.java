@@ -191,14 +191,16 @@ public class BlockingQueueTest {
             }
         });
         putter.start();
-        Util.sleep(500);
+        Util.waitUntilTrue(5000, 100, () -> q.size() == 10);
         for(int i=0; i < 5; i++)
             q.poll();
+        Util.waitUntilTrue(5000, 100, () -> q.size() == 10);
         Util.waitUntil(1000, 100, () -> !putter.isAlive());
         putter.join();
+        assert !putter.isAlive();
         List<Integer> l=new FastArray<>(15);
         int num=q.drainTo(l);
-        assert num == 10;
+        assert num == 10 : String.format("num: %d", num);
         assert l.equals(IntStream.rangeClosed(6,15).boxed().collect(Collectors.toList()));
     }
 
