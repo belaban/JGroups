@@ -9,7 +9,7 @@
         xmlns="urn:org:jgroups"
         xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
     <include file="${transport-config:tcp-default.xml}" />
-    <TCPPING async_discovery="false"
+    <TCPPING async_discovery="true"
              initial_hosts="${jgroups.tcpping.initial_hosts:localhost[7800]}"
              return_entire_cache="${jgroups.tcpping.return_entire_cache:false}"
              port_range="${jgroups.tcp.port_range:2}"/>

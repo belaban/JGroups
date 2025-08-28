@@ -10,8 +10,6 @@ import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BooleanSupplier;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -217,7 +215,7 @@ public class CloseTest extends ChannelTestBase {
         a.connect("CloseTest");
         b.connect("CloseTest");
         Util.waitUntilAllChannelsHaveSameView(5000, 500, a, b);
-
+        System.out.printf("---- initial view: %s\n", printView(a,b));
         for(int i=1; i <= 10; i++) {
             JChannel ch=i % 2 == 0? a : b;
             leaveAndRejoin(i, ch, a,b);
@@ -225,25 +223,25 @@ public class CloseTest extends ChannelTestBase {
     }
 
     private static void leaveAndRejoin(int i, JChannel ch, JChannel... channels) throws Exception {
-        System.out.printf("#%d disconnecting %s, view is %s ", i, ch.getName(), ch.getView());
         ch.disconnect();
-        System.out.println("OK");
-
-        BooleanSupplier p=() -> Stream.of(channels)
-          .allMatch(c -> !c.isConnected() || c.isConnected() && c.getView().size() == 1);
-        Supplier<String> message=() -> Stream.of(channels)
-          .map(c -> String.format("%s: connected=%b view=%s", c.getAddress(), c.isConnected(), c.getView()))
-          .collect(Collectors.joining("\n"));
-
+        System.out.printf("#%d %s left,   view: %s\n", i, ch.getName(), printView(channels));
         // one channel must be disconnected and the other must have a view of 1
-        Util.waitUntil(5000, 500, p, message);
-
-        System.out.printf("#%d rejoining %s: ", i, ch.getName());
+        Util.waitUntil(5000, 500, () -> numConnected(channels) == 1, () -> printView(channels));
+        long start=System.nanoTime();
         ch.connect("CloseTest");
-        Util.waitUntilAllChannelsHaveSameView(5000, 500, channels);
-        System.out.printf("OK, view is %s\n", ch.getView());
+        Util.waitUntil(5000, 100, () -> numConnected(channels) == 2);
+        long time=System.nanoTime() - start;
+        System.out.printf("#%d %s joined, view: %s (time: %s)\n", i, ch.getName(), printView(channels), Util.printTime(time));
     }
 
+    private static int numConnected(JChannel ... channels) {
+        return (int)Stream.of(channels).filter(JChannel::isConnected).count();
+    }
+
+    private static String printView(JChannel ... channels) {
+        JChannel channel=Stream.of(channels).filter(JChannel::isConnected).findFirst().orElse(null);
+        return String.format("%s: %s", channel.address(), channel.view());
+    }
 
     private static void assertView(JChannel ch, int num) {
         View view=ch.getView();

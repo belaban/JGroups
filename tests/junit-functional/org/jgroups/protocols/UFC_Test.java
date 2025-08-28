@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Tests {@link UFC} and {@link UFC_NB}
+ * Tests {@link UFC}
  * @author Bela Ban
  * @since  4.2.0
  */
@@ -40,11 +40,9 @@ public class UFC_Test {
     @DataProvider
     protected static Object[][] create() {
         return new Object[][]{
-          {UFC.class},
-          {UFC_NB.class}
+          {UFC.class}
         };
     }
-
 
     /** A blocks threads on sending messages to C. When C is removed from the view, the threads should unblock */
     public void testBlockingAndViewChange(Class<UFC> clazz) throws Exception {
@@ -120,8 +118,6 @@ public class UFC_Test {
         for(JChannel ch: channels) {
             UFC ufc=clazz.getConstructor().newInstance();
             ufc.setMaxCredits(MAX_CREDITS).setMaxBlockTime(60000);
-            if(ufc instanceof UFC_NB)
-                ((UFC_NB)ufc).setMaxQueueSize(MAX_CREDITS);
             ProtocolStack stack=ch.getProtocolStack();
             stack.removeProtocol(UFC.class); // just in case we already have a UFC protocol
             stack.insertProtocol(ufc, ProtocolStack.Position.ABOVE, GMS.class);

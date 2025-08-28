@@ -22,7 +22,7 @@ import java.util.stream.Stream;
 import static org.jgroups.stack.ProtocolStack.Position.ABOVE;
 
 /**
- * Tests {@link MFC} and {@link MFC_NB}
+ * Tests {@link MFC}
  * @author Bela Ban
  * @since  4.2.0
  */
@@ -48,11 +48,9 @@ public class MFC_Test {
     @DataProvider
     protected static Object[][] create() {
         return new Object[][] {
-          {MFC.class},
-          {MFC_NB.class}
+          {MFC.class}
         };
     }
-
 
     /** A blocks threads on sending messages to C. When C is removed from the view, the threads should unblock */
     public void testBlockingAndViewChange(Class<MFC> clazz) throws Exception {
@@ -60,11 +58,6 @@ public class MFC_Test {
 
         for(JChannel ch: Arrays.asList(a,b,d))
             send(ch, null, 9950); // uses up the 10'000 initial credits, so the next threads block on C
-        if(clazz.equals(MFC_NB.class)) {
-            // we send another 9K to fill the queue
-            for(JChannel ch: Arrays.asList(a,b,d))
-                send(ch, null, 9950); // uses up the 10'000 initial credits, so the next threads block on C
-        }
 
         Thread[] threads=new Thread[10];
         for(int i=0; i < threads.length; i++) {
@@ -104,11 +97,6 @@ public class MFC_Test {
 
         for(JChannel ch: Arrays.asList(a,b,d))
             send(ch, null, 9950); // uses up the 10'000 initial credits, so the next threads block on C
-        if(clazz.equals(MFC_NB.class)) {
-            // we send another 9K to fill the queue
-            for(JChannel ch: Arrays.asList(a,b,d))
-                send(ch, null, 9950); // uses up the 10'000 initial credits, so the next threads block on C
-        }
 
         Thread[] threads=new Thread[10];
         for(int i=0; i < threads.length; i++) {
@@ -213,8 +201,6 @@ public class MFC_Test {
         for(JChannel ch: channels) {
             MFC mfc=clazz.getConstructor().newInstance();
             mfc.setMaxCredits(MAX_CREDITS).setMaxBlockTime(60000);
-            if(mfc instanceof MFC_NB)
-                ((MFC_NB)mfc).setMaxQueueSize(MAX_CREDITS);
             mfc.init();
             ProtocolStack stack=ch.getProtocolStack();
             stack.removeProtocol(MFC.class); // just in case we already have an MFC protocol
@@ -229,8 +215,6 @@ public class MFC_Test {
         for(JChannel ch: channels) {
             MFC mfc=clazz.getConstructor().newInstance();
             mfc.setMaxCredits(max_credits).setMaxBlockTime(2000);
-            if(mfc instanceof MFC_NB)
-                ((MFC_NB)mfc).setMaxQueueSize((int)max_credits);
             mfc.init();
             ProtocolStack stack=ch.getProtocolStack();
             stack.removeProtocol(MFC.class); // just in case we already have an MFC protocol
@@ -239,7 +223,6 @@ public class MFC_Test {
             mfc.handleViewChange(v.getMembers());
         }
     }
-
 
     protected static void send(JChannel ch, Address target, int length) {
         try {
