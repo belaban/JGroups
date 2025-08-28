@@ -2,6 +2,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
+import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -211,6 +212,8 @@ public class CloseTest extends ChannelTestBase {
         a=createChannel().name("A");
         b=createChannel().name("B");
         makeUnique(a,b);
+        Stream.of(a, b).map(ch -> ch.stack().findProtocol(GMS.class))
+          .forEach(gms -> ((GMS)gms).printLocalAddress(false));
         a.connect("CloseTest");
         b.connect("CloseTest");
         Util.waitUntilAllChannelsHaveSameView(5000, 500, a, b);

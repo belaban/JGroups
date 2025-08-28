@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -79,8 +78,8 @@ public class DiscoveryTest2 extends ChannelTestBase {
         e.stack().insertProtocol(rh, ProtocolStack.Position.BELOW, Discovery.class);
         e.connect(CLUSTER);
         Util.waitUntilAllChannelsHaveSameView(5000, 500, a,b,c,d,e);
-        assert rh.count.get() >= 4 : String.format("count should be >= 4 but is %d", rh.count.get());
         Map<Address,Collection<PingData>> map=rh.map();
+        assert map.size() == 4 : String.format("cache: %s", map);
         String s=map.entrySet().stream().map(e -> String.format("%s: %s", e.getKey(), e.getValue()))
           .collect(Collectors.joining("\n"));
         System.out.printf("-- cache:\n%s", s);
@@ -88,7 +87,6 @@ public class DiscoveryTest2 extends ChannelTestBase {
 
     protected static class DiscoveryResponseHandler extends Protocol {
         protected final Map<Address,Collection<PingData>> map=new ConcurrentHashMap<>();
-        protected final AtomicInteger                     count=new AtomicInteger();
 
         protected Map<Address,Collection<PingData>> map() {return map;}
 
@@ -112,9 +110,8 @@ public class DiscoveryTest2 extends ChannelTestBase {
 
         protected void handlePingResponse(Message msg) {
             List<PingData> l=readPingData(msg.getArray(), msg.getOffset(), msg.getLength());
-            count.incrementAndGet();
-            System.out.printf("-- %s: received %d ping responses from %s (count=%d): %s\n",
-                              local_addr, l.size(), msg.src(), count.get(), l);
+            System.out.printf("-- %s: received %d ping responses from %s: %s\n",
+                              local_addr, l.size(), msg.src(), l);
             for(PingData data: l) {
                 Collection<PingData> list=map.computeIfAbsent(msg.src(), a -> new ConcurrentLinkedQueue<>());
                 list.add(data);
