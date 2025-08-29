@@ -2986,6 +2986,29 @@ public class Util {
         return sb.toString();
     }
 
+    public static <T> String printListWithDelimiter(Iterable<T> it,String delimiter, int size) {
+        return printListWithDelimiter(it, delimiter, MAX_LIST_PRINT_SIZE, size);
+    }
+
+    public static <T> String printListWithDelimiter(Iterable<T> it,String delimiter,int limit, int size) {
+        boolean first=true;
+        int count=0;
+        StringBuilder sb=new StringBuilder();
+        for(T el : it) {
+            if(first)
+                first=false;
+            else
+                sb.append(delimiter);
+            sb.append(el);
+            if(limit > 0 && ++count >= limit) {
+                if(size > count)
+                    sb.append(" ..."); // .append(list.size()).append("...");
+                break;
+            }
+        }
+        return sb.toString();
+    }
+
     public static <T> String printListWithDelimiter(T[] list,String delimiter,int limit) {
         boolean first=true;
         StringBuilder sb=new StringBuilder();

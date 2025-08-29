@@ -1,6 +1,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.util.ConcurrentBlockingRingBuffer;
+import org.jgroups.util.FastArray;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -9,6 +10,7 @@ import org.testng.annotations.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.IntStream;
 
 /**
  * This used to test the old RingBuffer (removed in 5.5.0); retrofitted to test
@@ -176,6 +178,25 @@ public class ConcurrentBlockingRingBufferTest {
         assert list.size() == 4;
         for(int i : Arrays.asList(3, 4, 5, 6))
             assert list.remove(0) == i;
+    }
+
+    public void testIterator() {
+        for(int i=1; i <= 8; i++)
+            rb.offer(i);
+        List<Integer> l=new FastArray<>(8);
+        for(Integer i: rb) {
+            //noinspection UseBulkOperation
+            l.add(i);
+        }
+        assert l.size() == 8;
+    }
+
+    public void testContents() {
+        for(int i=1; i <= 8; i++)
+            rb.offer(i);
+        List<Integer> l=rb.contents();
+        assert l.size() == 8;
+        assert IntStream.rangeClosed(1,8).boxed().toList().equals(l);
     }
 
 }

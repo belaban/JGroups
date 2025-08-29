@@ -254,7 +254,7 @@ public class ConcurrentBlockingRingBuffer<T> implements BlockingQueue<T> {
 
     @Override
     public Iterator<T> iterator() {
-        return null;
+        return new BufIterator();
     }
 
     @Override
@@ -294,7 +294,17 @@ public class ConcurrentBlockingRingBuffer<T> implements BlockingQueue<T> {
 
     @Override
     public String toString() {
-        return String.format("ri=%d wi=%d size=%,d", ri, wi.get(), size.get());
+        return String.format("ri=%d wi=%d size=%,d%s", ri, wi.get(), size.get(), isEmpty()? "" :
+          " [" + Util.printListWithDelimiter(this::iterator, ", ", size()) + "]");
+    }
+
+    public List<T> contents() {
+        List<T> l=new ArrayList<>(capacity);
+        for(T el: this) {
+            //noinspection UseBulkOperation
+            l.add(el);
+        }
+        return l;
     }
 
     protected int advance(int idx) {
@@ -322,6 +332,25 @@ public class ConcurrentBlockingRingBuffer<T> implements BlockingQueue<T> {
         }
         finally {
             lock.unlock();
+        }
+    }
+
+    protected class BufIterator implements Iterator<T> {
+        int index=ri, consumed=0, to_consume=size.get();
+
+        @Override
+        public boolean hasNext() {
+            return consumed < to_consume;
+        }
+
+        @Override
+        public T next() {
+            int idx=index;
+            index=INCR_INDEX.applyAsInt(index);
+            consumed++;
+            if(idx < 0 || idx >= array.length())
+                throw new NoSuchElementException(String.format("idx: %d", idx));
+            return array.get(idx);
         }
     }
 
