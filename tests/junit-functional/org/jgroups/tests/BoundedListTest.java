@@ -7,44 +7,41 @@ import org.jgroups.util.BoundedList;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.util.List;
+import java.util.stream.IntStream;
+
 @Test(groups=Global.FUNCTIONAL)
 public class BoundedListTest {
 
 
-    public static void testAdd() throws Exception {
+    public void testAdd() throws Exception {
         BoundedList<Integer> list=new BoundedList<>(3);
-        Assert.assertEquals(0, list.size());
-        list.add(1);
-        System.out.println(list);
-        Assert.assertEquals(1, list.size());
-
-        list.add(2);
-        System.out.println(list);
-
-        list.add(3);
-        System.out.println(list);
-        Assert.assertEquals(3, list.size());
+        Assert.assertEquals(list.size(), 0);
+        for(int i=1; i <= 3; i++) {
+            list.add(i);
+            System.out.println(list);
+            Assert.assertEquals(list.size(), i);
+        }
 
         list.add(4);
         System.out.println(list);
-        Assert.assertEquals(3, list.size());
+        Assert.assertEquals(list.size(), 3);
+        List<Integer> expected=IntStream.rangeClosed(2, 4).boxed().toList(), actual=list.contents();
+        assert actual.equals(expected);
 
-
-        int tmp;
-
-        tmp=list.removeFromHead();
-        Assert.assertEquals(2, tmp);
-
-        tmp=list.removeFromHead();
-        Assert.assertEquals(3, tmp);
+        int tmp=list.removeFromHead();
+        Assert.assertEquals(tmp, 2);
 
         tmp=list.removeFromHead();
-        Assert.assertEquals(4, tmp);
+        Assert.assertEquals(tmp, 3);
+
+        tmp=list.removeFromHead();
+        Assert.assertEquals(tmp, 4);
+        assert list.isEmpty();
     }
 
 
-
-    public static void testContains() throws Exception {
+    public void testContains() throws Exception {
         BoundedList<String> strlist=new BoundedList<>(3);
         strlist.add("Bela");
         System.out.println(strlist);
@@ -64,13 +61,13 @@ public class BoundedListTest {
     }
 
     
-    public static void testWithManyElements() {
+    public void testWithManyElements() {
         BoundedList<Integer> list=new BoundedList<>(3);
-        for(int i=0; i < 100000; i++) {
+        for(int i=0; i < 100_000; i++) {
             list.add(i);
         }
         System.out.println("list: " + list);
-        Assert.assertEquals(3, list.size());
+        Assert.assertEquals(list.size(), 3);
     }
 
 

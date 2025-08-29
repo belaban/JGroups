@@ -249,7 +249,11 @@ public class ConcurrentBlockingRingBuffer<T> implements BlockingQueue<T> {
 
     @Override
     public boolean contains(Object o) {
-        throw new UnsupportedOperationException();
+        for(T el: this) {
+            if(Objects.equals(el, o))
+                return true;
+        }
+        return false;
     }
 
     @Override

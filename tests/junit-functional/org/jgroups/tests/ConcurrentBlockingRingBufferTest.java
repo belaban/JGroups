@@ -199,5 +199,13 @@ public class ConcurrentBlockingRingBufferTest {
         assert IntStream.rangeClosed(1,8).boxed().toList().equals(l);
     }
 
+    public void testContains() {
+        for(int i=1; i <= 8; i++)
+            rb.offer(i);
+        assert rb.contains(6);
+        assert !rb.contains(-1);
+        assert !rb.contains(9);
+    }
+
 }
 
