@@ -106,10 +106,7 @@ public class DISCARD extends Protocol {
         return drop_down_unicasts;
     }
 
-    /**
-     * Drop the next N unicasts down the stack
-     * @param drop_down_unicasts
-     */
+    /** Drop the next N unicasts down the stack */
     public DISCARD dropDownUnicasts(int drop_down_unicasts) {
         this.drop_down_unicasts=drop_down_unicasts; return this;
     }

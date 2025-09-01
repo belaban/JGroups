@@ -27,8 +27,8 @@ import java.util.stream.Collectors;
 
 /**
  * Dynamic tool to measure multicast performance of JGroups; every member sends N messages and we measure how long it
- * takes for all receivers to receive them.<p/>
- * All messages received from a member P are checked for ordering and non duplicity.<p/>
+ * takes for all receivers to receive them.<p>
+ * All messages received from a member P are checked for ordering and non duplicity.<p>
  * MPerf is <em>dynamic</em> because it doesn't accept any configuration
  * parameters (besides the channel config file and name); all configuration is done at runtime, and will be broadcast
  * to all cluster members.
@@ -348,7 +348,7 @@ public class MPerf implements Receiver {
         }
     }
 
-    /** Returns all members if num_senders <= 0, or the members with rank <= num_senders */
+    /** Returns all members if num_senders {@literal <= 0}, or the members with rank {@literal <= num_senders} */
     protected List<Address> getSenders() {
         if(num_senders <= 0)
             return new ArrayList<>(members);

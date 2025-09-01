@@ -20,18 +20,12 @@ import java.util.Map;
  * to send). When the credits have been exhausted, the sender blocks. Each receiver also keeps track of
  * how many credits it has received from a sender. When credits for a sender fall below a threshold,
  * the receiver sends more credits to the sender. Works for both unicast and multicast messages.
- * <p/>
+ * <p>
  * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
- * <br/>This is the second simplified implementation of the same model. The algorithm is sketched out in
+ * <p>
+ * This is the second simplified implementation of the same model. The algorithm is sketched out in
  * doc/FlowControl.txt
- * <br/>
- * Changes (Brian) April 2006:
- * <ol>
- * <li>Receivers now send credits to a sender when more than min_credits have been received (rather than when min_credits
- * are left)
- * <li>Receivers don't send the full credits (max_credits), but rather the actual number of bytes received
- * <ol/>
  * @author Bela Ban
  */
 @MBean(description="Simple flow control protocol based on a credit system")
@@ -40,7 +34,7 @@ public class UFC extends FlowControl {
     protected final static FcHeader UFC_CREDIT_REQUEST_HDR = new FcHeader(FcHeader.CREDIT_REQUEST);
 
     /**
-     * Map<Address,Long>: keys are members, values are credits left. For each send,
+     * Map: keys are members, values are credits left. For each send,
      * the number of credits is decremented by the message size
      */
     protected final Map<Address,? extends Credit> sent=Util.createConcurrentMap();

@@ -1,6 +1,7 @@
 package org.jgroups.blocks.cs;
 
 /**
+ * Connection callbacks
  * @author Bela Ban
  * @since  3.6.5
  */

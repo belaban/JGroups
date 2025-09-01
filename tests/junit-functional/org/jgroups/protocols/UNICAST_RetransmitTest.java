@@ -51,7 +51,7 @@ public class UNICAST_RetransmitTest {
      * disabled. Then starts the retransmission task, which should generate an XMIT-REQ which is larger than
      * TP.max_bundle_size, leading to endless retransmissions. With JGRP-1868 resolved, the receiver should get
      * all messages.
-     * <p/>
+     * <p>
      * https://issues.redhat.com/browse/JGRP-1868
      */
     public void testLargeRetransmission(Class<? extends Protocol> unicast_class) throws Exception {

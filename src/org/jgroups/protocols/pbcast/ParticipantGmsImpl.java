@@ -10,11 +10,10 @@ import java.util.List;
 
 
 /**
- * @author Bela Ban
+ * This is the role of a regular member, which has successfully joined the cluster, but is not the coordinator
  */
 public class ParticipantGmsImpl extends ServerGmsImpl {
     private final Collection<Address> suspected_mbrs=new LinkedHashSet<>();
-
 
     public ParticipantGmsImpl(GMS g) {
         super(g);

@@ -8,11 +8,12 @@ import java.nio.ByteBuffer;
 /**
  * Class using {@link ByteBuffer} and implementing {@link DataOutput}. Note that all instances need to pass the
  * exact size of the marshalled object as a ByteBuffer cannot be expanded.
+ * @param buf The buffer
  * @author Bela Ban
  * @since  3.5
  */
 public record ByteBufferOutputStream(ByteBuffer buf) implements DataOutput {
-    public void       reset()             {buf.clear();}
+    public void reset() {buf.clear();}
 
     public void write(int b) throws IOException {
         buf.put((byte)b);

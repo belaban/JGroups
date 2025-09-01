@@ -19,7 +19,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * Tests that there aren't unnecessary retransmissions caused by the retransmit task in NAKACK{2,4}<p/>
+ * Tests that there aren't unnecessary retransmissions caused by the retransmit task in NAKACK{2,4}<p>
  * https://issues.redhat.com/browse/JGRP-1539
  * @author Bela Ban
  * @since 3.3

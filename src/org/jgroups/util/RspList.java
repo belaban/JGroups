@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 /**
  * Contains responses from all members. Marks faulty members.
  * A RspList is a response list used in peer-to-peer protocols. This class is unsynchronized
+ * @param <T> T
  */
 public class RspList<T> extends HashMap<Address,Rsp<T>> implements Iterable<Rsp<T>> {
     private static final long serialVersionUID=6085009056724212815L;

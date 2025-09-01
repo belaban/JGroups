@@ -243,7 +243,7 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
      * @param dests A list of group members from which to expect responses (if the call is blocking).
      * @param msg The message to be sent
      * @param opts A set of options that govern the call. See {@link org.jgroups.blocks.RequestOptions} for details
-     * @return CompletableFuture<T> A future from which the results (RspList) can be retrieved, or null if the request
+     * @return CompletableFuture A future from which the results (RspList) can be retrieved, or null if the request
      *                              was sent asynchronously
      * @throws Exception If the request cannot be sent
      */
@@ -315,7 +315,7 @@ public class MessageDispatcher implements RequestHandler, Closeable, ChannelList
      * Sends a unicast message to the target defined by msg.getDest() and returns a future
      * @param msg the payload to send
      * @param opts the options
-     * @return CompletableFuture<T> A future from which the result can be fetched, or null if the call was asynchronous
+     * @return CompletableFuture A future from which the result can be fetched, or null if the call was asynchronous
      * @throws Exception If there was problem sending the request, processing it at the receiver, or processing
      *                   it at the sender. {@link java.util.concurrent.Future#get()} will throw this exception
      */

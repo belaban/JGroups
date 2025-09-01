@@ -3,6 +3,7 @@ package org.jgroups.util;
 /**
  * A bounded list where the oldest elements are removed once the capacity is reached. In most scenarios, this class is
  * used for maintaining a history, e.g. of digests or views, so perf is not important.
+ * @param <T> T
  * @author Bela Ban Nov 20, 2003
  */
 public class BoundedList<T> extends ConcurrentBlockingRingBuffer<T> {

@@ -19,7 +19,7 @@ import java.util.*;
 
 /**
  * Discovery protocol based on Openstack Swift (object storage).
- * <p/>
+ * <br/>
  * This implementation is derived from Gustavo Fernandes work on RACKSPACE_PING
  *
  * @author tsegismont
@@ -75,18 +75,12 @@ public class SWIFT_PING extends FILE_PING {
         }
 
         URL authUrl = URI.create(auth_url).toURL();
-        Authenticator authenticator = null;
-        switch (authType) {
-            case KEYSTONE_V_2_0:
-                authenticator = new Keystone_V_2_0_Auth(tenant, authUrl, username,
-                                                        password);
-                break;
-
-            default:
+        return switch(authType) {
+            case KEYSTONE_V_2_0 -> new Keystone_V_2_0_Auth(tenant, authUrl, username, password);
+            default ->
                 // We shouldn't come here since we checked auth_type
-                throw new IllegalStateException("Could not select authenticator");
-        }
-        return authenticator;
+              throw new IllegalStateException("Could not select authenticator");
+        };
     }
 
     @Override

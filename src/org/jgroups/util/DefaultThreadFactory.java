@@ -7,10 +7,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Thread factory mainly responsible for naming of threads. Can be replaced by
  * user. If use_numbering is set, a thread THREAD will be called THREAD-1,
- * THREAD-2, and so on.<p/> If a pattern has been set (through setPattern()),
+ * THREAD-2, and so on.<p> If a pattern has been set (through setPattern()),
  * then the cluster name and local address will also be added, e.g.
  * THREAD-5,MyCluster,192.168.1.5:63754 or THREAD,MyCluster,192.168.1.5:63754
- * <p/>
+ * <p>
  * If includeClusterName and includeLocalAddress are both false, and clusterName is set, then we assume we
  * have a shared transport, and therefore print shared=clusterName.
  * @author Vladimir Blagojevic
@@ -88,10 +88,6 @@ public class DefaultThreadFactory implements ThreadFactory {
      * Names a thread according to base_name, cluster name and local address. If includeClusterName and includeLocalAddress
      * are null, but cluster_name is set, then we assume we have a shared transport and name the thread shared=clusterName.
      * In the latter case, clusterName points to the singleton_name of TP.
-     * @param base_name
-     * @param thread
-     * @param addr
-     * @param cluster_name
      */
     public void renameThread(String base_name, Thread thread, String addr, String cluster_name) {
         String thread_name=getThreadName(base_name, thread, addr, cluster_name);

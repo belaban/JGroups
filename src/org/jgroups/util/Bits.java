@@ -10,23 +10,23 @@ import java.nio.ByteBuffer;
 /**
  * Class (similar to (and partly copied from) java.nio.Bits) containing helper methods to encode variables
  * (e.g. ints, long, List&lt;Address&gt; etc) to memory (byte buffer) or output streams and read variables
- * from memory or input streams.<p/>
+ * from memory or input streams.<p>
  * The write methods write a type (e.g. an int or a char) to a buffer ({@link ByteBuffer} or output stream, using
  * <a href="https://developers.google.com/protocol-buffers/docs/encoding">variable-length encoding</a>. If
  * there are not enough byte in the buffer to write a type, a {@link java.nio.BufferOverflowException} is thrown.
  * If the variable cannot be written to the output stream, an IOException is thrown.
- * <p/>
+ * <p>
  * The read methods read a variable-length encoded type from a buffer or input stream. If there are fewer bytes in
  * the buffer than needed to read the type, a {@link java.nio.BufferUnderflowException} is thrown. If the read fails,
  * an IOException is thrown.
- * <p/>
+ * <p>
  * The size() methods return the number of bytes used to encode the given type with variable-length encoding.
- * <p/>
+ * <p>
  * There are additional helper methods to write/read custom JGroups types, e.g. address lists, Views etc
- * <p/>
+ * <p>
  * Note that methods to read/write atomic types (char, int etc) should only be used if variable-length encoding is
  * desired; otherwise {@link DataOutput#writeInt(int)} or {@link ByteBuffer#putInt(int)} should be used instead.
- * <p/>
+ * <p>
  * At the time of writing this (Feb 2014), most methods have not yet been implemented.
  * @author Bela Ban
  * @author Sanne Grinovero
@@ -332,7 +332,7 @@ public final class Bits {
     /**
      * Writes 2 sequence numbers (seqnos) in compressed format to buf.
      * The seqnos are non-negative and hr is guaranteed to be &gt;= hd.
-     * <p/>
+     * <p>
      * Once variable-length encoding has been implemented, this method will probably get dropped as we can simply
      * write the 2 longs individually.
      * @param hd the highest delivered seqno. Guaranteed to be a positive number
@@ -365,7 +365,7 @@ public final class Bits {
     /**
      * Writes 2 sequence numbers (seqnos) in compressed format to an output stream.
      * The seqnos are non-negative and hr is guaranteed to be &gt;= hd.
-     * <p/>
+     * <p>
      * Once variable-length encoding has been implemented, this method will probably get dropped as we can simply
      * write the 2 longs individually.
      * @param hd the highest delivered seqno. Guaranteed to be a positive number
@@ -397,7 +397,7 @@ public final class Bits {
 
     /**
      * Reads 2 compressed longs from buf into seqnos
-     * <p/>
+     * <p>
      * Once variable-length encoding has been implemented, this method will probably get dropped as we can simply
      * read the 2 longs individually.
      * @param buf the buffer to read from
@@ -416,7 +416,7 @@ public final class Bits {
 
     /**
      * Reads 2 compressed longs into an array of 2 longs.
-     * <p/>
+     * <p>
      * Once variable-length encoding has been implemented, this method will probably get dropped as we can simply
      * read the 2 longs individually.
      * @param in the input stream to read from

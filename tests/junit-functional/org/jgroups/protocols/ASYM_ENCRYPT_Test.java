@@ -194,7 +194,7 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
     /**
      * Tests A,B,C with C leaving gracefully and ASYM_ENCRYPT.change_key_on_leave=true. A installs a new secret key,
      * which B doesn't understand. However, B fetches the secret key from A and is now able to install the new view B,C.
-     * @throws Exception
+     * @throws Exception An exception
      */
     public void testLeaveOfParticipant() throws Exception {
         for(JChannel ch: Arrays.asList(a,b)) {

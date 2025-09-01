@@ -12,7 +12,6 @@ import java.util.List;
 
 /**
  * Simple STOMP demo client. Use -h and -p to connect to *any* JGroups server (has to have STOMP in the config)
- * <p>
  * @author Bela Ban, Oct 17 2001
  */
 public class StompDraw implements StompConnection.Listener, ActionListener {

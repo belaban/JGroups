@@ -53,10 +53,10 @@ public class MPING extends PING implements Runnable {
     protected boolean                receive_on_all_interfaces;
 
     /**
-     * List<NetworkInterface> of interfaces to receive multicasts on. The multicast receive socket will listen on all
+     * List of interfaces to receive multicasts on. The multicast receive socket will listen on all
      * of these interfaces. This is a comma-separated list of IP addresses or interface names. E.g.
-     * "192.168.5.1,eth1,127.0.0.1". Duplicates are discarded; we only bind to an interface once. If this property
-     * is set, it overrides receive_on_all_interfaces.
+     * {@literal "192.168.5.1,eth1,127.0.0.1"}. Duplicates are discarded; we only bind to an interface once.
+     * If this property is set, it overrides receive_on_all_interfaces.
      */
     @Property(converter=PropertyConverters.NetworkInterfaceList.class, description="List of interfaces to receive multicasts on")
     protected List<NetworkInterface> receive_interfaces;
@@ -69,9 +69,10 @@ public class MPING extends PING implements Runnable {
     protected boolean                send_on_all_interfaces;
 
     /**
-     * List<NetworkInterface> of interfaces to send multicasts on. The multicast send socket will send the same multicast
+     * List of interfaces to send multicasts on. The multicast send socket will send the same multicast
      * message on all of these interfaces. This is a comma-separated list of IP addresses or interface names.
-     * E.g. "192.168.5.1,eth1,127.0.0.1". Duplicates are discarded. If this property is set, it override send_on_all_interfaces.
+     * E.g. {@literal "192.168.5.1,eth1,127.0.0.1"}. Duplicates are discarded. If this property is set, it overrides
+     * send_on_all_interfaces.
      */
     @Property(converter=PropertyConverters.NetworkInterfaceList.class, description="List of interfaces to send multicasts on")
     protected List<NetworkInterface> send_interfaces;

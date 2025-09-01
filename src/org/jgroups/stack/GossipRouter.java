@@ -35,23 +35,23 @@ import static org.jgroups.stack.GossipType.GET_MBRS_RSP_LAST;
  * Router for TCP based group comunication (using layer TCP instead of UDP). Instead of the TCP
  * layer sending packets point-to-point to each other member, it sends the packet to the router
  * which - depending on the target address - multicasts or unicasts it to the group / or single member.
- * <p/>
+ * <p>
  * This class is especially interesting for applets which cannot directly make connections (neither
  * UDP nor TCP) to a host different from the one they were loaded from. Therefore, an applet would
  * create a normal channel plus protocol stack, but the bottom layer would have to be the TCP layer
  * which sends all packets point-to-point (over a TCP connection) to the router, which in turn
  * forwards them to their end location(s) (also over TCP). A centralized router would therefore have
  * to be running on the host the applet was loaded from.
- * <p/>
+ * <p>
  * An alternative for running JGroups in an applet (IP multicast is not allows in applets as of
  * 1.2), is to use point-to-point UDP communication via the gossip server. However, then the appplet
  * has to be signed which involves additional administrative effort on the part of the user.
- * <p/>
+ * <p>
  * Note that a GossipRouter is also a good way of running JGroups in Amazon's EC2 environment which (as of summer 09)
  * doesn't support IP multicasting.
  * @author Bela Ban
  * @author Vladimir Blagojevic
- * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
+ * @author Ovidiu Feodorov ovidiuf@users.sourceforge.net
  * @since 2.1.1
  */
 public class GossipRouter extends ReceiverAdapter implements ConnectionListener, DiagnosticsHandler.ProbeHandler {
@@ -758,16 +758,11 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
         }
     }
 
-
-    /**
-     * @param client_addr address of the client which registered an item
-     */
     protected record Entry(Address client_addr, PhysicalAddress phys_addr, String logical_name) {
         public String toString() {
             return String.format("client=%s, name=%s, addr=%s", client_addr, logical_name, phys_addr);
         }
     }
-
 
 
     public static void main(String[] args) throws Exception {

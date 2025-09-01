@@ -380,13 +380,10 @@ public class GroupRequestTest {
 
 
     /**
-     * test group timeout. demonstrates that the timeout mechanism times out too
-     * quickly as multiple responses are received by the GroupRequest.
-	 * Demonstrates by group request receiving multiple messages in a timeframe
-	 * less than the total timeout. the request will fail, as after each
-	 * received message, the request alters the total timeout.
-	 * 
-	 * @throws Exception
+     * test group timeout. demonstrates that the timeout mechanism times out too quickly as multiple responses are
+     * received by the GroupRequest.
+	 * Demonstrates by group request receiving multiple messages in a timeframe less than the total timeout.
+     * the request will fail, as after each received message, the request alters the total timeout.
 	 */
     private void _testMessageTimeout(boolean async) throws Exception {
         

@@ -10,10 +10,6 @@ import org.jgroups.util.Util;
 
 import java.util.List;
 
-/**
- * @author Bela Ban
- * @since  4.0
- */
 public class JGroupsTransport implements Receiver, RtTransport {
     protected JChannel     ch;
     protected RtReceiver   receiver;

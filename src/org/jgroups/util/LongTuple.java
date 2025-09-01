@@ -2,6 +2,7 @@ package org.jgroups.util;
 
 /**
  * A tuple with a long (primitive) first value
+ * @param <V> V
  * @author Bela Ban
  */
 @SuppressWarnings("ClassCanBeRecord")

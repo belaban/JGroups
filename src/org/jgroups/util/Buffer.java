@@ -19,6 +19,7 @@ import java.util.stream.Stream;
 /**
  * Base class for message buffers. Used on the senders (keeping track of sent messages and purging
  * delivered messages) and receivers (delivering messages in the correct order and asking senders for missing messages).
+ * @param <T> T
  * @author Bela Ban
  * @since  5.4
  */
@@ -34,7 +35,7 @@ public abstract class Buffer<T> implements Iterable<T>, Closeable {
     protected long                hd;
 
     /** The highest received/sent seqno. Moved forward by add(). The next message to be added is high+1.
-     low <= hd <= high always holds */
+     {@literal low <= hd <= high} always holds */
     protected long                high;
 
     /** The number of non-null elements */
@@ -63,8 +64,6 @@ public abstract class Buffer<T> implements Iterable<T>, Closeable {
     /**
      * Adds an element if the element at the given index is null. Returns true if no element existed at the given index,
      * else returns false and doesn't set the element.
-     * @param seqno
-     * @param element
      * @return True if the element at the computed index was null, else false
      */
     // used: single message received
@@ -93,7 +92,7 @@ public abstract class Buffer<T> implements Iterable<T>, Closeable {
     /**
      * Adds elements from the list
      * @param list The list of tuples of seqnos and elements. If remove_added_elements is true, if elements could
-     *             not be added (e.g. because they were already present or the seqno was < HD), those
+     *             not be added (e.g. because they were already present or the seqno was &lt; HD), those
      *             elements will be removed from list
      * @param remove_added_elements If true, elements that could not be added to the table are removed from list
      * @param const_value If non-null, this value should be used rather than the values of the list tuples
@@ -123,15 +122,15 @@ public abstract class Buffer<T> implements Iterable<T>, Closeable {
     public abstract <R> R removeMany(boolean nullify, int max_results, Predicate<T> filter,
                                      Supplier<R> result_creator, BiConsumer<R,T> accumulator);
 
-    /** Removes all elements <= seqno from the buffer. Does this by nulling all elements < index(seqno) */
+    /** Removes all elements {@literal <=} seqno from the buffer. Does this by nulling all elements &lt; index(seqno) */
     public int purge(long seqno) {
         return purge(seqno, false);
     }
 
     /**
-     * Purges (nulls) all elements <= seqno.
-     * @param seqno All elements <= seqno will be purged.
-     * @param force If false, seqno is max(seqno,hd), else max(seqno,high). In the latter case (seqno > hd), we might
+     * Purges (nulls) all elements {@literal <=} seqno.
+     * @param seqno All elements {@literal <=} seqno will be purged.
+     * @param force If false, seqno is max(seqno,hd), else max(seqno,high). In the latter case (seqno &gt; hd), we might
      *              purge elements that have not yet been received
      * @return 0. The number of purged elements
      */

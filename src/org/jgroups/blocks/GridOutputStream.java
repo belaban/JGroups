@@ -6,9 +6,6 @@ import org.jgroups.annotations.Experimental;
 
 import java.io.*;
 
-/**
- * @author Bela Ban
- */
 @Experimental
 public class GridOutputStream extends OutputStream {
     final ReplCache<String,byte[]> cache;

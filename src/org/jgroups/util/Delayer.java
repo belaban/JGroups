@@ -8,6 +8,7 @@ import java.util.function.Predicate;
 
 /**
  * Collects actions by key and executes them - if a predicate is true - every N ms.
+ * @param <T> T
  * @author Bela Ban
  * @since  5.3.1
  */

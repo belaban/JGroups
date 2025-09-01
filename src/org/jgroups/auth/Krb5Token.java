@@ -111,7 +111,7 @@ public class Krb5Token extends AuthToken {
     }
     
     /******************************************************
-     * 
+     * <p>
      * Private Methods
      * 
      */

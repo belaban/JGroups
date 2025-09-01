@@ -1514,7 +1514,7 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
             return this;
         }
 
-        /** Returns true if a real ACK should be sent. This is based on num_acks_sent being > ack_threshold */
+        /** Returns true if a real ACK should be sent. This is when num_acks_sent is greater than ack_threshold */
         public boolean update(int num_acks, final IntBinaryOperator op) {
             boolean should_send_ack=acks_sent.accumulateAndGet(num_acks, op) == 0;
             if(should_send_ack)
@@ -1588,8 +1588,8 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
      *     <li>If any of the receiver windows have the ack flag set, clears the flag and sends an ack for the
      *         highest delivered seqno to the sender</li>
      *     <li>Checks all receiver windows for missing messages and asks senders for retransmission</li>
-     *     <li>For all sender windows, checks if highest acked (HA) < highest sent (HS). If not, and HA/HS is the same
-     *         as on the last retransmission run, send the highest sent message again</li>
+     *     <li>For all sender windows, checks if highest acked (HA) is smaller than highest sent (HS). If not, and
+     *         HA/HS is the same as on the last retransmission run, send the highest sent message again</li>
      * </ul>
      */
     protected class RetransmitTask implements Runnable {

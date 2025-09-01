@@ -2,6 +2,7 @@ package org.jgroups.util;
 
 /**
  * Keeps a reference to another object
+ * @param <T> T
  * @author Bela Ban
  * @since  5.2
  */

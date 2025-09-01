@@ -8,10 +8,6 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.function.Supplier;
 
-/**
- * @author Bela Ban
- * @since  5.4.9
- */
 public class PerfHeader extends Header {
     protected long start_time; // in ns
 

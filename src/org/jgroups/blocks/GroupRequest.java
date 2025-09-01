@@ -41,7 +41,7 @@ import java.util.function.Predicate;
  * class cannot itself receive and process requests/responses from the channel. A mechanism outside this class
  * has to do this; it has to determine what the responses are for the message
  * sent by the {@code execute()} method and call {@code receiveResponse()} to do so.
- *
+ * @param <T> T
  * @author Bela Ban
  */
 public class GroupRequest<T> extends Request<RspList<T>> {

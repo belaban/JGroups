@@ -12,6 +12,7 @@ import java.util.StringJoiner;
  * Note that this class does not lend itself to be used as a sparse array, ie. adding keys [0 .. 100] and then 5000
  * would create an array of length 5001, and waste the space between index 100 and 5000. Ideally, keys start as 0, so
  * adding keys [50..100] would also waste the space for 50 keys.
+ * @param <T> T
  * @author Bela Ban
  * @since  5.0.0
  */

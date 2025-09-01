@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
+ * Registers beans accessed by JMX
  * @author Bela Ban, Vladimir Blagojevic
  */
 public final class JmxConfigurator {

@@ -217,6 +217,8 @@ public class RelayConfig {
      * Forwards to site 'to' via route 'gateway'. Example: if site HF is reachable via NET1, if NET2 is not directly
      * connected to HF, it needs to have a ForwardConfig with to="HF" and gateway="NET1". This means that a message to
      * site HF will be forwarded to NET1, which then forwards it to HF.
+     * @param to The destination
+     * @param gateway The gateway to use for the above destination
      */
     public record ForwardConfig(String to, String gateway) {
         public String toString() {

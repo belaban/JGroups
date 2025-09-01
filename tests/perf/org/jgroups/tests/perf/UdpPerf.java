@@ -110,8 +110,8 @@ public class UdpPerf {
             double msgs_sec=receive_log_interval / (diff / 1000.0);
             double throughput=msgs_sec * msg_size;
             last_interval=curr_time;
-            System.out.println(String.format("-- received %d msgs %d ms, %.2f msgs/sec, %s / sec)",
-                                             received_so_far, diff, msgs_sec, Util.printBytes(throughput)));
+            System.out.printf("-- received %d msgs %d ms, %.2f msgs/sec, %s / sec)%n",
+                              received_so_far, diff, msgs_sec, Util.printBytes(throughput));
         }
     }
 

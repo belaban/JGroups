@@ -222,8 +222,8 @@ public class UnicastTestTcp {
                     long time=System.currentTimeMillis() - start;
                     double msgs_sec=(current_value.get() / (time / 1000.0));
                     double throughput=total_bytes.get() / (time / 1000.0);
-                    System.out.println(String.format("\nreceived %d messages in %d ms (%.2f msgs/sec), throughput=%s",
-                                                     current_value.get(), time, msgs_sec, Util.printBytes(throughput)));
+                    System.out.printf("\nreceived %d messages in %d ms (%.2f msgs/sec), throughput=%s%n",
+                                      current_value.get(), time, msgs_sec, Util.printBytes(throughput));
                     break;
                 }
                 break;

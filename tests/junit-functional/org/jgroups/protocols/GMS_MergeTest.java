@@ -241,7 +241,6 @@ public class GMS_MergeTest {
      * <li>C: {B, C}
      * </ol>
      * JIRA: https://issues.redhat.com/browse/JGRP-1031
-     * @throws Exception
      */
     static void _testMergeAsymmetricPartitions(String cluster_name) throws Exception {
         JChannel[] channels=null;
@@ -413,10 +412,7 @@ public class GMS_MergeTest {
 
 
 
-    /**
-     * First name is the channel name, the rest is the view to be applied
-     * @param members
-     */
+    /** First name is the channel name, the rest is the view to be applied */
     private static void applyView(JChannel[] channels, String member, String ... members) throws Exception {
         JChannel ch=findChannel(member, channels);
         View view=createView(members, channels);

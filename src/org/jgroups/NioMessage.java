@@ -82,7 +82,7 @@ public class NioMessage extends BaseMessage {
     }
 
     /**
-     * Sets the internal buffer to point to a subset of a given buffer.<p/>
+     * Sets the internal buffer to point to a subset of a given buffer.<p>
      * <em>
      * Note that the byte[] buffer passed as argument must not be modified. Reason: if we retransmit the
      * message, it would still have a ref to the original byte[] buffer passed in as argument, and so we would
@@ -100,7 +100,7 @@ public class NioMessage extends BaseMessage {
     }
 
     /**
-     * Sets the buffer<p/>
+     * Sets the buffer<p>
      * Note that the byte[] buffer passed as argument must not be modified. Reason: if we retransmit the
      * message, it would still have a ref to the original byte[] buffer passed in as argument, and so we would
      * retransmit a changed byte[] buffer !

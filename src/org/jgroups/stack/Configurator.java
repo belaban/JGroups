@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
  * a reference to the top layer (Protocol).<p>
  * Future functionality will include the capability to dynamically modify the layering
  * of the protocol stack and the properties of each layer.
- *
+ * @param stack The protocol stack
  * @author Bela Ban
  * @author Richard Achmatowicz
  */

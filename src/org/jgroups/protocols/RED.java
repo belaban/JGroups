@@ -134,7 +134,7 @@ public class RED extends Protocol {
         return old_avg * (1 - weight) + new_queue_size * weight;
     }
 
-    /** Computes a probability P with which the message should get dropped. min_threshold < avg < max_threshold.
+    /** Computes a probability P with which the message should get dropped. min_threshold less than avg less than  max_threshold.
      * Probability increases linearly with min moving toward max */
     protected double computeDropProbability(double avg) {
         return Math.min(1, (avg-min) / span);

@@ -15,7 +15,7 @@ import java.util.function.Supplier;
 
 /**
  * Sends a request to a single target destination
- *
+ * @param <T> T
  * @author Bela Ban
  */
 public class UnicastRequest<T> extends Request<T> {

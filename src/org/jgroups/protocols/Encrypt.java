@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 
 /**
  * Super class of symmetric ({@link SYM_ENCRYPT}) and asymmetric ({@link ASYM_ENCRYPT}) encryption protocols.
+ * @param <E> E
  * @author Bela Ban
  */
 public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {

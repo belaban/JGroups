@@ -8,6 +8,7 @@ import java.util.stream.StreamSupport;
 /**
  * Simple <pre>unsynchronized</pre> array. The array can only grow, but never shrinks (no arraycopy()). Elements
  * are removed by nulling them. A size variable is maintained for quick size() / isEmpty().
+ * @param <T> T
  * @author Bela Ban
  * @since  5.2
  */
@@ -82,7 +83,7 @@ public class FastArray<T> implements Iterable<T>, List<T> {
     /**
      * Adds elements from an array els to this array
      * @param els The other array, can have null elements
-     * @param length The number of elements to add. must be <= els.length
+     * @param length The number of elements to add. must be {@literal <=} els.length
      * @return The number of elements added
      */
     public boolean addAll(T[] els, int length) {
@@ -406,7 +407,6 @@ public class FastArray<T> implements Iterable<T>, List<T> {
      * Attempts to reduce the current capacity to new_capacity
      * @param new_capacity The new capacity. If greater than the current capacity, this will be a no-op. If smaller
      *                     than the current size, the current size will be taken instead as new capacity.
-     * @return
      */
     public FastArray<T> trimTo(int new_capacity) {
         if(new_capacity >= elements.length)

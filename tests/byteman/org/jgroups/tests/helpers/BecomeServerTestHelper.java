@@ -16,11 +16,7 @@ public class BecomeServerTestHelper extends Helper {
         super(rule);
     }
 
-    /**
-     * Checks if any of the messages in the list has a non-zero length
-     * @param list
-     * @return
-     */
+    /** Checks if any of the messages in the list has a non-zero length */
     public boolean messageReceived(Queue<Message> list) {
         if(list == null || list.isEmpty())
             return false;

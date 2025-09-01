@@ -30,6 +30,11 @@
       <password>password</password>
     </server>
 
+    <server>
+      <id>gpg.passphrase</id>
+      <passphrase>password</passphrase>
+    </server>
+
   </servers>
 
   <profiles>

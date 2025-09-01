@@ -17,6 +17,8 @@ import java.util.concurrent.TimeUnit;
  * Cache which allows for replication factors <em>per data items</em>; the factor determines how many replicas
  * of a key/value we create across the cluster.<br/>
  * See doc/design/ReplCache.txt for details.
+ * @param <K> K
+ * @param <V> V
  * @author Bela Ban
  */
 public class ReplCache<K,V> implements Receiver, Cache.ChangeListener {

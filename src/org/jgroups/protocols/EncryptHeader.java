@@ -10,10 +10,6 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.function.Supplier;
 
-/**
- * @author Bela Ban
- * @since  4.0
- */
 public class EncryptHeader extends Header {
     public static final byte INSTALL_KEYS       = 1; // body of the message contains public and/or shared keys
     public static final byte FETCH_SHARED_KEY   = 2; // the receiver fetches the shared key via an external key exchange

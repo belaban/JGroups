@@ -20,7 +20,8 @@ import java.util.*;
 
 /**
  * Shared whiteboard, each new instance joins the same group. Each instance chooses a random color,
- * mouse moves are broadcast to all group members, which then apply them to their canvas<p>
+ * mouse moves are broadcast to all group members, which then apply them to their canvas
+ *
  * @author Bela Ban, Oct 17 2001
  */
 public class Draw implements Receiver, ActionListener, ChannelListener {

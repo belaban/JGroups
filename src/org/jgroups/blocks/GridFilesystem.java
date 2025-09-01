@@ -17,12 +17,7 @@ public class GridFilesystem {
 
 
 
-    /**
-     * Creates an instance. The data and metadata caches should already have been setup and started
-     * @param data
-     * @param metadata
-     * @param default_chunk_size
-     */
+    /** Creates an instance. The data and metadata caches should already have been setup and started */
     public GridFilesystem(ReplCache<String, byte[]> data, ReplCache<String, GridFile.Metadata> metadata,
                           short default_repl_count, int default_chunk_size) {
         this.data=data;

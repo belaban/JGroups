@@ -7,9 +7,10 @@ import java.util.concurrent.ConcurrentMap;
 
 /**
  * Cache which keeps a timestamp and counter for every key. When a timestamp has expired (based on an expiry time), the
- * corresponding key is removed.<p/>
+ * corresponding key is removed.<p>
  * This cache is mainly used to suppress identical warning messages (in TP), e.g. if we get 1000 warnings about reception
  * of messages from P (who's not in our cluster), we can print such a message only every 60 seconds (expiry time = 60 secs).
+ * @param <T> T
  * @author Bela Ban
  * @since 3.2
  */

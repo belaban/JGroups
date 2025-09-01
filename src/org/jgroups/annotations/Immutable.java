@@ -10,7 +10,7 @@ import java.lang.annotation.RetentionPolicy;
  * Released under the Creative Commons Attribution License
  * (http://creativecommons.org/licenses/by/2.5)
  * Official home: http://www.jcip.net
- * 
+ * <p>
  * Adopted from Java Concurrency in Practice. This annotation defines an immutable class, ie. a class whose
  * instances cannot be modified after creation
  * @author Bela Ban

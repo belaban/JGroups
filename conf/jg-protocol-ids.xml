@@ -57,7 +57,6 @@
     <class id="70" name="org.jgroups.protocols.FD_ALL3"/>
     <class id="71" name="org.jgroups.protocols.FD_SOCK2"/>
     <class id="72" name="org.jgroups.protocols.VERIFY_SUSPECT2"/>
-    <class id="73" name="org.jgroups.protocols.BATCH"/>
     <class id="74" name="org.jgroups.protocols.BATCH2"/>
     <class id="75" name="org.jgroups.protocols.JDBC_PING2"/>
     <class id="76" name="org.jgroups.protocols.NAKACK3"/>

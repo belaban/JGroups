@@ -12,9 +12,9 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * This class allows a programmer to invoke remote methods in all (or single) group members and optionally wait for
- * the return value(s).<p/>
+ * the return value(s).<p>
  * An application will typically create a channel and layer the RpcDispatcher building block on top of it, which
- * allows it to dispatch remote methods (client role) and at the same time be called by other members (server role).<p/>
+ * allows it to dispatch remote methods (client role) and at the same time be called by other members (server role).<p>
  * This class is derived from MessageDispatcher. 
  * @author Bela Ban
  */
@@ -51,7 +51,7 @@ public class RpcDispatcher extends MessageDispatcher {
      * @param args The arguments to be passed
      * @param types The types of the arguments
      * @param options A collection of call options, e.g. sync versus async, timeout etc
-     * @return RspList<T> A response list with results, one for each member in dests, or null if the RPC is asynchronous
+     * @return RspList A response list with results, one for each member in dests, or null if the RPC is asynchronous
      * @throws Exception If the sending of the message threw an exception. Note that <em>no</em> exception will be
      *                   thrown if any of the target members threw an exception, but this exception will be in the Rsp
      *                   object for the particular member in the RspList

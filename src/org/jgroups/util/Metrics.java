@@ -39,9 +39,6 @@ public class Metrics {
     public static final Predicate<AccessibleObject> IS_MANAGED_ATTRIBUTE=obj -> obj.getAnnotation(ManagedAttribute.class) != null;
 
 
-    /**
-     * @param type Field or Method
-     */
     public record Entry<T>(AccessibleObject type, String description, Supplier<T> supplier) {
         @Override
         public String toString() {

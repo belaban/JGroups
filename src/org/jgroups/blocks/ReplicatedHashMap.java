@@ -19,10 +19,12 @@ import java.util.stream.Collectors;
  * All read-only methods will always access the local replica.
  * <p>
  * Keys and values added to the hashmap <em>must be serializable</em>, the reason being that they will be sent
- * across the network to all replicas of the group.<p/>
+ * across the network to all replicas of the group.<p>
  * A {@code ReplicatedHashMap} allows one to implement a distributed naming service in just a couple of lines.
  * <p>
  * An instance of this class will contact an existing member of the group to fetch its initial state.
+ * @param <K> K
+ * @param <V> V
  *
  * @author Bela Ban
  */
@@ -201,14 +203,14 @@ public class ReplicatedHashMap<K, V> extends
     }
 
     /**
-     * Maps the specified key to the specified value in this table. Neither the key nor the value can be null. <p/>
+     * Maps the specified key to the specified value in this table. Neither the key nor the value can be null. <p>
      * <p>
-     * The value can be retrieved by calling the <tt>get</tt> method with a key that is equal to the original key.
+     * The value can be retrieved by calling the get method with a key that is equal to the original key.
      *
      * @param key   key with which the specified value is to be associated
      * @param value value to be associated with the specified key
-     * @return the previous value associated with <tt>key</tt>, or
-     * <tt>null</tt> if there was no mapping for <tt>key</tt>
+     * @return the previous value associated with key, or
+     * null if there was no mapping for key
      * @throws NullPointerException if the specified key or value is null
      */
     public V put(K key, V value) {
@@ -223,7 +225,7 @@ public class ReplicatedHashMap<K, V> extends
     }
 
     /**
-     * @return the previous value associated with the specified key, or <tt>null</tt> if there was no mapping for the key
+     * @return the previous value associated with the specified key, or null if there was no mapping for the key
      * @throws NullPointerException if the specified key or value is null
      */
     public V putIfAbsent(K key, V value) {
@@ -270,8 +272,8 @@ public class ReplicatedHashMap<K, V> extends
      * does nothing if the key is not in the map.
      *
      * @param key the key that needs to be removed
-     * @return the previous value associated with <tt>key</tt>, or
-     * <tt>null</tt> if there was no mapping for <tt>key</tt>
+     * @return the previous value associated with key, or
+     * null if there was no mapping for key
      * @throws NullPointerException if the specified key is null
      */
     public V remove(Object key) {
@@ -322,7 +324,7 @@ public class ReplicatedHashMap<K, V> extends
 
     /**
      * @return the previous value associated with the specified key, or
-     * <tt>null</tt> if there was no mapping for the key
+     * null if there was no mapping for the key
      * @throws NullPointerException if the specified key or value is null
      */
     public V replace(K key, V value) {

@@ -10,11 +10,6 @@ import org.jgroups.util.ByteArray;
 import org.jgroups.util.Util;
 
 
-
-
-/**
- * @author Bela Ban
- */
 public class MessageDispatcherSpeedTest implements Receiver, RequestHandler {
     JChannel channel;
     MessageDispatcher   disp;

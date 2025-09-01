@@ -15,9 +15,9 @@ import java.nio.channels.SocketChannel;
 /**
  * Factory to create various types of sockets. For socket creation, a <em>service name</em> can be passed as argument:
  * an implementation could look up a service description (e.g. port) and create the socket, ignoring the passed port and
- * possibly also the bind address.<p/>
+ * possibly also the bind address.<p>
  * Ephemeral ports can be created by passing 0 as port, or (if the port is ignored), an implementation could pass in
- * a special service name (e.g. "EPHEMERAL"), this is implementation dependent.<p/>
+ * a special service name (e.g. "EPHEMERAL"), this is implementation dependent.<p>
  * The socket creation methods have the same parameter lists as the socket constructors, e.g.
  * {@link #createServerSocket(String, int, int)} is the same as {@link java.net.ServerSocket#ServerSocket(int, int)}.
  * @author Bela Ban

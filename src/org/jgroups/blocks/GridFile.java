@@ -217,8 +217,6 @@ public class GridFile extends File {
 
     /**
      * Verifies whether child is a child (dir or file) of parent
-     * @param parent
-     * @param child
      * @return True if child is a child, false otherwise
      */
     protected static boolean isChildOf(String parent, String child) {
@@ -245,9 +243,6 @@ public class GridFile extends File {
     /**
      * Checks whether the parent directories are present (and are directories). If create_if_absent is true,
      * creates missing dirs
-     * @param path
-     * @param create_if_absent
-     * @return
      */
     protected boolean checkParentDirs(String path, boolean create_if_absent) throws IOException {
         String[] components=Util.components(path, File.separator);

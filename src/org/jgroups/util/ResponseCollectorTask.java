@@ -11,6 +11,7 @@ import java.util.function.Consumer;
 /**
  * Task which is seeded with an initial membership. Periodically executes a runnable (which e.g. sends a message) and
  * stops when responses from all members have been received, or the task is stopped.
+ * @param <T> T
  * @author Bela Ban
  * @since  4.0.5
  */

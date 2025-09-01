@@ -18,6 +18,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
+ * Base class for all failure detection protocols
  * @author Bela Ban
  * @since  5.0.0
  */

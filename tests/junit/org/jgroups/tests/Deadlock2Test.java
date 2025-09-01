@@ -66,7 +66,7 @@ public class Deadlock2Test extends ChannelTestBase {
     /**
      * Tests the deadlock resolution using two different channels. The deadlock detection
      * is turned on. It implements the following scenario:
-     *
+     * <p>
      * Channel1                              Channel2
      *    |                                     |
      *    + -------------------------------> outerMethod()
@@ -77,7 +77,7 @@ public class Deadlock2Test extends ChannelTestBase {
      *    | <-- innerMethod() <-----------------+ ---------+
      *    |                                     |          |
      *    |                                     | <-- innerMethod()
-     *
+     * <p>
      * If there is a deadlock, JUnit will timeout and fail the test.
      *
      */

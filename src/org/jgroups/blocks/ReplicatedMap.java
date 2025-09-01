@@ -4,6 +4,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
 /**
+ * An implementation of {@link Map} which replicates its contents to all members of a cluster.
+ * @param <K> K
+ * @param <V> V
  * @author Bela Ban
  */
 public interface ReplicatedMap<K, V> extends ConcurrentMap<K, V> {

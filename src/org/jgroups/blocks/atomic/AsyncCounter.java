@@ -35,7 +35,8 @@ public interface AsyncCounter extends BaseCounter {
      *
      * @param expect The expected value of the counter
      * @param update The new value of the counter
-     * @return A {@link CompletionStage} that is completed with {@code true} if the counter is updated and {@link false} otherwise.
+     * @return A {@link CompletionStage} that is completed with {@code true} if the counter is updated and
+     * {@code false} otherwise.
      */
     default CompletionStage<Boolean> compareAndSet(long expect, long update) {
         return compareAndSwap(expect, update).thenApply(value -> value == expect);

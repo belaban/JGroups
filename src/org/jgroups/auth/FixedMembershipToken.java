@@ -19,16 +19,13 @@ import java.util.List;
 import java.util.StringTokenizer;
 
 /**
- * <p>
  * The FixedMemberShipToken object predefines a list of IP addresses and ports that can join the group.
- * </p>
  * <p>
  * Configuration parameters for this example are shown below:
- * </p>
  * <ul>
- * <li>fixed_members_value (required) = List of IP addresses & ports (optionally) - ports must be
+ * <li>fixed_members_value (required) = List of IP addresses and ports (optionally) - ports must be
  * seperated by a '/' e.g. 127.0.0.1/1010*127.0.0.1/4567</li>
- * <li>fixed_members_seperator (required) = The seperator used between IP addresses - e.g. *</li>
+ * <li>fixed_members_seperator (required) = The seperator used between IP addresses - e.g. </li>
  * </ul>
  * 
  * @author Chris Mills (millsy@jboss.com)

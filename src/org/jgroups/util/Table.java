@@ -23,9 +23,9 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  * Table maintains a matrix (an array of arrays) of elements, which are stored by mapping their seqno to an index.
  * E.g. when we have 10 rows of 1000 elements each, and first_seqno is 3000, then an element with seqno=5600, will
  * be stored in the 3rd row, at index 600.
- * <br/>
+ * <p>
  * Rows are removed when all elements in that row have been delivered.
- * <br/>
+ * @param <T> T
  * @author Bela Ban
  * @version 3.1
  */
@@ -247,7 +247,7 @@ public class Table<T> implements Iterable<T> {
     /**
      * Adds elements from the list to the table
      * @param list The list of tuples of seqnos and elements. If remove_added_elements is true, if elements could
-     *             not be added to the table (e.g. because they were already present or the seqno was < HD), those
+     *             not be added to the table (e.g. because they were already present or the seqno was &lt; HD), those
      *             elements will be removed from list
      * @param remove_added_elements If true, elements that could not be added to the table are removed from list
      * @param const_value If non-null, this value should be used rather than the values of the list tuples
@@ -329,7 +329,6 @@ public class Table<T> implements Iterable<T> {
     /**
      * Returns an element at seqno
      * @param seqno
-     * @return
      */
     public T get(long seqno) {
         lock.lock();
@@ -354,7 +353,6 @@ public class Table<T> implements Iterable<T> {
     /**
      * To be used only for testing; doesn't do any index or sanity checks
      * @param seqno
-     * @return
      */
     public T _get(long seqno) {
         lock.lock();
@@ -444,7 +442,7 @@ public class Table<T> implements Iterable<T> {
 
     /**
      * Removes all elements less than or equal to seqno from the table. Does this by nulling entire rows in the matrix
-     * and nulling all elements < index(seqno) of the first row that cannot be removed
+     * and nulling all elements &lt; index(seqno) of the first row that cannot be removed
      * @param seqno
      */
     public void purge(long seqno) {
@@ -453,9 +451,9 @@ public class Table<T> implements Iterable<T> {
 
     /**
      * Removes all elements less than or equal to seqno from the table. Does this by nulling entire rows in the matrix
-     * and nulling all elements < index(seqno) of the first row that cannot be removed.
-     * @param seqno All elements <= seqno will be nulled
-     * @param force If true, we only ensure that seqno <= hr, but don't care about hd, and set hd=low=seqno.
+     * and nulling all elements &lt; index(seqno) of the first row that cannot be removed.
+     * @param seqno All elements {@literal <= seqno} will be nulled
+     * @param force If true, we only ensure that {@literal seqno <= hr}, but don't care about hd, and set hd=low=seqno.
      */
     public void purge(long seqno, boolean force) {
         lock.lock();
@@ -522,7 +520,7 @@ public class Table<T> implements Iterable<T> {
     /**
      * Iterates over the matrix with range [from .. to] (including from and to), and calls
      * {@link Visitor#visit(long,Object,int,int)}. If the visit() method returns false, the iteration is terminated.
-     * <p/>
+     * <p>
      * This method must be called with the lock held
      * @param from The starting seqno
      * @param to The ending seqno, the range is [from .. to] including from and to

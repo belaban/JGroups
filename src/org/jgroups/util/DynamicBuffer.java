@@ -21,9 +21,9 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  * DynamicBuffer maintains a matrix of elements, which are stored by mapping their seqno to an index.
  * E.g. when we have 10 rows of 1000 elements each, and first_seqno is 3000, then an element with seqno=5600, will
  * be stored in the 3rd row, at index 600.
- * <br/>
+ * <p>
  * Rows are removed when all elements in that row have been delivered.
- * <br/>
+ * @param <T> T
  * @author Bela Ban
  * @version 3.1
  */
@@ -110,8 +110,6 @@ public class DynamicBuffer<T> extends Buffer<T> {
      * Adds an element if the element at the given index is null. Returns true if no element existed at the given index,
      * else returns false and doesn't set the element.
      *
-     * @param seqno
-     * @param element
      * @param remove_filter If not null, a filter used to remove all consecutive messages passing the filter
      * @return True if the element at the computed index was null, else false
      */
@@ -222,11 +220,7 @@ public class DynamicBuffer<T> extends Buffer<T> {
         }
     }
 
-    /**
-     * Returns an element at seqno
-     * @param seqno
-     * @return
-     */
+    /** Returns an element at seqno */
     @Override
     public T get(long seqno) {
         lock.lock();
@@ -248,11 +242,7 @@ public class DynamicBuffer<T> extends Buffer<T> {
     }
 
 
-    /**
-     * To be used only for testing; doesn't do any index or sanity checks
-     * @param seqno
-     * @return
-     */
+    /** To be used only for testing; doesn't do any index or sanity checks */
     @Override
     public T _get(long seqno) {
         lock.lock();
@@ -335,10 +325,10 @@ public class DynamicBuffer<T> extends Buffer<T> {
 
 
     /**
-     * Removes all elements less than or equal to seqno from the buffer. Does this by nulling entire rows in the matrix
-     * and nulling all elements < index(seqno) of the first row that cannot be removed.
-     * @param seqno All elements <= seqno will be nulled
-     * @param force If true, we only ensure that seqno <= hr, but don't care about hd, and set hd=low=seqno.
+     * Removes all elements {@literal <=} seqno from the buffer. Does this by nulling entire rows in the matrix
+     * and nulling all elements &lt; index(seqno) of the first row that cannot be removed.
+     * @param seqno All elements {@literal <=} seqno will be nulled
+     * @param force If true, we only ensure that seqno {@literal <= hr}, but don't care about hd, and set hd=low=seqno.
      * @return 0. The number of purged elements
      */
     @Override
@@ -562,7 +552,6 @@ public class DynamicBuffer<T> extends Buffer<T> {
 
     /**
      * Returns a row. Creates a new row and inserts it at index if the row at index doesn't exist
-     * @param index
      * @return A row
      */
     @GuardedBy("lock")

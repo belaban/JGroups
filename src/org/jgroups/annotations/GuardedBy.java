@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
  * Released under the Creative Commons Attribution License
  * (http://creativecommons.org/licenses/by/2.5)
  * Official home: http://www.jcip.net
- *
+ * <p>
  * Adopted from Java Concurrency in Practice. This annotation defines the monitor that protects the variable
  * annotated by @GuardedBy, e.g. @GuardedBy("lock") or @GuardedBy("this")
  * @author Bela Ban

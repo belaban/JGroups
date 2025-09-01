@@ -271,9 +271,6 @@ public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
     }
     /* ----------------------------- End of Private Methods -------------------------------- */
 
-    /**
-     * @param target_time millis
-     */
     protected record Entry(Address suspect, long target_time) implements Comparable<Entry> {
 
         public boolean equals(Object obj) {

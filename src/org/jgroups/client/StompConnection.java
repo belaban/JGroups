@@ -23,7 +23,7 @@ import java.util.Set;
 /**
  * STOMP client to access the STOMP [1] protocol. Note that the full STOMP protocol is not implemented, e.g. transactions
  * are currently not supported.
- * <p/>
+ * <p>
  * The interactive client can be started with -h HOST -p PORT, which are the hostname and port of a JGroups server, running
  * with STOMP in its stack configuration. The interactive client supports automatic failover to a different server if
  * the currently connected-to server crashes, and a simple syntax for sending STOMP messages:
@@ -31,7 +31,7 @@ import java.util.Set;
  * subscribe DEST // example: subscribe /topics/a
  * send DEST message // example: send /topics/a Hello world
  * </pre>
- * <p/>
+ * <p>
  * [1] http://stomp.codehaus.org/Protocol
  * @author Bela Ban
  */

@@ -13,6 +13,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
+ * Base class for NIO clients / servers
  * @author Bela Ban
  * @since  3.6.5
  */

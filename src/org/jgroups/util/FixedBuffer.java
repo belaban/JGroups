@@ -19,6 +19,7 @@ import java.util.stream.StreamSupport;
  * or blocks when that's the case.<br/>
  * Note that 'null' is not a valid element, but signifies a missing element<br/>
  * The design is described in doc/design/FixedBuffer.txt.
+ * @param <T> T
  * @author Bela Ban
  * @since  5.4
  */

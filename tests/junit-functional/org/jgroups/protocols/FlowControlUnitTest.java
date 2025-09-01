@@ -95,7 +95,6 @@ public class FlowControlUnitTest {
     /**
      * Second callback, called from A.forward. This blocks if buffer.length > {UFC,MFC}.max_credits, until
      * JGRP-1665 has been fixed
-     * @param buffer
      */
     @Test(enabled=false)
     public int receive(Address sender, byte[] buffer) {

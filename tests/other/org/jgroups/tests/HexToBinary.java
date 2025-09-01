@@ -5,12 +5,7 @@ import org.jgroups.util.Util;
 import java.io.*;
 import java.util.stream.Stream;
 
-/**
- * @author Bela Ban
- * @since  4.0.16
- */
 public class HexToBinary {
-
 
     public static void main(String[] args) throws Exception {
         if(args.length != 2) {
@@ -44,13 +39,6 @@ public class HexToBinary {
                     }
                 }
             });
-
-           // while ((sCurrentLine = br.readLine(true)) != null) {
-             //   bits = Util.hexToBin(sCurrentLine);
-               // bw.write(bits);
-            //}
-
-
             bw.close();
             System.out.println("done....");
 

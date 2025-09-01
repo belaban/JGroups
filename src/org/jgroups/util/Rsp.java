@@ -5,6 +5,7 @@ import java.util.Objects;
 
 /**
  * Class that represents a response from a communication
+ * @param <T> T
  */
 public class Rsp<T> {
     /** Flag that represents whether the response was received */

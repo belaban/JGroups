@@ -13,10 +13,6 @@ import java.io.DataInput;
 import java.net.InetAddress;
 import java.util.List;
 
-/**
- * @author Bela Ban
- * @since  4.0
- */
 public class ServerTransport extends ReceiverAdapter implements RtTransport {
     protected BaseServer   srv;
     protected RtReceiver   receiver;

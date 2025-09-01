@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
  * configurable time are evicted. Elements are marked as removable by remove(), removeAll() and retainAll(). When
  * an elements is marked as removable, but later reinserted, the mark is removed.<br/>
  * Note that methods get() and remove() iterate through the list (linear cost), so large lists will be slow.
+ * @param <T> T
  * @author Bela Ban
  * @since 5.4.4
  */

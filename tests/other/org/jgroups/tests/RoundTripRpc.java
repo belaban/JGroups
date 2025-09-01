@@ -176,7 +176,7 @@ public class RoundTripRpc implements Receiver {
                 if(num > num_msgs)
                     break;
                 if(num > 0 && num % print == 0)
-                    System.out.printf(".");
+                    System.out.print(".");
                 try {
                     long start=System.nanoTime();
                     disp.callRemoteMethod(target, call, opts);

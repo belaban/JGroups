@@ -16,10 +16,6 @@ import java.util.List;
 
 import static java.lang.System.out;
 
-/**
- * @author Bela Ban
- * @since  4.0
- */
 public class TcpTransport implements RtTransport {
     protected ServerSocket srv_sock;
     protected Socket       sock;

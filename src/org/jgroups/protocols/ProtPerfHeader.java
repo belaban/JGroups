@@ -7,10 +7,6 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.function.Supplier;
 
-/**
- * @author Bela Ban
- * @since  5.2.7
- */
 public class ProtPerfHeader extends Header {
     public static final short ID=1505; // dummy protocol ID to get the ProtPerfHeader from a message
 

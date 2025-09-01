@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * Iterates over all concrete Protocol classes and creates tables with Protocol's properties.
  * These tables are in turn then merged into asciidoc.
- * 
+ * <p>
  * Iterates over unsupported and experimental classes and creates tables listing those classes.
  * These tables are in turn then merged into asciidoc.
  *

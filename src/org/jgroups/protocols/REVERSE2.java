@@ -10,10 +10,6 @@ import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Predicate;
 
-/**
- * @author Bela Ban
- * @since x.y
- */
 @MBean(description="Reverts messages based on a filter and delivers them when told")
 public class REVERSE2 extends Protocol {
     protected volatile Predicate<Message> filter; // if set and true: queue messages

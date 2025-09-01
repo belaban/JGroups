@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
+ * An implementation of a {@link org.jgroups.stack.DiagnosticsHandler.ProbeHandler} for {@link JChannel}
  * @author Bela Ban
  * @since  4.0
  */
@@ -368,11 +369,6 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
         }
     }
 
-
-    /**
-     * @param wait_time ms
-     * @param user_time ms
-     */
     protected record ThreadEntry(Thread.State state, String thread_name, long blocks, long waits, double block_time,
                                  double wait_time, double cpu_time, double user_time) {
 

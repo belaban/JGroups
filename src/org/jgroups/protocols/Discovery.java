@@ -25,9 +25,9 @@ import java.util.stream.Collectors;
 /**
  * The Discovery protocol retrieves the initial membership (used by GMS and MERGE3) by sending discovery requests.
  * We do this in subclasses of Discovery, e.g. by mcasting a discovery request ({@link PING}) or, if gossiping is enabled,
- * by contacting the GossipRouter ({@link TCPGOSSIP}).<p/>
+ * by contacting the GossipRouter ({@link TCPGOSSIP}).<p>
  * The responses should allow us to determine the coordinator which we have to contact, e.g. in case we want to join
- * the group, or to see if we have diverging views in case of MERGE2.<p/>
+ * the group, or to see if we have diverging views in case of MERGE2.<p>
  * When we are a server (after having received the BECOME_SERVER event), we'll respond to discovery requests with
  * a discovery response.
  *
@@ -621,7 +621,6 @@ public abstract class Discovery extends Protocol {
     /**
      * Creates a byte[] representation of the PingData, but DISCARDING the view it contains.
      * @param data the PingData instance to serialize.
-     * @return
      */
     protected ByteArray serializeWithoutView(PingData data) {
         final PingData clone=new PingData(data.getAddress(), data.isServer(), data.getLogicalName(), data.getPhysicalAddr())

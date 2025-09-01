@@ -1843,9 +1843,7 @@ public class Util {
 
     /**
      * Writes a list of Addresses. Can contain 65K addresses at most
-     * @param v   A Collection<Address>
-     * @param out
-     * @throws Exception
+     * @param v A list of addresses
      */
     public static void writeAddresses(Collection<? extends Address> v,DataOutput out) throws IOException {
         if(v == null) {
@@ -1898,7 +1896,7 @@ public class Util {
     /**
      * Returns the marshalled size of a Collection of Addresses.
      * <em>Assumes elements are of the same type !</em>
-     * @param addrs Collection<Address>
+     * @param addrs A list of addresses
      * @return long size
      */
     public static int size(Collection<? extends Address> addrs) {
@@ -2890,7 +2888,7 @@ public class Util {
      * starts at offset 4 and has a length of 4 bytes, and the last fragment starts at offset 8 and has a length
      * of 2 bytes.
      * @param frag_size
-     * @return List. A List<Range> of offset/length pairs
+     * @return A List of offset/length pairs
      */
     public static List<Range> computeFragOffsets(int offset,int length,int frag_size) {
         int num_frags=(int)Math.ceil(length / (double)frag_size);
@@ -3258,7 +3256,7 @@ public class Util {
     }
 
     /** Returns the element before el. If el is the first element, returns the last element. Returns null
-     * if array.length < 2 */
+     * if array.length &lt; 2 */
     public static <T> T pickPrevious(T[] array, T el) {
         if(array == null || el == null || array.length < 2)
             return null;
@@ -4213,10 +4211,6 @@ public class Util {
         }
     }
 
-    /**
-     * @param s
-     * @return List<NetworkInterface>
-     */
     public static List<NetworkInterface> parseInterfaceList(String s) throws Exception {
         List<NetworkInterface> interfaces=new ArrayList<>(10);
         if(s == null)
@@ -4463,7 +4457,7 @@ public class Util {
 
     /**
      * Method used by PropertyConverters.BindInterface to check that a bind_addr is consistent with a specified interface
-     * <p/>
+     * <p>
      * Idea:
      * 1. We are passed a bind_addr, which may be null
      * 2. If non-null, check that bind_addr is on bind_interface - if not, throw exception,
@@ -4706,7 +4700,8 @@ public class Util {
     /**
      * Returns a valid interface address based on a pattern. Iterates over all interfaces that are up and
      * returns the first match, based on the address or interface name
-     * @param pattern Can be "match-addr:<pattern></pattern>" or "match-interface:<pattern></pattern>". Example:<p/>
+     * @param pattern Can be "match-addr:'pattern'" or "match-interface:'pattern'". Example:
+     *                <p>
      *                match-addr:192.168.*
      * @return InetAddress or null if not found
      */

@@ -72,7 +72,7 @@ public class ClassConfigurator {
      * Method to register a user-defined header with jg-magic-map at runtime
      * @param magic The magic number. Needs to be > 1024
      * @param clazz The class. Usually a subclass of Header
-     * @throws IllegalArgumentException If the magic number is already taken, or the magic number is <= 1024
+     * @throws IllegalArgumentException If the magic number is already taken, or the magic number is {@literal <=} 1024
      */
     public static void add(short magic, Class<?> clazz) {
         if(magic < MIN_CUSTOM_MAGIC_NUMBER)
@@ -208,17 +208,17 @@ public class ClassConfigurator {
         // Read jg-magic-map.xml
         List<Triple<Short,String,Boolean>> mapping=readMappings(magic_number_file);
         for(Triple<Short,String,Boolean> tuple: mapping) {
-            short m=tuple.getVal1();
+            short m=tuple.val1();
             if(m >= MAX_MAGIC_VALUE)
                 throw new IllegalArgumentException("ID " + m + " is bigger than MAX_MAGIC_VALUE (" +
                                                      MAX_MAGIC_VALUE + "); increase MAX_MAGIC_VALUE");
-            boolean external=tuple.getVal3();
+            boolean external=tuple.val3();
             if(external) {
                 if(magicMap[m] != null)
-                    alreadyInMagicMap(m, tuple.getVal2());
+                    alreadyInMagicMap(m, tuple.val2());
                 continue;
             }
-            Class<?> clazz=Util.loadClass(tuple.getVal2(), ClassConfigurator.class);
+            Class<?> clazz=Util.loadClass(tuple.val2(), ClassConfigurator.class);
             if(magicMap[m] != null)
                 alreadyInMagicMap(m, clazz.getName());
 
@@ -254,15 +254,15 @@ public class ClassConfigurator {
 
         mapping=readMappings(protocol_id_file); // Read jg-protocol-ids.xml
         for(Triple<Short,String,Boolean> tuple: mapping) {
-            short m=tuple.getVal1();
-            boolean external=tuple.getVal3();
+            short m=tuple.val1();
+            boolean external=tuple.val3();
             if(external) {
                 if(protocol_names.containsKey(m))
-                    alreadyInProtocolsMap(m, tuple.getVal2());
+                    alreadyInProtocolsMap(m, tuple.val2());
                 continue;
             }
 
-            Class<?> clazz=Util.loadClass(tuple.getVal2(), ClassConfigurator.class);
+            Class<?> clazz=Util.loadClass(tuple.val2(), ClassConfigurator.class);
             if(protocol_ids.containsKey(clazz))
                 alreadyInProtocolsMap(m, clazz.getName());
             protocol_ids.put(clazz, m);

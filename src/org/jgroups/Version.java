@@ -14,9 +14,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * We're using the scheme described at http://www.jboss.com/index.html?module=bb&op=viewtopic&t=77231
- * for major, minor and micro version numbers. We have 5 bits for major and minor version numbers each and
- * 6 bits for the micro version.
+ * We have 5 bits for major and minor version numbers each and 6 bits for the micro version.
  * This gives:
  * X = 0-31 for major versions
  * Y = 0-31 for minor versions
@@ -138,12 +136,10 @@ public class Version {
         return version == v;
     }
 
-    /** Method copied from http://www.jboss.com/index.html?module=bb&op=viewtopic&t=77231 */
     public static short encode(int major, int minor, int micro) {
         return (short)((major << MAJOR_SHIFT) + (minor << MINOR_SHIFT) + micro);
     }
 
-    /** Method copied from http://www.jboss.com/index.html?module=bb&op=viewtopic&t=77231 */
     public static String print(short version) {
         int major=getMajor(version);
         int minor=getMinor(version);
@@ -176,8 +172,6 @@ public class Version {
      * Checks whether ver is binary compatible with the current version. The rule for binary compatibility is that
      * the major and minor versions have to match, whereas micro versions can differ.
      * If VERSION_CHECK_MICRO is set to true (default: false) only exact same version is considered compatible.
-     * @param ver
-     * @return
      */
     public static boolean isBinaryCompatible(short ver) {
         if(!VERSION_CHECK || version == ver)

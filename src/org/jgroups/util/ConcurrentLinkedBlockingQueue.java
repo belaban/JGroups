@@ -19,6 +19,7 @@ import java.util.function.Predicate;
  * Might add more implementation as needed.
  * <br/>
  * See https://issues.redhat.com/browse/JGRP-2890 for details
+ * @param <T> T
  * @author Bela Ban
  * @since 5.5.0
  */

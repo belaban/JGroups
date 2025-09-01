@@ -34,9 +34,7 @@ public interface Bundler {
      */
     int getQueueSize();
 
-    /**
-     * If the bundler implementation supports a capacity (e.g. {@link RingBufferBundler}, then return it, else return -1
-     */
+    /** If the bundler implementation supports a capacity, then return it, else return -1 */
     default int getCapacity() {return -1;}
 
     /** Maximum number of bytes for messages to be queued until they are sent */

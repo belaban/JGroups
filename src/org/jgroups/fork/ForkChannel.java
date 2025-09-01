@@ -53,8 +53,6 @@ public class ForkChannel extends JChannel implements ChannelListener {
      *                  thrown.
      *                  Can be null if no protocols should be added. This may be the case when an app only wants to use
      *                  a ForkChannel to mux/demux messages, but doesn't need a different protocol stack.
-     *
-     * @throws Exception
      */
     public ForkChannel(final JChannel main_channel, String fork_stack_id, String fork_channel_id,
                        boolean create_fork_if_absent, ProtocolStack.Position position, Class<? extends Protocol> neighbor,
@@ -91,7 +89,6 @@ public class ForkChannel extends JChannel implements ChannelListener {
      *                  thrown.
      *                  Can be null if no protocols should be added. This may be the case when an app only wants to use
      *                  a ForkChannel to mux/demux messages, but doesn't need a different protocol stack.
-     * @throws Exception
      */
     public ForkChannel(final JChannel main_channel, String fork_stack_id, String fork_channel_id,
                        Protocol ... protocols) throws Exception {
@@ -129,10 +126,9 @@ public class ForkChannel extends JChannel implements ChannelListener {
      * Connects the fork-channel, which will be operational after this. Note that the fork-channel will
      * have the same state as the main-channel, ie. if the main-channel is disconnected, so will the fork-channel be,
      * even if connect() was called. This connect() method essentially adds the fork-channel to the fork-stack's hashmap,
-     * ready to send/receive messages as soon as the main-channel has been connected.<p/>
+     * ready to send/receive messages as soon as the main-channel has been connected.<p>
      * This method does <em>not</em> affect the main-channel.
      * @param cluster_name Ignored, will be the same as the main-channel's cluster name
-     * @throws Exception
      */
     @Override
     public ForkChannel connect(String cluster_name) throws Exception {

@@ -6,6 +6,7 @@ import java.util.Arrays;
  * Simple string implemented as a byte[] array. Each character's higher 8 bits are truncated and
  * only the lower 8 bits are stored. AsciiString is mutable for efficiency reasons, but the chars array should never
  * be changed !
+ * @param val The value as a byte array
  * @author Bela Ban
  * @since  3.5
  */

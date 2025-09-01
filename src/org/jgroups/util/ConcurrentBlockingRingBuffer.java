@@ -35,6 +35,7 @@ import java.util.function.Predicate;
  * array[3]=el3 (written by P3). The consumer therefore returns on the first element because it is null, but continues
  * looping because size=3. Only when P1 and P2 write their respective elements will the consumer be able to make
  * progress.
+ * @param <T> T
  * @author Bela Ban
  * @since  5.5.0
  */

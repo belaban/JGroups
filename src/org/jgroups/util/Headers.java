@@ -43,7 +43,6 @@ public final class Headers {
     /**
      * Returns the header associated with an ID
      * @param id The ID
-     * @return
      */
     public static <T extends Header> T getHeader(final Header[] hdrs, short id) {
         if(hdrs == null)
@@ -57,13 +56,7 @@ public final class Headers {
         return null;
     }
 
-    /**
-     * Returns the header associated with a set of IDs
-     * @param hdrs
-     * @param ids The IDs
-     * @param <T>
-     * @return
-     */
+    /** Returns the header associated with a set of IDs */
     public static <T extends Header> T getHeader(final Header[] hdrs, short ... ids) {
         if(hdrs == null || ids == null || ids.length == 0)
             return null;

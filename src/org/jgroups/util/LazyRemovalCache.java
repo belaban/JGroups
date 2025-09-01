@@ -11,6 +11,8 @@ import java.util.stream.Collectors;
  * configurable size limit has been exceeded. In that case, all elements marked as removable and older than a
  * configurable time are evicted. Elements are marked as removable by remove(), removeAll() and retainAll(). When
  * an elements is marked as removable, but later reinserted, the mark is removed.
+ * @param <K> K
+ * @param <V> V
  * @author Bela Ban
  */
 public class LazyRemovalCache<K,V> {

@@ -10,19 +10,20 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * If you use `tshark ... -w data.tshark > parsed.txt` when the test is over, the parse will continue running and can take a lot of time.
+ * If you use `tshark ... -w data.tshark > parsed.txt` when the test is over, the parse will continue running and can
+ * take a lot of time.<p>
  * In order to speed up, we are going to parse the output from `-w `
  * Open in Wireshark the output resulted from -w from the tshark command.
- *
+ * <p>
  *    Columns: No. Time Source Destination Protocol length Info
- *
+ * <p>
  *    Menu View -> Time Display Format -> Time of the Day
  *    Menu View -> Time Display Format -> Automatic ( from capture file )
  *       The hour in the Wireshark can be different when comparing with the the application log because of the timezone.
- *
+ * <p>
  *    If you know the time of the error, you can apply a display filter to reduce the exported file size.
- *    Example: (frame.time >= "Jul 15, 2022 15:47:00" && frame.time <= "Jul 15, 2022 15:49:00")
- *
+ *    Example: <pre>frame.time >= "Jul 15, 2022 15:47:00" &amp;&amp; frame.time &gt;= "Jul 15, 2022 15:49:00"</pre>
+ * <p>
  *    Menu File -> Export Packet Dissections -> As Plain Text
  *       Fill the File name:
  *       All packets captured

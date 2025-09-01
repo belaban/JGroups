@@ -6,6 +6,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Log (using {@link SuppressCache}) which suppresses (certain) messages from the same member for a given time
+ * @param <T> T
  * @author Bela Ban
  * @since  3.2
  */

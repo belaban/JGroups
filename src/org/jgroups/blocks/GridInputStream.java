@@ -6,9 +6,6 @@ import org.jgroups.annotations.Experimental;
 
 import java.io.*;
 
-/**
- * @author Bela Ban
- */
 @Experimental
 public class GridInputStream extends InputStream {
     final ReplCache<String,byte[]> cache;
@@ -29,8 +26,6 @@ public class GridInputStream extends InputStream {
         this.cache=cache;
         this.chunk_size=chunk_size;
     }
-
-
 
     public int read() throws IOException {
         int bytes_remaining_to_read=getBytesRemainingInChunk();

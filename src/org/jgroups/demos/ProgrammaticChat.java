@@ -18,9 +18,6 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Stream;
 
-/**
- * @author Bela Ban
- */
 public class ProgrammaticChat {
     protected static final JChannel ch;
     protected static final NonReflectiveProbeHandler h;

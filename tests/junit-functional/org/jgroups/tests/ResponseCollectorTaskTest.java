@@ -28,7 +28,7 @@ public class ResponseCollectorTaskTest {
     public void testTask() {
         ResponseCollectorTask<Boolean> task=new ResponseCollectorTask<>(a,b,c,d,e);
         task.setPeriodicTask(t -> {
-            System.out.printf(".");Util.sleep(200);});
+            System.out.print("."); Util.sleep(200);});
         assert !task.hasAllResponses();
         task.start(timer, 500, 200);
         Util.sleep(1000);
@@ -41,7 +41,7 @@ public class ResponseCollectorTaskTest {
     public void testRetainAll() {
         ResponseCollectorTask<Boolean> task=new ResponseCollectorTask<>(a,b,c,d,e);
         task.setPeriodicTask(t -> {
-            System.out.printf(".");Util.sleep(200);});
+            System.out.print("."); Util.sleep(200);});
         assert !task.hasAllResponses();
         task.start(timer, 500, 200);
         Stream.of(a,b,d).peek(mbr -> System.out.printf("adding %s\n", mbr)).forEach(mbr -> task.add(mbr, true));

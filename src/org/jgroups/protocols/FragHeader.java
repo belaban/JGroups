@@ -10,9 +10,6 @@ import java.io.IOException;
 import java.util.function.Supplier;
 
 
-/**
- * @author Bela Ban
- */
 public class FragHeader extends Header {
     public long    id;
     public int     frag_id;

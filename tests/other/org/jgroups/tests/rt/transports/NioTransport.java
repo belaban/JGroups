@@ -14,10 +14,6 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.List;
 
-/**
- * @author Bela Ban
- * @since  4.0
- */
 public class NioTransport implements RtTransport {
     protected ServerSocketChannel srv_channel;
     protected SocketChannel       client_channel;

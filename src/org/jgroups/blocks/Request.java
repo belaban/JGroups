@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Abstract class for a unicast or multicast request
+ * @param <T> T
  *
  * @author Bela Ban
  */

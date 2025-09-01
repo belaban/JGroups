@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.concurrent.*;
 
 /** Cache which removes its elements after a certain time
+ * @param <K> K
  * @author Bela Ban
  */
 public class AgeOutCache<K> {

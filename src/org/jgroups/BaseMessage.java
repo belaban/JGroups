@@ -109,7 +109,6 @@ public abstract class BaseMessage implements Message {
     /**
      * Returns the internal representation of flags. Don't use this, as the internal format might change at any time !
      * This is only used by unit test code
-     * @return
      */
     public short getFlags(boolean transient_flags) {return transient_flags? this.transient_flags : flags;}
 
@@ -155,10 +154,7 @@ public abstract class BaseMessage implements Message {
 
     /**
     * Atomically checks if a given flag is set and - if not - sets it. When multiple threads
-    * concurrently call this method with the same flag, only one of them will be able to set the
-    * flag
-    *
-    * @param flag
+    * concurrently call this method with the same flag, only one of them will be able to set the flag
     * @return True if the flag could be set, false if not (was already set)
     */
     public synchronized boolean setFlagIfAbsent(TransientFlag flag) {

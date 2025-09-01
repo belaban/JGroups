@@ -5,6 +5,8 @@ import java.util.Map;
 
 /**
  * Bounded linked hashmap; used by SEQUENCER
+ * @param <K> K
+ * @param <V> V
  * @author Bela Ban
  * @since  3.3
  */

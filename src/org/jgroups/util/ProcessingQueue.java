@@ -7,6 +7,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * A queue with many producers and consumers. However, only <em>one</em> consumer gets to remove and process elements
  * at any given time. This is done through the use of locks.
+ * @param <T> T
  * @author Bela Ban
  * @since  3.5
  */

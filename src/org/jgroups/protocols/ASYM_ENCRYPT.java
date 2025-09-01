@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * The secret key is identical for all cluster members and is used to encrypt messages when sending and decrypt them
  * when receiving messages.
- *
+ * <p>
  * This protocol is typically placed under {@link org.jgroups.protocols.pbcast.NAKACK2}.<br>
  *
  * The current keyserver (always the coordinator) generates a secret key. When a new member joins, it asks the keyserver
@@ -33,7 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * This protocol is suited for an application that does not ship with a known key but instead it is generated and
  * distributed by the keyserver.
- *
+ * <p>
  * Since messages can only get encrypted and decrypted when the secret key was received from the keyserver, messages
  * are dropped when the secret key hasn't been installed yet.
  *

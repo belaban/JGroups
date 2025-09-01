@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 
 /**
  * Generic receiver for a JChannel
+ * @param <T> T
  * @author Bela Ban
  * @since  3.3
  */

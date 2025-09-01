@@ -20,6 +20,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * Simple cache which maintains keys and value. A reaper can be enabled which periodically evicts expired entries.
  * Also, when the cache is configured to be bounded, entries in excess of the max size will be evicted on put().
+ * @param <K> K
+ * @param <V> V
  * @author Bela Ban
  */
 public class Cache<K,V> {
@@ -93,9 +95,6 @@ public class Cache<K,V> {
     }
 
     /**
-     *
-     * @param key
-     * @param val
      * @param caching_time Number of milliseconds to keep an entry in the cache. -1 means don't cache (if reaping
      * is enabled, we'll evict an entry with -1 caching time), 0 means never evict. In the latter case, we can still
      * evict an entry with 0 caching time: when we have a bounded cache, we evict in order of insertion no matter
@@ -169,7 +168,6 @@ public class Cache<K,V> {
     /**
      * This method should not be used to add or remove elements ! It was just added because ReplCacheDemo
      * requires it for its data model
-     * @return
      */
     public ConcurrentMap<K, Value<V>> getInternalMap() {
         return map;

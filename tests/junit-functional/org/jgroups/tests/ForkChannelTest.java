@@ -360,7 +360,6 @@ public class ForkChannelTest {
     /**
      * Tests CounterService on 2 different fork-channels, using the *same* fork-stack. This means the 2 counter
      * services will 'see' each other and the counters must have the same value
-     * @throws Exception
      */
     public void testCounterService() throws Exception {
         a.connect(CLUSTER);

@@ -10,6 +10,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 /** Similar to AckCollector, but collects responses from cluster members, not just acks. Null is not a valid key.
+ * @param <T> T
  * @author Bela Ban
  */
 public class ResponseCollector<T> {

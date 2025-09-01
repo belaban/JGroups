@@ -69,18 +69,12 @@ public class DynamicDiscardTest {
     private static class MyRequestHandler implements RequestHandler {
         @Override
         public Object handle(Message msg) throws Exception {
-            System.out.println(String.format("Received message %s", msg));
+            System.out.printf("Received message %s%n", msg);
             return "bla";
         }
     }
 
-    protected static class MyMembershipListener implements Receiver {
-        protected final JChannel ch;
-
-        public MyMembershipListener(JChannel ch) {
-            this.ch=ch;
-        }
-
+    protected record MyMembershipListener(JChannel ch) implements Receiver {
         public void viewAccepted(View view) {
             System.out.printf("[%s] view: %s\n", ch.getAddress(), view);
         }

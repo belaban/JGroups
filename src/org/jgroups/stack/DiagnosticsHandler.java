@@ -18,6 +18,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 /**
+ * The server-side component handling probe requests
  * @author Bela Ban
  * @since 3.0
  */
@@ -411,7 +412,7 @@ public class DiagnosticsHandler extends ReceiverAdapter implements Closeable {
     public interface ProbeHandler {
         /**
          * Handles a probe. For each key that is handled, the key and its result should be in the returned map.
-         * @return Map<String,String>. A map of keys and values. A null return value is permissible.
+         * @return A map of sring keys and values. A null return value is permissible.
          */
         Map<String,String> handleProbe(String... keys);
 

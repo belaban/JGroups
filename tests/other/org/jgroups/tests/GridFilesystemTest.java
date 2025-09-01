@@ -9,11 +9,6 @@ import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * @author Bela Ban
- * todo: regexp for file ls, rm, down and up
- * todo: recursive up and down
- */
 public class GridFilesystemTest {
     static final Map<String,Command> commands=new HashMap<>();
     static String current_dir="/";

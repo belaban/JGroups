@@ -10,9 +10,6 @@ import java.io.IOException;
 import java.util.function.Supplier;
 
 
-/**
- * @author Bela Ban
- */
 public class Frag3Header extends Header {
     protected int     id;              // unique sequence number - same for all fragments of a given original message
     protected int     frag_id;         // the ID of the frag, starting with 0. E.g. 4 fragments will have IDs from 0 to 3

@@ -35,9 +35,9 @@ import static org.jgroups.blocks.ResponseMode.GET_ALL;
  * (ii) null, if the RPC call timed out before the value could be returned
  * (iii) an object of type java.lang.Throwable, if an exception (e.g. lava.lang.OutOfMemoryException) 
  * was raised during the processing of the call 
- *
+ * <p>
  * It is wise to check for such cases when processing RpcDispatcher calls.
- * 
+ * <p>
  * This also applies to the return value of callRemoteMethod(...).
  * 
  * @author Bela Ban
@@ -321,10 +321,10 @@ public class RpcDispatcherTest {
     /**
      * Test the response filter mechanism which can be used to filter responses received with
      * a call to RpcDispatcher.
-     * 
+     * <p>
      * The test filters requests based on the id of the server object they were received
      * from, and only accept responses from servers with id > 1. 
-     * 
+     * <p>
      * The expected behaviour is that the response from server 1 is rejected, but the responses 
      * from servers 2 and 3 are accepted.
      *
@@ -567,11 +567,11 @@ public class RpcDispatcherTest {
     /**
      * Test the ability of RpcDispatcher to handle large argument and return values
      * with multicast RPC calls.
-     * 
+     * <p>
      * The test sends requests for return values (byte arrays) having increasing sizes,
      * which increase the processing time for requests as well as the amount of memory
      * required to process requests.
-     * 
+     * <p>
      * The expected behaviour is that all RPC requests complete successfully.
      *
      */
@@ -649,11 +649,11 @@ public class RpcDispatcherTest {
     /**
      * Test the ability of RpcDispatcher to handle large argument and return values
      * with unicast RPC calls.
-     * 
+     * <p>
      * The test sends requests for return values (byte arrays) having increasing sizes,
      * which increase the processing time for requests as well as the amount of memory
      * required to process requests.
-     * 
+     * <p>
      * The expected behaviour is that all RPC requests complete successfully.
      */
     public void testLargeReturnValueUnicastCall() throws Exception {
@@ -769,7 +769,7 @@ public class RpcDispatcherTest {
     /**
      * Helper method to perform a RPC call on server method "returnValue(int size)" for 
      * all group members.
-     * 
+     * <p>
      * The method checks that each returned value is non-null and has the correct size. 
      *    
      */
@@ -805,7 +805,7 @@ public class RpcDispatcherTest {
     /**
      * Helper method to perform a RPC call on server method "returnValue(int size)" for 
      * all group members.
-     * 
+     * <p>
      * This method need to take into account that RPC calls can timeout with huge values,
      * and they can also trigger OOMEs. But if we are lucky, they can also return
      * reasonable values. 
@@ -856,7 +856,7 @@ public class RpcDispatcherTest {
     /**
      * Helper method to perform a RPC call on server method "returnValue(int size)" for 
      * an individual group member. 
-     * 
+     * <p>
      * The method checks that the returned value is non-null and has the correct size. 
      * 
      * @param dst the group member
@@ -886,7 +886,7 @@ public class RpcDispatcherTest {
     /**
      * This class serves as a server obect to turn requests into replies.
      * It is initialised with an integer id value.
-     * 
+     * <p>
      * It implements two functions:
      * function foo() returns the id of the server
      * function largeReturnValue(int size) returns a byte array of size 'size'

@@ -158,10 +158,9 @@ public class FRAG extends Fragmentation {
     /**
      * Send all fragments as separate messages (with same ID !).
      * Example:
-     * <pre>
      * Given the generated ID is 2344, number of fragments=3, message {dst,src,buf}
      * would be fragmented into:
-     * <p/>
+     * <pre>
      * [2344,3,0]{dst,src,buf1},
      * [2344,3,1]{dst,src,buf2} and
      * [2344,3,2]{dst,src,buf3}

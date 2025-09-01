@@ -5,6 +5,7 @@ import java.util.NoSuchElementException;
 
 /**
  * Iterator over an array of elements of type T.
+ * @param <T> T
  * @author Bela Ban
  * @since  3.4
  */

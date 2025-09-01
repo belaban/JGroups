@@ -27,7 +27,7 @@ import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
 /**
  * The TCPPING protocol defines a static cluster membership. The cluster members are retrieved by
  * directly contacting the members listed in initial_hosts, sending point-to-point discovery requests.
- * <p/>
+ * <p>
  * The TCPPING protocol defines a static configuration, which requires that you to know in advance where to find all
  * of the members of your cluster.
  *
@@ -82,8 +82,8 @@ public class TCPPING extends Discovery {
 
     /**
      * Returns the list of initial hosts as configured by the user via XML. Note that the returned list is mutable, so
-     * careful with changes !
-     * @return List<Address> list of initial hosts. This variable is only set after the channel has been created and
+     * careful with changes!
+     * @return A list of initial hosts. This variable is only set after the channel has been created and
      * set Properties() has been called
      */
     public Collection<PhysicalAddress> getInitialHosts() {

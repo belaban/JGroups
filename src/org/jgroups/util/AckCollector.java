@@ -12,8 +12,7 @@ import java.util.concurrent.TimeoutException;
  * @author Bela Ban
  */
 public class AckCollector {
-    /** List of members from whom we haven't received an ACK yet */
-    protected final List<Address>     missing_acks;
+    protected final List<Address>     missing_acks; // List of members from whom we haven't received an ACK yet
     protected final Promise<Boolean>  all_acks_received=new Promise<>();
 
 
@@ -30,7 +29,6 @@ public class AckCollector {
         missing_acks=new ArrayList<>(members != null? members.length : 10);
         addAll(members);
     }
-
 
     public synchronized void reset(Collection<Address> members) {
         missing_acks.clear();

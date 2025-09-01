@@ -15,9 +15,9 @@ import java.util.function.Consumer;
 /**
  * While investigating network errors, we would like to look for timestamp and JGroups data.
  * But when needed, we need to add more fields like source and destination ports.
- *
+ * <p>
  * Example: tshark -q -i lo0 -Tfields -e frame.time_epoch -e udp.srcport -e udp.dstport -e data udp and port 9090
- *
+ * <p>
  * Run: ParseMessages -instance org.jgroups.tests.ParseMessagesFields -Dfields="frame.time_epoch,udp.srcport,udp.dstport"
  */
 public class ParseMessagesFields extends ParseMessages {
@@ -54,7 +54,7 @@ public class ParseMessagesFields extends ParseMessages {
       }
 
       public String readIntegerAsStr() throws IOException {
-         String str = "";
+         StringBuilder str=new StringBuilder();
          while (true) {
             input[0] = (byte)in.read();
             if (input[0] == '\t') {
@@ -63,17 +63,17 @@ public class ParseMessagesFields extends ParseMessages {
             input[1] = (byte)in.read();
             // tshark \t separator
             if (input[1] == '\t') {
-               str += new String(new byte[]{input[0]});
+               str.append(new String(new byte[]{input[0]}));
                break;
             } else {
-               str += new String(input);
+               str.append(new String(input));
             }
          }
-         return str;
+         return str.toString();
       }
 
       public String readEpochTime() throws IOException {
-         String timestamp="";
+         StringBuilder timestamp=new StringBuilder();
          while (timestamp.length() != 20) {
             input[0] = (byte)in.read();
             if (input[0] == '\n' || input[0] == '\r') {
@@ -84,17 +84,16 @@ public class ParseMessagesFields extends ParseMessages {
             if (input[0] == -1 || input[1] == -1) {
                throw new EOFException();
             }
-            timestamp+=new String(input);
+            timestamp.append(new String(input));
          }
          // tshark \t separator
          readPlainByte();
 
-         String[] time = timestamp.split("\\.");
-         long epochMilli = Long.valueOf(time[0]) * 1000;
-         long nanos = Long.valueOf(time[1]);
+         String[] time = timestamp.toString().split("\\.");
+         long epochMilli = Long.parseLong(time[0]) * 1000;
+         long nanos = Long.parseLong(time[1]);
          ZonedDateTime zonedDateTime = Instant.ofEpochMilli(epochMilli).plusNanos(nanos).atZone(ZONE_ID);
-         String epochTime = TIME_EPOCH_DATE_TIME_FORMATTER.format(zonedDateTime);
-         return epochTime;
+          return TIME_EPOCH_DATE_TIME_FORMATTER.format(zonedDateTime);
       }
 
       public byte readPlainByte() throws IOException {

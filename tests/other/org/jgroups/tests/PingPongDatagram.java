@@ -9,7 +9,7 @@ import java.net.*;
 
 /**
  * Simple protocol to test round trip times. Requests are [PING], responses are [PONG]. Start multiple instances
- * and press <return> to get the round trip times for all nodes in the cluster, This program doesn't use JGroups at all,
+ * and press 'return' to get the round trip times for all nodes in the cluster, This program doesn't use JGroups at all,
  * see {@link org.jgroups.tests.PingPong} for a comparison.
  * @author Bela Ban
  */

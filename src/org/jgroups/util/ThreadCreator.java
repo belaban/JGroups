@@ -8,9 +8,8 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 
 /**
+ * Helper class to create regular or virtual threads. Virtual threads are not supported for versions less than Java 17.
  * @author Bela Ban
- * @since  Helper class to create regular or virtual threads. Virtual threads are not supported for versions
- * less than Java 17.
  */
 public class ThreadCreator {
     private static final Log                  LOG=LogFactory.getLog(ThreadCreator.class);

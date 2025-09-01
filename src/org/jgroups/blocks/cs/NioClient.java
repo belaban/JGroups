@@ -9,6 +9,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Selector;
 
 /**
+ * Client to access servers based on TCP_NIO2
  * @author Bela Ban
  * @since  3.6.5
  */
@@ -25,7 +26,6 @@ public class NioClient extends NioBaseServer implements Client {
      * the client and server.
      * @param bind_addr The address to which the local channel should bind to. Can be null, then the OS picks the address
      * @param server_addr The address of the server to connect to
-     * @throws Exception If the creation failed
     */
     public NioClient(IpAddress bind_addr, IpAddress server_addr) {
         this(bind_addr != null? bind_addr.getIpAddress() : null, bind_addr != null? bind_addr.getPort() : 0,
@@ -43,7 +43,6 @@ public class NioClient extends NioBaseServer implements Client {
      * @param bind_port The local port. Can be 0, then the OS picks the port.
      * @param server_addr The address of the server to connect to
      * @param server_port The port of the server to connect to.
-     * @throws Exception If the creation failed
     */
     public NioClient(InetAddress bind_addr, int bind_port, InetAddress server_addr, int server_port) {
         super(new DefaultThreadFactory("nio", false), new DefaultSocketFactory(), 0);

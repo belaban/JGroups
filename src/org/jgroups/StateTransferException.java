@@ -3,8 +3,7 @@ package org.jgroups;
 /**
  * {@code StateTransferException} is thrown to indicate a failure of a state transfer between
  * cluster members.
- * <p>
- * 
+ *
  * @author Vladimir Blagojevic
  * @since 2.6
  * 
