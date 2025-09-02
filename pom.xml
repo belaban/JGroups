@@ -21,6 +21,7 @@
         <nexus.snapshot.server.url>https://repository.jboss.org/nexus/repository/snapshots/</nexus.snapshot.server.url>
         <insecure.repositories>ERROR</insecure.repositories>
         <log4j2.version>2.25.0</log4j2.version>
+        <version.maven.javadoc>3.11.2</version.maven.javadoc>
     </properties>
 
     <organization>
@@ -365,6 +366,42 @@
                         </manifestEntries>
                     </archive>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>${version.maven.javadoc}</version>
+                <executions>
+                    <execution>
+                        <id>javadoc</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>3.2.7</version>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                        <configuration>
+                            <!-- the name of the gpg key -->
+                            <keyname>bban@redhat.com</keyname>
+                            <!-- the name of the server in .m2/settings.xml -->
+                            <passphraseServerId>gpg.passphrase</passphraseServerId>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>
