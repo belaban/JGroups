@@ -17,9 +17,9 @@ import static java.lang.Math.max;
 /**
  * A message digest containing - for each member - the highest seqno delivered (hd) and the highest seqno received (hr).
  * The seqnos are stored according to the order of the members in the associated membership, ie. seqnos[0] is the hd for
- * member members[0], seqnos[1] is the hr for the same member, seqnos[2] is the hd for members[1] and so on.<p/>
+ * member members[0], seqnos[1] is the hr for the same member, seqnos[2] is the hd for members[1] and so on.<p>
  * Field 'members' may refer to the View.members, e.g. in a JoinRsp where we ship a view and a digest referring to
- * the view's membership. This is done to conserve memory.<p/>
+ * the view's membership. This is done to conserve memory.<p>
  * This class is immutable except for 2 cases:
  * <ul>
  *     <li>The contents are read when unmarshalling (readFrom())</li>

@@ -59,7 +59,7 @@ public class BytesMessage extends BaseMessage {
    /**
     * Constructs a message. The index and length parameters provide a reference to a byte array, rather than a copy,
     * and refer to a subset of the array. This is important when we want to avoid copying. When the message is
-    * serialized, only the subset is serialized.</p>
+    * serialized, only the subset is serialized.<p>
     * <em>
     * Note that the byte array passed as argument must not be modified. Reason: if we retransmit the
     * message, it would still have a ref to the original byte array passed in as argument, and so we would
@@ -70,7 +70,7 @@ public class BytesMessage extends BaseMessage {
     *             Otherwise, it is sent to a single member.
     * @param array A reference to a byte array
     * @param offset The index into the byte array
-    * @param length The number of bytes to be used from <tt>buf</tt>. Both index and length are checked
+    * @param length The number of bytes to be used from buf. Both index and length are checked
     *               for array index violations and an ArrayIndexOutOfBoundsException will be thrown if invalid
     */
     public BytesMessage(Address dest, byte[] array, int offset, int length) {
@@ -124,7 +124,7 @@ public class BytesMessage extends BaseMessage {
 
 
     /**
-     * Sets the internal array to point to a subset of a given array.<p/>
+     * Sets the internal array to point to a subset of a given array.<p>
      * <em>
      * Note that the byte array passed as argument must not be modified. Reason: if we retransmit the
      * message, it would still have a ref to the original byte array passed in as argument, and so we would
@@ -151,7 +151,7 @@ public class BytesMessage extends BaseMessage {
     }
 
     /**
-     * Sets the array<p/>
+     * Sets the array<p>
      * Note that the byte array passed as argument must not be modified. Reason: if we retransmit the
      * message, it would still have a ref to the original byte array passed in as argument, and so we would
      * retransmit a changed byte array !
@@ -210,7 +210,7 @@ public class BytesMessage extends BaseMessage {
      * using your own classloader, e.g. inside of an application server ! Most likely, JGroups will use the system
      * classloader to deserialize the array into an object, whereas (for example) a web application will want to use
      * the webapp's classloader, resulting in a ClassCastException. The recommended way is for the application to use
-     * their own serialization and only pass byte array to JGroups.<p/>
+     * their own serialization and only pass byte array to JGroups.<p>
      * As of 3.5, a classloader can be passed in. It will be used first to find a class, before contacting
      * the other classloaders in the list. If null, the default list of classloaders will be used.
      * @return the object
@@ -234,7 +234,7 @@ public class BytesMessage extends BaseMessage {
 
     /**
      * Copies the byte array. If offset and length are used (to refer to another array), the copy will contain only
-     * the subset that offset and length point to, copying the subset into the new copy.<p/>
+     * the subset that offset and length point to, copying the subset into the new copy.<p>
      * Note that for headers, only the arrays holding references to the headers are copied, not the headers themselves !
      * The consequence is that the headers array of the copy hold the *same* references as the original, so do *not*
      * modify the headers ! If you want to change a header, copy it and call {@link BytesMessage#putHeader(short,Header)} again.

@@ -153,7 +153,7 @@ public class MessageBatch implements Iterable<Message> {
     /**
      * Adds message to this batch from a message array
      * @param msgs  the message array
-     * @param num_msgs the number of messages to add, should be <= msgs.length
+     * @param num_msgs the number of messages to add, should be {@literal <= msgs.length}
      * @return the number of messages added to this batch
      */
     public int add(Message[] msgs, int num_msgs) {

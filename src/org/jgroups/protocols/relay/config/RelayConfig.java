@@ -33,7 +33,7 @@ public class RelayConfig {
 
 
 
-    /** Parses site names and their configuration (e.g. "nyc" --> SiteConfig) into the map passed as argument */
+    /** Parses site names and their configuration (e.g. {@literal "nyc" --> SiteConfig}) into the map passed as argument */
     public static void parse(InputStream input, final Map<String,SiteConfig> map) throws Exception {
         XmlNode root=XmlConfigurator.parseXmlDocument(input);
         parse(root, map);

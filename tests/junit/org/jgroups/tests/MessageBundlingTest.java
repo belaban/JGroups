@@ -16,7 +16,7 @@ import org.testng.annotations.Test;
  * Update April 2016: this test is more or less useless, as System.nanoTime() can yield different values, depending
  * on which core it is run. E.g. the sender (main) thread might run on core-0, but the receiver thread on core-1,
  * and since the cores can have different counters for nanoTime(), subtracting the values is meaningless.
- * System.nanoTime() only really works when invoked by the same thread, e.g. as in {@link #testSimple()}.</p>
+ * System.nanoTime() only really works when invoked by the same thread, e.g. as in {@link #testSimple()}.<p>
  * This was changed by making the sender block on a promise which is signalled by the receiver thread when a message
  * has been received. After that, System.nanoTime() is called by the sender, so start and stop times are called by the
  * same thread. Of course, (uncontended) lock acquisition, thread context switching etc amount to some overhead...

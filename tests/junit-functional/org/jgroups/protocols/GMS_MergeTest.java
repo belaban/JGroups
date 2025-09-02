@@ -265,10 +265,10 @@ public class GMS_MergeTest {
 
     /**
      * Tests the merge of the following partitions:
-     * <ul>
-     * <li>A: {B, A, C}
-     * <li>B: {B, C}
-     * <li>C: {B, C}
+     * <ol>
+     * <li>A: {B, A, C}</li>
+     * <li>B: {B, C}</li>
+     * <li>C: {B, C}</li>
      * </ol>
      * JIRA: https://issues.redhat.com/browse/JGRP-1031
      * @throws Exception
@@ -374,9 +374,9 @@ public class GMS_MergeTest {
 
     /**
      * Tests the merge of the following partitions:
-     * <ul>
-     * <li>A: {A,B}
-     * <li>B: {B}
+     * <ol>
+     * <li>A: {A,B}</li>
+     * <li>B: {B}</li>
      * </ol>
      * JIRA: https://issues.redhat.com/browse/JGRP-1031
      */

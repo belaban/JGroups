@@ -11,7 +11,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Attempt at writing a fast transfer queue, which is bounded. The take() method blocks until there is an element, but
- * the offer() method drops the element and returns if the queue is full (doesn't block). <p/>
+ * the offer() method drops the element and returns if the queue is full (doesn't block). <p>
  * The design assumes a number of producers but only <em>one</em> consumer. The consumer only blocks when the queue is
  * empty (on the not-empty condition), the producers block when the queue is full (on the not-full condition). The
  * producers increment a count atomically and if the count is greater than the capacity, they block on the not-full

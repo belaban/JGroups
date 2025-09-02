@@ -33,7 +33,7 @@ public class RequestCorrelator {
     /** The protocol layer to use to pass up/down messages. Can be either a Protocol or a Transport */
     protected Protocol                   down_prot;
 
-    /** The table of pending requests (keys=Long (request IDs), values=<tt>RequestEntry</tt>) */
+    /** The table of pending requests (keys=Long (request IDs), values=RequestEntry) */
     protected final Map<Long,Request<?>> requests=Util.createConcurrentMap();
 
     /** To generate unique request IDs */
@@ -468,9 +468,6 @@ public class RequestCorrelator {
     }
 
 
-    /**
-     * The header for <tt>RequestCorrelator</tt> messages
-     */
     public static class Header extends org.jgroups.Header {
         public static final byte REQ     = 0;
         public static final byte RSP     = 1;
@@ -490,9 +487,9 @@ public class RequestCorrelator {
         public Header() {}
 
         /**
-         * @param type type of header (<tt>REQ</tt>/<tt>RSP</tt>)
+         * @param type type of header (REQ/RSP)
          * @param req_id id of this header relative to ids of other requests originating from the same correlator
-         * @param corr_id The ID of the <tt>RequestCorrelator</tt> from which
+         * @param corr_id The ID of the RequestCorrelator from which
          */
         public Header(byte type, long req_id, short corr_id) {
             this.type=type;

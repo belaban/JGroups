@@ -41,7 +41,7 @@ public abstract class FlowControl extends Protocol {
     protected long           max_credits=5_000_000;
 
     /** Max time (in milliseconds) to block. If credit hasn't been received after max_block_time, we send
-     * a REPLENISHMENT request to the members from which we expect credits. A value <= 0 means to wait forever.
+     * a REPLENISHMENT request to the members from which we expect credits. A value {@literal <= 0} means to wait forever.
      */
     @Property(description="Max time (in ms) to block",type=AttributeType.TIME)
     protected long           max_block_time=5000;
@@ -58,7 +58,7 @@ public abstract class FlowControl extends Protocol {
     protected double         min_threshold=0.20;
 
     /**
-     * Computed as <tt>max_credits</tt> times <tt>min_theshold</tt>. If explicitly set, this will
+     * Computed as {@literal max_credits * min_theshold}. If explicitly set, this will
      * override the above computation
      */
     @Property(description="Computed as max_credits x min_theshold unless explicitly set",type=AttributeType.BYTES)

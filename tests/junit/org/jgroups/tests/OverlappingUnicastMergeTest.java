@@ -54,15 +54,15 @@ public class OverlappingUnicastMergeTest extends ChannelTestBase {
      * Verifies that unicasts are received correctly by all participants after an overlapping merge. The following steps
      * are executed:
      * <ol>
-     * <li/>Group is {A,B,C}, A is the coordinator
-     * <li/>MERGE3 is removed from all members
-     * <li/>VERIFY_SUSPECT is removed from all members
-     * <li/>Everyone sends 5 unicast messages to everyone else
-     * <li/>A VIEW(B,C) is injected into B and C
-     * <li/>B and C install {B,C}
-     * <li/>B and C trash the connection table for A in UNICAST
-     * <li/>A still has view {A,B,C} and all connection tables intact in UNICAST
-     * <li/>We now send N unicasts from everyone to everyone else, all the unicasts should be received.
+     * <li>Group is {A,B,C}, A is the coordinator</li>
+     * <li>MERGE3 is removed from all members</li>
+     * <li>VERIFY_SUSPECT is removed from all members</li>
+     * <li>Everyone sends 5 unicast messages to everyone else</li>
+     * <li>A VIEW(B,C) is injected into B and C</li>
+     * <li>B and C install {B,C}</li>
+     * <li>B and C trash the connection table for A in UNICAST</li>
+     * <li>A still has view {A,B,C} and all connection tables intact in UNICAST</li>
+     * <li>We now send N unicasts from everyone to everyone else, all the unicasts should be received.</li>
      * </ol>
      */
     public void testWithViewBC() throws Exception {

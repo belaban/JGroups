@@ -11,10 +11,10 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Bounded input stream. A consumer reads bytes until the end of the stream is reached, or the input stream is closed.
  * The producer writes bytes to the tail and blocks if the capacity has been reached (until the consumer reads more bytes).
- * <p/>
+ * <p>
  * This class is for only 1 producer and 1 consumer; multiple producers/consumers will most likely yield incorrect
  * results !
- * <p/>
+ * <p>
  * Note that the implementation of this class is optimized for reading and adding a few K at a time; performance will
  * be suboptimal if single bytes are added and read.
  * @author Bela Ban
@@ -127,7 +127,7 @@ public class BlockingInputStream extends InputStream {
     /**
      * Appends bytes to the end of the stream. If the number of bytes to be written is greater than the remaining
      * capacity, write() will block until the bytes can be added, or the stream is closed.
-     * <p/>
+     * <p>
      * This method will try to append partial buffers to the stream, e.g. if the remaining capacity is 2K, but the
      * length of the buffer is 5K, 2K will be written and then write() will block until the remaining 3K can be
      * added.

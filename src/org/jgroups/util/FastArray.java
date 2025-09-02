@@ -52,7 +52,7 @@ public class FastArray<T> implements Iterable<T> {
     /**
      * Adds elements from an array els to this array
      * @param els The other array, can have null elements
-     * @param length The number of elements to add. must be <= els.length
+     * @param length The number of elements to add. must be {@literal <= els.length}
      * @return The number of elements added
      */
     public int add(T[] els, int length) {

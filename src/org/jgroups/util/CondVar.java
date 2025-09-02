@@ -50,7 +50,7 @@ public class CondVar {
     /**
      * Blocks until condition is true or the time elapsed
      * @param condition The condition
-     * @param timeout The timeout to wait. A value <= 0 causes immediate return
+     * @param timeout The timeout to wait. A value {@literal <= 0} causes immediate return
      * @param unit TimeUnit
      * @return The condition's status
      */

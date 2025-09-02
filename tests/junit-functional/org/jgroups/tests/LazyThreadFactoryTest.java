@@ -29,7 +29,8 @@ public class LazyThreadFactoryTest {
         assert factory.size() == 0 : "found threads that are still alive: " + factory.dumpThreads();
     }
 
-    /** Tests that threads whose names have been replaced (no <ADDR> or <CLUSTER>) have been removed from the factory's queue */
+    /** Tests that threads whose names have been replaced (no {@literal <ADDR>} or {@literal <CLUSTER>})
+     * have been removed from the factory's queue */
     public void testRemovalOfCompleteThreads() throws Exception {
         factory.setPattern("cl");
 

@@ -249,7 +249,6 @@ public class XmlConfigurator implements ProtocolStackConfigurator {
         return true;
     }
 
-    /** Fixes errors like "/  >" with "/>" */
     protected static String sanitize(String s) {
         return s.replaceAll("/\\s*>", "/>");
     }

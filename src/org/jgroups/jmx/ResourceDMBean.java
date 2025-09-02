@@ -550,8 +550,6 @@ public class ResourceDMBean implements DynamicMBean {
 
     public static class AttributeEntry {
         protected final AccessibleObject   type; // method of field
-        /** The name of the field or method. Can be different from the key in atts when name in @Property or
-         * @ManagedAttribute  was used */
         protected final String             name;
         protected final MBeanAttributeInfo info;
         protected Accessor                 getter;

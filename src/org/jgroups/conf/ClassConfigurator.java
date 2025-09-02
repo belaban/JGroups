@@ -70,9 +70,9 @@ public class ClassConfigurator {
 
     /**
      * Method to register a user-defined header with jg-magic-map at runtime
-     * @param magic The magic number. Needs to be > 1024
+     * @param magic The magic number. Needs to be &gt; 1024
      * @param clazz The class. Usually a subclass of Header
-     * @throws IllegalArgumentException If the magic number is already taken, or the magic number is <= 1024
+     * @throws IllegalArgumentException If the magic number is already taken, or the magic number is {@literal <= 1024}
      */
     public static void add(short magic, Class<?> clazz) {
         if(magic < MIN_CUSTOM_MAGIC_NUMBER)

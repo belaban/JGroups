@@ -8,7 +8,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Provides a coarse grained time service. Registers a timer task which calls and caches {@link System#nanoTime()}
  * and returns the cached value. This is way faster than calling {@link System#nanoTime()} many times, e.g.
- * for each received message. The granularity (interval) can be chosen by the user.<p/>
+ * for each received message. The granularity (interval) can be chosen by the user.<p>
  * Note that use of values returned by {@link #timestamp()} needs to obey the same rules as for {@link System#nanoTime()}
  * @author Bela Ban
  * @since  3.5

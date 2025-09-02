@@ -5,10 +5,10 @@ import org.jgroups.logging.Log;
 /**
  * Thread factory mainly responsible for naming of threads. Can be replaced by
  * user. If use_numbering is set, a thread THREAD will be called THREAD-1,
- * THREAD-2, and so on.<p/> If a pattern has been set (through setPattern()),
+ * THREAD-2, and so on.<p> If a pattern has been set (through setPattern()),
  * then the cluster name and local address will also be added, e.g.
  * THREAD-5,MyCluster,192.168.1.5:63754 or THREAD,MyCluster,192.168.1.5:63754
- * <p/>
+ * <p>
  * If includeClusterName and includeLocalAddress are both false, and clusterName is set, then we assume we
  * have a shared transport, and therefore print shared=clusterName.
  * @author Vladimir Blagojevic

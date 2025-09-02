@@ -14,8 +14,10 @@ import java.util.List;
  * Bundler implementation which sends message batches (or single messages) as soon as the target destination changes
  * (or max_bundler_size would be exceeded).<p>
  * Messages are removed from the main queue one by one and processed as follows:<p>
- * A B B C C A causes the following sends: A -> {CC} -> {BB} -> A<p>
- * Note that <em>null</em> is also a valid destination (send-to-all).<p>
+ * A B B C C A causes the following sends: {@literal A -> {CC} -> {BB} -> A}
+ * <p>
+ * Note that null is also a valid destination (send-to-all).
+ * <p>
  * JIRA: https://issues.redhat.com/browse/JGRP-2171
  * @author Bela Ban
  * @since  4.0.4

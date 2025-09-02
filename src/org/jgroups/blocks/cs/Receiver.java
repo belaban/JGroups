@@ -29,7 +29,7 @@ public interface Receiver {
      * @param sender The sender of the message
      * @param buf The buffer. An application typically de-serializes data from the buffer into objects used by the
      *            application. Note that when receive() returns, it is not safe to use the buffer any longer;
-     *            if an application needs to use a buffer after this callback returns, it must make a copy.<p/>
+     *            if an application needs to use a buffer after this callback returns, it must make a copy.<p>
      *            Note that buf could be a direct ByteBuffer.
      */
     default void receive(Address sender, ByteBuffer buf) {

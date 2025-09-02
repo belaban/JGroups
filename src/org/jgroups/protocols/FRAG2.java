@@ -30,7 +30,7 @@ import java.util.function.Predicate;
  * it into smaller fragments: it looks only at the message's buffer, which is a
  * byte[] array anyway. We assume that the size addition for headers and src and
  * dest address is minimal when the transport finally has to serialize the
- * message, so we add a constant (200 bytes).</br>
+ * message, so we add a constant (200 bytes).<p>
  * <em>Note that this protocol only works with {@link BytesMessage} types</em>
  * 
  * @author Bela Ban
@@ -241,7 +241,7 @@ public class FRAG2 extends Fragmentation {
 
     /**
      1. Get all the fragment buffers
-     2. When all are received -> Assemble them into one big buffer
+     2. When all are received: assemble them into one big buffer
      3. Read headers and byte buffer from big buffer
      4. Set headers and buffer in msg
      5. Return the message

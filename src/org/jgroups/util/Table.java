@@ -19,17 +19,16 @@ import java.util.stream.StreamSupport;
  * A store for elements (typically messages) to be retransmitted or delivered. Used on sender and receiver side,
  * as a replacement for HashMap. Table should use less memory than HashMap, as HashMap.Entry has 4 fields,
  * plus arrays for storage.
- * <p/>
+ * <p>
  * Table maintains a matrix (an array of arrays) of elements, which are stored in the matrix by mapping
  * their seqno to an index. E.g. when we have 10 rows of 1000 elements each, and first_seqno is 3000, then an element
  * with seqno=5600, will be stored in the 3rd row, at index 600.
- * <p/>
+ * <p>
  * Rows are removed when all elements in that row have been received.
- * <p/>
+ * <p>
  * Table started out as a copy of RetransmitTable, but is synchronized and maintains its own low, hd and hr
  * pointers, so it can be used as a replacement for NakReceiverWindow. The idea is to put messages into Table,
  * deliver them in order of seqnos, and periodically scan over all tables in NAKACK2 to do retransmission.
- * <p/>
  * @author Bela Ban
  * @version 3.1
  */
@@ -251,7 +250,7 @@ public class Table<T> implements Iterable<T> {
     /**
      * Adds elements from the list to the table
      * @param list The list of tuples of seqnos and elements. If remove_added_elements is true, if elements could
-     *             not be added to the table (e.g. because they were already present or the seqno was < HD), those
+     *             not be added to the table (e.g. because they were already present or the seqno was &lt; HD), those
      *             elements will be removed from list
      * @param remove_added_elements If true, elements that could not be added to the table are removed from list
      * @param const_value If non-null, this value should be used rather than the values of the list tuples
@@ -448,7 +447,7 @@ public class Table<T> implements Iterable<T> {
 
     /**
      * Removes all elements less than or equal to seqno from the table. Does this by nulling entire rows in the matrix
-     * and nulling all elements < index(seqno) of the first row that cannot be removed
+     * and nulling all elements &lt; index(seqno) of the first row that cannot be removed
      * @param seqno
      */
     public void purge(long seqno) {
@@ -457,9 +456,9 @@ public class Table<T> implements Iterable<T> {
 
     /**
      * Removes all elements less than or equal to seqno from the table. Does this by nulling entire rows in the matrix
-     * and nulling all elements < index(seqno) of the first row that cannot be removed.
-     * @param seqno All elements <= seqno will be nulled
-     * @param force If true, we only ensure that seqno <= hr, but don't care about hd, and set hd=low=seqno.
+     * and nulling all elements &lt; index(seqno) of the first row that cannot be removed.
+     * @param seqno All elements {@literal <= seqno} will be nulled
+     * @param force If true, we only ensure that {@literal seqno <= hr}, but don't care about hd, and set hd=low=seqno.
      */
     public void purge(long seqno, boolean force) {
         lock.lock();
@@ -526,7 +525,7 @@ public class Table<T> implements Iterable<T> {
     /**
      * Iterates over the matrix with range [from .. to] (including from and to), and calls
      * {@link Visitor#visit(long,Object,int,int)}. If the visit() method returns false, the iteration is terminated.
-     * <p/>
+     * <p>
      * This method must be called with the lock held
      * @param from The starting seqno
      * @param to The ending seqno, the range is [from .. to] including from and to
@@ -722,7 +721,7 @@ public class Table<T> implements Iterable<T> {
 
     /**
      * Returns a list of missing messages
-     * @param max_msgs If > 0, the max number of missing messages to be returned (oldest first), else no limit
+     * @param max_msgs If &gt; 0, the max number of missing messages to be returned (oldest first), else no limit
      * @return A SeqnoList of missing messages, or null if no messages are missing
      */
     public SeqnoList getMissing(int max_msgs) {

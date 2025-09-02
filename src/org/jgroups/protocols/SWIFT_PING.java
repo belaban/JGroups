@@ -18,7 +18,7 @@ import java.util.*;
 
 /**
  * Discovery protocol based on Openstack Swift (object storage).
- * <p/>
+ * <p>
  * This implementation is derived from Gustavo Fernandes work on RACKSPACE_PING
  *
  * @author tsegismont

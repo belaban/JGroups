@@ -13,7 +13,7 @@ import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
 
 /**
  * The PING protocol retrieves the initial membership by mcasting a discovery request (via the multicast capable
- * transport) to all current cluster members<p/>
+ * transport) to all current cluster members<p>
  * The responses should allow us to determine the coordinator which we have to contact, e.g. in case we want to join
  * the group.  When we are a server (after having received the BECOME_SERVER event), we'll respond to discovery requests
  * with a discovery response.

@@ -174,7 +174,7 @@ public class UNICAST_OOB_Test {
 
 
     public static class MyReceiver implements Receiver {
-        /** List<Long> of unicast sequence numbers */
+        /** List of unicast sequence numbers */
         List<Long> seqnos=Collections.synchronizedList(new LinkedList<>());
 
         public MyReceiver() {

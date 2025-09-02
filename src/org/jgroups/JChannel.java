@@ -29,15 +29,15 @@ import java.util.function.Consumer;
  * A channel represents a group communication endpoint (like a socket). An application joins a cluster by connecting
  * the channel to a cluster name and leaves it by disconnecting. Messages sent over the channel are received by all
  * cluster members that are connected to the same cluster (that is, all members that have the same cluster name).
- * <p/>
+ * <p>
  * The state machine for a channel is as follows: a channel is created (<em>unconnected</em>). The
  * channel is connected to a cluster (<em>connected</em>). Messages can now be sent and received. The
  * channel is disconnected from the cluster (<em>unconnected</em>). The channel could now be connected
  * to a different cluster again. The channel is closed (<em>closed</em>).
- * <p/>
+ * <p>
  * Only a single sender is allowed to be connected to a channel at a time, but there can be more than one channel
  * in an application.
- * <p/>
+ * <p>
  * Messages can be sent to the cluster members using the <em>send</em> method and messages can be received by setting
  * a {@link Receiver} in {@link #setReceiver(Receiver)} and implementing the {@link Receiver#receive(Message)} callback.
  *
@@ -309,7 +309,7 @@ public class JChannel implements Closeable {
 
     /**
      * Joins the cluster. The application is now able to receive messages from cluster members, views and to send
-     * messages to (all or single) cluster members. This is a no-op if already connected.<p/>
+     * messages to (all or single) cluster members. This is a no-op if already connected.<p>
      * All channels connecting to the same cluster name form a cluster; messages sent to the cluster will
      * be received by all cluster members.
      * @param cluster_name The name of the cluster to join
@@ -336,10 +336,10 @@ public class JChannel implements Closeable {
 
     /**
      * Joins the cluster and gets the state from a specified state provider.
-     * <p/>
-     * This method essentially invokes <code>connect<code> and <code>getState<code> methods successively.
+     * <p>
+     * This method essentially invokes {@code connect} and {@code getState} methods successively.
      * If FLUSH protocol is in channel's stack definition only one flush is executed for both connecting and
-     * fetching state rather than two flushes if we invoke <code>connect<code> and <code>getState<code> in succession.<p/>
+     * fetching state rather than two flushes if we invoke {@code connect} and {@code getState} in succession.<p>
      * If the channel is closed an exception will be thrown.
      * @param cluster_name  the cluster name to connect to. Cannot be null.
      * @param target the state provider. If null state will be fetched from coordinator, unless this channel is coordinator.
@@ -353,10 +353,10 @@ public class JChannel implements Closeable {
 
     
     /**
-     * Joins the cluster and gets a state from a specified state provider.<p/>
-     * This method invokes {@code connect()} and then {@code getState}.<p/>
+     * Joins the cluster and gets a state from a specified state provider.<p>
+     * This method invokes {@code connect()} and then {@code getState}.<p>
      * If the FLUSH protocol is in the channel's stack definition, only one flush round is executed for both connecting and
-     * fetching the state rather than two flushes if we invoke {@code connect} and {@code getState} in succession.<p/>
+     * fetching the state rather than two flushes if we invoke {@code connect} and {@code getState} in succession.<p>
      * If the channel is closed a ChannelClosed exception will be thrown.
      * @param cluster_name  The cluster name to connect to. Cannot be null.
      * @param target The state provider. If null, the state will be fetched from the coordinator, unless this channel
@@ -426,7 +426,7 @@ public class JChannel implements Closeable {
     /**
      * Destroys the channel and its associated resources (e.g. the protocol stack). After a channel has been closed,
      * invoking methods on it will throw a {@code ChannelClosed} exception (or results in a null operation).
-     * It is a no-op if the channel is already closed.<p/>
+     * It is a no-op if the channel is already closed.<p>
      * If the channel is connected to a cluster, {@code disconnect()} will be called first.
      */
     @ManagedOperation(description="Disconnects and destroys the channel")
@@ -484,7 +484,7 @@ public class JChannel implements Closeable {
      * * @param dst the destination address. If null, the message will be sent to all cluster nodes (= cluster members)
      * @param buf the buffer to be sent
      * @param offset the offset into the buffer
-     * @param length the length of the data to be sent. Has to be <= buf.length - offset. This will send
+     * @param length the length of the data to be sent. Has to be {@literal <= buf.length - offset}. This will send
      *           {@code length} bytes starting at {@code offset}
      * @throws Exception thrown if send() failed
      */
@@ -524,9 +524,9 @@ public class JChannel implements Closeable {
     /**
      * Performs the flush of the cluster, ie. all pending application messages are flushed out of the cluster and
      * all members ack their reception. After this call returns, no member will be allowed to send any
-     * messages until {@link #stopFlush()} is called.<p/>
+     * messages until {@link #stopFlush()} is called.<p>
      * In the case of flush collisions (another member attempts flush at roughly the same time) start flush will
-     * fail by throwing an Exception. Applications can re-attempt flushing after certain back-off period.<p/>
+     * fail by throwing an Exception. Applications can re-attempt flushing after certain back-off period.<p>
      * JGroups provides a helper random sleep time backoff algorithm for flush using Util class.
      * @param automatic_resume if true call {@link #stopFlush()} after the flush
      */
@@ -548,9 +548,9 @@ public class JChannel implements Closeable {
     }
 
     /**
-     * Performs the flush of the cluster but only for the specified flush participants.<p/>
+     * Performs the flush of the cluster but only for the specified flush participants.<p>
      * All pending messages are flushed out but only for the flush participants. The remaining members in the cluster
-     * are not included in the flush. The list of flush participants should be a proper subset of the current view.<p/>
+     * are not included in the flush. The list of flush participants should be a proper subset of the current view.<p>
      * If this flush is not automatically resumed it is an obligation of the application to invoke the matching
      * {@link #stopFlush(List)} method with the same list of members used in {@link #startFlush(List, boolean)}.
      * @param automatic_resume if true call {@link #stopFlush()} after the flush
@@ -588,7 +588,7 @@ public class JChannel implements Closeable {
 
     /**
      * Stops the current flush of the cluster for the specified flush participants. Flush participants are unblocked and
-     * allowed to send new and pending messages.<p/>
+     * allowed to send new and pending messages.<p>
      * It is an obligation of the application to invoke the matching {@link #startFlush(List, boolean)} method with the
      * same list of members prior to invocation of this method.
      * @param flushParticipants the flush participants

@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Class that measure RTT for multicast messages between 2 cluster members. See {@link RpcDispatcherSpeedTest} for
  * RPCs. Note that request and response times are measured using {@link System#nanoTime()} which might yield incorrect
- * values when run on different cores, so these numbers may not be reliable.<p/>
+ * values when run on different cores, so these numbers may not be reliable.<p>
  * Running this on different nodes will not yield correct results for request- and response-latencies, but should be ok
  * for round-trip times. *If* times across nodes are synchronized, flag -use-wall-clock can switch to currentTimeMillis()
  * which gives more meaningful results for request- and response-latency across boxes.

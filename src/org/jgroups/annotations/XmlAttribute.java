@@ -7,7 +7,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotation to add attributes to the schema created by {@link org.jgroups.util.XMLSchemaGenerator}. Example: <p>
+ * Annotation to add attributes to the schema created by {@link org.jgroups.util.XMLSchemaGenerator}. Example:
  * <pre>
  * {@literal @}XmlAttribute(attrs={"auth_value", "demo_token})
  * </pre>

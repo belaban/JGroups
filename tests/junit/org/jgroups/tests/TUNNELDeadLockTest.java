@@ -74,7 +74,7 @@ public class TUNNELDeadLockTest {
      * machine I run it usually happens after 700 - 1000 messages and I
      * suspect that this number it is related to the socket buffer size.
      * (the comments are written when I didn't solve the bug yet). <br>
-     * <p/>
+     * <p>
      * The number of messages sent can be controlled with msgCount.
      * The time (in ms) the main threads wait for the all messages to come can
      * be controlled with mainTimeout. If this time passes and the test

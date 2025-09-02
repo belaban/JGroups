@@ -15,13 +15,13 @@ import java.util.Iterator;
 /**
  * Subclass of {@link org.jgroups.View} with a null members field. Adds an array for left members and one for joined
  * members compared to the previous view. A recipient receiving a DeltaView can construct a new view by grabbing the
- * view corresponding to {@link #view_id}, removing the left members and adding the new members.<p/>
+ * view corresponding to {@link #view_id}, removing the left members and adding the new members.<p>
  * This class is only used with VIEW messages in GMS to install new views (not merge views). When a VIEW
  * message is received, the DeltaView is read from the {@link org.jgroups.protocols.pbcast.GMS.GmsHeader}, a View is
  * constructured and the header discarded. Therefore, the lifetime of a DeltaView is short: it is created and set in
  * a GmsHeader, the header is then marshalled. On the receiving side, the DeltaView is created from the stream, a View
- * is created and the DeltaView discarded again.<p/>
- * Instances of this class are created by {@link CoordGmsImpl#handleMembershipChange(java.util.Collection)}.<p/>
+ * is created and the DeltaView discarded again.<p>
+ * Instances of this class are created by {@link CoordGmsImpl#handleMembershipChange(java.util.Collection)}.<p>
  * JIRA issue: https://issues.redhat.com/browse/JGRP-1354
  * @author Bela Ban
  * @since  3.4

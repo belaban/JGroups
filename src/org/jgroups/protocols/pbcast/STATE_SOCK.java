@@ -26,12 +26,12 @@ import java.util.concurrent.RejectedExecutionException;
 /**
  * {@code STATE_SOCK} has the state provider create a server socket to which the state
  * requester connects and from which the latter reads the state.
- * <p/>
+ * <p>
  * When implementing {@link org.jgroups.Receiver#getState(java.io.OutputStream)}, the state should be written in
  * sizeable chunks, because the underlying output stream sends 1 message / write over the socket. So if there are 1000
  * writes of 1 byte each, this would generate 1000 messages ! We suggest using a {@link java.io.BufferedOutputStream}
  * over the output stream handed to the application as argument of the callback.
- * <p/>
+ * <p>
  * When implementing the {@link org.jgroups.Receiver#setState(java.io.InputStream)} callback, there is no need to use a
  * {@link java.io.BufferedOutputStream}, as the input stream handed to the application already buffers incoming data
  * internally.

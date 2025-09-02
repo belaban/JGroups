@@ -92,7 +92,7 @@ public class LazyThreadFactory extends DefaultThreadFactory {
 
 
 
-    /** Replaces "<ADDR>" with the local address and <CLUSTER> with the cluster name */
+    /** Replaces {@literal "<ADDR>"} with the local address and {@literal "<CLUSTER>"} with the cluster name */
     protected String changeName(String name) {
         String retval=name;
         StringBuilder tmp;

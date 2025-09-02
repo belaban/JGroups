@@ -74,21 +74,21 @@ public class OverlappingMergeTest extends ChannelTestBase {
      * Verifies that unicasts are received correctly by all participants after an overlapping merge. The following steps
      * are executed:
      * <ol>
-     * <li/>Group is {A,B,C}, A is the coordinator
-     * <li/>MERGE3 is removed from all members
-     * <li/>VERIFY_SUSPECT is removed from all members
-     * <li/>Everyone sends 5 unicast messages to everyone else
-     * <li/>Everyone sends 5 multicasts
-     * <li/>A SUSPECT(A) event is injected into B's stack (GMS). This causes a new view {B,C} to be multicast by B
-     * <li/>B and C install {B,C}
-     * <li/>B and C trash the connection table for A in UNICAST
-     * <li/>A ignores the view, it still has view {A,B,C} and all connection tables intact in UNICAST
-     * <li/>We now inject a MERGE(A,B) event into A. This should use A and B as coords to create a new MergeView {A,B,C}
-     * <li/>The merge already fails because the unicast between A and B fails due to the reason given below !
-     *      Once this is fixed, the next step below should work, too !
-     * <li/>A sends a unicast to B and C. This should fail until JGRP-940 has been fixed !
-     * <li/>Reason: B and C trashed A's conntables in UNICAST, but A didn't trash its conn tables for B and C, so
-     * we have non-matching seqnos !
+     * <li>Group is {A,B,C}, A is the coordinator</li>
+     * <li>MERGE3 is removed from all members</li>
+     * <li>VERIFY_SUSPECT is removed from all members</li>
+     * <li>Everyone sends 5 unicast messages to everyone else</li>
+     * <li>Everyone sends 5 multicasts</li>
+     * <li>A SUSPECT(A) event is injected into B's stack (GMS). This causes a new view {B,C} to be multicast by B</li>
+     * <li>B and C install {B,C}</li>
+     * <li>B and C trash the connection table for A in UNICAST</li>
+     * <li>A ignores the view, it still has view {A,B,C} and all connection tables intact in UNICAST</li>
+     * <li>We now inject a MERGE(A,B) event into A. This should use A and B as coords to create a new MergeView {A,B,C}</li>
+     * <li>The merge already fails because the unicast between A and B fails due to the reason given below !
+     *      Once this is fixed, the next step below should work, too !</li>
+     * <li>A sends a unicast to B and C. This should fail until JGRP-940 has been fixed !</li>
+     * <li>Reason: B and C trashed A's conntables in UNICAST, but A didn't trash its conn tables for B and C, so
+     * we have non-matching seqnos !</li>
      * </ol>
      */
     public void testOverlappingMergeWithBC() throws Exception {
@@ -162,11 +162,11 @@ public class OverlappingMergeTest extends ChannelTestBase {
      * Verifies that unicasts are received correctly by all participants after an overlapping merge. The following steps
      * are executed:
      * <ol>
-     * <li/>Group is {A,B,C}, inject views:
-     * <li/>A: A,C
-     * <li/>B: A,B,C
-     * <li/>C: A,B,C
-     * <li/>Then initiate a merge.
+     * <li>Group is {A,B,C}, inject views:</li>
+     * <li>A: A,C</li>
+     * <li>B: A,B,C</li>
+     * <li>C: A,B,C</li>
+     * <li>Then initiate a merge.</li>
      * </ol>
      */
     public void testOverlappingMergeWithABC() throws Exception {
@@ -229,11 +229,11 @@ public class OverlappingMergeTest extends ChannelTestBase {
 
     /**
      * <ol>
-     * <li/>Group is A|4={A,B,C}, inject views:
-     * <li/>A: A|5={A,B}
-     * <li/>B: A|5={A,B}
-     * <li/>C: A|4={A,B,C} // failed installing view A|5
-     * <li/>Then initiate a merge.
+     * <li>Group is A|4={A,B,C}, inject views:</li>
+     * <li>A: A|5={A,B}</li>
+     * <li>B: A|5={A,B}</li>
+     * <li>C: A|4={A,B,C} // failed installing view A|5</li>
+     * <li>Then initiate a merge.</li>
      * </ol>
      */
     public void testOverlappingMergeWithABC2() throws Exception {

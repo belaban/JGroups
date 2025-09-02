@@ -27,7 +27,7 @@ import java.util.function.Predicate;
  * For details see https://issues.redhat.com/browse/JGRP-2154
  * <p>
  * Requirement: lossless delivery (e.g. NAKACK2 or UNICAST3). No requirement on ordering. Works for both unicast and
- * multicast messages.<p>
+ * multicast messages.
  *
  * @author Bela Ban
  * @since 4.0
@@ -246,7 +246,7 @@ public class FRAG3 extends Fragmentation {
 
     /**
      1. Get all the fragment buffers
-     2. When all are received -> Assemble them into one big buffer
+     2. When all are received: assemble them into one big buffer
      3. Read headers and byte buffer from big buffer
      4. Set headers and buffer in msg
      5. Return the message

@@ -15,7 +15,8 @@ import java.util.List;
  * Bundler implementation which sends message batches (or single messages) as soon as the remove queue is full
  * (or max_bundler_size would be exceeded).<p>
  * Messages are removed from the main queue  and processed as follows (assuming they all fit into the remove queue):<p>
- * A B B C C A causes the following sends: {AA} -> {CC} -> {BB}<p>
+ * A B B C C A causes the following sends: {@literal {AA} -> {CC} -> {BB}}
+ * <p>
  * Note that <em>null</em> is also a valid destination (send-to-all).<p>
  * Contrary to {@link TransferQueueBundler}, this bundler uses a {@link RingBuffer} rather than an ArrayBlockingQueue
  * and the size of the remove queue is fixed. TransferQueueBundler increases the size of the remove queue

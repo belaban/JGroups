@@ -597,7 +597,6 @@ public class ProtocolStack extends Protocol {
      * Removes a protocol from the stack. Stops the protocol and readjusts the linked lists of protocols.
      * @param prot_name The name of the protocol. Since all protocol names in a stack have to be unique
      *                  (otherwise the stack won't be created), the name refers to just 1 protocol.
-     * @exception Exception Thrown if the protocol cannot be stopped correctly.
      */
     public <T extends Protocol> T removeProtocol(String prot_name) {
         if(prot_name == null) return null;

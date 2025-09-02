@@ -14,22 +14,21 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Ring buffer, implemented with a circular array.
  * Designed for multiple producers (add()) and a single consumer (remove()). <em>Note that the remove() methods
- * are not reentrant, so multiple consumers won't work correctly !</em><p/>
- * The buffer has a fixed capacity, and a low (LOW), highest delivered (HD) and highest received (HR) seqno.<p/>
- * An element with a sequence number (seqno) > low + capacity or < HD will get discarded.
- * <p/>
+ * are not reentrant, so multiple consumers won't work correctly !</em><p>
+ * The buffer has a fixed capacity, and a low (LOW), highest delivered (HD) and highest received (HR) seqno.<p>
+ * An element with a sequence number (seqno) &gt; low + capacity or &lt; HD will get discarded.
+ * <p>
  * Elements are added after HD, but cannot wrap around beyond LOW. Addition doesn't need to be sequential, e.g.
  * adding 5, 6, 8 is OK (as long as a seqno doesn't pass LOW). Addition may advance HR. Addition of elements that
  * are already present is a no-op, and will not set the element again.
- * <p/>
+ * <p>
  * Removal of elements starts at HD+1; any non-null element is removed and HD is advanced accordingly. If a remove
  * method is called with nullify=true, then removed elements are nulled and LOW is advanced as well (LOW=HD). Note
  * that <em>all</em> removals in a given RingBufferLockless must either have nullify=true, or all must be false. It is not
  * permitted to do some removals with nullify=true, and others with nullify=false, in the same RingBufferLockless.
- * <p/>
+ * <p>
  * The {@link #stable(long)} method is called periodically; it nulls all elements between LOW and HD and advances LOW
  * to HD.
- * <p/>
  * @author Bela Ban
  * @since 3.1
  */
@@ -138,7 +137,7 @@ public class RingBufferSeqnoLockless<T> implements Iterable<T> {
      * RingBuffer can only have 1 remover thread active at any time !</em>
      * @param nullify Nulls the element in the array if true
      * @return T if there was a non-null element at position hd +1, or null if the element at hd+1 was null, or
-     * hd+1 > hr.
+     * {@literal hd+1 > hr}.
      */
     public T remove(boolean nullify) {
         long tmp=hd+1;

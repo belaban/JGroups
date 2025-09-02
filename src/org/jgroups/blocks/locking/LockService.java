@@ -12,7 +12,7 @@ import java.util.concurrent.locks.Lock;
 
 /**
  * LockService is the main class for to use for distributed locking functionality. LockService needs access to a
- * {@link JChannel} and interacts with a locking protocol (e.g. {@link org.jgroups.protocols.CENTRAL_LOCK}) via events.<p/>
+ * {@link JChannel} and interacts with a locking protocol (e.g. {@link org.jgroups.protocols.CENTRAL_LOCK}) via events.<p>
  * When no locking protocol is seen on the channel's stack, LockService will throw an exception at startup. An example
  * of using LockService is:
  * <pre>
@@ -28,9 +28,9 @@ import java.util.concurrent.locks.Lock;
       lock.unlock();
    }
  * </pre>
- * <p/>
+ * <p>
  * The exact semantics of this lock implemantation are defined in {@link LockImpl}.
- * <p/>
+ * <p>
  * Note that, contrary to the semantics of {@link java.util.concurrent.locks.Lock}, unlock() can be called multiple
  * times; after a lock has been released, future calls to unlock() have no effect.
  * @author Bela Ban
@@ -86,10 +86,10 @@ public class LockService {
 
     /**
      * Implementation of {@link Lock}. This is a client stub communicates with a server equivalent. The semantics are
-     * more or less those of {@link Lock}, but may differ slightly.<p/>
+     * more or less those of {@link Lock}, but may differ slightly.<p>
      * There is no reference counting of lock owners, so acquisition of a lock already held by a thread is a no-op.
      * Also, releasing the lock after it was already released is a no-op as well.
-     * <p/>
+     * <p>
      * An exact description is provided below.
      */
     protected class LockImpl implements Lock {

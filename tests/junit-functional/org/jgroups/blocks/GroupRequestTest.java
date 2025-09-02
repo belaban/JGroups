@@ -202,7 +202,7 @@ public class GroupRequestTest {
     }
 
     /**
-     * Tests https://issues.redhat.com/browse/JGRP-2575:<p>
+     * Tests https://issues.redhat.com/browse/JGRP-2575:
      * <pre>
      *   Members: A, B
      *   A uses MessageDispatcher to send a request to B.

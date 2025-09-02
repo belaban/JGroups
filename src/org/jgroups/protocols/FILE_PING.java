@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 /**
  * Simple discovery protocol which uses a file on shared storage such as an SMB share, NFS mount or S3. The local
  * address information, e.g. UUID and physical addresses mappings are written to the file and the content is read and
- * added to our transport's UUID-PhysicalAddress cache.<p/>
+ * added to our transport's UUID-PhysicalAddress cache.<p>
  * The design is at doc/design/FILE_PING.txt
  * @author Bela Ban
  */

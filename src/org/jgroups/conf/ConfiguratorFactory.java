@@ -19,7 +19,7 @@ import java.util.Objects;
  * 1. XmlConfigurator - parses XML files<BR>
  * 2. PlainConfigurator - uses the old style strings UDP:FRAG: etc etc<BR>
  *
- * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
+ * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net</a>)
  * @author Bela Ban
  */
 public class ConfiguratorFactory {

@@ -143,10 +143,10 @@ public class MFC_Test {
     /**
      * Mimicks the following scenario: MFC is _below_ NAKACK2. Members have 2MB of credits. Every member sends 1000 1K
      * messages and then blocks on flow control.
-     * </br>
+     * <p>
      * The switch (DROP) drops messages 1-999, only message #1000 is received. This leads to xmit requests for
      * messages 1-999.
-     * </br>
+     * <p>
      * MFC drops retransmission messages (DONT_BLOCK flag set) as no credits are available. When the switch is back to
      * normal (DROP is removed), the original senders should send a CREDIT_REQUEST to the receivers, which send a
      * REPLENISH message to the senders. As a result, the senders have enough credits to send messages 1-999, which

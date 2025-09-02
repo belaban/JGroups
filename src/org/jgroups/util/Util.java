@@ -626,11 +626,10 @@ public class Util {
     }
 
     /**
-     * Copies a message. Copies only headers with IDs >= starting_id or IDs which are in the copy_only_ids list
+     * Copies a message. Copies only headers with IDs {@literal >= starting_id} or IDs which are in the copy_only_ids list
      * @param copy_buffer
      * @param starting_id
      * @param copy_only_ids
-     * @return
      */
     public static Message copy(Message msg, boolean copy_buffer, short starting_id, short... copy_only_ids) {
         Message retval=msg.copy(copy_buffer, false);
@@ -1825,9 +1824,7 @@ public class Util {
 
     /**
      * Writes a list of Addresses. Can contain 65K addresses at most
-     * @param v   A Collection<Address>
-     * @param out
-     * @throws Exception
+     * @param v   A Collection of addresses
      */
     public static void writeAddresses(Collection<? extends Address> v,DataOutput out) throws IOException {
         if(v == null) {
@@ -1880,7 +1877,7 @@ public class Util {
     /**
      * Returns the marshalled size of a Collection of Addresses.
      * <em>Assumes elements are of the same type !</em>
-     * @param addrs Collection<Address>
+     * @param addrs Collection
      * @return long size
      */
     public static long size(Collection<? extends Address> addrs) {
@@ -2402,7 +2399,7 @@ public class Util {
 
     /**
      * Performs an ordered permutation of the elements of a and b such that the order of elements in list a and b is
-     * preserved. Example: {A1,A2} and {B1,B2} -> {A1,B1,A2,B2} but not {A1,B2,B1,A2}
+     * preserved. Example: {A1,A2} and {B1,B2} {@literal ->} {A1,B1,A2,B2} but not {A1,B2,B1,A2}
      */
     public static <E> Collection<List<E>> orderedPermutation(List<E> a, List<E> b) {
         Collection<List<E>> perms=new LinkedHashSet<>();
@@ -2472,7 +2469,7 @@ public class Util {
      * Reorders elements of an array in-place. No bounds checking is performed. Null elements are shuffled, too
      * @param array the array to be shuffled; the array will be modified
      * @param from the start index inclusive
-     * @param to the end index (exclusive), must be >= from (not checked)
+     * @param to the end index (exclusive), must be {@literal >=} from (not checked)
      * @param <T> the type of the array's elements
      */
     public static <T> void shuffle(T[] array, int from, int to) {
@@ -2847,7 +2844,7 @@ public class Util {
      * starts at offset 4 and has a length of 4 bytes, and the last fragment starts at offset 8 and has a length
      * of 2 bytes.
      * @param frag_size
-     * @return List. A List<Range> of offset/length pairs
+     * @return List. A List of offset/length pairs
      */
     public static List<Range> computeFragOffsets(int offset,int length,int frag_size) {
         int num_frags=(int)Math.ceil(length / (double)frag_size);
@@ -3192,7 +3189,7 @@ public class Util {
     }
 
     /** Returns the element before el. If el is the first element, returns the last element. Returns null
-     * if array.length < 2 */
+     * if array.length &lt; 2 */
     public static <T> T pickPrevious(T[] array, T el) {
         if(array == null || el == null || array.length < 2)
             return null;
@@ -3910,7 +3907,7 @@ public class Util {
     }
 
 
-    /** e.g. "A,B,C" --> List{"A", "B", "C"} */
+    /** e.g. "A,B,C": List{"A", "B", "C"} */
     public static List<String> parseCommaDelimitedStrings(String l) {
         return parseStringList(l,",");
     }
@@ -4104,10 +4101,6 @@ public class Util {
         }
     }
 
-    /**
-     * @param s
-     * @return List<NetworkInterface>
-     */
     public static List<NetworkInterface> parseInterfaceList(String s) throws Exception {
         List<NetworkInterface> interfaces=new ArrayList<>(10);
         if(s == null)
@@ -4358,7 +4351,7 @@ public class Util {
      * Creates a DatagramSocket bound to addr. If addr is null, socket won't be bound. If address is already in use,
      * start_port will be incremented until a socket can be created.
      * @param addr The InetAddress to which the socket should be bound. If null, the socket will not be bound.
-     * @param port The port which the socket should use. If 0, a random port will be used. If > 0, but port is already
+     * @param port The port which the socket should use. If 0, a random port will be used. If &gt; 0, but port is already
      *             in use, it will be incremented until an unused port is found, or until MAX_PORT is reached.
      */
     public static DatagramSocket createDatagramSocket(SocketFactory factory,String service_name,InetAddress addr,int port) throws Exception {
@@ -4425,7 +4418,7 @@ public class Util {
 
     /**
      * Method used by PropertyConverters.BindInterface to check that a bind_addr is consistent with a specified interface
-     * <p/>
+     * <p>
      * Idea:
      * 1. We are passed a bind_addr, which may be null
      * 2. If non-null, check that bind_addr is on bind_interface - if not, throw exception,
@@ -4675,7 +4668,8 @@ public class Util {
     /**
      * Returns a valid interface address based on a pattern. Iterates over all interfaces that are up and
      * returns the first match, based on the address or interface name
-     * @param pattern Can be "match-addr:<pattern></pattern>" or "match-interface:<pattern></pattern>". Example:<p/>
+     * @param pattern Can be {@literal "match-addr:<pattern></pattern>"} or
+     *                {@literal "match-interface:<pattern></pattern>"}. Example:<p>
      *                match-addr:192.168.*
      * @return InetAddress or null if not found
      */
@@ -5153,7 +5147,7 @@ public class Util {
     }
 
 
-    /** Converts a method name to an attribute name, e.g. getFooBar() --> foo_bar, isFlag --> flag */
+    /** Converts a method name to an attribute name, e.g. getFooBar() to foo_bar, isFlag to flag */
     public static String methodNameToAttributeName(final String methodName) {
         String name=methodName;
         if((methodName.startsWith("get") || methodName.startsWith("set")) && methodName.length() > 3)
@@ -5189,7 +5183,7 @@ public class Util {
     }
 
     /**
-     * Converts a method name to a Java attribute name, e.g. getFooBar() --> fooBar, isFlag --> flag.
+     * Converts a method name to a Java attribute name, e.g. getFooBar() to fooBar, isFlag to flag.
      * @param methodName
      * @return
      */
@@ -5255,7 +5249,7 @@ public class Util {
 
     /**
      * Returns the sites of the view (all addresses are SiteUUIDs) minus the given site, Example:
-     * bridge_view=A:net1,B:net1,X:net2,Y:net2, excluding_site=net1 -> ["net2"]
+     * bridge_view=A:net1,B:net1,X:net2,Y:net2, excluding_site=net1 {@literal ->} ["net2"]
      * @param bridge_view
      * @param excluding_site
      * @return the sites of members who are _not_ in excluding_site; each site is returned onlt once
