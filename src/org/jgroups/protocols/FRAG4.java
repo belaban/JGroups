@@ -20,14 +20,14 @@ import java.util.Objects;
 /**
  * Fragmentation layer. Fragments messages larger than frag_size into smaller packets. Reassembles fragmented packets
  * into bigger ones. The fragmentation ID is added to the messages as a header (and removed at the receiving side).
- * <br/>
+ * <p>
  * Each fragment is identified by (a) the sender (part of the message to which the header is appended),
  * (b) the fragmentation ID (which is unique (monotonically increasing) and (c) the fragement ID which ranges from 0
  * to number_of_fragments-1.
- * <br/>
+ * <p>
  * Requirement: lossless delivery (e.g. NAKACK2, UNICAST3).
  * No requirement on ordering. Works for both unicast and multicast messages.
- * <br/>
+ * <p>
  * Compared to {@link FRAG2}, this protocol does <em>not</em> need to serialize the message in order to break
  * it into smaller fragments: if the message is a {@link BytesMessage}, then we send all fragments with a reference to
  * the original message's byte array, plus and offset and length. Otherwise, we use a number of {@link FragmentedMessage}

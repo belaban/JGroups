@@ -2890,7 +2890,7 @@ public class Util {
 
     /**
      * Given a buffer and a fragmentation size, compute a list of fragmentation offset/length pairs, and
-     * return them in a list. Example:<br/>
+     * return them in a list. Example:<p>
      * Buffer is 10 bytes, frag_size is 4 bytes. Return value will be ({0,4}, {4,4}, {8,2}).
      * This is a total of 3 fragments: the first fragment starts at 0, and has a length of 4 bytes, the second fragment
      * starts at offset 4 and has a length of 4 bytes, and the last fragment starts at offset 8 and has a length
@@ -4445,7 +4445,7 @@ public class Util {
 
     /**
      * Method used by PropertyConverters.BindInterface to check that a bind_addr is consistent with a specified interface
-     * <p/>
+     * <p>
      * Idea:
      * 1. We are passed a bind_addr, which may be null
      * 2. If non-null, check that bind_addr is on bind_interface - if not, throw exception,
@@ -4697,7 +4697,7 @@ public class Util {
     /**
      * Returns a valid interface address based on a pattern. Iterates over all interfaces that are up and
      * returns the first match, based on the address or interface name
-     * @param pattern Can be "match-addr:<pattern></pattern>" or "match-interface:<pattern></pattern>". Example:<p/>
+     * @param pattern Can be "match-addr:<pattern></pattern>" or "match-interface:<pattern></pattern>". Example:<p>
      *                match-addr:192.168.*
      * @return InetAddress or null if not found
      */

@@ -11,8 +11,8 @@ import java.util.function.Supplier;
 /**
  * A message which refers to another message, but only marshals ({@link org.jgroups.util.Streamable#writeTo(DataOutput)})
  * a part of the original message, starting at a given {@link #offset} and marshalling only {@link #length} bytes.
- * <br/>
- * The marshalling is done using {@link org.jgroups.util.PartialOutputStream}.<br/>
+ * <p>
+ * The marshalling is done using {@link org.jgroups.util.PartialOutputStream}.<p>
  * Used by {@link org.jgroups.protocols.FRAG4}.
  *
  * @author Bela Ban

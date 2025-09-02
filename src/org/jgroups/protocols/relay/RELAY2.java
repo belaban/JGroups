@@ -13,7 +13,7 @@ import java.util.function.Supplier;
 
 /**
  *
- * Design: ./doc/design/RELAY2.txt and at https://github.com/belaban/JGroups/blob/master/doc/design/RELAY2.txt.<p/>
+ * Design: ./doc/design/RELAY2.txt and at https://github.com/belaban/JGroups/blob/master/doc/design/RELAY2.txt.<p>
  * JIRA: https://issues.redhat.com/browse/JGRP-1433
  * @author Bela Ban
  * @since 3.2

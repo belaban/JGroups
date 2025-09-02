@@ -170,7 +170,7 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
 
     /**
      * Tests {A,B,C} with A crashing. B installs a new view with a freshly created secret key SK. However, C won't be
-     * able to decrypt the new view as it doesn't have SK.<br/>
+     * able to decrypt the new view as it doesn't have SK.<p>
      * https://issues.redhat.com/browse/JGRP-2203
      */
     public void testCrashOfCoord() throws Exception {

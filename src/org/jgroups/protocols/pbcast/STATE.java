@@ -15,12 +15,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * chunk_size). Every chunk is sent via a unicast message. The state requester writes the chunks into a blocking
  * input stream ({@link BlockingInputStream}) from which the {@link Receiver#setState(java.io.InputStream)}
  * reads it. The size of the BlockingInputStream is buffer_size bytes.
- * <p/>
+ * <p>
  * When implementing {@link Receiver#getState(java.io.OutputStream)}, the state should be written in sizeable
  * chunks, because the underlying output stream generates 1 message / write. So if there are 1000 writes of 1 byte
  * each, this would generate 1000 messages ! We suggest using a {@link java.io.BufferedOutputStream} over the output
  * stream handed to the application as argument of the callback.
- * <p/>
+ * <p>
  * When implementing the {@link Receiver#setState(java.io.InputStream)} callback, there is no need to use a
  * {@link java.io.BufferedOutputStream}, as the input stream handed to the application already buffers incoming data
  * internally.

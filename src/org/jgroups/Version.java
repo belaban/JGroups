@@ -14,9 +14,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * We're using the scheme described at http://www.jboss.com/index.html?module=bb&op=viewtopic&t=77231
- * for major, minor and micro version numbers. We have 5 bits for major and minor version numbers each and
- * 6 bits for the micro version.
+ * We have 5 bits for major and minor version numbers each and 6 bits for the micro version.
  * This gives:
  * X = 0-31 for major versions
  * Y = 0-31 for minor versions

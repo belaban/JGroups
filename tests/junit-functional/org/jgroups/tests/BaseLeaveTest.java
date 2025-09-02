@@ -21,7 +21,7 @@ import java.util.stream.Stream;
 
 /**
  * Tests graceful leaves of multiple members, especially coord and next-in-line.
- * Nodes are leaving gracefully so no merging is expected.<br/>
+ * Nodes are leaving gracefully so no merging is expected.<p>
  * Reproducer for https://issues.redhat.com/browse/JGRP-2293.
  *
  * @author Radoslav Husar

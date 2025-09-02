@@ -99,7 +99,7 @@ public class VERIFY_SUSPECT_Test {
     /**
      * {A,B,C,D,E}: at time T, {B,C} are suspected, then at time T+500 {D,E}. This results in 2 views V2={A,D,E}
      * and V3={A}. V2 will run into GMS.view_ack_collection_timeout, as acks from D and E are missing.
-     * <br/>
+     * <p>
      * Issue: https://issues.redhat.com/browse/JGRP-2556
      */
     public void testMultipleSuspectEvents() throws Exception {

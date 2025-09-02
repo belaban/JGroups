@@ -161,7 +161,7 @@ public class FRAG extends Fragmentation {
      * <pre>
      * Given the generated ID is 2344, number of fragments=3, message {dst,src,buf}
      * would be fragmented into:
-     * <p/>
+     * <p>
      * [2344,3,0]{dst,src,buf1},
      * [2344,3,1]{dst,src,buf2} and
      * [2344,3,2]{dst,src,buf3}
@@ -252,7 +252,7 @@ public class FRAG extends Fragmentation {
      */
     static class FragmentationList {
         /* initialize the hashtable to hold all the fragmentation tables
-         * 11 is the best growth capacity to start with<br/>
+         * 11 is the best growth capacity to start with<p>
          * HashMap<Address,FragmentationTable>
          */
         private final HashMap<Address,FragmentationTable> frag_tables=new HashMap<>(11);

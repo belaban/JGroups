@@ -19,14 +19,14 @@ import java.util.function.Supplier;
 
 /**
  * Protocol which provides STOMP (https://stomp.github.io/) support. Very simple implementation, with a
- * one-thread-per-connection model. Use for a few hundred clients max.<p/>
+ * one-thread-per-connection model. Use for a few hundred clients max.<p>
  * The intended use for this protocol is pub-sub with clients which handle text messages, e.g. stock updates,
- * SMS messages to mobile clients, SNMP traps etc.<p/>
+ * SMS messages to mobile clients, SNMP traps etc.<p>
  * Note that the full STOMP protocol has not yet been implemented, e.g. transactions are not supported.
  * todo: use a thread pool to handle incoming frames and to send messages to clients
- * <p/>
+ * <p>
  * todo: add PING to test health of client connections
- * <p/> 
+ * <p> 
  * @author Bela Ban
  * @since 2.11
  */

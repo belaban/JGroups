@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
  * will be passed to its higher layer as an Event. That layer will in turn pass the Event to
  * its layer and so on, until a layer handles the Message and sends a response or discards it,
  * the former resulting in another Event being passed down the stack.
- * <p/>
+ * <p>
  * The important thing to bear in mind is that <a href=org.jgroups.Event.html>Events</a> have to
  * be passed on between layers in FIFO order which is guaranteed by the Protocol implementation
  * and must be guaranteed by subclasses implementing their on Event queuing.<p>
@@ -155,7 +155,7 @@ public abstract class Protocol implements Lifecycle {
     /**
      * After configuring the protocol itself from the properties defined in the XML config, a protocol might have
      * additional component objects which need to be configured. This callback allows a protocol developer to configure those
-     * other objects. This call is guaranteed to be invoked <em>after</em> the protocol itself has been configured.<br/>
+     * other objects. This call is guaranteed to be invoked <em>after</em> the protocol itself has been configured.<p>
      * See AUTH for an example.
      */
     public List<Object> getComponents() {
@@ -365,10 +365,10 @@ public abstract class Protocol implements Lifecycle {
      * Sends up a multiple messages in a {@link MessageBatch}. The sender of the batch is always the same, and so is the
      * destination (null == multicast messages). Messages in a batch can be OOB messages, regular messages, or mixed
      * messages, although the transport itself will create initial MessageBatches that contain only either OOB or
-     * regular messages.<p/>
+     * regular messages.<p>
      * The default processing below sends messages up the stack individually, based on a matching criteria
      * (calling {@link #accept(Message)}), and - if true - calls {@link #up(org.jgroups.Event)}
-     * for that message and removes the message. If the batch is not empty, it is passed up, or else it is dropped.<p/>
+     * for that message and removes the message. If the batch is not empty, it is passed up, or else it is dropped.<p>
      * Subclasses should check if there are any messages destined for them (e.g. using
      * {@link MessageBatch#iterator(Predicate)}), then possibly remove and process them and finally pass
      * the batch up to the next protocol. Protocols can also modify messages in place, e.g. ENCRYPT could decrypt all
@@ -401,7 +401,7 @@ public abstract class Protocol implements Lifecycle {
      * if the message should be removed from the message batch (and handled by the current protocol) or not.
      * @param msg The message. Guaranteed to be non-null
      * @return True if the message should be handled by this protocol (will be removed from the batch), false if the
-     * message should remain in the batch and be passed up.<p/>
+     * message should remain in the batch and be passed up.<p>
      * The default implementation tries to find a header matching the current protocol's ID and returns true if there
      * is a match, or false otherwise
      */

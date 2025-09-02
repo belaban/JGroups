@@ -21,11 +21,11 @@ import java.util.Iterator;
 import java.util.function.Supplier;
 
 /**
- * Key exchange based on Diffie-Hellman-Merkle (https://en.wikipedia.org/wiki/Diffie%E2%80%93Hellman_key_exchange).<br/>
+ * Key exchange based on Diffie-Hellman-Merkle (https://en.wikipedia.org/wiki/Diffie%E2%80%93Hellman_key_exchange).<p>
  * Diffie-Hellman is used between a member and a key server (the coordinator) to obtain a session key
  * (only known to the key server and the joiner) which is used by the key server to encrypt the shared secret symmetric
  * (group) key and by the requester to decrypt the group key it gets in the response of the key server.
- * <br/>
+ * <p>
  * Note that this implementation is not immune against man-in-the-middle attacks.
  * @author Bela Ban
  * @since  4.0.5

@@ -27,7 +27,7 @@ import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
 /**
  * The TCPPING protocol defines a static cluster membership. The cluster members are retrieved by
  * directly contacting the members listed in initial_hosts, sending point-to-point discovery requests.
- * <p/>
+ * <p>
  * The TCPPING protocol defines a static configuration, which requires that you to know in advance where to find all
  * of the members of your cluster.
  *

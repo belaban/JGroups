@@ -58,7 +58,7 @@ public abstract class FlowControl extends Protocol {
     protected double         min_threshold=0.20;
 
     /**
-     * Computed as <tt>max_credits</tt> times <tt>min_theshold</tt>. If explicitly set, this will
+     * Computed as max_credits times min_theshold. If explicitly set, this will
      * override the above computation
      */
     @Property(description="Computed as max_credits x min_theshold unless explicitly set",type=AttributeType.BYTES)

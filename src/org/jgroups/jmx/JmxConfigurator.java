@@ -26,7 +26,7 @@ public final class JmxConfigurator {
 
     /**
      * Registers an already created channel with the given MBeanServer. Wraps instance of JChannel
-     * with DynamicMBean and delegates all calls to the actual JChannel wrapped.<br/>
+     * with DynamicMBean and delegates all calls to the actual JChannel wrapped.<p>
      * Optionally, this method will also wrap each protocol in the given channel with DynamicMBean
      * and register it as well.
      * @param channel The channel
@@ -60,7 +60,7 @@ public final class JmxConfigurator {
 
     /**
      * Registers an already created channel with the given MBeanServer. Wraps instance of JChannel
-     * with DynamicMBean and delegates all calls to the actual JChannel wrapped.<br/>
+     * with DynamicMBean and delegates all calls to the actual JChannel wrapped.<p>
      * This method will also wrap each protocol in the given channel with DynamicMBean and register
      * it as well.
      * @param channel The channel

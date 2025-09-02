@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 
 /**
  * Protocol which lists how many messages have been received by size: https://issues.redhat.com/browse/JGRP-2893
- * <br/>
+ * <p>
  * Don't use this layer in a production stack since the costs are high; only use for debugging/diagnosis.
  * @author Bela Ban June 13 2001
  * @author Bela Ban June 2025

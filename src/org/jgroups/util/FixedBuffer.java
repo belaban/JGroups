@@ -16,8 +16,8 @@ import java.util.stream.StreamSupport;
 /**
  * Ring buffer of fixed capacity. Indices low and high point to the beginning and end of the buffer. Sequence numbers
  * (seqnos) are mapped to an index by <pre>seqno % capacity</pre>. High can never pass low, and drops the element
- * or blocks when that's the case.<br/>
- * Note that 'null' is not a valid element, but signifies a missing element<br/>
+ * or blocks when that's the case.<p>
+ * Note that 'null' is not a valid element, but signifies a missing element<p>
  * The design is described in doc/design/FixedBuffer.txt.
  * @author Bela Ban
  * @since  5.4

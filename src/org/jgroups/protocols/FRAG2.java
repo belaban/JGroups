@@ -25,7 +25,7 @@ import java.util.function.Predicate;
  * to number_of_fragments-1.
  * <p>
  * Requirement: lossless delivery (e.g. NAK, ACK). No requirement on ordering.
- * Works for both unicast and multicast messages.<br/> Compared to FRAG, this
+ * Works for both unicast and multicast messages.<p> Compared to FRAG, this
  * protocol does <em>not</em> need to serialize the message in order to break
  * it into smaller fragments: it looks only at the message's buffer, which is a
  * byte[] array anyway. We assume that the size addition for headers and src and
@@ -323,7 +323,7 @@ public class FRAG2 extends Fragmentation {
 
     /**
      * Class represents an entry for a message. Each entry holds an array of byte arrays sorted
-     * once all the byte buffer entries have been filled the fragmentation is considered complete.<br/>
+     * once all the byte buffer entries have been filled the fragmentation is considered complete.<p>
      * All methods are unsynchronized, use getLock() to obtain a lock for concurrent access.
      */
     protected static class FragEntry {

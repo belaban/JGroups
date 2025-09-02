@@ -19,11 +19,11 @@ import java.util.Map;
  *
  * The arrays are populated from left to right, and any empty slot in 'headers' can terminate an interation
  * (e.g. a getHeader())
- * <br/>
+ * <p>
  * It is assumed that we only have a few headers, 3-4 on average. Note that getting a header for a given key and
  * putting a new key/header are operations with O(n) cost, so this implementation is <em>not</em> recommended for
  * a large number of elements.
- * <br/>
+ * <p>
  * This class is unsynchronized.
  * @author Bela Ban
  */

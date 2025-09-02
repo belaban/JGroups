@@ -47,7 +47,7 @@ public class ClientGmsImpl extends GmsImpl {
      * Makes this process join a group. Determines the coordinator and sends a JOIN request to it. The coordinator
      * returns a JOIN response, then broadcasts the new view, which contains a message digest and the current membership
      * (including the joiner). The joiner then installs the new view and the digest and starts accepting messages.
-     * <br/>
+     * <p>
      * If successful, impl is changed to an instance of ParticipantGmsImpl. Otherwise, we continue trying to send JOIN
      * requests to the coordinator, until we succeed (or there is no member in the group. In this case, we
      * create our own singleton group).

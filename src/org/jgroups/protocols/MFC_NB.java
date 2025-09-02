@@ -18,7 +18,7 @@ import java.util.function.Consumer;
 
 
 /**
- * Non-blocking alternative to {@link MFC}.<br/>
+ * Non-blocking alternative to {@link MFC}.<p>
  * JIRA: JIRA: https://issues.redhat.com/browse/JGRP-2172
  * @author Bela Ban
  * @since 4.0.4

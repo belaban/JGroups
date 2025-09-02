@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
  * List which doesn't remove elements on remove(), removeAll() or retainAll(), but only removes elements when a
  * configurable size limit has been exceeded. In that case, all elements marked as removable and older than a
  * configurable time are evicted. Elements are marked as removable by remove(), removeAll() and retainAll(). When
- * an elements is marked as removable, but later reinserted, the mark is removed.<br/>
+ * an elements is marked as removable, but later reinserted, the mark is removed.<p>
  * Note that methods get() and remove() iterate through the list (linear cost), so large lists will be slow.
  * @author Bela Ban
  * @since 5.4.4

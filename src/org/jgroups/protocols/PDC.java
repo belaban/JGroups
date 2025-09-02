@@ -205,7 +205,7 @@ public class PDC extends Protocol {
 
     /**
      * Writes the data to a temporary file.<br>
-     * The file is stored in the same directory as the other cluster files but is given the <tt>.tmp</tmp> suffix
+     * The file is stored in the same directory as the other cluster files but is given the .tmp</tmp> suffix
      * @param dir The disk cache root dir
      * @param logical_addr The logical address
      * @param physical_addr The physical address

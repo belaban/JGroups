@@ -12,10 +12,10 @@ import java.util.concurrent.locks.LockSupport;
 
 /**
  * Tests pinned threads (JEP-491).
- * <br/>
+ * <p>
  * If we have more pinned virtual threads than the parallelism of the ForkJoinPool (VirtualThread.scheduler), then
  * the virtual worker threads will never get to run because the FJP is exhaused, since all threads are blocked.
- * <br/>
+ * <p>
  * If -cores is higher than the number of pinned threads (even by one), and all the workers are non-pinned, then the
  * test will succeed, and all worker threads will complete.
  * @author Bela Ban

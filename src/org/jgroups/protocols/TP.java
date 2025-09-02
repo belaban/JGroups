@@ -391,7 +391,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     /**
      * Cache which maintains mappings between logical and physical addresses. When sending a message to a logical
-     * address,  we look up the physical address from logical_addr_cache and send the message to the physical address<br/>
+     * address,  we look up the physical address from logical_addr_cache and send the message to the physical address<p>
      * The keys are logical addresses, the values physical addresses
      */
     protected LazyRemovalCache<Address,PhysicalAddress> logical_addr_cache;

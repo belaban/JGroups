@@ -11,7 +11,7 @@ import org.testng.annotations.Test;
 
 /**
  * Tests graceful leaving of the coordinator and second-in-line in a 10 node cluster with ASYM_ENCRYPT configured.
- * <br/>
+ * <p>
  * Reproducer for https://issues.redhat.com/browse/JGRP-2297
  * @author Bela Ban
  * @since  4.0.12

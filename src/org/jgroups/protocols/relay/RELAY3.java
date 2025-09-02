@@ -25,8 +25,8 @@ import static org.jgroups.protocols.relay.RelayHeader.*;
 // todo: use CompletableFutures in routeThen(); this could parallelize routing and delivery/passsing up
 // todo: check if a message can bypass RELAY2 completely when NO_RELAY is set (in up(),down())
 /**
- * Provides relaying of messages between autonomous sites.<br/>
- * Design: ./doc/design/RELAY2.txt and at https://github.com/belaban/JGroups/blob/master/doc/design/RELAY2.txt.<br/>
+ * Provides relaying of messages between autonomous sites.<p>
+ * Design: ./doc/design/RELAY2.txt and at https://github.com/belaban/JGroups/blob/master/doc/design/RELAY2.txt.<p>
  * JIRA: https://issues.redhat.com/browse/JGRP-1433
  * @author Bela Ban
  * @since 3.2

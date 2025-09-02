@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Dynamic tool to measure multicast RPC performance of JGroups; every member invokes N RPCs and we measure how long it
- * takes for all receivers to receive them.<p/>
+ * takes for all receivers to receive them.<p>
  * Initially copied from {@link MPerf}.
  * @author Bela Ban (belaban@yahoo.com)
  * @since 3.3

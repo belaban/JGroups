@@ -11,7 +11,7 @@ import java.util.function.Supplier;
 
 /**
  * A {@link Message} with an object as payload. The object won't get serialized until sent by the transport.
- * <br/>
+ * <p>
  * Note that the object passed to the constructor (or set with {@link #setObject(Object)}) must not be changed after
  * the creation of an {@link ObjectMessage}.
  * @since  5.0

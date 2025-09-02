@@ -165,10 +165,10 @@ public class FixedSizeBitSet {
     /**
      * Returns the index of the first bit that is set to {@code true} that occurs on or after
      * the specified starting index. If no such bit exists then -1 is returned.
-     * <p/>
+     * <p>
      * To iterate over the {@code true} bits in a {@code BitSet},
      * use the following loop:
-     * <p/>
+     * <p>
      * <pre>
      * for (int i = bs.nextSetBit(0); i >= 0; i = bs.nextSetBit(i+1)) {
      *     // operate on index i here
@@ -254,8 +254,8 @@ public class FixedSizeBitSet {
 
 
     /**
-     * Returns the number of bits set to <tt>true</tt> in this bit set
-     * @return the number of bits set to <tt>true</tt> in this bit set
+     * Returns the number of bits set to true in this bit set
+     * @return the number of bits set to true in this bit set
      */
     public int cardinality() {
         int sum=0;

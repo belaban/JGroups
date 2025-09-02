@@ -12,7 +12,7 @@ import org.jgroups.util.ThreadPool;
 import java.util.concurrent.atomic.LongAdder;
 
 /**
- * Unbatches OOB batches when enabled and virtual threads are available.<br/>
+ * Unbatches OOB batches when enabled and virtual threads are available.<p>
  * https://issues.redhat.com/browse/JGRP-2888
  * @author Bela Ban
  * @since  5.4.9

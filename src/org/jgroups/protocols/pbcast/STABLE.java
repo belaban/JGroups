@@ -34,9 +34,9 @@ import static org.jgroups.conf.AttributeType.SCALAR;
  * the stack when this is the case. This allows NAKACK{2,3} to garbage collect messages that have been seen by all members.
  * <p>
  * Works as follows: periodically (desired_avg_gossip) or when having received a number of bytes (max_bytes), every
- * member sends its digest (highest seqno delivered, received) to the current coordinator<br/>
+ * member sends its digest (highest seqno delivered, received) to the current coordinator<p>
  * The coordinator updates a stability vector, which maintains the highest seqno delivered/receive for each member
- * and initially contains no data, when such a message is received. <br/>
+ * and initially contains no data, when such a message is received. <p>
  * When messages from all members have been received, a stability message is mcast, which causes all
  * members to send a STABLE event down the stack (triggering garbage collection in the NAKACK{2,3} layer).
  * @author Bela Ban

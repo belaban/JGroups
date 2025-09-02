@@ -120,7 +120,7 @@ public class UDP extends TP {
      * <li>sending unicast and multicast packets and
      * <li>receiving unicast packets
      * </ol>
-     * The address of this socket will be our local address (<tt>local_addr</tt>)
+     * The address of this socket will be our local address (local_addr)
      */
     protected MulticastSocket  sock;
 

@@ -24,8 +24,8 @@ import java.util.function.Supplier;
 
 /**
  * Base class for state transfer protocols which use streaming (or chunking) to transfer state between two members.
- * <p/>
- * <p/>
+ * <p>
+ * <p>
  * The major advantage of this approach is that transferring application state to a
  * joining member of a group does not entail loading of the complete application
  * state into memory. The application state, for example, might be located entirely
@@ -35,7 +35,7 @@ import java.util.function.Supplier;
  * Thus the streaming state transfer protocols are able to
  * transfer application state that is very large (>1Gb) without a likelihood of the
  * such transfer resulting in OutOfMemoryException.
- * <p/>
+ * <p>
  * Note that prior to 3.0, there was only 1 streaming protocol: STATE. In 3.0 the functionality
  * was split between STATE and STATE_SOCK, and common functionality moved up
  * into StreamingStateTransfer.

@@ -15,15 +15,15 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
  * Copy of {@link Table}. Implementation of {@link Buffer )}, expanding and shrinking dynamically.
- * <br/>
+ * <p>
  * A store for elements (typically messages) to be retransmitted or delivered. Used on sender and receiver side.
- * <br/>
+ * <p>
  * DynamicBuffer maintains a matrix of elements, which are stored by mapping their seqno to an index.
  * E.g. when we have 10 rows of 1000 elements each, and first_seqno is 3000, then an element with seqno=5600, will
  * be stored in the 3rd row, at index 600.
- * <br/>
+ * <p>
  * Rows are removed when all elements in that row have been delivered.
- * <br/>
+ * <p>
  * @author Bela Ban
  * @version 3.1
  */
@@ -414,7 +414,7 @@ public class DynamicBuffer<T> extends Buffer<T> {
     /**
      * Iterates over the matrix with range [from .. to] (including from and to), and calls
      * {@link Visitor#visit(long, Object)}. If the visit() method returns false, the iteration is terminated.
-     * <br/>
+     * <p>
      * This method must be called with the lock held
      * @param from The starting seqno
      * @param to The ending seqno, the range is [from .. to] including from and to

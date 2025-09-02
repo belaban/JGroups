@@ -5,10 +5,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Route which forwards all messages to a given site via a given route.<br/>
+ * Route which forwards all messages to a given site via a given route.<p>
  * Example: if site HF is reachable via NET1, and NET2 is not directly connected to HF, it needs to have a
  * ForwardConfig with to="HF" and gateway="NET1". This means that a message to site HF will be forwarded to NET1,
- * which then forwards it to HF.<br/>
+ * which then forwards it to HF.<p>
  * Note that 'to' can be a regular expression and {@link #matches(String)} can be used to match a given site against it.
  * @author Bela Ban
  * @since  5.2.15

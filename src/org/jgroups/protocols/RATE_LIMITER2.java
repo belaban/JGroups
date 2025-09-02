@@ -20,7 +20,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Rate limiter based credits (max_bytes). Senders send until max_bytes is exceeded; a replenisher task replenishes
  * periodically.
- * <br/>
+ * <p>
  * See https://issues.redhat.com/browse/JGRP-2779 for details
  * @author Bela Ban
  * @since  5.3.5

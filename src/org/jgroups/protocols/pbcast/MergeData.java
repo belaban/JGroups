@@ -8,7 +8,7 @@ import org.jgroups.util.Digest;
 
 
 /**
- * Encapsulates data sent with a MERGE_RSP (handleMergeResponse()) and INSTALL_MERGE_VIEW (handleMergeView()).<p/>
+ * Encapsulates data sent with a MERGE_RSP (handleMergeResponse()) and INSTALL_MERGE_VIEW (handleMergeView()).<p>
  * Note that since MergeData is never sent across the network, it doesn't need to be Streamable.
  * @author Bela Ban Oct 22 2001
  */

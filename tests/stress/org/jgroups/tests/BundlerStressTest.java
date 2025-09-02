@@ -26,7 +26,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * Tests bundler performance. Creates N members, always sends from the first member to a random member (unicast)
  * and waits for the request to be received by sender_threads (same process, synchronous communication).
  * The request includes the thread's ID.
- * <br/>
+ * <p>
  * Each sender adds their thread-id to a hashmap (sender_threads) and waits on the promise (associated value). The
  * receiver reads the thread-id, grabs the promise and calls {@link org.jgroups.util.Promise#setResult(Object)},
  * waking up the sender thread to send the next message.

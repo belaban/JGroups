@@ -19,13 +19,13 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
  * A store for elements (typically messages) to be retransmitted or delivered. Used on sender and receiver side.
- * <br/>
+ * <p>
  * Table maintains a matrix (an array of arrays) of elements, which are stored by mapping their seqno to an index.
  * E.g. when we have 10 rows of 1000 elements each, and first_seqno is 3000, then an element with seqno=5600, will
  * be stored in the 3rd row, at index 600.
- * <br/>
+ * <p>
  * Rows are removed when all elements in that row have been delivered.
- * <br/>
+ * <p>
  * @author Bela Ban
  * @version 3.1
  */
@@ -522,7 +522,7 @@ public class Table<T> implements Iterable<T> {
     /**
      * Iterates over the matrix with range [from .. to] (including from and to), and calls
      * {@link Visitor#visit(long,Object,int,int)}. If the visit() method returns false, the iteration is terminated.
-     * <p/>
+     * <p>
      * This method must be called with the lock held
      * @param from The starting seqno
      * @param to The ending seqno, the range is [from .. to] including from and to

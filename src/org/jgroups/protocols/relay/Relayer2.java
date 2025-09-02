@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Maintains bridges and routing table. Does the routing of outgoing messages and dispatches incoming messages to
- * the right members.<p/>
+ * the right members.<p>
  * A Relayer cannot be reused once it is stopped, but a new Relayer instance must be created.
  * @author Bela Ban
  * @since 3.2

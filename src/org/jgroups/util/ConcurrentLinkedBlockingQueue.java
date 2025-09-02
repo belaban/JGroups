@@ -17,7 +17,7 @@ import java.util.function.Predicate;
  * Concurrent queue which offers optional blocking on empty / full. Designed for multiple producers, but only
  * a single consumer. Only methods required by message bundlers (offer(), poll(), drainTo(), size() etc) are implemented.
  * Might add more implementation as needed.
- * <br/>
+ * <p>
  * See https://issues.redhat.com/browse/JGRP-2890 for details
  * @author Bela Ban
  * @since 5.4.9

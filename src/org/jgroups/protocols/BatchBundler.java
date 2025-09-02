@@ -23,9 +23,9 @@ import static org.jgroups.protocols.TP.MSG_OVERHEAD;
 /**
  * Bundler based on {@link BATCH}. Batches messages, keeping a {@link #max_size} for every destination.
  * When the accumulated size of the messages for a given destination P would exceed max_bytes, a MessageBatch is
- * created and sent to P.<br/>
+ * created and sent to P.<p>
  * Additionally, a timer runs every {@link #flush_interval} milliseconds, sending messages whose size hasn't yet
- * reached max_size.<br/>
+ * reached max_size.<p>
  * Contrary to {@link TransferQueueBundler}, which maintains a max_size for all messages, {@link BatchBundler} maintains
  * it for every destination separately. This causes batches to be fuller than with {@link TransferQueueBundler}:
  * assuming 4 members, everyone sending to everyone else, and max_size = 60000: with TransferQueueBundler, a batch is

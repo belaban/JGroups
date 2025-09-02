@@ -15,7 +15,7 @@ import static java.nio.channels.SelectionKey.OP_READ;
 /**
  * Server for sending and receiving messages via NIO channels. Uses only a single thread to accept, connect, write and
  * read to/from connections.
- * <br/>
+ * <p>
  * <em>Note that writes can get dropped</em>, e.g. in the case where we have a previous write pending and a new write is
  * invoked.
  * This is typically not an issue as JGroups retransmits messages, but might become one when using NioServer standalone,

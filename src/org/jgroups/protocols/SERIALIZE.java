@@ -16,10 +16,10 @@ import org.jgroups.util.Util;
 /**
  * Serializes the entire message (including payload, headers, flags and destination and src) into the payload of
  * another message that's then sent. Deserializes the payload of an incoming message into a new message that's sent
- * up the stack.<br/>
+ * up the stack.<p>
  * To be used with {@link ASYM_ENCRYPT} or {@link SYM_ENCRYPT} when the entire message (including the headers) needs to
  * be encrypted. Can be used as a replacement for the deprecated attribute encrypt_entire_message in the above encryption
- * protocols.<br/>
+ * protocols.<p>
  * See https://issues.redhat.com/browse/JGRP-2273 for details.
  * @author Bela Ban
  * @since  4.0.12

@@ -13,7 +13,7 @@ import java.util.function.IntBinaryOperator;
 import static org.jgroups.conf.AttributeType.SCALAR;
 
 /**
- * New unicast protocol based on fixed-size xmit windows and message ACKs<br/>
+ * New unicast protocol based on fixed-size xmit windows and message ACKs<p>
  * Details: https://issues.redhat.com/browse/JGRP-2843
  * @author Bela Ban
  * @since  5.4

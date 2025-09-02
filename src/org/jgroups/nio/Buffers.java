@@ -18,17 +18,17 @@ import java.util.NoSuchElementException;
  * Buffers can be added and removed dynamically, but they're <em>dropped when the capacity is exceeded</em>. This
  * means that, if a we have configured a capacity of 5 buffers, and want to add 6, <em>none of the 6 buffers will
  * be added!</em>
- * <br/>
+ * <p>
  * A read is successful when all non-null buffers from left to right are filled, i.e. all {@link ByteBuffer#remaining()}
  * methods return 0.
- * <br/>
+ * <p>
  * Same for writes: when all non-null buffers (from left to right) have been written ({@link ByteBuffer#remaining()} == 0),
  * a write is considered successful; otherwise it is partial.
- * <br/>
+ * <p>
  * Individual buffers can be accessed; e.g. for reading its value after a read. It is also possible to add buffers
  * dynamically, e.g. after reading a 'length' buffer, a user may want to add a new buffer allocated for reading
  * 'length' bytes.
- * <br/>
+ * <p>
  * This class is not synchronized.
  * @author Bela Ban
  * @since  3.6.5

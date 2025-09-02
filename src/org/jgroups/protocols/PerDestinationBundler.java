@@ -24,7 +24,7 @@ import static org.jgroups.protocols.TP.MSG_OVERHEAD;
 /**
  * Queues messages per destination ('null' is a special destination). Uses 1 thread per destination to process
  * queued messages, so it won't scale to many cluster members (unless virtual threads are used).
- * <br/>
+ * <p>
  * See https://issues.redhat.com/browse/JGRP-2639 for details.
  * @author Bela Ban
  * @since  5.2.7

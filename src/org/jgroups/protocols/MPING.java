@@ -16,7 +16,7 @@ import java.util.*;
 
 /**
  * Uses its own IP multicast socket to send and receive discovery requests/responses. Can be used in
- * conjuntion with a non-UDP transport, e.g. TCP.<br/>
+ * conjuntion with a non-UDP transport, e.g. TCP.<p>
  * The discovery is <em>asymmetric</em>: discovery requests are broadcast via the multicast socket, and received via the
  * multicast socket by everyone in the group. However, the discovery responses are sent back via the regular transport
  * (e.g. TCP) to the sender (discovery request contains sender's regular address, e.g. 192.168.0.2:7800).

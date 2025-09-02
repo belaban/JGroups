@@ -16,19 +16,19 @@ import java.util.function.Function;
 /**
  * <p>Discovery protocol using a JDBC connection to a shared database.
  * Connection options can be defined as configuration properties, or the JNDI
- * name of a {@code DataSource} can be provided (avoid providing both).</p>
+ * name of a {@code DataSource} can be provided (avoid providing both).<p>
  * 
  * <p>Both the schema and the used SQL statements can be customized; make sure
  * the order of parameters of such customized SQL statements is maintained and
  * that compatible types are used for the columns. The recommended schema uses a
  * single table, with two String columns being used primary key (local address,
  * cluster name) and a third column to store the serialized form of the objects
- * needed by JGroups.</p>
+ * needed by JGroups.<p>
  * 
  * <p>A default table will be created at first connection, errors during this
  * operation are not considered critical. Set the {@code initialize_sql}
  * to an empty value to prevent this initial table creation, or change it to
- * create a customized table.</p>
+ * create a customized table.<p>
  * 
  * @author Sanne Grinovero
  * @author Bela Ban

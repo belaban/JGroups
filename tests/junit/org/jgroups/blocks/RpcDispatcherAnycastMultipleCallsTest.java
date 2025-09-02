@@ -80,7 +80,7 @@ public class RpcDispatcherAnycastMultipleCallsTest extends ChannelTestBase {
     /**
      * Simple test that creates n instances of {@link org.jgroups.blocks.RpcDispatcherAnycastServerObject}, each one creates a Channel
      * and registers an RpcDispatcher.
-     * <p/>
+     * <p>
      * This test then calls {@link org.jgroups.blocks.RpcDispatcherAnycastServerObject#callRemote(boolean, boolean)} once on each of the n instances
      * and then tests that the method calls have in fact been executed on each of the n instances.
      * @param useAnycast  if true, anycast is used for remote calls.

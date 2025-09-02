@@ -16,9 +16,9 @@ import java.util.stream.Stream;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
- * Tests multicast and unicast ordering of <em>regular</em> messages.<br/>
+ * Tests multicast and unicast ordering of <em>regular</em> messages.<p>
  * Regular messages from different senders can be delivered in parallel; messages from the same sender must be
- * delivered in send order.<br/>
+ * delivered in send order.<p>
  * There is no relation between multicast and unicast messages from a sender P; they are unrelated and therefore
  * delivered in parallel as well.
  * @author Bela Ban

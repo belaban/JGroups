@@ -17,17 +17,17 @@ import java.util.function.Predicate;
 
 
 /**
- * Fragmentation protocol which uses less memory to store fragments than {@link FRAG2}.<br/>
+ * Fragmentation protocol which uses less memory to store fragments than {@link FRAG2}.<p>
  * When a message is fragmented, all fragments carry the size of the original message, their offset and
- * length with respect to the original message and a fragment ID (to identify the fragment).<br/>
+ * length with respect to the original message and a fragment ID (to identify the fragment).<p>
  * When the first fragment is received, the full message is created and each fragment copies its data into the full
- * message at its offset and length. When all fragments have been received, the full message is passed up.<br/>
+ * message at its offset and length. When all fragments have been received, the full message is passed up.<p>
  * Only the first fragment carries the headers and dest and src addresses. When received, its src/dest addresses and
- * the headers will be set in the full message.<br/>
+ * the headers will be set in the full message.<p>
  * For details see https://issues.redhat.com/browse/JGRP-2154
- * <br/>
+ * <p>
  * Requirement: lossless delivery (e.g. NAKACK2 or UNICAST3). No requirement on ordering. Works for both unicast and
- * multicast messages.<br/>
+ * multicast messages.<p>
  *
  * @author Bela Ban
  * @since 4.0

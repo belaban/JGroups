@@ -122,7 +122,7 @@ public class ByteArrayDataInputStream extends InputStream implements DataInput {
 
     /**
      * Non-copying reading of len bytes from the input stream into a {@link ByteBuffer}.
-     * <br/>
+     * <p>
      * Reads len bytes from the input stream and wraps them in a {@link ByteBuffer}. Note that the buffer is pinned to
      * a subrange of the underlying 'buf' byte[] array: make sure that the contents of 'buf' don't change until you're
      * done with 'buf', or else you'll end up with unpredictable behavior.

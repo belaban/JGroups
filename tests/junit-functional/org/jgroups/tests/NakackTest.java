@@ -20,12 +20,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 /**
- * Tests the reliable FIFO (NAKACK{2,4}) protocols<br/>
+ * Tests the reliable FIFO (NAKACK{2,4}) protocols<p>
  * Two senders send 1000 messages to the group, where each message contains a long value, mirroring seqnos used.
  * A receiver receives the messages from both senders and checks that seqnos are received in the correct order.
- * <p/>
+ * <p>
  * An object all_msgs_recvd is used to allow the main test thread to discover when all sent messages have been received.
- * <p/>
+ * <p>
  * The test case passes if the expected number of messages is received, and messages are received in order from
  * each sender. This implies that:
  * (i) all messages from each peer were received (reliable) and

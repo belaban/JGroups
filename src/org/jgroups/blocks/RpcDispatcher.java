@@ -12,9 +12,9 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * This class allows a programmer to invoke remote methods in all (or single) group members and optionally wait for
- * the return value(s).<p/>
+ * the return value(s).<p>
  * An application will typically create a channel and layer the RpcDispatcher building block on top of it, which
- * allows it to dispatch remote methods (client role) and at the same time be called by other members (server role).<p/>
+ * allows it to dispatch remote methods (client role) and at the same time be called by other members (server role).<p>
  * This class is derived from MessageDispatcher. 
  * @author Bela Ban
  */

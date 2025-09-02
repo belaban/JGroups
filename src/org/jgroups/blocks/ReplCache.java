@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Cache which allows for replication factors <em>per data items</em>; the factor determines how many replicas
- * of a key/value we create across the cluster.<br/>
+ * of a key/value we create across the cluster.<p>
  * See doc/design/ReplCache.txt for details.
  * @author Bela Ban
  */

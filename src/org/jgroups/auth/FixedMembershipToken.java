@@ -21,10 +21,10 @@ import java.util.StringTokenizer;
 /**
  * <p>
  * The FixedMemberShipToken object predefines a list of IP addresses and ports that can join the group.
- * </p>
+ * <p>
  * <p>
  * Configuration parameters for this example are shown below:
- * </p>
+ * <p>
  * <ul>
  * <li>fixed_members_value (required) = List of IP addresses & ports (optionally) - ports must be
  * seperated by a '/' e.g. 127.0.0.1/1010*127.0.0.1/4567</li>

@@ -13,9 +13,9 @@ import java.util.concurrent.atomic.AtomicIntegerArray;
 /**
  * Failure detection based on simple heartbeat protocol. Every member periodically (interval ms) multicasts a heartbeat.
  * Every member maintains a table of all members (minus itself) and a bitmap with timeout/interval bits, initially
- * all set to 1. On each interval, the TimeoutChecker task advances the index and sets the bit at the index to 0.<br/>
- * When all bits are 0, a member will be suspected.<br/>
- * On reception of a message or heartbeat from P, P's bitmap at index is set to 1.<br/>
+ * all set to 1. On each interval, the TimeoutChecker task advances the index and sets the bit at the index to 0.<p>
+ * When all bits are 0, a member will be suspected.<p>
+ * On reception of a message or heartbeat from P, P's bitmap at index is set to 1.<p>
  * JIRA: https://issues.redhat.com/browse/JGRP-2451
  *
  * @author  Dan Berindei

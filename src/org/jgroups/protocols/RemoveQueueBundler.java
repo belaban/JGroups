@@ -9,14 +9,14 @@ import org.jgroups.util.Runner;
 
 /**
  * Bundler implementation which sends message batches (or single messages) as soon as the remove queue is full
- * (or max_bundler_size would be exceeded).<br/>
- * Messages are removed from the main queue  and processed as follows (assuming they all fit into the remove queue):<br/>
- * A B B C C A causes the following sends: {AA} -> {CC} -> {BB}<br/>
- * Note that <em>null</em> is also a valid destination (send-to-all).<br/>
+ * (or max_bundler_size would be exceeded).<p>
+ * Messages are removed from the main queue  and processed as follows (assuming they all fit into the remove queue):<p>
+ * A B B C C A causes the following sends: {AA} -> {CC} -> {BB}<p>
+ * Note that <em>null</em> is also a valid destination (send-to-all).<p>
  * Contrary to {@link TransferQueueBundler}, this bundler uses a {@link RingBuffer} rather than an ArrayBlockingQueue
  * and the size of the remove queue is fixed. TransferQueueBundler increases the size of the remove queue
  * dynamically, which leads to higher latency if the remove queue grows too much.
- * <br/>
+ * <p>
  * JIRA: https://issues.redhat.com/browse/JGRP-2171
  * @author Bela Ban
  * @since  4.0.4

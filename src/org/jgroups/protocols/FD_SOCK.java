@@ -578,7 +578,7 @@ public class FD_SOCK extends Protocol implements Runnable {
      * (JDK 1.2.2 had no problems here), therefore we close the socket (setSoLinger has to be set !) if we are
      * running under Linux. This should be tested under Windows. (Solaris 8 and JDK 1.3.1 definitely works).<p>
      * Oct 29 2001 (bela): completely removed Thread.interrupt(), but used socket close on all OSs. This makes this
-     * code portable and we don't have to check for OSs.<p/>
+     * code portable and we don't have to check for OSs.<p>
      */
     protected synchronized void interruptPingerThread(boolean sendTerminationSignal) {
         if(isPingerThreadRunning()) {

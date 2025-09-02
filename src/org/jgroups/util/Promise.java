@@ -11,7 +11,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Allows a thread to submit an asynchronous request and to wait for the result. The caller may choose to check
  * for the result at a later time, or immediately and it may block or not. Both the caller and responder have to
- * know the promise.<p/>
+ * know the promise.<p>
  * When the result is available, {@link #hasResult()} will always return true and {@link #getResult()} will return the
  * result. In order to block for a different result, {@link #reset()} has to be called first.
  * @author Bela Ban

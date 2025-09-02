@@ -22,11 +22,11 @@ import java.security.cert.X509Certificate;
  * This is an example of using a preshared token that is encrypted using an X509 certificate for
  * authentication purposes. All members of the group have to have the same string value in the
  * JGroups config.
- * </p>
+ * <p>
  * <p>
  * This example uses certificates contained within a specified keystore. Configuration parameters
  * for this example are shown below:
- * </p>
+ * <p>
  * <ul>
  * <li>keystore_type = JKS(default)/PKCS12 - see
  * http://java.sun.com/j2se/1.4.2/docs/guide/security/CryptoSpec.html#AppA</li>
