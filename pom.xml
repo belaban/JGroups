@@ -395,7 +395,11 @@
                         </goals>
                         <configuration>
                             <!-- the name of the gpg key -->
-                            <keyname>bban@redhat.com</keyname>
+                            <!--keyname>bban@redhat.com</keyname-->
+                            <gpgArguments>
+                                <arg>--pinentry-mode</arg>
+                                <arg>loopback</arg>
+                            </gpgArguments>
                             <!-- the name of the server in .m2/settings.xml -->
                             <passphraseServerId>gpg.passphrase</passphraseServerId>
                         </configuration>
