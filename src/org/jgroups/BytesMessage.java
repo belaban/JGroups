@@ -13,7 +13,7 @@ import java.util.function.Supplier;
 
 /**
  * A {@link Message} containing a byte array as payload.
- * <br/>
+ * <p>
  * The byte array can point to a reference, and we can subset it using index and length. When the message is serialized,
  * only the bytes between index and length are written.
  *
@@ -116,7 +116,7 @@ public class BytesMessage extends BaseMessage {
     /**
      * Returns a <em>reference</em> to the payload (byte array). Note that this array should not be
      * modified as we do not copy the array on copy() or clone(): the array of the copied message
-     * is simply a reference to the old array.<br/>
+     * is simply a reference to the old array.<p>
      * Even if offset and length are used: we return the <em>entire</em> array, not a subset.
      */
     public byte[]            getArray()     {return array;}

@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 /**
  * Tools to (1) dump all protocols and the names of their attributes ({@link org.jgroups.annotations.ManagedAttribute})
  * and properties ({@link Property}) to file, (2) read from that file ('old) and compare whether old is a proper
- * subset of new, ie. if all protocols and attributes/properties still have the same names in new.<br/>
+ * subset of new, ie. if all protocols and attributes/properties still have the same names in new.<p>
  * To be run before releasing a new version (mainly minor and micro).
  * @author Bela Ban
  * @since 5.4.4
@@ -143,10 +143,10 @@ public class CompareMetrics {
     }
 
     /**
-     * Compares the new to the old metrics by removing 'old' from 'new' (if present in both 'new' and 'old').<br/>
+     * Compares the new to the old metrics by removing 'old' from 'new' (if present in both 'new' and 'old').<p>
      * If protocols/attributes remain, then either new protocols or attributes were added in new, or attributes /
      * protocols changed. E.g. an attribute changes from "number_of_messages" -> "num_msgs", then "number_of_attributes"
-     * will remain in 'old' and "num_msgs" in 'new'.<br/>
+     * will remain in 'old' and "num_msgs" in 'new'.<p>
      * The goal is that all attributes of 'old' also need to be in 'new', or else we have an incompatible change in that
      * an attribute was renamed or removed. If an attribute or protocol is only in 'new', that's acceptable and means
      * that it was added in 'new.

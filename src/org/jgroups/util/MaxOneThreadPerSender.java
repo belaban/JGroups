@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
  * {@link org.jgroups.stack.MessageProcessingPolicy} which processes <em>regular</em> messages and message batches by
  * assigning a max of 1 thread per message from the same sender. So if we have senders A, B, C and D, we'll have no more
  * than 4 threads handling regular unicasts and 4 threads handling regular multicasts.<p>
- * See <a href="https://issues.redhat.com/browse/JGRP-2143">JGRP-2143</a> for details.<br/>
+ * See <a href="https://issues.redhat.com/browse/JGRP-2143">JGRP-2143</a> for details.<p>
  * When using virtual threads, we probably don't need this anymore, and can use a virtual thread to send messages /
  * message batches directly up to UNICAST or NAKACK.
  * @author Bela Ban

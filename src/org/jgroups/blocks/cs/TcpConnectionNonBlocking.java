@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.LongAdder;
 /**
  * TCP connection which (despite the fancy name) blocks only a single thread at most. Uses a bounded queue, to which
  * senders add their messages, and a single consumer sending the messages. When the queue is full, messages will
- * get dropped. Therefore, at most one thread is blocked on TCP write when the send-window is full.<br/>
+ * get dropped. Therefore, at most one thread is blocked on TCP write when the send-window is full.<p>
  * Link: https://issues.redhat.com/browse/JGRP-2759
  * @author Bela Ban
  * @since  5.3.3

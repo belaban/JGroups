@@ -169,9 +169,9 @@ public abstract class BaseMessage implements Message {
     }
 
     /**
-     * Copies the source- and destination addresses, flags and headers (if copy_headers is true).<br/>
+     * Copies the source- and destination addresses, flags and headers (if copy_headers is true).<p>
      * If copy_payload is set, then method {@link #copyPayload(Message)} of the subclass will be called, which is
-     * responsible for copying the payload specific to that message type.<br/>
+     * responsible for copying the payload specific to that message type.<p>
      * Note that for headers, only the arrays holding references to the headers are copied, not the headers themselves !
      * The consequence is that the headers array of the copy hold the *same* references as the original, so do *not*
      * modify the headers ! If you want to change a header, copy it and call {@link Message#putHeader(short,Header)} again.

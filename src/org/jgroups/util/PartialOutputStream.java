@@ -5,7 +5,7 @@ import java.io.IOException;
 
 /**
  * Decorates an output stream ({@link java.io.DataOutput}) and writes only a subset [start..end] (both indices
- * inclusive) of the original data to the underlying output stream.<br/>
+ * inclusive) of the original data to the underlying output stream.<p>
  * Example: <pre>start=5, length=5: range=[5..9], bytes are written for positions 5,6,7,8,9 (5 bytes)</pre>
  * @author Bela Ban
  * @since  5.0

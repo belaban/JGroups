@@ -25,7 +25,7 @@ import static org.jgroups.protocols.TP.MSG_OVERHEAD;
 
 /**
  * This bundler adds all (unicast or multicast) messages to a queue until max size has been exceeded, but does send
- * messages immediately when no other messages are available. https://issues.redhat.com/browse/JGRP-1540<br/>
+ * messages immediately when no other messages are available. https://issues.redhat.com/browse/JGRP-1540<p>
  * The difference to {@link TransferQueueBundler} is that a size is maintained <pre>per destination</pre> and we
  * maintain byte arrays of max_bundle_size per destination into which we marshall a message directly when it is sent.
  */

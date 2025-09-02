@@ -254,7 +254,7 @@ public class FRAG extends Fragmentation {
      */
     static class FragmentationList {
         /* initialize the hashtable to hold all the fragmentation tables
-         * 11 is the best growth capacity to start with<br/>
+         * 11 is the best growth capacity to start with<p>
          * HashMap<Address,FragmentationTable>
          */
         private final HashMap<Address,FragmentationTable> frag_tables=new HashMap<>(11);

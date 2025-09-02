@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * Base class for protocols implementing key exchange: a secret key to be used for encryption is exchanged between
  * 2 parties (usually the key server and a new cluster member) <em>securely</em>; ie. without the possibility of
- * man-in-the-middle attacks, compromising the key and (optional) perfect forward secrecy.<br/>
+ * man-in-the-middle attacks, compromising the key and (optional) perfect forward secrecy.<p>
  * This protocol has to be placed somewhere below {@link ASYM_ENCRYPT}.
  * @author Bela Ban
  * @since  4.0.5

@@ -114,7 +114,7 @@ public class ServerTests {
 
     /**
      * Tests multiple threads sending a message to the same (unconnected) server; the first thread should establish
-     * the connection to the server and the other threads should be blocked until the connection has been created.<br/>
+     * the connection to the server and the other threads should be blocked until the connection has been created.<p>
      * JIRA: https://issues.redhat.com/browse/JGRP-2271
      */
     // @Test(invocationCount=50,dataProvider="configProvider")

@@ -5,7 +5,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 /**
- * Byte array with an offset and length.<br/>
+ * Byte array with an offset and length.<p>
  * Note that the underlying byte array must <em>not</em> be changed as long as this instance is in use !
  * @author Bela Ban
  */

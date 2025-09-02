@@ -85,13 +85,13 @@ public class TIME extends Protocol {
     /**
      * Dividing the delivery time for a batch by the batch size is problematic, e.g. if a batch of 5 is
      * received at time 0 and the 5 messages are delivered at times 20, 40, 60, 80 and 100, then the total
-     * time is 100, divided by 5 would be 20 per message.<br/>
+     * time is 100, divided by 5 would be 20 per message.<p>
      * However, this is incorrect as it ignores the waiting times for the individual messages: e.g. message 3 gets
-     * delayed for 60 until it is processed.<br/>
+     * delayed for 60 until it is processed.<p>
      * The correct average delivery time per message is therefore (20+40+60+80+100)/5 = 60.
-     * <br/>
+     * <p>
      * The above computation is not correct: we don't know whether a protocol looks at all messages: it may even
-     * remove some (making 'size' incorrect)!<br/>
+     * remove some (making 'size' incorrect)!<p>
      * Also, we don't know whether messages in a batch are processed in order, on by one, or whether they are processed
      * in parallel. Therefore, times for individual messages will not be computed.
      */

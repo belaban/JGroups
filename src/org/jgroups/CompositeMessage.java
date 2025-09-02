@@ -16,10 +16,10 @@ import java.util.function.Supplier;
 /**
  * A message composed of multiple messages. This is useful when multiple messages are to be passed
  * in a single message. Example: a byte buffer (1000 bytes) with a request type (req/rsp/ack).
- * <br/>
+ * <p>
  * In versions prior to 5.0, the byte arrays had to be copied into a single, larger (1001 bytes), byte array in
  * order to be passed to the message.
- * <br/>
+ * <p>
  * This class is unsynchronized; the envisaged use case is that a CompositeMessage is created with a number of messages,
  * or messages are added, but then the instance is not modified anymore and sent.
  * @author Bela Ban

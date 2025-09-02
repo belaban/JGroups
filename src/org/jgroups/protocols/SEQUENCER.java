@@ -307,9 +307,9 @@ public class SEQUENCER extends Protocol {
     /**
      * Sends all messages currently in forward_table to the new coordinator (changing the dest field).
      * This needs to be done, so the underlying reliable unicast protocol (e.g. UNICAST) adds these messages
-     * to its retransmission mechanism<br/>
+     * to its retransmission mechanism<p>
      * Note that we need to resend the messages in order of their seqnos! We also need to prevent other message
-     * from being inserted until we're done, that's why there's synchronization.<br/>
+     * from being inserted until we're done, that's why there's synchronization.<p>
      * Access to the forward_table doesn't need to be synchronized as there won't be any insertions during flushing
      * (all down-threads are blocked)
      */

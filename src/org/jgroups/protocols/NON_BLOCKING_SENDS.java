@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 
 /**
  * Detects sends during processing of incoming messages and sets flag
- * {@link org.jgroups.Message.TransientFlag#DONT_BLOCK} to prevent blocking the incoming thread on a send.<br/>
+ * {@link org.jgroups.Message.TransientFlag#DONT_BLOCK} to prevent blocking the incoming thread on a send.<p>
  * JIRA: https://issues.redhat.com/browse/JGRP-2772
  * @author Bela Ban
  * @since  5.3.5

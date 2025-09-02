@@ -76,9 +76,9 @@ public class LockService_JGRP_2234_Test {
 
     /**
      * The initial view is {A,B,C,D}. D holds the lock and unlocks it (on A), but the view is already {B,C,D} as A has
-     * left. However, at the time of the unlock request, the view is still {A,B,C,D} on D so the request is sent to A.<br/>
-     * The unlock request from D (to the new coord B) is therefore lost and the lock is never released.<br/>
-     * Therefore, when C tries to acquire the lock, it will fail as B thinks the lock is still held by D.<br/>
+     * left. However, at the time of the unlock request, the view is still {A,B,C,D} on D so the request is sent to A.<p>
+     * The unlock request from D (to the new coord B) is therefore lost and the lock is never released.<p>
+     * Therefore, when C tries to acquire the lock, it will fail as B thinks the lock is still held by D.<p>
      * The lost request (due to the new view not being received at all members at the same wall-clock time) is simulated
      * by a simple dropping of the release request on D.
      */

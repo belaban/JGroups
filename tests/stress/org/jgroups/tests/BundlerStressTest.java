@@ -22,7 +22,7 @@ import static java.util.concurrent.TimeUnit.*;
 /**
  * Tests bundler performance. Creates N members, always sends from the first member to a random member and waits for
  * the response (synchronous communication). The request includes the thread's ID.
- * <br/>
+ * <p>
  * Each sender adds their thread-id to a hashmap and waits on the promise (associated value). The receiver reads the
  * thread-id, grabs the promise and calls {@link org.jgroups.util.Promise#setResult(Object)}, waking up the sender
  * thread to send the next message.

@@ -31,7 +31,7 @@ import static org.jgroups.Message.TransientFlag.*;
 
 /**
  * Negative AcKnowledgement layer (NAKs). Messages are assigned a monotonically increasing sequence number (seqno).
- * Receivers deliver messages ordered according to seqno and request retransmission of missing messages.<br/>
+ * Receivers deliver messages ordered according to seqno and request retransmission of missing messages.<p>
  * Retransmit requests are usually sent to the original sender of a message, but this can be changed by
  * xmit_from_random_member (send to random member) or use_mcast_xmit_req (send to everyone). Responses can also be sent
  * to everyone instead of the requester by setting use_mcast_xmit to true.

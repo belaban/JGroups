@@ -6,9 +6,9 @@ import java.util.StringJoiner;
 
 /**
  * A hashmap where keys have to be ints. The size is fixed and keys/values are stored in a simple array, e.g.
- * [K1,V1, K2,V2, ... Kn,Vn]. The keys are indices into the array.<br/>
+ * [K1,V1, K2,V2, ... Kn,Vn]. The keys are indices into the array.<p>
  * Typically populated at startup and then used in read-only mode. This implementation is unsynchronized, and keys
- * and values have to be non-null. Note that removals and changes (e.g. adding the same key twice) are unsupported.<br/>
+ * and values have to be non-null. Note that removals and changes (e.g. adding the same key twice) are unsupported.<p>
  * Note that this class does not lend itself to be used as a sparse array, ie. adding keys [0 .. 100] and then 5000
  * would create an array of length 5001, and waste the space between index 100 and 5000. Ideally, keys start as 0, so
  * adding keys [50..100] would also waste the space for 50 keys.

@@ -118,7 +118,7 @@ public class FlowControlUnitTest {
     /**
      * A invokes 15 async RPCs of 1000 bytes to B, but drops credits it gets from B. With {@link UFC}, the caller
      * would block, but with {@link UFC_NB}, all RPCs return successfully as the messages with insufficient credits
-     * are queued by UFC_NB.<br/>
+     * are queued by UFC_NB.<p>
      * Next, the droping of requests is stopped and retransmission will deliver credits at A, so the queued messages
      * are drained and sent to B. The test finally confirms that B indeed received 15 RPCs.
      */

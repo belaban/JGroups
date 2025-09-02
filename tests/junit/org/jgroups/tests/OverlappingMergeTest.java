@@ -16,7 +16,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
  /**
- * Tests overlapping merges, e.g. A: {A,B}, B: {A,B} and C: {A,B,C}. Tests unicast as well as multicast seqno tables.<br/>
+ * Tests overlapping merges, e.g. A: {A,B}, B: {A,B} and C: {A,B,C}. Tests unicast as well as multicast seqno tables.<p>
  * Related JIRA: https://issues.redhat.com/browse/JGRP-940
  * @author Bela Ban
  */

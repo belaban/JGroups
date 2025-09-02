@@ -23,8 +23,8 @@ import java.util.stream.Collectors;
 
 
 /**
- * Double-checks that a suspected member is really dead.<br/>
- * Details: https://issues.redhat.com/browse/JGRP-2558<br/>
+ * Double-checks that a suspected member is really dead.<p>
+ * Details: https://issues.redhat.com/browse/JGRP-2558<p>
  * Design: https://github.com/belaban/JGroups/blob/master/doc/design/VERIFY_SUSPECT2.txt
  * @author Bela Ban
  */

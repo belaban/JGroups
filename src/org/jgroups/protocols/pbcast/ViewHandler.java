@@ -115,7 +115,7 @@ public class ViewHandler<R> {
     }
 
     /** Blocks the caller until the <em>current</em> set of requests being processed have been completed, or the timeout
-     * elapsed.<br/>
+     * elapsed.<p>
      * Returns immediately if no requests are currently being processed
      * @param timeout Max time to wait in milliseconds
      */

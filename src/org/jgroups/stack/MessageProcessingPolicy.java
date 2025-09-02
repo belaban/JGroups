@@ -25,7 +25,7 @@ public interface MessageProcessingPolicy {
     /**
      * Process a message that was not received from the transport but from above (e.g. the channel or a protocol), and
      * needs to be looped back up because (1) the destination address is null (every multicast message is looped back)
-     * or (2) the destination address is the sender's address (unicast message to self).<br/>
+     * or (2) the destination address is the sender's address (unicast message to self).<p>
      * A message that is looped back can bypass cluster name matching.
      * @param msg the message to be looped back up the stack.
      * @param oob true if the message is an OOB message

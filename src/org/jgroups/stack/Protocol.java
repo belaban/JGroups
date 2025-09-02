@@ -155,7 +155,7 @@ public abstract class Protocol implements Lifecycle {
     /**
      * After configuring the protocol itself from the properties defined in the XML config, a protocol might have
      * additional component objects which need to be configured. This callback allows a protocol developer to configure those
-     * other objects. This call is guaranteed to be invoked <em>after</em> the protocol itself has been configured.<br/>
+     * other objects. This call is guaranteed to be invoked <em>after</em> the protocol itself has been configured.<p>
      * See AUTH for an example.
      */
     public List<Object> getComponents() {

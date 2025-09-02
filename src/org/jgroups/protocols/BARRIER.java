@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
  * All messages up the stack have to go through a barrier (read lock, RL). By default, the barrier is open.
  * When a CLOSE_BARRIER event is received, we close the barrier by acquiring a write lock (WL). This succeeds when all
  * previous messages have completed (by releasing their RLs). Thus, when we have acquired the WL, we know that there
- * are no pending messages processed.<br/>
+ * are no pending messages processed.<p>
  * When an OPEN_BARRIER event is received, we simply open the barrier again and let all messages pass in the up
  * direction. This is done by releasing the WL.
  * @author Bela Ban

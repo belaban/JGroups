@@ -30,7 +30,7 @@ import static org.jgroups.protocols.TP.MSG_OVERHEAD;
  * Queues messages per destination ('null' is a special destination), sending when the last sender thread to the same
  * destination returns or max_size has been reached. This uses 1 thread per destination, so it won't scale to many
  * cluster members (unless virtual threads are used).
- * <br/>
+ * <p>
  * See https://issues.redhat.com/browse/JGRP-2639 for details.
  * @author Bela Ban
  * @since  5.2.7

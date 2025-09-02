@@ -16,17 +16,17 @@ import java.util.stream.Stream;
 
 
 /**
- * Implementation of a locking protocol which acquires locks by asking the coordinator.<br/>
- * Because the coordinator maintains all locks, no total ordering of requests is required.<br/>
+ * Implementation of a locking protocol which acquires locks by asking the coordinator.<p>
+ * Because the coordinator maintains all locks, no total ordering of requests is required.<p>
  * CENTRAL_LOCK2 has all members send lock and unlock requests to the current coordinator. The coordinator has a queue
- * for incoming requests, and grants locks based on order of arrival.<br/>
+ * for incoming requests, and grants locks based on order of arrival.<p>
  * Contrary to {@link CENTRAL_LOCK}, CENTRAL_LOCK2 has no members who act as backups for lock information. Instead,
  * when the coord leaves or on a merge, the new coordinator runs a <em>reconciliation</em> protocol in which it fetches
  * information from all members about acquired locks and pending lock and unlock requests, and then creates its lock
- * table accordingly. During this phase, all regular request handling is paused.<br/>
+ * table accordingly. During this phase, all regular request handling is paused.<p>
  * This protocol requires less traffic than {@link CENTRAL_LOCK} (each request also has to be sent to the backup(s)),
  * but introduces communication between the new coord and all members (and thus a small pause) on coord change.
- * <br/>
+ * <p>
  * The JIRA issue is https://issues.redhat.com/browse/JGRP-2249.
  * @author Bela Ban
  * @since  4.0.13

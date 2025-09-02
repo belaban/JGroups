@@ -11,7 +11,7 @@ import java.util.Map;
 /**
  * A Message is used to send data to members of a group. It contains the address of the sender, the destination address,
  * (typically) a payload, flags and a list of headers.
- * <br/>
+ * <p>
  * Subclasses define different types of payloads, e.g. byte arrays, ByteBuffers, Objects etc.
  * @author Bela Ban
  * @since  5.0
@@ -135,16 +135,16 @@ public interface Message extends SizeStreamable, Constructable<Message> {
     /**
      * Returns a <em>reference</em> to the payload (byte array). Note that this array should not be
      * modified as we do not copy the array on copy() or clone(): the array of the copied message
-     * is simply a reference to the old array.<br/>
-     * Even if offset and length are used: we return the <em>entire</em> array, not a subset.<br/>
-     * Throws an exception if the message does not have a byte[] array payload ({@link #hasArray()} is false).<br/>
+     * is simply a reference to the old array.<p>
+     * Even if offset and length are used: we return the <em>entire</em> array, not a subset.<p>
+     * Throws an exception if the message does not have a byte[] array payload ({@link #hasArray()} is false).<p>
      * Note that this is a convenience method, as most messages are of type {@link BytesMessage}. It is recommended to
      * downcast a {@link Message} to the correct subtype and use the methods available there to get/set the payload.
      */
     byte[]               getArray();
 
     /** Returns the offset of the byte[] array at which user data starts. Throws an exception if the message
-     * does not have a byte[] array payload (if {@link #hasArray()} is false).<br/>
+     * does not have a byte[] array payload (if {@link #hasArray()} is false).<p>
      * Note that this is a convenience method, as most messages are of type {@link BytesMessage}. */
     int                  getOffset();
 
@@ -154,8 +154,8 @@ public interface Message extends SizeStreamable, Constructable<Message> {
     int                  getLength();
 
     /**
-     * Sets the byte array in a message.<br/>
-     * Throws an exception if the message does not have a byte[] array payload ({@link #hasArray()} is false).<br/>
+     * Sets the byte array in a message.<p>
+     * Throws an exception if the message does not have a byte[] array payload ({@link #hasArray()} is false).<p>
      * Note that this is a convenience method, as most messages are of type {@link BytesMessage}. It is recommended to
      * downcast a {@link Message} to the correct subtype and use the methods available there to get/set the payload.
      */
@@ -164,8 +164,8 @@ public interface Message extends SizeStreamable, Constructable<Message> {
 
 
     /**
-     * Sets the byte array in a message.<br/>
-     * Throws an exception if the message does not have a byte[] array payload ({@link #hasArray()} is false).<br/>
+     * Sets the byte array in a message.<p>
+     * Throws an exception if the message does not have a byte[] array payload ({@link #hasArray()} is false).<p>
      * Note that this is a convenience method, as most messages are of type {@link BytesMessage}. It is recommended to
      * downcast a {@link Message} to the correct subtype and use the methods available there to get/set the payload.
      */
@@ -173,7 +173,7 @@ public interface Message extends SizeStreamable, Constructable<Message> {
 
     /**
      * Gets an object from the payload. If the payload is a byte[] array (e.g. as in {@link BytesMessage}),
-     * an attempt to de-serialize the array into an object is made, and the object returned.<br/>
+     * an attempt to de-serialize the array into an object is made, and the object returned.<p>
      * If the payload is an object (e.g. as is the case in {@link ObjectMessage}), the object will be returned directly.
      */
     <T extends Object> T getObject();

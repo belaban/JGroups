@@ -34,7 +34,7 @@ public interface Address extends SizeStreamable, Comparable<Address> {
 
     /**
      * Whether or not this address is a {@link org.jgroups.protocols.relay.SiteAddress}. Kludgey workaround to avoid
-     * the use of {@code instanceof SiteAddress}.<br/>
+     * the use of {@code instanceof SiteAddress}.<p>
      * Will be removed once the type pollution issue (https://bugs.openjdk.org/browse/JDK-8180450) is fixed.
      * @return True if this address is a site address, otherwise false
      */
@@ -42,7 +42,7 @@ public interface Address extends SizeStreamable, Comparable<Address> {
 
     /**
      * Whether or not this address is a {@link org.jgroups.protocols.relay.SiteMaster}. Kludgey workaround to avoid
-     * the use of {@code instanceof SiteMaster}.<br/>
+     * the use of {@code instanceof SiteMaster}.<p>
      * Will be removed once the type pollution issue (https://bugs.openjdk.org/browse/JDK-8180450) is fixed.
      * @return true if this address is a site master, false otherwise
      */

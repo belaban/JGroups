@@ -17,7 +17,7 @@ import java.util.function.BiConsumer;
  * Provides a cache of all sites and their members (addresses, IP addresses, site masters etc) in a network of
  * autonomous sites. The cache is an approximation, and is refreshed on reception of {@link RelayHeader#SITES_UP}
  * or {@link RelayHeader#SITES_DOWN} notifications. A refresh can also be triggered programmatically.
- * <br/>
+ * <p>
  * Used as a component in {@link RELAY2} and {@link RELAY3}.
  * @author Bela Ban
  * @since  5.2.15

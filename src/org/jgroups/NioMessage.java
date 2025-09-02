@@ -12,8 +12,8 @@ import java.nio.ByteBuffer;
 import java.util.function.Supplier;
 
 /**
- * A {@link Message} with a (heap-based or direct) {@link java.nio.ByteBuffer} as payload.<br/>
- * <br/>
+ * A {@link Message} with a (heap-based or direct) {@link java.nio.ByteBuffer} as payload.<p>
+ * <p>
  * Note that the payload of an NioMessage must not be modified after sending it (ie. {@link JChannel#send(Message)};
  * serialization depends on position and limit to be correct.
  *
@@ -28,10 +28,10 @@ public class NioMessage extends BaseMessage {
     /**
      * If true, use direct memory when creating {@link ByteBuffer} payloads, e.g. on {@link #setArray(byte[], int, int)},
      * {@link #setArray(ByteArray)}, {@link #setObject(Object)} or when getting read from the network
-     * ({@link #readPayload(DataInput)}).<br/>
+     * ({@link #readPayload(DataInput)}).<p>
      * Unless this flag is set to true, a direct {@link ByteBuffer} payload will become a heap-based payload by a
      * receiver when sent over the network. This may be useful if we want to use off-heap (direct) memory only for
-     * sending, but not receiving of messages.<br/>
+     * sending, but not receiving of messages.<p>
      * If we want the receiver to create a direct-memory based message, set this flag to true before sending the message.
      */
     protected boolean use_direct_memory_for_allocations;
@@ -160,7 +160,7 @@ public class NioMessage extends BaseMessage {
 
 
     /**
-     * Create a copy of the message.<br/>
+     * Create a copy of the message.<p>
      * Note that for headers, only the arrays holding references to the headers are copied, not the headers themselves !
      * The consequence is that the headers array of the copy hold the *same* references as the original, so do *not*
      * modify the headers ! If you want to change a header, copy it and call {@link NioMessage#putHeader(short,Header)} again.

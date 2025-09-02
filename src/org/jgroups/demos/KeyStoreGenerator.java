@@ -12,10 +12,10 @@ import java.security.NoSuchAlgorithmException;
  * Generates a keystore file that has a SecretKey in it. It is not possible to
  * use keytool to achieve this. This is a simple way to generate a
  * JCEKS format keystore and SecretKey.
- * <br/>
+ * <p>
  * Usage is --alg ALGNAME --size ALGSIZE --storeName FILENAME --storePass
  * PASSWORD --alias KEYALIAS
- * <br/>
+ * <p>
  * Any of args are optional and will default to
  * <ul>
  * <li>ALGNAME = Blowfish

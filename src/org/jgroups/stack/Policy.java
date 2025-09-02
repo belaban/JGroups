@@ -3,7 +3,7 @@ package org.jgroups.stack;
 /**
  * A policy implementation checks that a condition is met or throws an exception if not. A condition could be for
  * example the check if a given protocol is present, an attribute is within a given range etc.
- * <br/>
+ * <p>
  * Policies are called after {@link Protocol#init()}, so the protocol is full initialized (all attrs and components
  * are set).
  * @author Bela Ban

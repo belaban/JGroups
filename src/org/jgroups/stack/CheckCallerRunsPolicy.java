@@ -10,7 +10,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 /**
  * If either {@link org.jgroups.protocols.UNICAST3} or {@link org.jgroups.protocols.pbcast.NAKACK2} are missing, then
  * this policy checks that the thread pool has a rejection policy of
- * {@link java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy}.<br/>
+ * {@link java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy}.<p>
  * Issues a warning and changes the rejection policy to {@link java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy}
  * if not.
  * @author Bela Ban

@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Handles the leaving of a member from a group. On leave(), a LEAVE-REQ is sent to the coordinator and the caller is
- * blocked until a LEAVE-RSP has been received.<br/>
+ * blocked until a LEAVE-RSP has been received.<p>
  * If the coordinator changes before the response has been received, the LEAVE-REQ will be resent to the new
  * cordinator. If the coordinator is null, leave() returns.
  *

@@ -41,7 +41,7 @@ public interface Receiver {
      * Called when a change in membership has occurred. No long running actions, sending of messages
      * or anything that could block should be done in this callback. If some long running action
      * needs to be performed, it should be done in a separate thread.
-     * <br/>
+     * <p>
      * Note that on reception of the first view (a new member just joined), the channel will not yet
      * be in the connected state. This only happens when {@link JChannel#connect(String)} returns.
      */
@@ -60,10 +60,10 @@ public interface Receiver {
     /**
      * Called <em>after</em> the FLUSH protocol has unblocked previously blocked senders, and
      * messages can be sent again.
-     * <br/>
+     * <p>
      * Note that during new view installation we provide guarantee that unblock invocation strictly
      * follows view installation at some node A belonging to that view. However, some other message
-     * M may squeeze in between view and unblock callbacks.<br/>
+     * M may squeeze in between view and unblock callbacks.<p>
      * For more details see <a href="https://issues.redhat.com/browse/JGRP-986">JGRP-986</a>
      */
     default void unblock() {}
