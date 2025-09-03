@@ -125,22 +125,4 @@ public class DefaultThreadFactory implements ThreadFactory {
             sb.append(',').append(addr);
         return sb.toString();
     }
-
-    protected String getThreadNameNew(String base_name, String addr, String cluster_name) {
-        if(cluster_name == null)
-            cluster_name=clusterName;
-        if(addr == null)
-            addr=this.address;
-
-        String ret=String.format("%s%s%s%s",
-                                 base_name != null? base_name : "thread",
-                                 use_numbering? String.format("-%d", counter.incrementAndGet()) : "",
-                                 includeClusterName? String.format(",%s", cluster_name) : "",
-                                 includeLocalAddress? String.format(",%s", addr) : "");
-        System.out.printf("-- ret: %s\n", ret);
-        return ret;
-
-
-    }
-
 }
