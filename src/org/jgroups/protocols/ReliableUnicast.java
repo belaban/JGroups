@@ -1110,7 +1110,7 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
                 lock.unlock();
         }
         if(is_trace) {
-            StringBuilder sb=new StringBuilder();
+            StringBuilder sb=new StringBuilder(32);
             sb.append(local_addr).append(" --> ").append(msg.dest()).append(": DATA(").append("#").append(seqno).
               append(", conn_id=").append(send_conn_id);
             if(seqno == DEFAULT_FIRST_SEQNO) sb.append(", first");
@@ -1167,7 +1167,7 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
                 return;
             if(is_trace) {
                 Message first=batch.first(), last=batch.last();
-                StringBuilder sb=new StringBuilder(local_addr + ": delivering");
+                StringBuilder sb=new StringBuilder(128).append(local_addr).append(": delivering");
                 if(first != null && last != null) {
                     UnicastHeader hdr1=first.getHeader(id), hdr2=last.getHeader(id);
                     if(hdr1 != null && hdr2 != null)

@@ -908,7 +908,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
                 return;
             if(is_trace) {
                 Message first=batch.first(), last=batch.last();
-                StringBuilder sb=new StringBuilder(local_addr + " <-- " + batch.sender() + ": ");
+                StringBuilder sb=new StringBuilder(128).append(local_addr).append(" <-- " + batch.sender() + ": ");
                 if(first != null && last != null) {
                     NakAckHeader hdr1=first.getHeader(id), hdr2=last.getHeader(id);
                     if(hdr1 != null && hdr2 != null)

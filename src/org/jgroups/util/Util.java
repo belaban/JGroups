@@ -610,7 +610,7 @@ public class Util {
     }
 
     public static String flagsToString(short flags) {
-        StringBuilder sb=new StringBuilder();
+        StringBuilder sb=new StringBuilder(32);
         boolean first=true;
 
         Message.Flag[] all_flags=Message.Flag.values();
