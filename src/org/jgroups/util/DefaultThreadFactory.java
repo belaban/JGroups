@@ -76,7 +76,7 @@ public class DefaultThreadFactory implements ThreadFactory {
     }
 
     protected Thread newThread(Runnable r, String name, String addr, String cluster_name) {
-        String thread_name=getNewThreadName(name, addr, cluster_name);
+        String thread_name=getThreadName(name, addr, cluster_name);
         return ThreadCreator.createThread(r, thread_name, createDaemons, use_vthreads);
     }
 
@@ -99,60 +99,34 @@ public class DefaultThreadFactory implements ThreadFactory {
             thread.setName(thread_name);
     }
 
-    public void renameThread(Thread thread) {
-        renameThread(null, thread);
-    }
-
-
     protected String getThreadName(String base_name, final Thread thread, String addr, String cluster_name) {
-        if(thread == null)
+        if(thread == null || (!use_numbering && !includeClusterName && !includeLocalAddress))
             return null;
-        StringBuilder sb=new StringBuilder(base_name != null? base_name : thread.getName());
-        if(use_numbering) {
-            int id=counter.incrementAndGet();
-            sb.append("-").append(id);
-        }
-
-        if(cluster_name == null)
-            cluster_name=clusterName;
-        if(addr == null)
-            addr=this.address;
-
-        if(!includeClusterName && !includeLocalAddress)
-            return sb.toString();
-
-        if(includeClusterName)
-            sb.append(',').append(cluster_name);
-
-        if(includeLocalAddress)
-            sb.append(',').append(addr);
-
-        if(use_numbering || includeClusterName || includeLocalAddress)
-            return sb.toString();
-        return null;
+        return getThreadName(base_name != null? base_name : thread.getName(), addr, cluster_name);
     }
 
-    protected String getNewThreadName(String base_name, String addr, String cluster_name) {
-        StringBuilder sb=new StringBuilder(base_name != null? base_name : "thread");
-        if(use_numbering) {
-            int id=counter.incrementAndGet();
-            sb.append("-").append(id);
-        }
-
+    protected String getThreadName(String base_name, String addr, String cluster_name) {
         if(cluster_name == null)
             cluster_name=clusterName;
         if(addr == null)
             addr=this.address;
 
-        if(!includeClusterName && !includeLocalAddress)
-            return sb.toString();
+        String name=base_name != null? base_name : "thread";
+        int estimated_size=name.length() + 10; // additional space for numbering
+        if(cluster_name != null)
+            estimated_size+=cluster_name.length();
+        if(addr != null)
+            estimated_size+=addr.length();
 
+        StringBuilder sb=new StringBuilder(estimated_size).append(name);
+        if(use_numbering) {
+            int id=counter.incrementAndGet();
+            sb.append("-").append(id);
+        }
         if(includeClusterName)
             sb.append(',').append(cluster_name);
-
         if(includeLocalAddress)
             sb.append(',').append(addr);
-
         return sb.toString();
     }
 
