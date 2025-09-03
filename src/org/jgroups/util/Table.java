@@ -247,7 +247,7 @@ public class Table<T> implements Iterable<T> {
     /**
      * Adds elements from the list to the table
      * @param list The list of tuples of seqnos and elements. If remove_added_elements is true, if elements could
-     *             not be added to the table (e.g. because they were already present or the seqno was < HD), those
+     *             not be added to the table (e.g. because they were already present or the seqno was &lt; HD), those
      *             elements will be removed from list
      * @param remove_added_elements If true, elements that could not be added to the table are removed from list
      * @param const_value If non-null, this value should be used rather than the values of the list tuples
@@ -444,7 +444,7 @@ public class Table<T> implements Iterable<T> {
 
     /**
      * Removes all elements less than or equal to seqno from the table. Does this by nulling entire rows in the matrix
-     * and nulling all elements < index(seqno) of the first row that cannot be removed
+     * and nulling all elements &lt; index(seqno) of the first row that cannot be removed
      * @param seqno
      */
     public void purge(long seqno) {
@@ -453,9 +453,9 @@ public class Table<T> implements Iterable<T> {
 
     /**
      * Removes all elements less than or equal to seqno from the table. Does this by nulling entire rows in the matrix
-     * and nulling all elements < index(seqno) of the first row that cannot be removed.
-     * @param seqno All elements <= seqno will be nulled
-     * @param force If true, we only ensure that seqno <= hr, but don't care about hd, and set hd=low=seqno.
+     * and nulling all elements &lt; index(seqno) of the first row that cannot be removed.
+     * @param seqno All elements {@literal <= seqno} will be nulled
+     * @param force If true, we only ensure that {@literal seqno <= hr}, but don't care about hd, and set hd=low=seqno.
      */
     public void purge(long seqno, boolean force) {
         lock.lock();

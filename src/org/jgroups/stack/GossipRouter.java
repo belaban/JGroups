@@ -51,7 +51,7 @@ import static org.jgroups.stack.GossipType.GET_MBRS_RSP_LAST;
  * doesn't support IP multicasting.
  * @author Bela Ban
  * @author Vladimir Blagojevic
- * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
+ * @author Ovidiu Feodorov (ovidiuf@users.sourceforge.net)
  * @since 2.1.1
  */
 public class GossipRouter extends ReceiverAdapter implements ConnectionListener, DiagnosticsHandler.ProbeHandler {

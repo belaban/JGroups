@@ -136,7 +136,7 @@ public class TimeScheduler3 implements TimeScheduler, Runnable {
     /**
      * Schedule a task for execution at varying intervals. After execution, the task will get rescheduled after
      * {@link org.jgroups.util.TimeScheduler.Task#nextInterval()} milliseconds. The task is never done until
-     * nextInterval() returns a value <= 0 or the task is cancelled.<p>
+     * nextInterval() returns a value {@literal <= 0} or the task is cancelled.<p>
      * Note that the task is rescheduled relative to the last time is actually executed. This is similar to
      * {@link #scheduleWithFixedDelay(Runnable,long,long,java.util.concurrent.TimeUnit)}.
      * @param work the task to execute

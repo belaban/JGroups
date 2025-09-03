@@ -24,7 +24,7 @@ public interface TimeScheduler {
     /** The interface that dynamic tasks
      * ({@link TimeScheduler#scheduleWithDynamicInterval(org.jgroups.util.TimeScheduler.Task)}) must implement */
     interface Task extends Runnable {
-        /** @return the next scheduled interval in ms. If <= 0 the task will not be re-scheduled */
+        /** @return the next scheduled interval in ms. If {@literal <= 0} the task will not be re-scheduled */
         long nextInterval();
     }
 
@@ -114,7 +114,7 @@ public interface TimeScheduler {
      * Schedule a task for execution at varying intervals. After execution, the task will get rescheduled after
      * {@link org.jgroups.util.TimeScheduler.Task#nextInterval()} milliseconds. This is delay-based and not
      * rate-based.
-     * The task is never done until nextInterval() return a value <= 0 or the task is cancelled.
+     * The task is never done until nextInterval() return a value {@literal <= 0} or the task is cancelled.
      * @param task the task to execute
      */
     default Future<?> scheduleWithDynamicInterval(Task task) {
@@ -136,7 +136,6 @@ public interface TimeScheduler {
 
     /**
      * Returns the configured core threads, or -1 if not applicable
-     * @return
      */
     int getMinThreads();
 

@@ -1851,9 +1851,7 @@ public class Util {
 
     /**
      * Writes a list of Addresses. Can contain 65K addresses at most
-     * @param v   A Collection<Address>
-     * @param out
-     * @throws Exception
+     * @param v A Collection of addresses
      */
     public static void writeAddresses(Collection<? extends Address> v,DataOutput out) throws IOException {
         if(v == null) {
@@ -1906,7 +1904,7 @@ public class Util {
     /**
      * Returns the marshalled size of a Collection of Addresses.
      * <em>Assumes elements are of the same type !</em>
-     * @param addrs Collection<Address>
+     * @param addrs List of addresses
      * @return long size
      */
     public static long size(Collection<? extends Address> addrs) {
@@ -2896,7 +2894,7 @@ public class Util {
      * starts at offset 4 and has a length of 4 bytes, and the last fragment starts at offset 8 and has a length
      * of 2 bytes.
      * @param frag_size
-     * @return List. A List<Range> of offset/length pairs
+     * @return List. A List of offset/length pairs
      */
     public static List<Range> computeFragOffsets(int offset,int length,int frag_size) {
         int num_frags=(int)Math.ceil(length / (double)frag_size);
@@ -3241,7 +3239,7 @@ public class Util {
     }
 
     /** Returns the element before el. If el is the first element, returns the last element. Returns null
-     * if array.length < 2 */
+     * if array.length &lt; 2 */
     public static <T> T pickPrevious(T[] array, T el) {
         if(array == null || el == null || array.length < 2)
             return null;
@@ -4195,10 +4193,6 @@ public class Util {
         }
     }
 
-    /**
-     * @param s
-     * @return List<NetworkInterface>
-     */
     public static List<NetworkInterface> parseInterfaceList(String s) throws Exception {
         List<NetworkInterface> interfaces=new ArrayList<>(10);
         if(s == null)
@@ -4697,8 +4691,8 @@ public class Util {
     /**
      * Returns a valid interface address based on a pattern. Iterates over all interfaces that are up and
      * returns the first match, based on the address or interface name
-     * @param pattern Can be "match-addr:<pattern></pattern>" or "match-interface:<pattern></pattern>". Example:<p>
-     *                match-addr:192.168.*
+     * @param pattern Can be {@literal "match-addr:<pattern>"} or {@literal "match-interface:<pattern>}".
+     *                Example: {@literal match-addr:192.168.*}
      * @return InetAddress or null if not found
      */
     public static InetAddress getAddressByPatternMatch(String pattern, StackType ip_version) throws Exception {

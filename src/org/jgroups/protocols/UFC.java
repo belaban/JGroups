@@ -31,7 +31,7 @@ import java.util.Map;
  * <li>Receivers now send credits to a sender when more than min_credits have been received (rather than when min_credits
  * are left)
  * <li>Receivers don't send the full credits (max_credits), but rather the actual number of bytes received
- * <ol/>
+ * </ol>
  * @author Bela Ban
  */
 @MBean(description="Simple flow control protocol based on a credit system")
@@ -40,7 +40,7 @@ public class UFC extends FlowControl {
     protected final static FcHeader UFC_CREDIT_REQUEST_HDR = new FcHeader(FcHeader.CREDIT_REQUEST);
 
     /**
-     * Map<Address,Long>: keys are members, values are credits left. For each send,
+     * Map: keys are members, values are credits left. For each send,
      * the number of credits is decremented by the message size
      */
     protected final Map<Address,? extends Credit> sent=Util.createConcurrentMap();

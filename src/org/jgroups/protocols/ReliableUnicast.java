@@ -1588,7 +1588,7 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
      *     <li>If any of the receiver windows have the ack flag set, clears the flag and sends an ack for the
      *         highest delivered seqno to the sender</li>
      *     <li>Checks all receiver windows for missing messages and asks senders for retransmission</li>
-     *     <li>For all sender windows, checks if highest acked (HA) < highest sent (HS). If not, and HA/HS is the same
+     *     <li>For all sender windows, checks if highest acked (HA) &lt; highest sent (HS). If not, and HA/HS is the same
      *         as on the last retransmission run, send the highest sent message again</li>
      * </ul>
      */

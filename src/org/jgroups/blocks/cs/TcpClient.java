@@ -24,7 +24,6 @@ public class TcpClient extends TcpBaseServer implements Client, ConnectionListen
      * the client and server.
      * @param bind_addr The address to which the local socket should bind to. Can be null, then the OS picks the address
      * @param server_addr The address of the server to connect to
-     * @throws Exception If the creation failed
      */
     public TcpClient(IpAddress bind_addr, IpAddress server_addr) {
         this(bind_addr != null? bind_addr.getIpAddress() : null, bind_addr != null? bind_addr.getPort() : 0,
@@ -42,7 +41,6 @@ public class TcpClient extends TcpBaseServer implements Client, ConnectionListen
      * @param bind_port The local port. Can be 0, then the OS picks the port.
      * @param server_addr The address of the server to connect to
      * @param server_port The port of the server to connect to.
-     * @throws Exception If the creation failed
      */
     public TcpClient(InetAddress bind_addr, int bind_port, InetAddress server_addr, int server_port) {
         super(new DefaultThreadFactory("tcp", false), new DefaultSocketFactory(), 0);

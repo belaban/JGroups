@@ -336,9 +336,9 @@ public class DynamicBuffer<T> extends Buffer<T> {
 
     /**
      * Removes all elements less than or equal to seqno from the buffer. Does this by nulling entire rows in the matrix
-     * and nulling all elements < index(seqno) of the first row that cannot be removed.
-     * @param seqno All elements <= seqno will be nulled
-     * @param force If true, we only ensure that seqno <= hr, but don't care about hd, and set hd=low=seqno.
+     * and nulling all elements &lt; index(seqno) of the first row that cannot be removed.
+     * @param seqno All elements {@literal <= seqno} will be nulled
+     * @param force If true, we only ensure that {@literal seqno <= hr}, but don't care about hd, and set hd=low=seqno.
      * @return 0. The number of purged elements
      */
     @Override

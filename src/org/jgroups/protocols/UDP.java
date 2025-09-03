@@ -56,9 +56,9 @@ public class UDP extends TP {
      * are (check {@link DatagramSocket#setTrafficClass(int)} ); for details):
      * <ul>
      * <li>{@code IPTOS_LOWCOST (0x02)}, <b>decimal 2</b></li>
-     * <li>{@code IPTOS_RELIABILITY (0x04)}<, <b>decimal 4</b>/li>
+     * <li>{@code IPTOS_RELIABILITY (0x04)}, <b>decimal 4</b>/li>
      * <li>{@code IPTOS_THROUGHPUT (0x08)}, <b>decimal 8</b></li>
-     * <li>{@code IPTOS_LOWDELAY (0x10)}, <b>decimal</b> 16</li>
+     * <li>{@code IPTOS_LOWDELAY (0x10)}, <b>decimal 16</b></li>
      * </ul>
      */
     @Property(description="Traffic class for sending unicast and multicast datagrams")
@@ -531,7 +531,7 @@ public class UDP extends TP {
 
     /**
      * Joins a multicast address on all interfaces
-     * @param interfaces List<NetworkInterface>. The interfaces to join mcast_addr:mcast_port
+     * @param interfaces The interfaces to join mcast_addr:mcast_port
      * @param s The MulticastSocket to join on
      * @param mcast_addr The multicast address to join
      */
@@ -548,8 +548,6 @@ public class UDP extends TP {
             }
         }
     }
-
-
 
     /**
      * Creates a DatagramSocket when bind_port > 0. Attempts to allocate the socket with port == bind_port, and

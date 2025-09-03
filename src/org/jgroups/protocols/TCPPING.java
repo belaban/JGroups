@@ -83,7 +83,7 @@ public class TCPPING extends Discovery {
     /**
      * Returns the list of initial hosts as configured by the user via XML. Note that the returned list is mutable, so
      * careful with changes !
-     * @return List<Address> list of initial hosts. This variable is only set after the channel has been created and
+     * @return List of initial hosts. This variable is only set after the channel has been created and
      * set Properties() has been called
      */
     public Collection<PhysicalAddress> getInitialHosts() {

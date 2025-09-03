@@ -20,7 +20,7 @@ import java.util.function.Supplier;
 
 /**
  * Batches messages near the top of the stack.  This reduces the work done on the IO thread and reduces overhead,
- * greatly increasing throughput for smaller message sizes (<1k in test configurations).  Also reduces the amount of
+ * greatly increasing throughput for smaller message sizes (&lt; 1k in test configurations).  Also reduces the amount of
  * header data by having one header for each batch.
  * Conceptually, down messages are buffered then put in a wrapper message, so lower protocols only interact with the
  * wrapper.  On the receiving end, the batch is unwrapped when it reaches this protocol and then forwarded to higher

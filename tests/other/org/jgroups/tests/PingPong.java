@@ -8,7 +8,8 @@ import java.util.List;
 
 /**
  * Simple protocol to test round trip times. Requests are [PING], responses are [PONG]. Start multiple instances
- * and press <return> to get the round trip times for all nodes in the cluster<p>
+ * and press 'return' to get the round trip times for all nodes in the cluster
+ * <p>
  * See {@link org.jgroups.tests.PingPongDatagram} for the same program using MulticastSockets
  * @author Bela Ban
  */

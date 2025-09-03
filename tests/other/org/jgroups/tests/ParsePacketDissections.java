@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
  *       The hour in the Wireshark can be different when comparing with the the application log because of the timezone.
  *
  *    If you know the time of the error, you can apply a display filter to reduce the exported file size.
- *    Example: (frame.time >= "Jul 15, 2022 15:47:00" && frame.time <= "Jul 15, 2022 15:49:00")
+ *    Example: {@literal frame.time >= "Jul 15, 2022 15:47:00" && frame.time <= "Jul 15, 2022 15:49:00"}
  *
  *    Menu File -> Export Packet Dissections -> As Plain Text
  *       Fill the File name:

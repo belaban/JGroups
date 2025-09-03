@@ -30,7 +30,7 @@ import java.util.function.Predicate;
  * it into smaller fragments: it looks only at the message's buffer, which is a
  * byte[] array anyway. We assume that the size addition for headers and src and
  * dest address is minimal when the transport finally has to serialize the
- * message, so we add a constant (200 bytes).</br>
+ * message, so we add a constant (200 bytes).<p>
  * <em>Note that this protocol only works with {@link BytesMessage} types</em>
  * 
  * @author Bela Ban

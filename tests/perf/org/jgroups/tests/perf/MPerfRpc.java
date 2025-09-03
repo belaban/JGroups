@@ -398,7 +398,7 @@ public class MPerfRpc implements Receiver {
 
 
 
-    /** Returns all members if num_senders <= 0, or the members with rank <= num_senders */
+    /** Returns all members if {@literal num_senders <= 0}, or the members with {@literal rank <= num_senders} */
     protected List<Address> getSenders() {
         if(num_senders <= 0)
             return new ArrayList<>(members);

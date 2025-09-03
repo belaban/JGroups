@@ -12,10 +12,10 @@ public interface Response {
 
     /**
      * Sends a response, usually called from a thread spawned by
-     * {@link AsyncRequestHandler#handle(Message,Response)}
+     * {@link RequestHandler#handle(Message,Response)}
      * @param reply The reply to be sent back, ie. as result to a synchronous RPC. Can be null, e.g.
      *              when the method has a void return type.
-     * @param is_exception If {@link AsyncRequestHandler#handle(Message,Response)} threw an exception,
+     * @param is_exception If {@link RequestHandler#handle(Message,Response)} threw an exception,
      *                     it must be caught, returned as the reply and is_exception must be true. If reply is a regular
      *                     object, is_exception is false
      */

@@ -41,7 +41,7 @@ public abstract class FlowControl extends Protocol {
     protected long           max_credits=5_000_000;
 
     /** Max time (in milliseconds) to block. If credit hasn't been received after max_block_time, we send
-     * a REPLENISHMENT request to the members from which we expect credits. A value <= 0 means to wait forever.
+     * a REPLENISHMENT request to the members from which we expect credits. A value {@literal <= 0} means to wait forever.
      */
     @Property(description="Max time (in ms) to block",type=AttributeType.TIME)
     protected long           max_block_time=5000;

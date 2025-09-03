@@ -280,7 +280,6 @@ public class JChannel implements Closeable {
     /**
      * Sets the new {@link AddressGenerator}. New addresses will be generated using the new generator. This
      * should <em>not</em> be done while a channel is connected, but before connecting.
-     * @param address_generator
      * @since 2.12
      */
     public JChannel addAddressGenerator(AddressGenerator address_generator) {
@@ -355,8 +354,8 @@ public class JChannel implements Closeable {
 
 
     /**
-     * Joins the cluster and gets the state from a specified state provider.</br>
-     * This method invokes <code>connect<code> and <code>getState<code> methods.
+     * Joins the cluster and gets the state from a specified state provider.<p>
+     * This method invokes {@code connect} and {@code getState} methods.
      * If the channel is closed an exception will be thrown.
      * @param cluster_name  the cluster name to connect to. Cannot be null.
      * @param target the state provider. If null, the state will be fetched from coordinator, unless this channel is coordinator.
@@ -491,7 +490,7 @@ public class JChannel implements Closeable {
      * * @param dst the destination address. If null, the message will be sent to all cluster nodes (= cluster members)
      * @param buf the buffer to be sent
      * @param offset the offset into the buffer
-     * @param length the length of the data to be sent. Has to be <= buf.length - offset. This will send
+     * @param length the length of the data to be sent. Has to be {@literal <= buf.length - offset}. This will send
      *           {@code length} bytes starting at {@code offset}
      * @throws Exception thrown if send() failed
      */

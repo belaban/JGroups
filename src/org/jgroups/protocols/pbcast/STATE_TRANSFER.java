@@ -354,9 +354,7 @@ public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<
 
     /**
      * Wraps data for a state request/response. Note that for a state response
-     * the actual state will <em>not</em
-     * be stored in the header itself, but in the message's buffer.
-     *
+     * the actual state will <em>not</em> be stored in the header itself, but in the message's buffer.
      */
     public static class StateHeader extends Header {
         public static final byte STATE_REQ = 1;

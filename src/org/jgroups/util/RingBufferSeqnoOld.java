@@ -16,7 +16,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Designed for multiple producers (add()) and a single consumer (remove()). <em>Note that the remove() methods
  * are not reentrant, so multiple consumers won't work correctly !</em><p>
  * The buffer has a fixed capacity, and a low (LOW), highest delivered (HD) and highest received (HR) seqno.<p>
- * An element with a sequence number (seqno) > low + capacity or < HD will get discarded.
+ * An element with a sequence number (seqno) &gt; low + capacity or &lt; HD will get discarded.
  * <p>
  * Elements are added after HD, but cannot wrap around beyond LOW. Addition doesn't need to be sequential, e.g.
  * adding 5, 6, 8 is OK (as long as a seqno doesn't pass LOW). Addition may advance HR. Addition of elements that
@@ -31,7 +31,6 @@ import java.util.concurrent.locks.ReentrantLock;
  * to HD.
  * <p>
  * The design of RingBuffer is discussed in doc/design/FixedBuffer.txt.
- * <p>
  * @author Bela Ban
  * @since 3.1
  */

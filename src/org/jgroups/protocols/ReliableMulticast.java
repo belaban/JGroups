@@ -1194,9 +1194,9 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
 
     /**
      * Garbage collect messages that have been seen by all members. Update sent_msgs: for the sender P in the digest
-     * which is equal to the local address, garbage collect all messages <= seqno at digest[P]. Update xmit_table:
+     * which is equal to the local address, garbage collect all messages {@literal <= seqno} at digest[P]. Update xmit_table:
      * for each sender P in the digest and its highest seqno seen SEQ, garbage collect all delivered_msgs in the
-     * retransmit buffer corresponding to P which are <= seqno at digest[P].
+     * retransmit buffer corresponding to P which are {@literal <= seqno} at digest[P].
      */
     protected void stable(Digest digest) {
         if(members == null || local_addr == null || digest == null)

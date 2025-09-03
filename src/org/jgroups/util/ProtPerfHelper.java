@@ -19,10 +19,6 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.jgroups.protocols.ProtPerfHeader.ID;
 import static org.jgroups.util.Util.printTime;
 
-/**
- * @author Bela Ban
- * @since  5.2.7
- */
 public class ProtPerfHelper extends Helper {
     protected ProtPerfHelper(Rule rule) {
         super(rule);

@@ -91,7 +91,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected boolean receive_on_all_interfaces;
 
     /**
-     * List<NetworkInterface> of interfaces to receive multicasts on. The multicast receive socket will listen
+     * List of interfaces to receive multicasts on. The multicast receive socket will listen
      * on all of these interfaces. This is a comma-separated list of IP addresses or interface names. E.g.
      * "192.168.5.1,eth1,127.0.0.1". Duplicates are discarded; we only bind to
      * an interface once. If this property is set, it overrides receive_on_all_interfaces.

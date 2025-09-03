@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
  * message with the ID of the PERF protocol, and the start time is set in the header.
  * On {@link #up(org.jgroups.Message)}, the time difference is computed and a rolling average is updated in PERF.<p>
  * Note that we can have several measurements by inserting PERF protocols with different IDs (Protocol.id) into the stack.
- * </br>
+ * <p>
  * If PERF is used to measure latency between nodes running on different physical boxes, it is important that the clocks
  * are synchronized, or else latency cannot be computed correctly (and may even be negative).
  * @author Bela Ban

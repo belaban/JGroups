@@ -51,7 +51,7 @@ public class RpcDispatcher extends MessageDispatcher {
      * @param args The arguments to be passed
      * @param types The types of the arguments
      * @param options A collection of call options, e.g. sync versus async, timeout etc
-     * @return RspList<T> A response list with results, one for each member in dests, or null if the RPC is asynchronous
+     * @return RspList A response list with results, one for each member in dests, or null if the RPC is asynchronous
      * @throws Exception If the sending of the message threw an exception. Note that <em>no</em> exception will be
      *                   thrown if any of the target members threw an exception, but this exception will be in the Rsp
      *                   object for the particular member in the RspList

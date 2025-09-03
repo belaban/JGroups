@@ -78,7 +78,7 @@ public class SeqnoList extends FixedSizeBitSet implements SizeStreamable, Iterab
         return this;
     }
 
-    /** Removes all seqnos < seqno */
+    /** Removes all seqnos &lt; seqno */
     public SeqnoList removeLowerThan(long seqno) {
         int to=index(seqno-1);
         if(to >= 0)

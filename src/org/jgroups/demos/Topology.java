@@ -24,7 +24,6 @@ import java.util.ArrayList;
  * A nice demo is to start a number of Topology instances at the same time. All of them will be blue (all are
  * coordinators since they don't find each other). Then the MERGE3 protocol sets in and only one will retain
  * its coordinator role.
- * @todo Needs to be ported to Swing.
  * @author Bela Ban
  */
 public class Topology extends Frame implements WindowListener {

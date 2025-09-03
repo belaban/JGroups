@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
  * <li>Receivers now send credits to a sender when more than min_credits have been received (rather than when min_credits
  * are left)
  * <li>Receivers don't send the full credits (max_credits), but rather the actual number of bytes received
- * <ol/>
+ * </ol>
  * @author Bela Ban
  */
 @MBean(description="Simple flow control protocol based on a credit system")

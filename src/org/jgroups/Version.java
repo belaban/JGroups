@@ -136,12 +136,10 @@ public class Version {
         return version == v;
     }
 
-    /** Method copied from http://www.jboss.com/index.html?module=bb&op=viewtopic&t=77231 */
     public static short encode(int major, int minor, int micro) {
         return (short)((major << MAJOR_SHIFT) + (minor << MINOR_SHIFT) + micro);
     }
 
-    /** Method copied from http://www.jboss.com/index.html?module=bb&op=viewtopic&t=77231 */
     public static String print(short version) {
         int major=getMajor(version);
         int minor=getMinor(version);
