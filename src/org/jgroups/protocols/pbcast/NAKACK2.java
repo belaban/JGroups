@@ -991,7 +991,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                 return;
             if(is_trace) {
                 Message first=batch.first(), last=batch.last();
-                StringBuilder sb=new StringBuilder(local_addr + " <-- " + batch.sender() + ": ");
+                StringBuilder sb=new StringBuilder(128).append(local_addr + " <-- " + batch.sender() + ": ");
                 if(first != null && last != null) {
                     NakAckHeader2 hdr1=first.getHeader(id), hdr2=last.getHeader(id);
                     if(hdr1 != null && hdr2 != null)
