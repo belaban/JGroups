@@ -95,6 +95,13 @@
                 <updatePolicy>always</updatePolicy>
             </snapshots>
         </repository>
+
+        <!-- To test validation of artifacts before deploying to real (releases) repository -->
+        <repository>
+            <id>jgroups-staging</id>
+            <name>JGroups private staing repo to test validation</name>
+            <url>https://repository.jboss.org/nexus/repository/jgroups-staging/</url>
+        </repository>
     </repositories>
 
     <dependencies>
