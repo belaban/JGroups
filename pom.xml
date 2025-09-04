@@ -4,7 +4,7 @@
     <artifactId>jgroups</artifactId>
     <packaging>jar</packaging>
     <name>JGroups</name>
-    <version>5.3.21.Final-SNAPSHOT</version>
+    <version>5.3.21.Final</version>
     <description>Reliable cluster communication toolkit</description>
     <url>http://www.jgroups.org</url>
 
@@ -95,6 +95,13 @@
                 <enabled>true</enabled>
                 <updatePolicy>always</updatePolicy>
             </snapshots>
+        </repository>
+
+        <!-- To test validation of artifacts before deploying to real (releases) repository -->
+        <repository>
+            <id>jgroups-staging</id>
+            <name>JGroups private staing repo to test validation</name>
+            <url>https://repository.jboss.org/nexus/repository/jgroups-staging/</url>
         </repository>
     </repositories>
 
@@ -220,6 +227,17 @@
                     </excludes>
                 </configuration>
             </plugin>
+
+            <!--<plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>0.8.0</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <publishingServerId>central</publishingServerId>
+                </configuration>
+            </plugin>-->
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
