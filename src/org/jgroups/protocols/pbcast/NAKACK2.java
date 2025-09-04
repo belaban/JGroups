@@ -6,7 +6,6 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
-import org.jgroups.protocols.TCP;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.Protocol;
@@ -127,8 +126,9 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     @Property(description="Max number of times the last seqno is resent before acquiescing if last seqno isn't incremented")
     protected int     resend_last_seqno_max_times=1;
 
-    @ManagedAttribute(description="True if sending a message can block at the transport level")
-    protected boolean sends_can_block=true;
+    @ManagedAttribute(description="True if sending a message can block at the transport level. Probabably only needed " +
+      "if NoBundler is used as bundler type, as the default bundler(s) never block.")
+    protected boolean sends_can_block;
 
     /** To cache batches for sending messages up the stack (https://issues.redhat.com/browse/JGRP-2841) */
     protected final Map<Address,MessageBatch> cached_batches=Util.createConcurrentMap();
@@ -491,7 +491,6 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         }
 
         TP transport=getTransport();
-        sends_can_block=transport instanceof TCP; // UDP and TCP_NIO2 won't block
         transport.registerProbeHandler(this);
         if(!transport.supportsMulticasting()) {
             if(use_mcast_xmit) {

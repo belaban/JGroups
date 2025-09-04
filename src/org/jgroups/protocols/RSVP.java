@@ -299,7 +299,7 @@ public class RSVP extends Protocol {
     protected synchronized void startResendTask() {
         if(resend_task == null || resend_task.isDone())
             resend_task=timer.scheduleWithFixedDelay(new ResendTask(), resend_interval, resend_interval, TimeUnit.MILLISECONDS,
-                                                     getTransport() instanceof TCP);
+                                                     false);
     }
 
     protected synchronized void stopResendTask() {

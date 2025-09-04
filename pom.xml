@@ -32,6 +32,8 @@
         <developer>
             <name>Bela Ban</name>
             <email>belaban@gmail.com</email>
+            <organization>IBM</organization>
+            <organizationUrl>http://www.ibm.com</organizationUrl>
         </developer>
     </developers>
 
@@ -66,7 +68,7 @@
         </snapshotRepository>
     </distributionManagement>
 
-    <repositories>
+  <!--  <repositories>
         <repository>
             <id>jboss-public-repository-group</id>
             <name>JBoss Public Maven Repository Group</name>
@@ -96,13 +98,13 @@
             </snapshots>
         </repository>
 
-        <!-- To test validation of artifacts before deploying to real (releases) repository -->
+        &lt;!&ndash; To test validation of artifacts before deploying to real (releases) repository &ndash;&gt;
         <repository>
             <id>jgroups-staging</id>
             <name>JGroups private staing repo to test validation</name>
             <url>https://repository.jboss.org/nexus/repository/jgroups-staging/</url>
         </repository>
-    </repositories>
+    </repositories>-->
 
     <dependencies>
         <dependency>
@@ -215,6 +217,21 @@
                     </execution>
                 </executions>
             </plugin>
+
+           <!-- <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>${version.maven.sonatype.central}</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <autoPublish>true</autoPublish>
+                    <deploymentName>JGroups ${project.version}</deploymentName>
+                    <publishingServerId>central</publishingServerId>
+                    <waitMaxTime>1800</waitMaxTime>
+                    <waitPollingInterval>60</waitPollingInterval>
+                    <waitUntil>validated</waitUntil>
+                </configuration>
+            </plugin>-->
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

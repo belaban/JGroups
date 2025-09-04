@@ -106,7 +106,7 @@ public abstract class Discovery extends Protocol {
     @ManagedAttribute(description="Whether the transport supports multicasting")
     protected boolean                    transport_supports_multicasting=true;
     @ManagedAttribute(description="True if sending a message can block at the transport level")
-    protected boolean                    sends_can_block=true;
+    protected boolean                    sends_can_block;
     protected Consumer<PingData>         discovery_rsp_callback; // called when a discovery response is received
     protected static final byte[]        WHITESPACE=" \t".getBytes();
 
