@@ -488,4 +488,40 @@ public class ByteArrayDataInputOutputStreamTest {
         }
         assert lines.size() == 4;
     }
+
+    public void testMark() {
+        byte[] buf=new byte[10];
+        ByteArrayDataInputStream in=new ByteArrayDataInputStream(buf);
+        assert in.markSupported();
+    }
+
+    public void testMarkAndReset() {
+        byte[] buf="Bela".getBytes();
+        ByteArrayDataInputStream in=new ByteArrayDataInputStream(buf);
+        assert in.read() == 'B';
+        in.mark(0);
+        assert in.read() == 'e';
+        assert in.read() == 'l';
+        in.reset();
+        assert in.read() == 'e';
+    }
+
+    public void testMarkAndResetWithOffset() {
+        byte[] buf="hello world".getBytes();
+        ByteArrayDataInputStream in=new ByteArrayDataInputStream(buf, 6, 5);
+        assert in.read() == 'w';
+        in.mark(0);
+        assert in.read() == 'o';
+        assert in.read() == 'r';
+        in.reset();
+        assert in.read() == 'o';
+    }
+
+    public void testResetWithoutMark() {
+        byte[] buf="Bela".getBytes();
+        ByteArrayDataInputStream in=new ByteArrayDataInputStream(buf);
+        // We don't throw an exception if no mark
+        in.reset();
+        assert in.read() == 'B';
+    }
 }
