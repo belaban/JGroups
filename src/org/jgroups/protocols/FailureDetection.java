@@ -266,7 +266,7 @@ public abstract class FailureDetection extends Protocol {
         try {
             if(!isHeartbeatSenderRunning()) {
                 heartbeat_sender=timer.scheduleWithFixedDelay(new HeartbeatSender(this), 0, interval, TimeUnit.MILLISECONDS,
-                                                              getTransport() instanceof TCP);
+                                                              false);
             }
         }
         finally {

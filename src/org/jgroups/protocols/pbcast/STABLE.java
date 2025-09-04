@@ -4,7 +4,6 @@ package org.jgroups.protocols.pbcast;
 import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.conf.AttributeType;
-import org.jgroups.protocols.TCP;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
@@ -415,7 +414,7 @@ public class STABLE extends Protocol {
         try {
             if(stable_task_future == null || stable_task_future.isDone()) {
                 StableTask stable_task=new StableTask();
-                stable_task_future=timer.scheduleWithDynamicInterval(stable_task, getTransport() instanceof TCP);
+                stable_task_future=timer.scheduleWithDynamicInterval(stable_task, false);
                 log.trace("%s: stable task started", local_addr);
             }
         }
@@ -611,7 +610,7 @@ public class STABLE extends Protocol {
             };
 
             // Run in a separate thread so we don't potentially block (https://issues.redhat.com/browse/JGRP-532)
-            timer.execute(r, getTransport() instanceof TCP);
+            timer.execute(r, false);
         }
         catch(Throwable t) {
             log.warn("failed sending STABLE message", t);

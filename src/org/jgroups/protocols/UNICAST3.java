@@ -133,8 +133,9 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     @ManagedAttribute(description="Average batch size of messages delivered to the application")
     protected final AverageMinMax avg_delivery_batch_size=new AverageMinMax(1024);
 
-    @ManagedAttribute(description="True if sending a message can block at the transport level")
-    protected boolean sends_can_block=true;
+    @ManagedAttribute(description="True if sending a message can block at the transport level. Probabably only needed " +
+      "if NoBundler is used as bundler type, as the default bundler(s) never block.")
+    protected boolean sends_can_block;
 
     @ManagedAttribute(description="tracing is enabled or disabled for the given log",writable=true)
     protected boolean is_trace=log.isTraceEnabled();
@@ -422,7 +423,6 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     public void init() throws Exception {
         super.init();
         TP transport=getTransport();
-        sends_can_block=transport instanceof TCP; // UDP and TCP_NIO2 won't block
         time_service=transport.getTimeService();
         if(time_service == null)
             throw new IllegalStateException("time service from transport is null");

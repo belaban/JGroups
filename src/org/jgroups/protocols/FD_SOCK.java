@@ -1171,7 +1171,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             if(future == null || future.isDone()) {
                 try {
                     future=timer.scheduleWithFixedDelay(this, suspect_msg_interval, suspect_msg_interval, TimeUnit.MILLISECONDS,
-                                                        getTransport() instanceof TCP);
+                                                        false);
                 }
                 catch(RejectedExecutionException e) {
                     log.warn("%s: task %s was rejected as timer thread pool is shutting down", local_addr, this);

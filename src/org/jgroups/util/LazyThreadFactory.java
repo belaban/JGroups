@@ -42,6 +42,17 @@ public class LazyThreadFactory extends DefaultThreadFactory {
         return retval;
     }
 
+    public void renameThread(String base_name, Thread thread, String addr, String cluster_name) {
+        String thread_name=thread != null? thread.getName() : null;
+        if(thread_name == null) {
+            super.renameThread(base_name, thread, addr, cluster_name);
+            return;
+        }
+        if(!thread_name.contains(ADDR) && !thread_name.contains(CLUSTER))
+            return;
+        super.renameThread(base_name, thread, addr, cluster_name);
+    }
+
     public void setAddress(String address) {
         boolean changed=!Util.match(this.address, address);
         super.setAddress(address);

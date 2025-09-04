@@ -202,7 +202,7 @@ public class MERGE3 extends Protocol {
 
     protected synchronized void startInfoSender() {
         if(info_sender_future == null || info_sender_future.isDone())
-            info_sender_future=timer.scheduleWithDynamicInterval(info_sender, getTransport() instanceof TCP);
+            info_sender_future=timer.scheduleWithDynamicInterval(info_sender, false);
     }
 
     protected synchronized void stopInfoSender() {

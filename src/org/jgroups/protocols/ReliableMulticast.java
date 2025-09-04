@@ -94,7 +94,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
     protected boolean send_atomically;
 
     @ManagedAttribute(description="True if sending a message can block at the transport level")
-    protected boolean sends_can_block=true;
+    protected boolean sends_can_block;
 
     /* -------------------------------------------------- JMX ---------------------------------------------------------- */
 

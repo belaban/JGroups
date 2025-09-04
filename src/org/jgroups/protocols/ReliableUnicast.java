@@ -121,7 +121,7 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
     protected final AverageMinMax avg_delivery_batch_size=new AverageMinMax(1024);
 
     @ManagedAttribute(description="True if sending a message can block at the transport level")
-    protected boolean sends_can_block=true;
+    protected boolean sends_can_block;
 
     @ManagedAttribute(description="tracing is enabled or disabled for the given log",writable=true)
     protected boolean is_trace=log.isTraceEnabled();

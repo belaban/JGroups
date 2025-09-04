@@ -700,7 +700,7 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
         protected void startTask() {
             if(future == null || future.isDone()) {
                 future=timer.scheduleWithFixedDelay(this, suspect_msg_interval, suspect_msg_interval, MILLISECONDS,
-                                                    getTransport() instanceof TCP);
+                                                    false);
             }
         }
 
