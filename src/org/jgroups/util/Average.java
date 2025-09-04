@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit;
 import static org.jgroups.util.Util.printTime;
 
 /**
- * Maintains an approximation of an average of positive (>= 0) values in a window and adding new values at random
+ * Maintains an approximation of an average of positive ({@literal >= 0}) values in a window and adding new values at random
  * indices.<p>
  * This class is lock-less, at the expense of incorrect reads and writes (by multiple threads), but the noise of
  * these errors should be negligible. Note that a bigger capacity (window size) reduces this noise.
@@ -53,7 +53,7 @@ public class Average implements Streamable {
         return (T)this;
     }
 
-    /** Returns the total of all valid (>= 0) values */
+    /** Returns the total of all valid ({@literal >= 0}) values */
     public long total() {
         long ret=0;
         for(int i=0; i < samples.length; i++) {
@@ -64,7 +64,7 @@ public class Average implements Streamable {
         return ret;
     }
 
-    /** Returns the number of valid samples (>= 0) */
+    /** Returns the number of valid samples ({@literal >= 0}) */
     public int count() {
         if(all_filled)
             return samples.length;
@@ -78,7 +78,7 @@ public class Average implements Streamable {
         return ret;
     }
 
-    /** Returns true if there are no valid samples (>= 0), false otherwise */
+    /** Returns true if there are no valid samples ({@literal >= 0}), false otherwise */
     public boolean isEmpty() {
         if(all_filled)
             return false;

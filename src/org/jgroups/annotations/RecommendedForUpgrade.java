@@ -6,7 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Protocols annotated with this annotation should upgrade to a newer version (e.g. UNICAST -> UNICAST3)
+ * Protocols annotated with this annotation should upgrade to a newer version (e.g. UNICAST to UNICAST3)
  * @author Bela Ban
  */
 @Target({ElementType.TYPE})

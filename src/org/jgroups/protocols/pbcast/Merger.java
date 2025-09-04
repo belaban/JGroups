@@ -456,7 +456,7 @@ public class Merger {
 
 
         /**
-         * @param views Guaranteed to be non-null and to have >= 2 members, or else this thread would not be started
+         * @param views Guaranteed to be non-null and to have {@literal >= 2} members, or else this thread would not be started
          */
         public synchronized void start(Map<Address, View> views) {
             if(thread != null && thread.isAlive()) // the merge thread is already running

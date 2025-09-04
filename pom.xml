@@ -4,7 +4,7 @@
     <artifactId>jgroups</artifactId>
     <packaging>jar</packaging>
     <name>JGroups</name>
-    <version>5.4.10.Final-SNAPSHOT</version>
+    <version>5.4.9.Final</version>
     <description>Reliable cluster communication toolkit</description>
     <url>http://www.jgroups.org</url>
 
@@ -22,6 +22,7 @@
         <insecure.repositories>ERROR</insecure.repositories>
         <log4j2.version>2.25.0</log4j2.version>
         <version.maven.javadoc>3.11.2</version.maven.javadoc>
+        <version.maven.sonatype.central>0.8.0</version.maven.sonatype.central>
     </properties>
 
     <organization>
@@ -33,6 +34,8 @@
         <developer>
             <name>Bela Ban</name>
             <email>belaban@gmail.com</email>
+            <organization>IBM</organization>
+            <organizationUrl>http://www.ibm.com</organizationUrl>
         </developer>
     </developers>
 
@@ -67,7 +70,7 @@
         </snapshotRepository>
     </distributionManagement>
 
-    <repositories>
+  <!--  <repositories>
         <repository>
             <id>jboss-public-repository-group</id>
             <name>JBoss Public Maven Repository Group</name>
@@ -96,7 +99,14 @@
                 <updatePolicy>always</updatePolicy>
             </snapshots>
         </repository>
-    </repositories>
+
+        &lt;!&ndash; To test validation of artifacts before deploying to real (releases) repository &ndash;&gt;
+        <repository>
+            <id>jgroups-staging</id>
+            <name>JGroups private staing repo to test validation</name>
+            <url>https://repository.jboss.org/nexus/repository/jgroups-staging/</url>
+        </repository>
+    </repositories>-->
 
     <dependencies>
         <dependency>
@@ -180,7 +190,7 @@
         </testResources>
         <plugins>
 
-            <plugin>
+            <!--<plugin>
                 <groupId>org.sonatype.plugins</groupId>
                 <artifactId>nxrm3-maven-plugin</artifactId>
                 <version>1.0.7</version>
@@ -188,17 +198,17 @@
                 <configuration>
                     <nexusUrl>https://repository.jboss.org/nexus</nexusUrl>
 
-                    <!-- The server "id" element from settings to use authentication from settings.xml-->
+                    &lt;!&ndash; The server "id" element from settings to use authentication from settings.xml&ndash;&gt;
                     <serverId>jboss-releases-repository</serverId>
 
-                    <!-- Change to repository you will be deploying to -->
+                    &lt;!&ndash; Change to repository you will be deploying to &ndash;&gt;
                     <repository>releases</repository>
 
-                    <!-- Skip the staging deploy mojo -->
+                    &lt;!&ndash; Skip the staging deploy mojo &ndash;&gt;
                     <skipNexusStagingDeployMojo>true</skipNexusStagingDeployMojo>
                 </configuration>
 
-                <!-- replacing the standard Maven Deployment Plugin -->
+                &lt;!&ndash; replacing the standard Maven Deployment Plugin &ndash;&gt;
                 <executions>
                     <execution>
                         <id>default-deploy</id>
@@ -208,6 +218,21 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>-->
+
+           <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>${version.maven.sonatype.central}</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <autoPublish>false</autoPublish>
+                    <deploymentName>JGroups ${project.version}</deploymentName>
+                    <publishingServerId>central</publishingServerId>
+                    <waitMaxTime>1800</waitMaxTime>
+                    <waitPollingInterval>60</waitPollingInterval>
+                    <waitUntil>validated</waitUntil>
+                </configuration>
             </plugin>
 
             <plugin>

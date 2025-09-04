@@ -239,7 +239,7 @@ public class FRAG2 extends Fragmentation {
 
     /**
      1. Get all the fragment buffers
-     2. When all are received -> Assemble them into one big buffer
+     2. When all are received {@literal ->} Assemble them into one big buffer
      3. Read headers and byte buffer from big buffer
      4. Set headers and buffer in msg
      5. Return the message

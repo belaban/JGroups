@@ -170,7 +170,7 @@ public class FixedSizeBitSet {
      * use the following loop:
      * <p>
      * <pre>
-     * for (int i = bs.nextSetBit(0); i >= 0; i = bs.nextSetBit(i+1)) {
+     * for (int i = bs.nextSetBit(0); i {@literal >= 0}; i = bs.nextSetBit(i+1)) {
      *     // operate on index i here
      * }</pre>
      * @param fromIndex the index to start checking from (inclusive).
@@ -270,7 +270,7 @@ public class FixedSizeBitSet {
 
 
     /**
-     * Flips all bits: 1 --> 0 and 0 --> 1
+     * Flips all bits: {@literal 1 --> 0 and 0 --> 1}
      */
     public void flip() {
         int fromIndex=0, toIndex=size();

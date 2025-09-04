@@ -718,7 +718,7 @@ public class Table<T> implements Iterable<T> {
 
     /**
      * Returns a list of missing messages
-     * @param max_msgs If > 0, the max number of missing messages to be returned (oldest first), else no limit
+     * @param max_msgs If &gt; 0, the max number of missing messages to be returned (oldest first), else no limit
      * @return A SeqnoList of missing messages, or null if no messages are missing
      */
     public SeqnoList getMissing(int max_msgs) {

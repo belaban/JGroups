@@ -55,7 +55,7 @@ public class STABLE extends Protocol {
 
     /**
      * Total amount of bytes from incoming messages (default = 0 = disabled). When exceeded, a STABLE message will
-     * be broadcast and{@code num_bytes_received} reset to 0 . If this is > 0, then ideally {@code stability_delay}
+     * be broadcast and {@code num_bytes_received} reset to 0 . If this is &gt; 0, then ideally {@code stability_delay}
      * should be set to a low number as well
      */
     @Property(description="Maximum number of bytes received in all messages before sending a STABLE message",

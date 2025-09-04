@@ -1514,7 +1514,7 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
             return this;
         }
 
-        /** Returns true if a real ACK should be sent. This is based on num_acks_sent being > ack_threshold */
+        /** Returns true if a real ACK should be sent. This is based on num_acks_sent being &gt; ack_threshold */
         public boolean update(int num_acks, final IntBinaryOperator op) {
             boolean should_send_ack=acks_sent.accumulateAndGet(num_acks, op) == 0;
             if(should_send_ack)

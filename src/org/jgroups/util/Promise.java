@@ -27,7 +27,7 @@ public class Promise<T> {
      * Blocks until a result is available, or timeout milliseconds have elapsed
      * @param timeout in ms
      * @return An object
-     * @throws TimeoutException If a timeout occurred (implies that timeout > 0)
+     * @throws TimeoutException If a timeout occurred (implies that timeout &gt; 0)
      */
     public T getResultWithTimeout(long timeout) throws TimeoutException {
         return _getResultWithTimeout(timeout);
@@ -138,7 +138,7 @@ public class Promise<T> {
      * Blocks until a result is available, or timeout milliseconds have elapsed. Needs to be called with lock held
      * @param timeout in ms
      * @return An object
-     * @throws TimeoutException If a timeout occurred (implies that timeout > 0)
+     * @throws TimeoutException If a timeout occurred (implies that timeout &gt; 0)
      */
     protected T _getResultWithTimeout(final long timeout) throws TimeoutException {
         if(timeout <= 0)

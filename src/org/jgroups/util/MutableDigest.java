@@ -39,7 +39,7 @@ public class MutableDigest extends Digest {
 
     public Supplier<? extends Digest> create() {return MutableDigest::new;}
 
-    /** Returns true if all members have a corresponding seqno >= 0, else false */
+    /** Returns true if all members have a corresponding {@literal seqno >= 0}, else false */
     public boolean allSet() {
         for(int i=0; i < seqnos.length; i+=2)
             if(seqnos[i] == -1)

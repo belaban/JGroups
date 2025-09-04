@@ -8,7 +8,7 @@ import java.util.Enumeration;
 /**
  * Tests IP multicast. Start one or more instances of McastReceiverTest which listen for IP mcast packets
  * and then start McastSenderTest, which sends IP mcast packets (all have to have the same IPMCAST address and port).
- * A TTL of 0 for the McastSenderTest means that packets will only be sent to receivers on the same host. If TTL > 0,
+ * A TTL of 0 for the McastSenderTest means that packets will only be sent to receivers on the same host. If TTL &gt; 0,
  * other hosts will receive the packets too. Since many routers are dropping IPMCAST traffic, this is a good way to
  * test whether IPMCAST works between different subnets.
  *

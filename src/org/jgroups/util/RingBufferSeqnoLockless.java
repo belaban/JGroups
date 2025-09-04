@@ -137,7 +137,7 @@ public class RingBufferSeqnoLockless<T> implements Iterable<T> {
      * RingBuffer can only have 1 remover thread active at any time !</em>
      * @param nullify Nulls the element in the array if true
      * @return T if there was a non-null element at position hd +1, or null if the element at hd+1 was null, or
-     * hd+1 > hr.
+     * hd+1 &gt; hr.
      */
     public T remove(boolean nullify) {
         long tmp=hd+1;

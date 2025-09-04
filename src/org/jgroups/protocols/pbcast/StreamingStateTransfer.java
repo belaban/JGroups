@@ -33,7 +33,7 @@ import java.util.function.Supplier;
  * requires this state to be loaded entirely into memory before being
  * transferred to a group member while the streaming state transfer protocols do not.
  * Thus the streaming state transfer protocols are able to
- * transfer application state that is very large (>1Gb) without a likelihood of the
+ * transfer application state that is very large (&lt; 1Gb) without a likelihood of the
  * such transfer resulting in OutOfMemoryException.
  * <p>
  * Note that prior to 3.0, there was only 1 streaming protocol: STATE. In 3.0 the functionality

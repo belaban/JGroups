@@ -57,7 +57,7 @@ public class COUNTER extends Protocol {
     /** The address of the cluster coordinator. Updated on view changes */
     protected Address coord;
 
-    /** Backup coordinators. Only created if num_backups > 0 and coord=true */
+    /** Backup coordinators. Only created if num_backups &gt; 0 and coord=true */
     protected List<Address> backup_coords=null;
 
     @GuardedBy("this")
@@ -1331,7 +1331,6 @@ public class COUNTER extends Protocol {
             this.version=version;
         }
 
-        /** num == 0 --> GET */
         protected synchronized long[] addAndGet(long num) {
             return num == 0? new long[]{value, version} : new long[]{value+=num, ++version};
         }
