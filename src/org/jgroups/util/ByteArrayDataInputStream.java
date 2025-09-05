@@ -12,6 +12,7 @@ import java.util.Objects;
 public class ByteArrayDataInputStream extends InputStream implements DataInput {
     protected final byte[] buf;
     protected int          pos;   // current position to read next byte from buf
+    protected int          marked_pos;
 
     // index of last byte to be read, reading beyond will return -1 or throw EOFException. Limit has to be <= buf.length
     protected final int    limit;
@@ -25,6 +26,7 @@ public class ByteArrayDataInputStream extends InputStream implements DataInput {
         this.buf=buf;
         this.limit=Math.min(buf.length, offset+length);
         this.pos=checkBounds(offset);
+        this.marked_pos=pos;
     }
 
     public ByteArrayDataInputStream(ByteArray buf) {
@@ -46,6 +48,7 @@ public class ByteArrayDataInputStream extends InputStream implements DataInput {
             this.pos=0;
             this.limit=len;
         }
+        this.marked_pos=pos;
     }
 
     public ByteArrayDataInputStream position(int pos) {
@@ -102,6 +105,37 @@ public class ByteArrayDataInputStream extends InputStream implements DataInput {
         System.arraycopy(buf, pos, b, off, len);
         pos += len;
         return len;
+    }
+
+    @Override
+    public long skip(long n) {
+        if (n <= 0)
+            return 0;
+        long avail=limit - pos;
+        if (n > avail)
+            n=avail;
+        pos+=n;
+        return n;
+    }
+
+    @Override
+    public int available() {
+        return limit - pos;
+    }
+
+    @Override
+    public boolean markSupported() {
+        return true;
+    }
+
+    @Override
+    public void mark(int readlimit) {
+        marked_pos=pos;
+    }
+
+    @Override
+    public void reset() {
+        pos=marked_pos;
     }
 
     public void readFully(byte[] b) throws IOException {
