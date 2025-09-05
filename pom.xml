@@ -12,20 +12,22 @@
         <codename>Alpe d'Huez</codename>
         <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <!-- nexus-staging-maven-plugin -->
-        <autoReleaseAfterClose>true</autoReleaseAfterClose>
         <nexus.server.id>jboss-releases-repository</nexus.server.id>
         <nexus.server.url>https://repository.jboss.org/nexus/repository/releases/</nexus.server.url>
         <nexus.snapshot.server.id>jboss-snapshots-repository</nexus.snapshot.server.id>
         <nexus.snapshot.server.url>https://repository.jboss.org/nexus/repository/snapshots/</nexus.snapshot.server.url>
         <insecure.repositories>ERROR</insecure.repositories>
         <log4j2.version>2.25.1</log4j2.version>
-        <version.maven.javadoc>3.11.2</version.maven.javadoc>
         <version.maven.sonatype.central>0.8.0</version.maven.sonatype.central>
+        <javadoc.plugin.version>3.11.2</javadoc.plugin.version>
+        <compiler.plugin.version>3.14.0</compiler.plugin.version>
+        <nexus3.plugin.version>1.0.7</nexus3.plugin.version>
+        <enforcer.plugin.version>3.6.1</enforcer.plugin.version>
+        <gpg.plugin.version>3.2.8</gpg.plugin.version>
     </properties>
 
     <organization>
-        <name>JBoss, a division of Red Hat</name>
+        <name>JBoss, IBM</name>
         <url>http://www.jboss.org</url>
     </organization>
 
@@ -153,7 +155,7 @@
             <plugin>
                 <groupId>org.sonatype.plugins</groupId>
                 <artifactId>nxrm3-maven-plugin</artifactId>
-                <version>1.0.7</version>
+                <version>${nexus3.plugin.version}</version>
                 <extensions>true</extensions>
                 <configuration>
                     <nexusUrl>https://repository.jboss.org/nexus</nexusUrl>
@@ -198,18 +200,12 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.14.0</version>
-                <configuration>
-                    <useIncrementalCompilation>false</useIncrementalCompilation>
-                    <excludes>
-                        <exclude>org/jgroups/util/JUnitXMLReporter.java</exclude>
-                    </excludes>
-                </configuration>
+                <version>${compiler.plugin.version}</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
-                <version>3.6.1</version>
+                <version>${enforcer.plugin.version}</version>
                 <executions>
                     <execution>
                         <id>enforce-java</id>
@@ -220,11 +216,6 @@
                 </executions>
                 <configuration>
                     <rules>
-                        <bannedRepositories>
-                            <level>${insecure.repositories}</level>
-                            <bannedRepositories>http://*</bannedRepositories>
-                            <bannedPluginRepositories>http://*</bannedPluginRepositories>
-                        </bannedRepositories>
                         <requireJavaVersion>
                             <!-- require Java 17 or higher -->
                             <version>[17,)</version>
@@ -321,6 +312,7 @@
                             <addBuildEnvironmentEntries>true</addBuildEnvironmentEntries>
                         </manifest>
                     </archive>
+                    <defaultManifestFile/>
                 </configuration>
                 <executions>
                     <execution>
@@ -354,7 +346,10 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>${version.maven.javadoc}</version>
+                <version>${javadoc.plugin.version}</version>
+                <configuration>
+                    <doclint>none</doclint>
+                </configuration>
                 <executions>
                     <execution>
                         <id>javadoc</id>
@@ -364,16 +359,6 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-release-plugin</artifactId>
-                <configuration>
-                    <arguments>-DskipTests=true -Dmaven.test.skip=true -Dmaven.javadoc.skip=true</arguments>
-                    <preparationGoals>clean</preparationGoals>
-                </configuration>
-
             </plugin>
 
             <!-- Disable default tests: they won't run since they are lacking configuration -->
@@ -395,16 +380,6 @@
             <plugins>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-release-plugin</artifactId>
-                    <version>3.1.1</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.sonatype.plugins</groupId>
-                    <artifactId>nexus-staging-maven-plugin</artifactId>
-                    <version>1.7.0</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-antrun-plugin</artifactId>
                     <version>3.1.0</version>
                 </plugin>
@@ -412,11 +387,6 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-clean-plugin</artifactId>
                     <version>3.5.0</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-deploy-plugin</artifactId>
-                    <version>3.1.4</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -447,27 +417,6 @@
                     <version>3.5.3</version>
                 </plugin>
                 <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-failsafe-plugin</artifactId>
-                    <version>3.5.3</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-dependency-plugin</artifactId>
-                    <version>3.8.1</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-help-plugin</artifactId>
-                    <version>3.5.1</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>build-helper-maven-plugin</artifactId>
-                    <version>3.6.1</version>
-                </plugin>
-
-                <plugin>
                     <groupId>org.asciidoctor</groupId>
                     <artifactId>asciidoctor-maven-plugin</artifactId>
                     <version>3.2.0</version>
@@ -479,38 +428,13 @@
                         </dependency>
                     </dependencies>
                 </plugin>
-                <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
-                <plugin>
-                    <groupId>org.eclipse.m2e</groupId>
-                    <artifactId>lifecycle-mapping</artifactId>
-                    <version>1.0.0</version>
-                    <configuration>
-                        <lifecycleMappingMetadata>
-                            <pluginExecutions>
-                                <pluginExecution>
-                                    <pluginExecutionFilter>
-                                        <groupId>org.apache.maven.plugins</groupId>
-                                        <artifactId>maven-antrun-plugin</artifactId>
-                                        <versionRange>[1.3,)</versionRange>
-                                        <goals>
-                                            <goal>run</goal>
-                                        </goals>
-                                    </pluginExecutionFilter>
-                                    <action>
-                                        <ignore />
-                                    </action>
-                                </pluginExecution>
-                            </pluginExecutions>
-                        </lifecycleMappingMetadata>
-                    </configuration>
-                </plugin>
             </plugins>
         </pluginManagement>
     </build>
 
     <profiles>
         <profile>
-            <id>community-release</id>
+            <id>release</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
             </activation>
@@ -520,7 +444,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
-                        <version>3.2.8</version>
+                        <version>${gpg.plugin.version}</version>
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
@@ -582,7 +506,6 @@
                     <plugin>
                         <groupId>org.asciidoctor</groupId>
                         <artifactId>asciidoctor-maven-plugin</artifactId>
-
                         <configuration>
                             <sourceDirectory>${basedir}/doc/manual</sourceDirectory>
                             <requires>
@@ -619,6 +542,4 @@
             </build>
         </profile>
     </profiles>
-
-
 </project>
