@@ -1,0 +1,37 @@
+
+
+= Steps to take when releasing JGroups
+:author: Bela Ban <belaban@gmail.com>
+:toc2:
+:toclevels: 3
+:icons:
+:homepage: http://www.jgroups.org
+:source-highlighter: pygments
+
+== Overview
+
+A release consists of the JGroups JAR, a source JAR and a javadoc JAR. All 3 JARs need to be signed and there ned to be
+checksums (md5 and sha1) for each of them (Sonatype requirement)
+
+The `nxrm3-maven-plugin` plugin is responsible for releasing. We release to repository.jboss.org, which periodically
+synchronizes with maven central.
+
+== Steps
+
+* Change the version in the POM `from x.y.z.Final-SNAPSHOT` to `x.y.z.Final`
+
+* Make sure you have a valid GPG key: `gpg --list-keys`
+
+* The key needs to be registered with one of the 3 keyservers recognized by Sonatype, e.g. by uploading it:
+  `gpg --keyserver keyserver.ubuntu.com --send-keys 185xxxxx`
+
+* Create the necessary files in `target`: `mvn -DskipTests clean install -Prelease`
+
+* Deploy to `repository.jboss.org`: `mvn -DskipTests deploy`
+
+* Tag the version: `git tag jgroups-x.y.z.Final ; git push --tags`
+
+* Increment the version in the POM and append `-SNAPSHOT`
+
+
+== Todo:
