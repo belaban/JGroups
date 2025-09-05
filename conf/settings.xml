@@ -20,7 +20,6 @@
         </server>
     </servers>
 
-
     <profiles>
         <profile>
             <id>jboss-releases-repository</id>
@@ -42,7 +41,6 @@
             </repositories>
         </profile>
 
-
         <profile>
             <id>jboss-snapshots-repository</id>
             <repositories>
@@ -62,65 +60,6 @@
                 </repository>
             </repositories>
         </profile>
-
-
-        <profile>
-            <id>jboss-public-repository</id>
-            <repositories>
-                <repository>
-                    <id>jboss-public-repository-group</id>
-                    <name>JBoss Public Maven Repository Group</name>
-                    <url>https://repository.jboss.org/nexus/content/groups/public/</url>
-                    <layout>default</layout>
-                    <releases>
-                        <enabled>true</enabled>
-                        <updatePolicy>never</updatePolicy>
-                    </releases>
-                    <snapshots>
-                        <enabled>true</enabled>
-                        <updatePolicy>never</updatePolicy>
-                    </snapshots>
-                </repository>
-            </repositories>
-            <pluginRepositories>
-                <pluginRepository>
-                    <id>jboss-public-repository-group</id>
-                    <name>JBoss Public Maven Repository Group</name>
-                    <url>https://repository.jboss.org/nexus/content/groups/public/</url>
-                    <layout>default</layout>
-                    <releases>
-                        <enabled>true</enabled>
-                        <updatePolicy>never</updatePolicy>
-                    </releases>
-                    <snapshots>
-                        <enabled>true</enabled>
-                        <updatePolicy>never</updatePolicy>
-                    </snapshots>
-                </pluginRepository>
-            </pluginRepositories>
-        </profile>
-
-
-        <profile>
-            <id>jboss-deprecated-repository</id>
-            <repositories>
-                <repository>
-                    <id>jboss-deprecated-repository</id>
-                    <name>JBoss Deprecated Maven Repository</name>
-                    <url>https://repository.jboss.org/nexus/content/repositories/deprecated/</url>
-                    <layout>default</layout>
-                    <releases>
-                        <enabled>true</enabled>
-                        <updatePolicy>never</updatePolicy>
-                    </releases>
-                    <snapshots>
-                        <enabled>false</enabled>
-                        <updatePolicy>never</updatePolicy>
-                    </snapshots>
-                </repository>
-            </repositories>
-        </profile>
-
 
     </profiles>
 

@@ -67,44 +67,6 @@
         </snapshotRepository>
     </distributionManagement>
 
-    <repositories>
-        <repository>
-            <id>jboss-public-repository-group</id>
-            <name>JBoss Public Maven Repository Group</name>
-            <url>https://repository.jboss.org/nexus/content/groups/public/</url>
-            <layout>default</layout>
-            <releases>
-                <enabled>true</enabled>
-                <updatePolicy>never</updatePolicy>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-
-        <repository>
-            <id>jboss-snapshots-repository</id>
-            <name>JBoss Nexus snapshots repository</name>
-            <url>https://repository.jboss.org/nexus/repository/snapshots/</url>
-            <layout>default</layout>
-            <releases>
-                <enabled>false</enabled>
-                <updatePolicy>never</updatePolicy>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-                <updatePolicy>always</updatePolicy>
-            </snapshots>
-        </repository>
-
-        <!-- To test validation of artifacts before deploying to real (releases) repository -->
-        <repository>
-            <id>jgroups-staging</id>
-            <name>JGroups private staing repo to test validation</name>
-            <url>https://repository.jboss.org/nexus/repository/jgroups-staging/</url>
-        </repository>
-    </repositories>
-
     <dependencies>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
