@@ -69,44 +69,6 @@
         </snapshotRepository>
     </distributionManagement>
 
-  <!--  <repositories>
-        <repository>
-            <id>jboss-public-repository-group</id>
-            <name>JBoss Public Maven Repository Group</name>
-            <url>https://repository.jboss.org/nexus/content/groups/public/</url>
-            <layout>default</layout>
-            <releases>
-                <enabled>true</enabled>
-                <updatePolicy>never</updatePolicy>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-
-        <repository>
-            <id>jboss-snapshots-repository</id>
-            <name>JBoss Nexus snapshots repository</name>
-            <url>https://repository.jboss.org/nexus/repository/snapshots/</url>
-            <layout>default</layout>
-            <releases>
-                <enabled>false</enabled>
-                <updatePolicy>never</updatePolicy>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-                <updatePolicy>always</updatePolicy>
-            </snapshots>
-        </repository>
-
-        &lt;!&ndash; To test validation of artifacts before deploying to real (releases) repository &ndash;&gt;
-        <repository>
-            <id>jgroups-staging</id>
-            <name>JGroups private staing repo to test validation</name>
-            <url>https://repository.jboss.org/nexus/repository/jgroups-staging/</url>
-        </repository>
-    </repositories>-->
-
     <dependencies>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
@@ -188,8 +150,7 @@
             </testResource>
         </testResources>
         <plugins>
-
-            <!--<plugin>
+            <plugin>
                 <groupId>org.sonatype.plugins</groupId>
                 <artifactId>nxrm3-maven-plugin</artifactId>
                 <version>1.0.7</version>
@@ -197,17 +158,17 @@
                 <configuration>
                     <nexusUrl>https://repository.jboss.org/nexus</nexusUrl>
 
-                    &lt;!&ndash; The server "id" element from settings to use authentication from settings.xml&ndash;&gt;
+                    <!-- The server "id" element from settings to use authentication from settings.xml-->
                     <serverId>jboss-releases-repository</serverId>
 
-                    &lt;!&ndash; Change to repository you will be deploying to &ndash;&gt;
+                    <!-- Change to repository you will be deploying to -->
                     <repository>releases</repository>
 
-                    &lt;!&ndash; Skip the staging deploy mojo &ndash;&gt;
+                    <!-- Skip the staging deploy mojo -->
                     <skipNexusStagingDeployMojo>true</skipNexusStagingDeployMojo>
                 </configuration>
 
-                &lt;!&ndash; replacing the standard Maven Deployment Plugin &ndash;&gt;
+                <!-- replacing the standard Maven Deployment Plugin -->
                 <executions>
                     <execution>
                         <id>default-deploy</id>
@@ -217,9 +178,9 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>-->
-
-           <plugin>
+            </plugin>
+            <!-- Currently not used, as we're not publishing against sonatype central directly -->
+            <!-- plugin>
                 <groupId>org.sonatype.central</groupId>
                 <artifactId>central-publishing-maven-plugin</artifactId>
                 <version>${version.maven.sonatype.central}</version>
@@ -232,7 +193,7 @@
                     <waitPollingInterval>60</waitPollingInterval>
                     <waitUntil>validated</waitUntil>
                 </configuration>
-            </plugin>
+            </plugin>-->
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -381,8 +342,6 @@
                             <addDefaultEntries>true</addDefaultEntries>
                             <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
                             <addBuildEnvironmentEntries>true</addBuildEnvironmentEntries>
-                            <!--addClasspath>true</addClasspath-->
-                            <!-- classpathPrefix>libs/</classpathPrefix-->
                             <mainClass>org.jgroups.Version</mainClass>
                         </manifest>
                         <manifestEntries>
