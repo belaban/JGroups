@@ -161,6 +161,9 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
     @Property(description="The SSL protocol to use. Defaults to TLS")
     protected String          ssl_protocol=SslContextFactory.DEFAULT_SSL_PROTOCOL;
 
+    @Property(description="The ciphers to use.")
+    protected String[] enabled_ciphers;
+
     @Property(description="The SSL security provider. Defaults to null, which will use the default JDK provider.")
     protected String          ssl_provider;
 
@@ -354,7 +357,8 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
     protected void accept() {
         try(SSLSocket client_sock=(SSLSocket)srv_sock.accept()) {
             server_ssl_ctx_reloader.reload(); // try to reload ssl context before handshake
-            client_sock.setEnabledCipherSuites(client_sock.getSupportedCipherSuites());
+            client_sock.setEnabledProtocols(getProtocols(client_sock.getEnabledProtocols()));
+            client_sock.setEnabledCipherSuites(getEnabledCipherSuites(client_sock.getEnabledCipherSuites()));
             client_sock.startHandshake();
             SSLSession sslSession=client_sock.getSession();
 
@@ -444,6 +448,8 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
             try {
                 sslServerSocket=(SSLServerSocket)sslServerSocketFactory.createServerSocket(port + i, 50, bind_addr);
                 sslServerSocket.setNeedClientAuth(require_client_authentication);
+                sslServerSocket.setEnabledProtocols(getProtocols(sslServerSocket.getEnabledProtocols()));
+                sslServerSocket.setEnabledCipherSuites(getEnabledCipherSuites(sslServerSocket.getEnabledCipherSuites()));
                 return sslServerSocket;
             }
             catch(Throwable t) {
@@ -465,7 +471,7 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
             try {
                 sock=(SSLSocket)sslSocketFactory.createSocket(dest.getIpAddress(), port+i);
                 sock.setSoTimeout(socket_timeout);
-                sock.setEnabledCipherSuites(sock.getSupportedCipherSuites());
+                sock.setEnabledCipherSuites(getEnabledCipherSuites(sock.getEnabledCipherSuites()));
                 sock.startHandshake();
                 SSLSession sslSession=sock.getSession();
 
@@ -490,7 +496,8 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
         try {
             SSLSocket sock=(SSLSocket)sslSocketFactory.createSocket(dest.getIpAddress(), dest.getPort());
             sock.setSoTimeout(socket_timeout);
-            sock.setEnabledCipherSuites(sock.getSupportedCipherSuites());
+            sock.setEnabledProtocols(getProtocols(sock.getEnabledCipherSuites()));
+            sock.setEnabledCipherSuites(getEnabledCipherSuites(sock.getEnabledCipherSuites()));
             sock.startHandshake();
             SSLSession sslSession=sock.getSession();
 
@@ -507,5 +514,13 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
         catch(Throwable t) {
             throw new IllegalStateException(String.format("failed connecting to %s: %s", dest, t.getMessage()));
         }
+    }
+
+    private String[] getProtocols(String[] defaultProtocols) {
+        return !SslContextFactory.DEFAULT_SSL_PROTOCOL.equals(ssl_protocol) ? new String[]{ssl_protocol} : defaultProtocols;
+    }
+
+    private String[] getEnabledCipherSuites(String[] defaultCipherSuites) {
+        return enabled_ciphers != null ? enabled_ciphers : defaultCipherSuites;
     }
 }
