@@ -4293,7 +4293,7 @@ public class Util {
         return new ConcurrentHashMap<>(CCHM_INITIAL_CAPACITY,CCHM_LOAD_FACTOR,CCHM_CONCURRENCY_LEVEL);
     }
 
-    public static ServerSocket createServerSocket(SocketFactory factory, String service_name, InetAddress bind_addr,
+    public static synchronized ServerSocket createServerSocket(SocketFactory factory, String service_name, InetAddress bind_addr,
                                                   int start_port, int end_port, int recv_buf_size) throws Exception {
         ServerSocket ret=null;
         try {
