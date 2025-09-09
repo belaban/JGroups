@@ -162,7 +162,7 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
     protected String          ssl_protocol=SslContextFactory.DEFAULT_SSL_PROTOCOL;
 
     @Property(description="The ciphers to use.")
-    protected String[] enabled_ciphers;
+    protected String[]        enabled_ciphers;
 
     @Property(description="The SSL security provider. Defaults to null, which will use the default JDK provider.")
     protected String          ssl_provider;
