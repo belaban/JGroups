@@ -27,7 +27,7 @@ synchronizes with maven central.
 
 * Create the necessary files in `target`: `mvn -DskipTests clean install -Prelease`
 
-* Deploy to `repository.jboss.org`: `mvn -DskipTests deploy`
+* Deploy to `repository.jboss.org`: `mvn -DskipTests deploy -Prelease`
 
 * Tag the version: `git tag jgroups-x.y.z.Final ; git push --tags`
 
