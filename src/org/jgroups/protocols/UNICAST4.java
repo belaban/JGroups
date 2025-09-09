@@ -59,8 +59,7 @@ public class UNICAST4 extends ReliableUnicast {
 
     /**
      * Changes the capacity of all buffers, basically by creating new buffers and copying the messages from the
-     * old ones.
-     * This method is only supposed to be used by perf testing, so DON'T USE!
+     * old ones. This method is only supposed to be used by perf testing, so DON'T USE!
      */
     @ManagedOperation
     public void changeCapacity(int new_capacity) {
@@ -75,14 +74,11 @@ public class UNICAST4 extends ReliableUnicast {
     }
 
     @Override
-    protected Buffer<Message> createBuffer(long seqno) {
-        return new FixedBuffer<>(capacity, seqno);
-    }
-
-    public int                capacity()          {return capacity;}
-    public UNICAST4           capacity(int c)     {capacity=c; return this;}
-    public int                ackThreshold()      {return ack_threshold;}
-    public UNICAST4           ackThreshold(int t) {ack_threshold=t; return this;}
+    protected Buffer<Message> createBuffer(long s) {return new FixedBuffer<>(capacity, s);}
+    public int                capacity()           {return capacity;}
+    public UNICAST4           capacity(int c)      {capacity=c; return this;}
+    public int                ackThreshold()       {return ack_threshold;}
+    public UNICAST4           ackThreshold(int t)  {ack_threshold=t; return this;}
 
     @Override
     public void init() throws Exception {
@@ -91,6 +87,12 @@ public class UNICAST4 extends ReliableUnicast {
             ack_threshold=capacity / 4;
             log.debug("defaulted ack_threshold to %d", ack_threshold);
         }
+        if(conn_expiry_timeout == 0)
+            log.warn("%s: conn_expiry_timeout should be >= 0, or sender threads could be blocked until " +
+                       "the channel is closed. See https://issues.redhat.com/browse/JGRP-2929 for details");
+        if(conn_close_timeout == 0)
+            log.warn("%s: conn_close_timeout should be >= 0, or sender threads could be blocked until " +
+                       "the channel is closed. See https://issues.redhat.com/browse/JGRP-2929 for details");
     }
 
     @Override

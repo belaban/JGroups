@@ -7,7 +7,6 @@ import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.MyReceiver;
-import org.jgroups.util.ThreadPool;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -18,6 +17,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -32,9 +32,11 @@ import java.util.stream.Stream;
 public class ReliableUnicastBlockTest {
     protected JChannel                   a,b,c;
     protected MyReceiver<Integer>        ra, rb, rc;
+    protected Address                    a_addr, b_addr;
     protected static long                CONN_CLOSE_TIMEOUT=2000;
     protected static short               UNICAST4_ID=ClassConfigurator.getProtocolId(UNICAST4.class);
     protected static final List<Integer> EXPECTED=expected(1,10);
+    protected int                        seqno;
 
     @BeforeMethod
     protected void setup() throws Exception {
@@ -43,12 +45,12 @@ public class ReliableUnicastBlockTest {
         ReliableUnicast u=a.stack().findProtocol(ReliableUnicast.class);
         u.setConnCloseTimeout(CONN_CLOSE_TIMEOUT);
         b=new JChannel(Util.getTestStackNew()).name("B").receiver(rb=new MyReceiver<Integer>().name("B"));
-        c=new JChannel(Util.getTestStackNew()).name("C").receiver(rc=new MyReceiver<Integer>().name("C"));
-        Stream.of(a,b,c).map(ch -> ch.stack().getTransport().getDiagnosticsHandler()).forEach(d -> d.setEnabled(true));
+        Stream.of(a,b).map(ch -> ch.stack().getTransport().getDiagnosticsHandler()).forEach(d -> d.setEnabled(true));
         a.connect("ReliableUnicastBlockTest");
         b.connect("ReliableUnicastBlockTest");
-        c.connect("ReliableUnicastBlockTest");
-        Util.waitUntilAllChannelsHaveSameView(2000, 100, a,b,c);
+        Util.waitUntilAllChannelsHaveSameView(2000, 100, a,b);
+        a_addr=a.address(); b_addr=b.address();
+        seqno=0;
     }
 
     @AfterMethod
@@ -58,9 +60,10 @@ public class ReliableUnicastBlockTest {
 
     /** Tests A sending to B and C and blocking on waiting for ACKs from B, then B leaves -> this should unblock A */
     public void testSenderBlockingAndViewChange() throws Exception {
-        final Address target_b=b.address(), target_c=c.address();
+        c=new JChannel(Util.getTestStackNew()).name("C").receiver(rc=new MyReceiver<Integer>().name("C"))
+          .connect("ReliableUnicastBlockTest");
         Util.shutdown(b);
-        Sender sender=new Sender(a, target_b, target_c);
+        Sender sender=new Sender(a, b_addr, c.address());
         sender.start(); // will block after sending 5 unicasts to B
         // Wait until sender blocks: seqno >= 5
         Util.waitUntilTrue(2000, 100, () -> sender.seqno() >= 5);
@@ -88,10 +91,8 @@ public class ReliableUnicastBlockTest {
 
     /** A blocks sending message to B, then A is closed */
     public void testSenderBlockingAndChannelCloseA() throws Exception {
-        Util.close(c);
-        final Address target_b=b.address();
         Util.shutdown(b);
-        Sender sender=new Sender(a, target_b);
+        Sender sender=new Sender(a, b_addr);
         sender.start(); // will block
         // Wait until sender blocks: seqno >= 5
         Util.waitUntilTrue(2000, 100, () -> sender.seqno() >= 5);
@@ -101,17 +102,15 @@ public class ReliableUnicastBlockTest {
 
     /** A blocks sending messages to B, then B is closed */
     public void testSenderBlockingAndChannelCloseB() throws Exception {
-        Util.close(c);
-        final Address target_b=b.address();
         DISCARD discard=new DISCARD().discardAll(true);
         b.stack().insertProtocol(discard, ProtocolStack.Position.ABOVE, TP.class);
-        Sender sender=new Sender(a, target_b);
+        Sender sender=new Sender(a, b_addr);
         sender.start(); // will block
         // Wait until sender blocks: seqno >= 5
-        Util.waitUntilTrue(2000, 100, () -> sender.seqno() >= 5);
+        Util.waitUntil(2000, 100, () -> sender.seqno() >= 5);
 
         // inject view change excluding B
-        View view=View.create(a.address(), 10L, a.address());
+        View view=View.create(a_addr, 10L, a_addr);
         System.out.printf("-- installing view %s\n", view);
         GMS gms=a.stack().findProtocol(GMS.class);
         gms.installView(view); // this should unblock the sender thread above
@@ -122,23 +121,75 @@ public class ReliableUnicastBlockTest {
         Util.waitUntil(2000, 100, () -> !sender.isAlive());
     }
 
+    /** A blocks sending messages to B, then B is closed. Then A sends spurious messages to B, reopening the connection
+     * and eventually blocking: https://issues.redhat.com/browse/JGRP-2929 */
+    public void testSenderBlockingAndChannelCloseBAndSpuriousMessages() throws Exception {
+        changeCapacity(UNICAST4.class, 10, a);
+        UNICAST4 ua=a.stack().findProtocol(UNICAST4.class);
+        // 2 secs before a send entry marked as 'CLOSING' is closed and removed (unblocking a blocked sender thread)
+        ua.setConnCloseTimeout(2000).setConnExpiryTimeout(2000);
+
+        DISCARD discard=new DISCARD().discardAll(true);
+        b.stack().insertProtocol(discard, ProtocolStack.Position.ABOVE, TP.class);
+
+        sendUntilFull(a, b_addr);
+        boolean success=Util.waitUntilTrue(1000, 100, () -> rb.size() == 10);
+        assert !success; // B dropped all messages
+        assert rb.size() == 0;
+
+        // inject view change excluding B
+        View view=View.create(a_addr, 10L, a_addr);
+        System.out.printf("-- installing view %s\n", view);
+        GMS gms=a.stack().findProtocol(GMS.class);
+        gms.installView(view); // this should unblock the sender thread above after conn_close_timeout
+        Util.shutdown(b);
+
+        // Now send 5 messages. They will block (as the send-buffer is full) until the send-connection is removed
+        // The first message is discarded when the buffer is closed, the next 4 are sent on a new send-buffer
+        Thread t=new Thread(() -> send(a, b_addr, 5));
+        t.start();
+        success=Util.waitUntilTrue(1000, 100, () -> rb.size() > 0);
+        assert !success;
+        Util.waitUntil(4000, 100, () -> !t.isAlive());
+        assert rb.size() == 0;
+
+        // Now wait until the connectionm expires and is removed (4s)
+        waitUntilConnectionHasBeenRemoved(a, b_addr, 6000);
+    }
+
+    protected static void waitUntilConnectionHasBeenRemoved(JChannel ch, Address dest, long max_wait_time_ms)
+      throws TimeoutException {
+        UNICAST4 u=ch.stack().findProtocol(UNICAST4.class);
+        BooleanSupplier predicate=() -> u._getSenderEntry(dest) == null;
+        Util.waitUntil(max_wait_time_ms, 100, predicate, () -> String.format("conn: %s", u._getSenderEntry(dest)));
+    }
+
+    protected void sendUntilFull(JChannel ch, Address dest) throws Exception {
+        UNICAST4 uc=ch.stack().findProtocol(UNICAST4.class);
+        ReliableUnicast.SenderEntry se=uc._getSenderEntry(dest);
+        for(;;) {
+            int space_left=se.buf().capacity() - se.buf().size();
+            if(space_left == 0)
+                break;
+            ch.send(new ObjectMessage(dest, ++seqno));
+        }
+    }
+
     /** A blocks sending to B. Then A's connection to B is closed (state: CLOSING), the reopened (state: OPEN).
      * A should now again be able to send messages to B (as soon as B's DISCARD has been removed). This mimicks
      * a network partition which subsequently heals */
     public void testConnectionCloseThenReopen() throws Exception {
-        Util.close(c);
         ReliableUnicast u=a.stack().findProtocol(ReliableUnicast.class);
         u.setConnCloseTimeout(60_000); // to give the MergeView a chance to re-open the connection to B
-        final Address target_b=b.address();
         DISCARD discard=new DISCARD().discardAll(true);
         b.stack().insertProtocol(discard, ProtocolStack.Position.ABOVE, TP.class);
-        Sender sender=new Sender(a, target_b);
+        Sender sender=new Sender(a, b_addr);
         sender.start(); // will block
         // Wait until sender blocks: seqno >= 5
         Util.waitUntilTrue(2000, 100, () -> sender.seqno() >= 5);
 
         // inject view change excluding B
-        View view=View.create(a.address(), 10L, a.address());
+        View view=View.create(a_addr, 10L, a_addr);
         System.out.printf("-- installing view %s\n", view);
         GMS gms=a.stack().findProtocol(GMS.class);
         gms.installView(view);
@@ -146,9 +197,9 @@ public class ReliableUnicastBlockTest {
         Util.waitUntilTrue(2000, 100, () -> !sender.isAlive());
         assert sender.isAlive();
 
-        View view_b=View.create(b.address(), 10L, b.address());
-        ViewId vid=new ViewId(a.address(), 12L);
-        MergeView mv=new MergeView(vid, List.of(a.address(), b.address()), List.of(view, view_b));
+        View view_b=View.create(b_addr, 10L, b_addr);
+        ViewId vid=new ViewId(a_addr, 12L);
+        MergeView mv=new MergeView(vid, List.of(a_addr, b_addr), List.of(view, view_b));
         System.out.printf("-- Installing view %s\n", mv);
         gms.installView(mv);
         discard.discardAll(false);
@@ -166,15 +217,15 @@ public class ReliableUnicastBlockTest {
      */
     public void testNonBlockingUnicastSends() throws Exception {
         final Class<? extends Protocol> CLAZZ=UNICAST4.class;
-        final Address target=b.address();
         changeCapacity(CLAZZ, 11, a);
         insertAckDropper(CLAZZ, b);
         // A already sent a JOIN-RSP to B, so we can only send 10 more unicasts to B before we block (capacity: 11)
-        for(int i=1; i <= 10; i++)
-            a.send(target, i);
+        send(a, b_addr, 10);
         // send messages that block, odd msgs are tagged with DONT_BLOCK
-        sendMessages(target, 11, 15);
+        Thread t=new Thread(() -> send(a,b_addr, 5));
+        t.start();
         removeAckDropper(b);
+        Util.waitUntilTrue(2000, 100, () -> !t.isAlive());
         assertSize(expected(1,15), rb);
         UNICAST4 u=a.stack().findProtocol(UNICAST4.class);
         long num_blockings=u.getNumBlockings();
@@ -182,27 +233,17 @@ public class ReliableUnicastBlockTest {
         assert num_blockings > 0;
     }
 
-    // messages are sent in *any order*, so we need to sort when comparing (see below in assertSize())
-    protected void sendMessages(Address target, int from, int to) {
-        ThreadPool thread_pool=a.stack().getTransport().getThreadPool();
-        for(int i=from; i <= to; i++) {
-            Message msg=new ObjectMessage(target, i);
-            if(i % 2 != 0) // set odd numbers to DONT_BLOCK
-                msg.setFlag(Message.TransientFlag.DONT_BLOCK);
-            thread_pool.execute(() -> send(a, msg));
-        }
-    }
-
     protected static List<Integer> expected(int from, int to) {
         return IntStream.rangeClosed(from,to).boxed().collect(Collectors.toList());
     }
 
-    protected static void send(JChannel ch, Message msg) {
+    protected void send(JChannel ch, Address dest, int num) {
         try {
-            ch.send(msg);
+            for(int i=0; i < num; i++)
+                ch.send(new ObjectMessage(dest, ++seqno));
         }
         catch(Exception ex) {
-            System.err.printf("sending of %s failed: %s\n", msg, ex);
+            System.err.printf("sending failed: %s\n", ex);
         }
     }
 

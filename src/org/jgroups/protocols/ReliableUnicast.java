@@ -47,11 +47,11 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
     @Property(description="Time (in milliseconds) after which an idle incoming or outgoing connection is closed. The " +
       "connection will get re-established when used again. 0 disables connection reaping. Note that this creates " +
       "lingering connection entries, which increases memory over time.",type=AttributeType.TIME)
-    protected long    conn_expiry_timeout=(long) 60000 * 2;
+    protected long    conn_expiry_timeout=10000; // https://issues.redhat.com/browse/JGRP-2929
 
     @Property(description="Time (in ms) until a connection marked to be closed will get removed. 0 disables this",
       type=AttributeType.TIME)
-    protected long    conn_close_timeout=60_000 * 4; // 4 mins == TIME_WAIT timeout (= 2 * MSL)
+    protected long    conn_close_timeout=10000; // https://issues.redhat.com/browse/JGRP-2929
 
     // @Property(description="Max time (in ms) after which a connection to a non-member is closed")
     protected long    max_retransmit_time=60 * 1000L;
@@ -248,7 +248,6 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
                 sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
             }
         }
-
         if(!recv_table.isEmpty()) {
             sb.append("\nreceive connections:\n");
             for(Map.Entry<Address,ReceiverEntry> entry: recv_table.entrySet()) {
@@ -950,6 +949,11 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
     }
 
     // public for unit testing - don't use in app code!
+    public SenderEntry _getSenderEntry(Address dest) {
+        return send_table.get(dest);
+    }
+
+    // public for unit testing - don't use in app code!
     public ReceiverEntry _getReceiverEntry(Address sender, long seqno, boolean first, short conn_id, Address real_dest) {
         ReceiverEntry entry;
         recv_table_lock.lock();
@@ -1503,7 +1507,7 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
                             buf.open(false); // unblocks blocked senders
                         break;
                     case CLOSING:
-                        buf.open(s != State.CLOSED);
+                        buf.open(s != State.CLOSED); // unblocks blocked senders
                         break;
                     case CLOSED:
                         break;
@@ -1524,7 +1528,8 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
         }
     }
 
-    protected final class SenderEntry extends Entry {
+    // public for unit testing
+    public final class SenderEntry extends Entry {
         final AtomicLong seqno=new AtomicLong(DEFAULT_FIRST_SEQNO);   // seqno for msgs sent by us
         final long[]     watermark={0,0}; // the highest acked and highest sent seqno
         int              last_timestamp;  // to prevent out-of-order ACKs from a receiver
