@@ -106,6 +106,14 @@ public class Version {
      * @param args
      */
     public static void main(String[] args) {
+        for(int i=0; i < args.length; i++) {
+            if("-incr".equals(args[i])) {
+                String old_version=args[++i];
+                String new_version=Version.incrementVersion(old_version);
+                System.out.print(new_version);
+                return;
+            }
+        }
         System.out.println("Version: " + description );
     }
 
@@ -172,8 +180,6 @@ public class Version {
      * Checks whether ver is binary compatible with the current version. The rule for binary compatibility is that
      * the major and minor versions have to match, whereas micro versions can differ.
      * If VERSION_CHECK_MICRO is set to true (default: false) only exact same version is considered compatible.
-     * @param ver
-     * @return
      */
     public static boolean isBinaryCompatible(short ver) {
         if(!VERSION_CHECK || version == ver)
@@ -198,6 +204,22 @@ public class Version {
         tmp=decode(ver2);
         short tmp_major2=tmp[0], tmp_minor2=tmp[1];
         return tmp_major == tmp_major2 && tmp_minor == tmp_minor2;
+    }
+
+    public static String incrementVersion(String version) {
+        return incrementVersion(version, false);
+    }
+
+    public static String incrementVersion(String version, boolean add_snapshot) {
+        boolean final_present=version.contains("Final");
+        short[] decoded=Version.decode(Version.parse(version));
+        // increment micro version
+        decoded[2]=(short)(decoded[2]+1);
+        short new_version=Version.encode(decoded[0], decoded[1], decoded[2]);
+        return String.format("%s%s%s",
+                             Version.print(new_version),
+                             final_present? ".Final" : "",
+                             add_snapshot? "-SNAPSHOT" : "");
     }
 
 }
