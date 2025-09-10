@@ -6,6 +6,7 @@ import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
 import java.util.Properties;
 
 import static org.testng.Assert.assertNotNull;
@@ -88,13 +89,10 @@ public class VersionTest {
         assert !(Version.isSame(version2));
     }
 
-
-
     public static void testDifferentVersion() {
         short version1=Version.encode(2,0,7), version2=Version.encode(2,0,6);
         assert !(version1 == version2);
     }
-
 
     public static void testSameVersion() {
         assert match(0,0,1, 0,0,1);
@@ -105,14 +103,25 @@ public class VersionTest {
         assert !(match(2, 5, 0, 2, 5, 1));
     }
 
-
-
     public static void testBinaryCompatibility() {
         assert isBinaryCompatible(0,0,0, 0,0,0);
         assert isBinaryCompatible(1,2,0, 1,2,1);
         assert isBinaryCompatible(1,2,0, 1,2,60);
         assert !(isBinaryCompatible(2, 5, 0, 2, 4, 1));
         assert !(isBinaryCompatible(2, 5, 0, 2, 6, 0));
+    }
+
+    public void testIncrementVersion() {
+        String[] versions={"5.5.0.Final-SNAPSHOT", "5.5.0.Final", "5.5.0", "5.5.0-SNAPSHOT"};
+
+        for(String curr: versions) {
+            short[] decoded=Version.decode(Version.parse(curr));
+            assert Arrays.equals(decoded, new short[]{5, 5, 0});
+
+            String next=Version.incrementVersion(curr);
+            decoded=Version.decode(Version.parse(next));
+            assert Arrays.equals(decoded, new short[]{5, 5, 1});
+        }
     }
 
 

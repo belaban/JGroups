@@ -16,22 +16,28 @@ checksums (md5 and sha1) for each of them (Sonatype requirement)
 The `nxrm3-maven-plugin` plugin is responsible for releasing. We release to repository.jboss.org, which periodically
 synchronizes with maven central.
 
-== Steps
+== Requirements
 
-* Change the version in the POM `from x.y.z.Final-SNAPSHOT` to `x.y.z.Final`
+* `gpg` needs to be in the path
 
 * Make sure you have a valid GPG key: `gpg --list-keys`
 
 * The key needs to be registered with one of the 3 keyservers recognized by Sonatype, e.g. by uploading it:
   `gpg --keyserver keyserver.ubuntu.com --send-keys 185xxxxx`
 
+== Steps
+
+* Change the version in the POM `from x.y.z.Final-SNAPSHOT` to `x.y.z.Final`
+
 * Create the necessary files in `target`: `mvn -DskipTests clean install -Prelease`
 
 * Deploy to `repository.jboss.org`: `mvn -DskipTests deploy -Prelease`
+
+* On successful deploy: commit and push the change
 
 * Tag the version: `git tag jgroups-x.y.z.Final ; git push --tags`
 
 * Increment the version in the POM and append `-SNAPSHOT`
 
+* Commit and push the change
 
-== Todo:
