@@ -30,9 +30,9 @@ import java.util.Objects;
  * Key exchange based on SSL sockets. The key server creates an {@link javax.net.ssl.SSLServerSocket} on a given port
  * and members fetch the secret key by creating a {@link javax.net.ssl.SSLSocket} to the key server. The key server
  * authenticates the client (and vice versa) and then sends the secret key over this encrypted channel.
- * <br/>
+ * <br>
  * When the key exchange has completed, the secret key requester closes its SSL connection to the key server.
- * <br/>
+ * <br>
  * Note that this implementation should prevent man-in-the-middle attacks.
  * @author Bela Ban
  * @since  4.0.5
