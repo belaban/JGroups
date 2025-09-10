@@ -60,7 +60,7 @@ echo "execute: mvn -DskipTests deploy -Prelease"
 echo "Please commit and push your changes"
 
 ## uncomment
-echo "git commit -m 'Changed version from $CURRENT_VERSION to $RELEASE_VERSION' ; git push"
+echo "git commit -m 'Changed version from $CURRENT_VERSION to $RELEASE_VERSION' . ; git push"
 
 echo ""
 echo "================================================================"
@@ -75,9 +75,9 @@ echo ""
 
 NEXT_VERSION="$NEW_VERSION-SNAPSHOT"
 echo "changing pom.xml to version $NEXT_VERSION:"
-cat $POM | sed "s/$NEW_VERSION/$NEXT_VERSION/g" > $POM2
+cat $POM | sed "s/$RELEASE_VERSION/$NEXT_VERSION/g" > $POM2
 mv $POM2 $POM
 
 ## uncomment
-echo "git commit -m 'Changed version from $RELEASE_VERSION to $NEXT_VERSION' ; git push"
+echo "git commit -m 'Changed version from $RELEASE_VERSION to $NEXT_VERSION' . ; git push"
 echo ""
