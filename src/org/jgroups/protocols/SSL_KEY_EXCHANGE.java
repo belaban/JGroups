@@ -496,7 +496,7 @@ public class SSL_KEY_EXCHANGE extends KeyExchange {
         try {
             SSLSocket sock=(SSLSocket)sslSocketFactory.createSocket(dest.getIpAddress(), dest.getPort());
             sock.setSoTimeout(socket_timeout);
-            sock.setEnabledProtocols(getProtocols(sock.getEnabledCipherSuites()));
+            sock.setEnabledProtocols(getProtocols(sock.getEnabledProtocols()));
             sock.setEnabledCipherSuites(getEnabledCipherSuites(sock.getEnabledCipherSuites()));
             sock.startHandshake();
             SSLSession sslSession=sock.getSession();
