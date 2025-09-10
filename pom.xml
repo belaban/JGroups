@@ -517,7 +517,7 @@
 
     <profiles>
         <profile>
-            <id>community-release</id>
+            <id>release</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
             </activation>
