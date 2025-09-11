@@ -1,7 +1,6 @@
 package org.jgroups.tests;
 
 import org.jgroups.Global;
-import org.jgroups.util.NoProgressException;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
@@ -24,82 +23,6 @@ public class RejectionPoliciesTest {
             executor.execute(new NorunRunnable());
             assert false;
         } catch (FooException foo) {
-
-        } catch (Throwable t) {
-            assert false;
-        } finally {
-            blocker.stop = true;
-        }
-    }
-
-    public void testDeadlockDetectionPolicy1() {
-        BlockingQueue<Runnable> queue = new SynchronousQueue<>();
-        ThreadPoolExecutor executor = new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS, queue);
-        RejectedExecutionHandler handler = Util.parseRejectionPolicy("progress_check");
-        executor.setRejectedExecutionHandler(handler);
-
-        BlockingRunnable blocker = new BlockingRunnable();
-        executor.execute(blocker);
-        executor.execute(new NorunRunnable()); // should silently fail
-        try {
-            Thread.sleep(11000);
-        } catch (InterruptedException e) {
-            assert false;
-        }
-        try {
-            executor.execute(new NorunRunnable());
-            assert false;
-        } catch (NoProgressException e) {
-
-        } catch (Throwable t) {
-            assert false;
-        } finally {
-            blocker.stop = true;
-        }
-    }
-
-    public void testDeadlockDetectionPolicy2() {
-        BlockingQueue<Runnable> queue = new SynchronousQueue<>();
-        ThreadPoolExecutor executor = new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS, queue);
-        RejectedExecutionHandler handler = Util.parseRejectionPolicy(
-                "progress_check=period:15000,fallback:custom=org.jgroups.tests.RejectionPoliciesTest$FooPolicy");
-        executor.setRejectedExecutionHandler(handler);
-
-        BlockingRunnable blocker = new BlockingRunnable();
-        executor.execute(blocker);
-
-        try {
-            executor.execute(new NorunRunnable()); // should fail with fallback = FooPolicy
-            assert false;
-        } catch (FooException foo) {
-        } catch (Throwable t) {
-            assert false;
-        }
-
-        try {
-            Thread.sleep(11000);
-        } catch (InterruptedException e) {
-            assert false;
-        }
-
-        try {
-            executor.execute(new NorunRunnable()); // non-default period: still FooPolicy
-            assert false;
-        } catch (FooException foo) {
-        } catch (Throwable t) {
-            assert false;
-        }
-
-        try {
-            Thread.sleep(5000);
-        } catch (InterruptedException e) {
-            assert false;
-        }
-
-        try {
-            executor.execute(new NorunRunnable());
-            assert false;
-        } catch (NoProgressException e) {
 
         } catch (Throwable t) {
             assert false;

@@ -4013,8 +4013,6 @@ public class Util {
             return new ThreadPoolExecutor.CallerRunsPolicy();
         if(rejection_policy.toLowerCase().startsWith(CustomRejectionPolicy.NAME))
             return new CustomRejectionPolicy(rejection_policy);
-        if(rejection_policy.toLowerCase().startsWith(ProgressCheckRejectionPolicy.NAME))
-            return new ProgressCheckRejectionPolicy(rejection_policy);
         throw new IllegalArgumentException("rejection policy \"" + rejection_policy + "\" not known");
     }
 
