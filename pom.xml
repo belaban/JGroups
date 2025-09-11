@@ -24,6 +24,7 @@
         <nexus3.plugin.version>1.0.12</nexus3.plugin.version>
         <enforcer.plugin.version>3.6.1</enforcer.plugin.version>
         <gpg.plugin.version>3.2.8</gpg.plugin.version>
+        <helper.plugin.version>3.6.1</helper.plugin.version>
     </properties>
 
     <organization>
@@ -229,6 +230,7 @@
            <plugin>
               <groupId>org.codehaus.mojo</groupId>
               <artifactId>build-helper-maven-plugin</artifactId>
+              <version>${helper.plugin.version}</version>
               <executions>
                  <execution>
                     <id>add-source</id>
@@ -415,6 +417,10 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>3.5.3</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>build-helper-maven-plugin</artifactId>
                 </plugin>
                 <plugin>
                     <groupId>org.asciidoctor</groupId>
