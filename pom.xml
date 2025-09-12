@@ -24,7 +24,6 @@
         <nexus3.plugin.version>1.0.12</nexus3.plugin.version>
         <enforcer.plugin.version>3.6.1</enforcer.plugin.version>
         <gpg.plugin.version>3.2.8</gpg.plugin.version>
-        <helper.plugin.version>3.6.1</helper.plugin.version>
     </properties>
 
     <organization>
@@ -77,12 +76,14 @@
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
             <version>${log4j2.version}</version>
+            <scope>provided</scope>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-nop</artifactId>
             <version>2.0.17</version>
+            <scope>provided</scope>
             <optional>true</optional>
         </dependency>
 
@@ -104,6 +105,7 @@
             <groupId>org.jboss.byteman</groupId>
             <artifactId>byteman</artifactId>
             <version>4.0.25</version>
+            <scope>provided</scope>
             <optional>true</optional>
         </dependency>
     </dependencies>
@@ -230,7 +232,6 @@
            <plugin>
               <groupId>org.codehaus.mojo</groupId>
               <artifactId>build-helper-maven-plugin</artifactId>
-              <version>${helper.plugin.version}</version>
               <executions>
                  <execution>
                     <id>add-source</id>
@@ -417,10 +418,6 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>3.5.3</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>build-helper-maven-plugin</artifactId>
                 </plugin>
                 <plugin>
                     <groupId>org.asciidoctor</groupId>
