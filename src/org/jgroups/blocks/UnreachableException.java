@@ -1,4 +1,6 @@
-package org.jgroups;
+package org.jgroups.blocks;
+
+import org.jgroups.Address;
 
 /**
  * Thrown if member in different site cannot be contacted; used by RELAY2
@@ -14,12 +16,6 @@ public class UnreachableException extends RuntimeException {
         super("UnreachableException");
         this.member=member;
     }
-
-    public UnreachableException(String msg, Address member) {
-        super(msg);
-        this.member=member;
-    }
-
 
     public String toString() {
         return getMessage() + ": member=" + member;
