@@ -91,15 +91,16 @@ public class JChannel implements Closeable {
         if(create_protocol_stack) {
             try {
                 init(ConfiguratorFactory.getStackConfigurator(Global.DEFAULT_PROTOCOL_STACK));
-            }
-            catch(Exception e) {
-                throw new RuntimeException(e);
+            } catch (RuntimeException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new JGroupsException(e);
             }
         }
     }
 
     /** Creates a {@code JChannel} with the default stack */
-    public JChannel() throws Exception {
+    public JChannel() {
         this(Global.DEFAULT_PROTOCOL_STACK);
     }
 
@@ -108,8 +109,14 @@ public class JChannel implements Closeable {
      * Constructs a JChannel instance with the protocol stack configuration based upon the specified properties parameter.
      * @param props A file containing a JGroups XML configuration or a URL pointing to an XML configuration
      */
-    public JChannel(String props) throws Exception {
-        this(ConfiguratorFactory.getStackConfigurator(props));
+    public JChannel(String props) {
+        try {
+            init(ConfiguratorFactory.getStackConfigurator(props));
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new JGroupsException(e);
+        }
     }
 
     /**
@@ -117,8 +124,14 @@ public class JChannel implements Closeable {
      * @param input An input stream, pointing to a streamed configuration. It is the caller's resposibility to close
      *              the input stream after the constructor returns
      */
-    public JChannel(InputStream input) throws Exception {
-        this(ConfiguratorFactory.getStackConfigurator(input));
+    public JChannel(InputStream input) {
+        try {
+            init(ConfiguratorFactory.getStackConfigurator(input));
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new JGroupsException(e);
+        }
     }
 
     /**
@@ -127,8 +140,14 @@ public class JChannel implements Closeable {
      * All the public constructors of this class eventually delegate to this method.
      * @param configurator A protocol stack configurator containing a JGroups protocol stack configuration.
      */
-    public JChannel(ProtocolStackConfigurator configurator) throws Exception {
-        init(configurator);
+    public JChannel(ProtocolStackConfigurator configurator) {
+        try {
+            init(configurator);
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new JGroupsException(e);
+        }
     }
 
 
@@ -139,7 +158,7 @@ public class JChannel implements Closeable {
      * @param protocols The list of protocols, from bottom to top, ie. the first protocol in the list is the transport,
      *                  the last the top protocol
      */
-    public JChannel(Protocol ... protocols) throws Exception {
+    public JChannel(Protocol ... protocols) {
         this(Arrays.asList(protocols));
     }
 
@@ -152,29 +171,35 @@ public class JChannel implements Closeable {
      * @param protocols The list of protocols, from bottom to top, ie. the first protocol in the list is the transport,
      *                  the last the top protocol
      */
-    public JChannel(List<Protocol> protocols) throws Exception {
-        prot_stack=new ProtocolStack().setChannel(this);
-        for(Protocol prot: protocols) {
-            if(prot != null) {
-                prot_stack.addProtocol(prot);
-                prot.setProtocolStack(prot_stack);
+    public JChannel(List<Protocol> protocols) {
+        try {
+            prot_stack=new ProtocolStack().setChannel(this);
+            for(Protocol prot: protocols) {
+                if(prot != null) {
+                    prot_stack.addProtocol(prot);
+                    prot.setProtocolStack(prot_stack);
+                }
             }
+            prot_stack.init();
+            prot_stack.getTransport().getDiagnosticsHandler().setEnabled(false);
+            StackType ip_version=Util.getIpStackType();
+            TP transport=(TP)protocols.get(0);
+            InetAddress resolved_addr=Configurator.getValueFromObject(transport, "bind_addr");
+            if(resolved_addr != null)
+                ip_version=resolved_addr instanceof Inet6Address? StackType.IPv6 : StackType.IPv4;
+            else if(ip_version == StackType.Dual)
+                ip_version=StackType.IPv4; // prefer IPv4 addresses
+    
+            // Substitute vars with defined system props (if any)
+            List<Protocol> prots=prot_stack.getProtocols();
+            Map<String,String> map=new HashMap<>();
+            for(Protocol prot: prots)
+                Configurator.resolveAndAssignFields(prot, map, ip_version);
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new JGroupsException(e);
         }
-        prot_stack.init();
-        prot_stack.getTransport().getDiagnosticsHandler().setEnabled(false);
-        StackType ip_version=Util.getIpStackType();
-        TP transport=(TP)protocols.get(0);
-        InetAddress resolved_addr=Configurator.getValueFromObject(transport, "bind_addr");
-        if(resolved_addr != null)
-            ip_version=resolved_addr instanceof Inet6Address? StackType.IPv6 : StackType.IPv4;
-        else if(ip_version == StackType.Dual)
-            ip_version=StackType.IPv4; // prefer IPv4 addresses
-
-        // Substitute vars with defined system props (if any)
-        List<Protocol> prots=prot_stack.getProtocols();
-        Map<String,String> map=new HashMap<>();
-        for(Protocol prot: prots)
-            Configurator.resolveAndAssignFields(prot, map, ip_version);
     }
 
 
@@ -333,11 +358,11 @@ public class JChannel implements Closeable {
      * All channels connecting to the same cluster name form a cluster; messages sent to the cluster will
      * be received by all cluster members.
      * @param cluster_name The name of the cluster to join
-     * @exception Exception The protocol stack cannot be started
+     * @exception JGroupsException The protocol stack cannot be started
      * @exception IllegalStateException The channel is closed
      */
     @ManagedOperation(description="Connects the channel to a group")
-    public JChannel connect(String cluster_name) throws Exception {
+    public JChannel connect(String cluster_name) {
         lock.lock();
         try {
             if(!_preConnect(cluster_name))
@@ -347,8 +372,11 @@ public class JChannel implements Closeable {
             state=State.CONNECTED;
             notifyChannelConnected(this);
             return this;
-        }
-        finally {
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new JGroupsException(e);
+        } finally {
             lock.unlock();
         }
     }
@@ -362,25 +390,28 @@ public class JChannel implements Closeable {
      * @param cluster_name  the cluster name to connect to. Cannot be null.
      * @param target the state provider. If null, the state will be fetched from coordinator, unless this channel is coordinator.
      * @param timeout the timeout for state transfer.
-     * @exception Exception Connecting to the cluster or state transfer was not successful
+     * @exception JGroupsException Connecting to the cluster was not successful
+     * @exception StateTransferException State transfer was not successful
      * @exception IllegalStateException The channel is closed and therefore cannot be used
      */
-    public JChannel connect(String cluster_name, Address target, long timeout) throws Exception {
+    public JChannel connect(String cluster_name, Address target, long timeout) {
         lock.lock();
         try {
             if(!_preConnect(cluster_name))
                 return this;
-            boolean canFetchState=false;
             Event connect_event=new Event(Event.CONNECT_WITH_STATE_TRANSFER, cluster_name);
             _connect(connect_event);
             state=State.CONNECTED;
             notifyChannelConnected(this);
-            canFetchState=view != null && view.size() > 1;
+            boolean canFetchState=view != null && view.size() > 1;
             if(canFetchState) // if I am not the only member in cluster then ...
                 getState(target, timeout); // fetch state from target
             return this;
-        }
-        finally {
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new JGroupsException(e);
+        } finally {
             lock.unlock();
         }
     }
@@ -456,7 +487,7 @@ public class JChannel implements Closeable {
      *           means to send to all group members.
      * @exception IllegalStateException thrown if the channel is disconnected or closed
      */
-    public JChannel send(Message msg) throws Exception {
+    public JChannel send(Message msg) {
         if(msg == null)
             throw new NullPointerException("msg is null");
         checkClosedOrNotConnected();
@@ -472,7 +503,7 @@ public class JChannel implements Closeable {
      *           is <em>not</em> serializable, an exception will be thrown
      * @throws Exception exception thrown if message sending was not successful
      */
-    public JChannel send(Address dst, Object obj) throws Exception {
+    public JChannel send(Address dst, Object obj) {
         Message msg=new ObjectMessage(dst, obj);
         return send(msg);
     }
@@ -483,7 +514,7 @@ public class JChannel implements Closeable {
      * @param buf buffer message payload
      * @throws Exception exception thrown if the message sending was not successful
      */
-    public JChannel send(Address dst, byte[] buf) throws Exception {
+    public JChannel send(Address dst, byte[] buf) {
         return send(new BytesMessage(dst, buf));
     }
 
@@ -496,7 +527,7 @@ public class JChannel implements Closeable {
      *           {@code length} bytes starting at {@code offset}
      * @throws Exception thrown if send() failed
      */
-    public JChannel send(Address dst, byte[] buf, int offset, int length) throws Exception {
+    public JChannel send(Address dst, byte[] buf, int offset, int length) {
         return send(new BytesMessage(dst, buf, offset, length));
     }
 
@@ -512,10 +543,10 @@ public class JChannel implements Closeable {
      *           waits forever, or until the state has been received
      * @see Receiver#getState(java.io.OutputStream)
      * @see Receiver#setState(java.io.InputStream)
-     * @exception IllegalStateException the channel was closed or disconnected, or the flush (if present) failed
+     * @exception IllegalStateException the channel was closed or disconnected
      * @exception StateTransferException raised if there was a problem during the state transfer
      */
-    public JChannel getState(Address target, long timeout) throws Exception {
+    public JChannel getState(Address target, long timeout) {
         checkClosedOrNotConnected();
         if(!state_transfer_supported)
             throw new IllegalStateException("fetching state will fail as state transfer is not supported. "
@@ -534,7 +565,7 @@ public class JChannel implements Closeable {
         if(result == null)
             throw new StateTransferException("timeout during state transfer (" + (System.currentTimeMillis() - start) + "ms)");
         if(result.hasException())
-            throw new StateTransferException("state transfer failed", result.getException());
+            throw new StateTransferException(result.getException());
         return this;
     }
 
@@ -750,7 +781,7 @@ public class JChannel implements Closeable {
         return true;
     }
 
-    protected JChannel _connect(Event evt) throws Exception {
+    protected JChannel _connect(Event evt) {
         try {
             down(evt);
             return this;
