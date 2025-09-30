@@ -8,18 +8,14 @@ package org.jgroups;
  * @since 2.6
  * 
  */
-public class StateTransferException extends Exception {
+public class StateTransferException extends JGroupsException {
     private static final long serialVersionUID=-4070956583392020498L;
-
-    public StateTransferException(){    
-    }
 
     public StateTransferException(String reason){
         super(reason);        
     }
 
-    public StateTransferException(String reason,Throwable cause) {
-        super(reason, cause);        
+    public StateTransferException(Throwable cause) {
+        super(cause);        
     }
-
 }

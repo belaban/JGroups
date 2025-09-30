@@ -7,13 +7,16 @@ package org.jgroups;
  * @since 2.0
  * @author Bela Ban
  */
-public class SuspectedException extends Exception {
-    final Object suspect;
+public class SuspectedException extends RuntimeException {
+    private static final long serialVersionUID = -6663279911010545655L;
+    protected final Address member;
 
-    private static final long serialVersionUID=-6663279911010545655L;
+    public SuspectedException(Address member) {
+        super("SuspectedException");
+        this.member=member;
+    }
 
-    public SuspectedException()                {this.suspect=null;}
-    public SuspectedException(Object suspect)  {this.suspect=suspect;}
-
-    public String toString() {return "SuspectedException";}
+    public String toString() {
+        return getMessage() + ": member=" + member;
+    }
 }

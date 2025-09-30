@@ -504,7 +504,7 @@ public class ProtocolStack extends Protocol {
      *                      is not found
      * @exception Exception Will be thrown when the new protocol cannot be created, or inserted.
      */
-    public void insertProtocol(Protocol prot, Position position, String neighbor_prot) throws Exception {
+    public void insertProtocol(Protocol prot, Position position, String neighbor_prot) {
         if(neighbor_prot == null) throw new IllegalArgumentException("neighbor_prot is null");
         Protocol neighbor=findProtocol(neighbor_prot);
         if(neighbor == null)
@@ -548,7 +548,7 @@ public class ProtocolStack extends Protocol {
         }
     }
 
-    public void insertProtocol(Protocol prot, Position position, Class<? extends Protocol> neighbor_prot) throws Exception {
+    public void insertProtocol(Protocol prot, Position position, Class<? extends Protocol> neighbor_prot) {
         if(neighbor_prot == null) throw new IllegalArgumentException("neighbor_prot is null");
         Protocol neighbor=findProtocol(neighbor_prot);
         if(neighbor == null)
@@ -561,7 +561,7 @@ public class ProtocolStack extends Protocol {
 
 
     @SafeVarargs
-    public final void insertProtocol(Protocol prot, Position position, Class<? extends Protocol>... neighbor_prots) throws Exception {
+    public final void insertProtocol(Protocol prot, Position position, Class<? extends Protocol>... neighbor_prots) {
         if(neighbor_prots == null) throw new IllegalArgumentException("neighbor_prots is null");
         Protocol neighbor=findProtocol(neighbor_prots);
         if(neighbor == null)
