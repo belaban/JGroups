@@ -93,7 +93,7 @@ public class ByteArrayDataOutputStream extends BaseDataOutputStream {
     }
 
     /** Grows the buffer; whether it grow linearly or exponentially depends on grow_exponentially */
-    protected void ensureCapacity(int bytes) {
+    public void ensureCapacity(int bytes) {
         int minCapacity=pos+bytes;
 
         if(minCapacity - buf.length > 0) {
