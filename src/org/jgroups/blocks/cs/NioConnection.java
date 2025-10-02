@@ -162,7 +162,7 @@ public class NioConnection extends Connection {
         }
         catch(Exception ex) {
             if(!(ex instanceof SocketException || ex instanceof EOFException || ex instanceof ClosedChannelException))
-                server.log().error("%s: failed sending message to %s: %s", server.localAddress(), peerAddress(), ex);
+                server.log.error("%s: failed sending message to %s: %s", server.localAddress(), peerAddress(), ex);
             throw ex;
         }
         finally {
@@ -199,7 +199,7 @@ public class NioConnection extends Connection {
             }
             catch(Exception ex) {
                 if(!(ex instanceof SocketException || ex instanceof EOFException || ex instanceof ClosedChannelException))
-                    server.log.warn("failed handling message", ex);
+                    server.log.warn("%s: failed handling message from %s: %s", server.localAddress(), peerAddress(), ex);
                 server.closeConnection(NioConnection.this);
                 return;
             }
@@ -274,14 +274,14 @@ public class NioConnection extends Connection {
                 client_sock.setSendBufferSize(server.sendBufferSize());
         }
         catch(IllegalArgumentException ex) {
-            server.log().error("%s: exception setting send buffer to %d bytes: %s", server.localAddress(), server.sendBufferSize(), ex);
+            server.log.error("%s: exception setting send buffer to %d bytes: %s", server.localAddress(), server.sendBufferSize(), ex);
         }
         try {
             if(server.receiveBufferSize() > 0)
                 client_sock.setReceiveBufferSize(server.receiveBufferSize());
         }
         catch(IllegalArgumentException ex) {
-            server.log().error("%s: exception setting receive buffer to %d bytes: %s", server.localAddress(), server.receiveBufferSize(), ex);
+            server.log.error("%s: exception setting receive buffer to %d bytes: %s", server.localAddress(), server.receiveBufferSize(), ex);
         }
 
         client_sock.setKeepAlive(true);
@@ -321,15 +321,15 @@ public class NioConnection extends Connection {
                 case 0:      // cookie
                     byte[] cookie_buf=getBuffer(buf);
                     if(!Arrays.equals(cookie, cookie_buf))
-                        throw new IllegalStateException("BaseServer.NioConnection.readPeerAddress(): cookie read by "
-                                                          + server.localAddress() + " does not match own cookie; terminating connection");
+                        throw new IOException(String.format("%s: readPeerAddress(): cookie sent by %s does not match own cookie; terminating connection",
+                                                            server.localAddress(), channel.getRemoteAddress()));
                     recv_buf.add(ByteBuffer.allocate(Global.SHORT_SIZE));
                     break;
                 case 1:      // version
                     short version=buf.getShort();
                     if(!Version.isBinaryCompatible(version))
-                        throw new IOException("packet from " + channel.getRemoteAddress() + " has different version (" + Version.print(version) +
-                                                ") from ours (" + Version.printVersion() + "); discarding it");
+                        throw new IOException(String.format("%s: readPeerAddress(): packet from %s has different version (%s) from ours (%s); discarding it",
+                                                            server.localAddress(), channel.getRemoteAddress(), Version.print(version), Version.printVersion()));
                     recv_buf.add(ByteBuffer.allocate(Global.SHORT_SIZE));
                     break;
                 case 2:      // length of address
