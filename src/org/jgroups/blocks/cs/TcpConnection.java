@@ -243,13 +243,13 @@ public class TcpConnection extends Connection {
             byte[] input_cookie=new byte[cookie.length];
             in.readFully(input_cookie, 0, input_cookie.length);
             if(!Arrays.equals(cookie, input_cookie))
-                throw new IOException(String.format("readPeerAddress(): cookie sent by %s does not match own cookie; terminating connection",
-                        client_sock.getRemoteSocketAddress()));
+                throw new IOException(String.format("%s: readPeerAddress(): cookie sent by %s does not match own cookie; terminating connection",
+                                                    server.localAddress(), client_sock.getRemoteSocketAddress()));
             // then read the version
             short version=in.readShort();
             if(!Version.isBinaryCompatible(version))
-                throw new IOException(String.format("readPeerAddress(): packet from %s has different version (%s) from ours (%s); discarding it",
-                        client_sock.getRemoteSocketAddress(), Version.print(version), Version.printVersion()));
+                throw new IOException(String.format("%s: readPeerAddress(): packet from %s has different version (%s) from ours (%s); discarding it",
+                                                    server.localAddress(), client_sock.getRemoteSocketAddress(), Version.print(version), Version.printVersion()));
             in.readShort(); // address length is only needed by NioConnection
 
             Address client_peer_addr=new IpAddress();

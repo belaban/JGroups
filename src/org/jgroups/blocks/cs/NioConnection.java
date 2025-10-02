@@ -321,15 +321,15 @@ public class NioConnection extends Connection {
                 case 0:      // cookie
                     byte[] cookie_buf=getBuffer(buf);
                     if(!Arrays.equals(cookie, cookie_buf))
-                        throw new IOException(String.format("readPeerAddress(): cookie sent by %s does not match own cookie; terminating connection",
-                                channel.getRemoteAddress()));
+                        throw new IOException(String.format("%s: readPeerAddress(): cookie sent by %s does not match own cookie; terminating connection",
+                                                            server.localAddress(), channel.getRemoteAddress()));
                     recv_buf.add(ByteBuffer.allocate(Global.SHORT_SIZE));
                     break;
                 case 1:      // version
                     short version=buf.getShort();
                     if(!Version.isBinaryCompatible(version))
-                        throw new IOException(String.format("readPeerAddress(): packet from %s has different version (%s) from ours (%s); discarding it",
-                                channel.getRemoteAddress(), Version.print(version), Version.printVersion()));
+                        throw new IOException(String.format("%s: readPeerAddress(): packet from %s has different version (%s) from ours (%s); discarding it",
+                                                            server.localAddress(), channel.getRemoteAddress(), Version.print(version), Version.printVersion()));
                     recv_buf.add(ByteBuffer.allocate(Global.SHORT_SIZE));
                     break;
                 case 2:      // length of address
