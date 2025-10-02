@@ -627,7 +627,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
      * c: include the cluster name, e.g. "MyCluster"
      * l: include the local address of the current member, e.g. "192.168.5.1:5678"
      */
-    public String getThreadNamingPattern() {return thread_naming_pattern;}
+    public String           getThreadNamingPattern() {return thread_naming_pattern;}
+    public <T extends TP> T threadNamingPattern(String p) {thread_naming_pattern=p; return (T)this;}
 
 
     public InetAddress            getBindAddress()                  {return bind_addr;}
