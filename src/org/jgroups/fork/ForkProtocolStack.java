@@ -67,7 +67,7 @@ public class ForkProtocolStack extends ProtocolStack {
     }
 
     @Override
-    public List<Protocol> getProtocols() {
+    public synchronized List<Protocol> getProtocols() {
         return new ArrayList<>(protocols); // copy because Collections.reverse() will be called on the return value
     }
 
