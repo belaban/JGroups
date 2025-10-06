@@ -57,19 +57,19 @@ case $answer in
 esac
 
 ## uncomment
-echo "execute: mvn -B -q -f $POM -DskipTests deploy -Prelease"
-echo "Please commit and push your changes"
+mvn -B -q -f $POM -DskipTests deploy -Prelease
+# echo "Please commit and push your changes"
 
 ## uncomment
-echo "git commit -m 'Changed version from $CURRENT_VERSION to $RELEASE_VERSION' . ; git push"
+git commit -m 'Changed version from $CURRENT_VERSION to $RELEASE_VERSION' . ; git push
 
 echo ""
 echo "================================================================"
 echo "Tagging the repo with $TAG"
 ## uncomment
-echo "git tag $TAG"
+git tag $TAG
 ## uncomment
-echo "git push --tags"
+echo git push --tags
 
 echo ""
 echo ""
