@@ -60,6 +60,15 @@ esac
 mvn -B -q -f $POM -DskipTests deploy -Prelease
 # echo "Please commit and push your changes"
 
+echo "Was the upload successful? Shall I continue with pushing the tag and setting the new version?"
+read -p "[<enter> to proceed | <ctrl-c> to cancel]" $answer
+echo ""
+case $answer in
+        [Yy]* ) break;;
+        [Nn]* ) exit;;
+        * ) echo "";;
+esac
+
 ## uncomment
 git commit -m 'Changed version from $CURRENT_VERSION to $RELEASE_VERSION' . ; git push
 
@@ -69,7 +78,7 @@ echo "Tagging the repo with $TAG"
 ## uncomment
 git tag $TAG
 ## uncomment
-echo git push --tags
+git push --tags
 
 echo ""
 echo ""
