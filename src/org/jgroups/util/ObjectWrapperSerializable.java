@@ -40,11 +40,11 @@ public class ObjectWrapperSerializable extends ObjectWrapperPrimitive {
     }
 
     public int getLength() {
-        return getSerialized().getLength();
+        return getSerialized().length();
     }
 
     public String toString() {
-        return String.format("%s%s", obj, serialized != null? "( " + serialized.getLength() + " bytes)" : "");
+        return String.format("%s%s", obj, serialized != null? "( " + serialized.length() + " bytes)" : "");
     }
 
     public int serializedSize() {
@@ -57,8 +57,8 @@ public class ObjectWrapperSerializable extends ObjectWrapperPrimitive {
     public void writeTo(DataOutput out) throws IOException {
         if(obj != null) {
             ByteArray arr=getSerialized();
-            out.writeInt(arr.getLength());
-            out.write(arr.getArray(), 0, arr.getLength());
+            out.writeInt(arr.length());
+            out.write(arr.array(), 0, arr.length());
         }
         else
             out.writeInt(-1);

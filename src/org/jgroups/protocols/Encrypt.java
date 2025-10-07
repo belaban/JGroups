@@ -331,9 +331,9 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
             return msg.putHeader(this.id, new EncryptHeader((byte)0, symVersion(), makeIv()));
         boolean serialize=!msg.hasArray();
         ByteArray tmp=null;
-        byte[] payload=serialize? (tmp=Util.messageToBuffer(msg)).getArray() : msg.getArray();
-        int offset=serialize? tmp.getOffset() : msg.getOffset();
-        int length=serialize? tmp.getLength() : msg.getLength();
+        byte[] payload=serialize? (tmp=Util.messageToBuffer(msg)).array() : msg.getArray();
+        int offset=serialize? tmp.offset() : msg.getOffset();
+        int length=serialize? tmp.length() : msg.getLength();
         byte[] iv=makeIv();
         Message encrypted=(serialize? new BytesMessage(msg.dest()) : msg.copy(false, true))
           .putHeader(this.id, new EncryptHeader((byte)0, symVersion(), iv).needsDeserialization(serialize));

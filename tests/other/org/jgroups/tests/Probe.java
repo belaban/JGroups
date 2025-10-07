@@ -72,7 +72,7 @@ public class Probe {
     protected void fetchAddressesAndInvoke(SocketAddress dest, InetAddress bind_addr, String request, String passcode,
                                            long timeout, int ttl, boolean udp, boolean tcp) throws IOException {
         Consumer<ByteArray> on_rsp_handler=buf -> {
-            String response=new String(buf.getArray(), 0, buf.getLength());
+            String response=new String(buf.array(), 0, buf.length());
             try {
                 Collection<SocketAddress> targets=parseAddresses(response, ((InetSocketAddress)dest).getPort());
                 if(targets == null || targets.isEmpty())
@@ -318,13 +318,13 @@ public class Probe {
                 System.out.println("\n");
                 return;
             }
-            String response=new String(buf.getArray(), 0, buf.getLength());
+            String response=new String(buf.array(), 0, buf.length());
             if(weed_out_duplicates && checkDuplicateResponse(response))
                 return;
             count.incrementAndGet();
             if(matches(response, Probe.this.match)) {
                 matched.incrementAndGet();
-                System.out.printf("#%d (%d bytes):\n%s\n", count.get(), buf.getLength(), response);
+                System.out.printf("#%d (%d bytes):\n%s\n", count.get(), buf.length(), response);
             }
             else
                 not_matched.incrementAndGet();

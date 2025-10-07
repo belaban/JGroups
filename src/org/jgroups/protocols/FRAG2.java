@@ -200,9 +200,9 @@ public class FRAG2 extends Fragmentation {
         try {
             boolean serialize=!msg.hasArray();
             ByteArray tmp=null;
-            byte[] buffer=serialize? (tmp=Util.messageToBuffer(msg)).getArray() : msg.getArray();
-            int offset=serialize? tmp.getOffset() : msg.getOffset();
-            int length=serialize? tmp.getLength() : msg.getLength();
+            byte[] buffer=serialize? (tmp=Util.messageToBuffer(msg)).array() : msg.getArray();
+            int offset=serialize? tmp.offset() : msg.getOffset();
+            int length=serialize? tmp.length() : msg.getLength();
             final List<Range> fragments=Util.computeFragOffsets(offset, length, frag_size);
             int num_frags=fragments.size();
             num_frags_sent.add(num_frags);

@@ -45,7 +45,7 @@ public class MillisAddressTest {
         MillisAddress addr=new MillisAddress(1);
         int size=Util.size(addr);
         ByteArray buf=writeAddress(addr);
-        assert buf.getLength() == size;
+        assert buf.length() == size;
         Address a2=readAddress(buf);
         assert addr.equals(a2);
         assert a2.equals(addr);

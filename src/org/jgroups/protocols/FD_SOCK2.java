@@ -255,7 +255,7 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
                 Message rsp=new EmptyMessage().setSrc(local_addr).putHeader(id, h);
                 ByteArray buf=messageToBuffer(rsp);
                 log.trace("%s: CONNECT-RSP[cluster=%s, srv=%s] --> %s", local_addr, cluster, local_addr, msg.src());
-                srv.send(sender, buf.getArray(), buf.getOffset(), buf.getLength());
+                srv.send(sender, buf.array(), buf.offset(), buf.length());
                 break;
 
             case FdHeader.CONNECT_RSP:
@@ -430,7 +430,7 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
             log.trace("%s: CONNECT --> %s (%s)", local_addr, logical_addr, dest);
             ping_dest.resetConnectResult();
             boolean existing_connection=srv.hasConnection(dest);
-            srv.send(dest, buf.getArray(), buf.getOffset(), buf.getLength());
+            srv.send(dest, buf.array(), buf.offset(), buf.length());
             ping_dest.waitForConnect(connect_timeout); // returns on CONNECT-RSP, connection exception or timeout
             if(ping_dest.connected())
                 return true;

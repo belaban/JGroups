@@ -357,7 +357,7 @@ public class JDBC_PING extends FILE_PING {
         try (PreparedStatement ps=connection.prepareStatement(insert_single_sql)) {
             ps.setString(1, address);
             ps.setString(2, clustername);
-            ps.setBytes(3, serializedPingData.getBytes());
+            ps.setBytes(3, serializedPingData.bytes());
             if(log.isTraceEnabled())
                 log.trace("%s: SQL for insertion: %s", local_addr, ps);
             ps.executeUpdate();

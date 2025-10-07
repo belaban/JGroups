@@ -51,17 +51,6 @@ public class SizeTest {
         _testSize(hdr);
     }
 
-    public void testByteArray() throws Exception {
-        byte[] arr={};
-        ByteArray ba=new ByteArray(arr);
-        _testSize(ba);
-        arr="hello world".getBytes();
-        ba=new ByteArray(arr);
-        _testSize(ba);
-        ba=new ByteArray(arr, 6, 5);
-        _testSize(ba);
-    }
-
     public void testPingHeader() throws Exception {
         _testSize(new PingHeader(PingHeader.GET_MBRS_REQ).clusterName("bla"));
         _testSize(new PingHeader(PingHeader.GET_MBRS_RSP));

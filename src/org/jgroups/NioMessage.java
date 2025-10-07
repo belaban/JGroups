@@ -107,7 +107,7 @@ public class NioMessage extends BaseMessage {
      */
     public NioMessage setArray(ByteArray b) {
         if(b != null)
-            this.buf=createBuffer(b.getArray(), b.getOffset(), b.getLength());
+            this.buf=createBuffer(b.array(), b.offset(), b.length());
         return this;
     }
 

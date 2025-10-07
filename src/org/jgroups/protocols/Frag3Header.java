@@ -15,7 +15,7 @@ public class Frag3Header extends Header {
     protected int     frag_id;         // the ID of the frag, starting with 0. E.g. 4 fragments will have IDs from 0 to 3
     protected int     num_frags;       // the total number of fragments
     protected int     original_length; // the length of the original message
-    protected int     offset;          // offset of this fragment in the original message; length is in Message.getLength()
+    protected int     offset;          // offset of this fragment in the original message; length is in Message.length()
     protected boolean needs_deserialization; // true if byte[] array of a fragment needs to be de-serialized into a payload
 
 

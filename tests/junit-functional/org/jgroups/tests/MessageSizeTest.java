@@ -41,7 +41,7 @@ public class MessageSizeTest {
         ByteArray buf=marshal(msg);
         System.out.println("buf = " + buf);
 
-        int len=buf.getLength();
+        int len=buf.length();
         System.out.println("len = " + len);
 
         assert len <= MCAST_MAX_SIZE;
@@ -65,7 +65,7 @@ public class MessageSizeTest {
         ByteArray buf=marshal(msg);
         System.out.println("buf = " + buf);
 
-        int len=buf.getLength();
+        int len=buf.length();
         System.out.println("len = " + len);
 
         assert len <= UNICAST_MAX_SIZE;

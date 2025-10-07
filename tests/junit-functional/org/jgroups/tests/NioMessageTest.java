@@ -235,7 +235,7 @@ public class NioMessageTest extends MessageTestBase {
         ByteBuffer payload=ByteBuffer.allocate(4).putInt(322649).flip().asReadOnlyBuffer();
         Message msg=new NioMessage(null, payload);
         ByteArray buf=Util.messageToBuffer(msg);
-        NioMessage msg2=(NioMessage)Util.messageFromBuffer(buf.getArray(), buf.getOffset(), buf.getLength());
+        NioMessage msg2=(NioMessage)Util.messageFromBuffer(buf.array(), buf.offset(), buf.length());
         ByteBuffer buf2=msg2.getBuf();
         assert payload.equals(buf2);
 

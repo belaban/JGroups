@@ -30,7 +30,7 @@ public class ByteArrayDataInputStream extends InputStream implements DataInput {
     }
 
     public ByteArrayDataInputStream(ByteArray buf) {
-        this(buf.getArray(), buf.getOffset(), buf.getLength());
+        this(buf.array(), buf.offset(), buf.length());
     }
 
     public ByteArrayDataInputStream(ByteBuffer buffer) {

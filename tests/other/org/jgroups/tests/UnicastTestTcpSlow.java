@@ -141,8 +141,8 @@ public class UnicastTestTcpSlow {
         output_lock.lock(); // need to sync if we have more than 1 sender
         try {
             // msg.writeTo(output);
-            output.writeInt(buffer.getLength());
-            output.write(buffer.getArray(), buffer.getOffset(), buffer.getLength());
+            output.writeInt(buffer.length());
+            output.write(buffer.array(), buffer.offset(), buffer.length());
         }
         finally {
             output_lock.unlock();
@@ -321,8 +321,8 @@ public class UnicastTestTcpSlow {
                     output_lock.lock(); // need to sync if we have more than 1 sender
                     try {
                         // msg.writeTo(output);
-                        output.writeInt(buffer.getLength());
-                        output.write(buffer.getArray(), buffer.getOffset(), buffer.getLength());
+                        output.writeInt(buffer.length());
+                        output.write(buffer.array(), buffer.offset(), buffer.length());
                         // output.flush();
                     }
                     finally {

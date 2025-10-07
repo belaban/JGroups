@@ -16,19 +16,40 @@ public class ByteArrayTest {
 
     public void testGetBytes() {
         ByteArray ba=new ByteArray(HELLO);
-        byte[] bytes=ba.getBytes();
+        byte[] bytes=ba.bytes();
         assert Arrays.equals(bytes, HELLO);
         assert HELLO.hashCode() == bytes.hashCode(); // same memory location
 
         ba=new ByteArray(HELLO, 0, 5);
-        bytes=ba.getBytes();
+        bytes=ba.bytes();
         assert HELLO.hashCode() != bytes.hashCode();
         assert new String(bytes).equals("hello");
 
         ba=new ByteArray(HELLO, 6, 5);
-        bytes=ba.getBytes();
+        bytes=ba.bytes();
         assert HELLO.hashCode() != bytes.hashCode();
         assert new String(bytes).equals("world");
+    }
 
+    public void testCopy() {
+        ByteArray ba=new ByteArray(HELLO), ba2=ba.copy();
+        byte[] bytes=ba2.bytes();
+        assert Arrays.equals(bytes, HELLO);
+
+        ba=new ByteArray(HELLO, 0, 5);
+        ba2=ba.copy();
+        bytes=ba2.bytes();
+        assert HELLO.hashCode() != bytes.hashCode();
+        assert new String(bytes).equals("hello");
+        assert ba.length() == ba2.length();
+        assert ba.array().length > ba2.array().length;
+
+        ba=new ByteArray(HELLO, 6, 5);
+        ba2=ba.copy();
+        bytes=ba2.bytes();
+        assert HELLO.hashCode() != bytes.hashCode();
+        assert new String(bytes).equals("world");
+        assert ba.length() == ba2.length();
+        assert ba.array().length > ba2.array().length;
     }
 }

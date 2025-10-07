@@ -83,7 +83,7 @@ public class TcpConnectionNonBlocking extends TcpConnection implements Runnable 
                 queue.drainTo(remove_queue, rq_capacity - 1);
                 for(ByteArray data: remove_queue) {
                     // no synchronization needed as this thread is the only sender
-                    doSend(data.getArray(), data.getOffset(), data.getLength(), false);
+                    doSend(data.array(), data.offset(), data.length(), false);
                 }
                 flush();
             }

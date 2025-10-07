@@ -368,7 +368,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     }
 
     @ManagedAttribute(description="Returns the number of bytes of all messages in all retransmit buffers. " +
-      "To compute the size, Message.getLength() is used",type=AttributeType.BYTES)
+      "To compute the size, Message.length() is used",type=AttributeType.BYTES)
     public long getSizeOfAllMessages() {
         long retval=0;
         for(Table<Message> buf: xmit_table.values())

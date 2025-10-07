@@ -178,7 +178,7 @@ public class ParseMessages {
             if(hdr instanceof PingHeader) {
                 byte[] payload=msg.getArray();
                 if(payload != null) {
-                    List<PingData> list=Discovery.deserialize(payload, msg.getOffset(), msg.getLength()); // Util.streamableFromBuffer(PingData::new, payload, msg.getOffset(), msg.getLength());
+                    List<PingData> list=Discovery.deserialize(payload, msg.getOffset(), msg.getLength()); // Util.streamableFromBuffer(PingData::new, payload, msg.offset(), msg.length());
                     if(list != null) {
                         for(PingData data: list)
                             NameCache.add(data.getAddress(), data.getLogicalName());

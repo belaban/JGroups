@@ -27,6 +27,7 @@ public abstract class BaseMessage implements Message {
     static final byte           DEST_SET         =  1;
     static final byte           SRC_SET          =  1 << 1;
 
+    byte refcount;
 
     public BaseMessage() {
     }

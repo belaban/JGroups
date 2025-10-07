@@ -158,9 +158,9 @@ public class BytesMessage extends BaseMessage {
      */
     public BytesMessage setArray(ByteArray buf) {
         if(buf != null) {
-            this.array=buf.getArray();
-            this.offset=buf.getOffset();
-            this.length=buf.getLength();
+            this.array=buf.array();
+            this.offset=buf.offset();
+            this.length=buf.length();
         }
         return this;
     }

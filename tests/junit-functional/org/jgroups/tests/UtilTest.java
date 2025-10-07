@@ -408,7 +408,7 @@ public class UtilTest {
         byte[] input="hello world".getBytes();
         InputStream in=new ByteArrayInputStream(input);
         ByteArray output=Util.readBytes(in);
-        byte[] tmp=output.getBytes();
+        byte[] tmp=output.bytes();
         assert Arrays.equals(input, tmp);
     }
 
@@ -547,7 +547,7 @@ public class UtilTest {
         Util.writeString(s2, out);
 
         ByteArray array=out.getBuffer();
-        ByteArrayDataInputStream in=new ByteArrayDataInputStream(array.getArray(), array.getOffset(), array.getLength());
+        ByteArrayDataInputStream in=new ByteArrayDataInputStream(array.array(), array.offset(), array.length());
         String str=Util.readString(in);
         assert str.equals(s1);
         str=Util.readString(in);
@@ -565,7 +565,7 @@ public class UtilTest {
 
     private static void _testMessage(Message msg) throws Exception {
         ByteArray buf=Util.messageToByteBuffer(msg);
-        Message msg2=Util.messageFromByteBuffer(buf.getArray(), buf.getOffset(), buf.getLength());
+        Message msg2=Util.messageFromByteBuffer(buf.array(), buf.offset(), buf.length());
         Assert.assertEquals(msg.getSrc(), msg2.getSrc());
         Assert.assertEquals(msg.getDest(), msg2.getDest());
         Assert.assertEquals(msg.getLength(), msg2.getLength());
@@ -626,7 +626,7 @@ public class UtilTest {
             ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(16);
             Util.primitiveToStream(obj, out);
             ByteArray buf=out.getBuffer();
-            try(ByteArrayDataInputStream in=new ByteArrayDataInputStream(buf.getArray(), 0, buf.getLength())) {
+            try(ByteArrayDataInputStream in=new ByteArrayDataInputStream(buf.array(), 0, buf.length())) {
                 Object obj2=Util.primitiveFromStream(in);
                 assert obj == obj2 || obj.equals(obj2);
             }
@@ -667,7 +667,7 @@ public class UtilTest {
 
         ByteArray buf=Util.objectToBuffer(ex);
 
-        Throwable ex2=Util.objectFromByteBuffer(buf.getArray(), buf.getOffset(), buf.getLength());
+        Throwable ex2=Util.objectFromByteBuffer(buf.array(), buf.offset(), buf.length());
         System.out.println("ex2 = " + ex2);
 
         int stack_trace_len2=ex2.getStackTrace().length;
@@ -680,7 +680,7 @@ public class UtilTest {
 
         buf=Util.objectToBuffer(ex);
 
-        ex2=Util.objectFromByteBuffer(buf.getArray(), buf.getOffset(), buf.getLength());
+        ex2=Util.objectFromByteBuffer(buf.array(), buf.offset(), buf.length());
         System.out.println("ex2 = " + ex2);
 
         stack_trace_len2=ex2.getStackTrace().length;
@@ -796,9 +796,9 @@ public class UtilTest {
     static void objectToBuffer(Object obj) throws Exception {
         ByteArray buf=Util.objectToBuffer(obj);
         assert buf != null;
-        assert buf.getLength() > 0;
-        Object obj2=Util.objectFromByteBuffer(buf.getArray(), buf.getOffset(), buf.getLength());
-        System.out.println("obj=" + obj + ", obj2=" + obj2 + " (type=" + obj.getClass().getName() + ", length=" + buf.getLength() + " bytes)");
+        assert buf.length() > 0;
+        Object obj2=Util.objectFromByteBuffer(buf.array(), buf.offset(), buf.length());
+        System.out.println("obj=" + obj + ", obj2=" + obj2 + " (type=" + obj.getClass().getName() + ", length=" + buf.length() + " bytes)");
         Assert.assertEquals(obj, obj2);
     }
 

@@ -174,8 +174,8 @@ public class FRAG extends Fragmentation {
         try {
             // write message into a byte buffer and fragment it
             ByteArray tmp=Util.messageToBuffer(msg);
-            byte[] buffer=tmp.getArray();
-            byte[][] fragments=Util.fragmentBuffer(buffer, frag_size, tmp.getLength());
+            byte[] buffer=tmp.array();
+            byte[][] fragments=Util.fragmentBuffer(buffer, frag_size, tmp.length());
             num_frags=fragments.length;
             num_frags_sent.add(num_frags);
 

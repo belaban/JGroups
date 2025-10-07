@@ -182,7 +182,7 @@ public class RpcDispatcher extends MessageDispatcher {
             return null;
         }
 
-        MethodCall method_call=req.getObject();   // methodCallFromBuffer(req.getArray(), req.getOffset(), req.getLength(), marshaller);
+        MethodCall method_call=req.getObject();   // methodCallFromBuffer(req.array(), req.offset(), req.length(), marshaller);
         if(log.isTraceEnabled())
             log.trace("[sender=%s], method_call: %s", req.getSrc(), method_call);
 

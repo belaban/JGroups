@@ -232,7 +232,7 @@ public class DiagnosticsHandler extends ReceiverAdapter implements Closeable {
             InputStream input=client_sock.getInputStream();
             OutputStream output=client_sock.getOutputStream();) {
             sender=client_sock.getRemoteSocketAddress();
-            byte[] request=Util.readBytes(input).getBytes();
+            byte[] request=Util.readBytes(input).bytes();
             int payloadStartOffset=0;
             if(passcode != null)
                 payloadStartOffset=authorizeProbeRequest(request);

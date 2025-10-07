@@ -292,7 +292,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
     }
 
     @ManagedAttribute(description="Returns the number of bytes of all messages in all retransmit buffers. " +
-      "To compute the size, Message.getLength() is used",type=AttributeType.BYTES)
+      "To compute the size, Message.length() is used",type=AttributeType.BYTES)
     public long getSizeOfAllMessages() {
         return xmit_table.values().stream().map(Entry::buf).map(win -> sizeOfAllMessages(win, false))
           .reduce(0L, Long::sum);

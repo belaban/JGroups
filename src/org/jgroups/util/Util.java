@@ -675,7 +675,7 @@ public class Util {
     }
 
     public static <T extends Object> T objectFromBuffer(ByteArray b, ClassLoader loader) throws IOException, ClassNotFoundException {
-        return objectFromByteBuffer(b.getArray(), b.getOffset(), b.getLength(), loader);
+        return objectFromByteBuffer(b.array(), b.offset(), b.length(), loader);
     }
 
     public static <T extends Object> T objectFromByteBuffer(byte[] buffer,int offset,int length, ClassLoader loader) throws IOException, ClassNotFoundException {
@@ -755,7 +755,7 @@ public class Util {
     }
 
     public static byte[] objectToByteBuffer(Object obj) throws IOException {
-        return objectToBuffer(obj).getBytes();
+        return objectToBuffer(obj).bytes();
     }
 
     /**

@@ -281,7 +281,7 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
         }
 
         protected void addAndSendIfSizeExceeded(Message msg) {
-            int size=msg.size(); // getLength() might return 0 when no payload is present: don't use!
+            int size=msg.size(); // length() might return 0 when no payload is present: don't use!
             if(count + size >= max_size) {
                 if(transport.statsEnabled())
                     avg_fill_count.add(count);
