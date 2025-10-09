@@ -149,7 +149,8 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
             this.sender=sender;
             this.cluster_name=cluster_name;
             int cap=max_buffer_size > 0? max_buffer_size : DEFAULT_INITIAL_CAPACITY; // initial capacity
-            batch=new MessageBatch(cap).dest(tp.getAddress()).sender(sender).clusterName(cluster_name)
+            Address dest=mcast? null : tp.getAddress();
+            batch=new MessageBatch(cap).dest(dest).sender(sender).clusterName(cluster_name)
               .multicast(mcast).mode(MessageBatch.Mode.REG); // only regular messages are queued
             batch.array().increment(DEFAULT_INCREMENT);
             msg_queue=max_buffer_size > 0? new FastArray<>(max_buffer_size) : new FastArray<>(DEFAULT_INITIAL_CAPACITY);

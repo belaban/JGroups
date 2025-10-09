@@ -184,6 +184,12 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
 
     protected static final BiConsumer<MessageBatch,Message> BATCH_ACCUMULATOR=MessageBatch::add;
 
+    protected static final Buffer.Visitor<Message> DECR=(seqno, msg) -> {
+        if(msg != null)
+            msg.decr();
+        return true;
+    };
+
     protected abstract Buffer<Message> createBuffer(long initial_seqno);
     protected abstract boolean         needToSendAck(Entry e, int num_acks);
 
@@ -681,8 +687,10 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
         boolean dont_loopback_set=msg.isFlagSet(DONT_LOOPBACK) && dst.equals(local_addr);
         if(send(msg, entry, dont_loopback_set))
             num_msgs_sent.increment();
-        else
+        else {
+            msg.decr();
             log.trace("%s: dropped message due to closed send buffer, message: %s", local_addr, msg);
+        }
         return null; // the message was already sent down the stack in send()
     }
 
@@ -1028,6 +1036,7 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
 
         Buffer<Message> win=entry != null? entry.buf : null;
         if(win != null && entry.updateLastTimestamp(timestamp)) {
+            win.forEach(win.low()+1, seqno, DECR, false);
             win.purge(seqno, true); // removes all messages <= seqno (forced purge)
             num_acks_received.increment();
         }
@@ -1101,6 +1110,9 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
             msg.putHeader(this.id,UnicastHeader.createDataHeader(seqno, send_conn_id,seqno == DEFAULT_FIRST_SEQNO));
             if(!addToSendBuffer(buf, seqno, msg, dont_loopback_set? remove_filter : null))
                 return false; // e.g. message already present in send buffer, or buffer is closed
+            boolean is_loopback=msg.dest() != null && msg.dest().equals(local_addr);
+            if(!dont_loopback_set && !is_loopback)
+                msg.incr();
             down_prot.down(msg); // if this fails, since msg is in sent_msgs, it can be retransmitted
             if(entry.state() == State.CLOSING)
                 entry.state(State.OPEN);

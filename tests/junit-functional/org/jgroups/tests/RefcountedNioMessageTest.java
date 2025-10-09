@@ -23,6 +23,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Tests {@link org.jgroups.RefcountedNioMessage}
@@ -36,16 +38,12 @@ public class RefcountedNioMessageTest {
     protected final BlockingQueue<ByteBuffer>  pool=new ArrayBlockingQueue<>(POOL_SIZE);
     protected final static String              CLUSTER=RefcountedNioMessageTest.class.getSimpleName();
     protected JChannel                         a,b,c;
-    protected final AtomicInteger              received=new AtomicInteger();
+    protected Receiver                         ra,rb,rc;
 
-    protected final Receiver                   r=new Receiver() {
-        @Override public void receive(Message msg)        {received.incrementAndGet();}
-        @Override public void receive(MessageBatch batch) {received.addAndGet(batch.size());}
-    };
 
     @DataProvider
     static Object[][] createUnicastProtocol() {
-        return new Object[][]{
+        return new Object[][] {
           {UNICAST3.class},
           {UNICAST4.class}
         };
@@ -62,7 +60,7 @@ public class RefcountedNioMessageTest {
 
     @BeforeMethod protected void setup() throws Exception {
         msgs.clear(); pool.clear();
-        received.set(0);
+        ra=new Receiver("A"); rb=new Receiver("B"); rc=new Receiver("C");
         // populate a fixed pool of POOL_SIZE elements
         for(int i=0; i < POOL_SIZE; i++)
             pool.offer(ByteBuffer.allocate(MSG_SIZE));
@@ -91,17 +89,21 @@ public class RefcountedNioMessageTest {
     @Test(dataProvider="createUnicastProtocol")
     public void testUnicastRefcounting_A_B(Class<? extends Protocol> cl) throws Exception {
         a=createUnicast("A", cl);
+        a.setReceiver(ra);
         b=createUnicast("B", cl);
+        b.setReceiver(rb);
         Util.waitUntilAllChannelsHaveSameView(3000, 100, a,b);
-        testUnicastRefcounting(a,b);
+        testUnicastRefcounting(a,b,rb);
     }
 
     @Test(dataProvider="createUnicastProtocol")
     public void testUnicastRefcounting_A_A(Class<? extends Protocol> cl) throws Exception {
         a=createUnicast("A", cl);
+        a.setReceiver(ra);
         b=createUnicast("B", cl);
+        b.setReceiver(rb);
         Util.waitUntilAllChannelsHaveSameView(3000, 100, a,b);
-        testUnicastRefcounting(a,a);
+        testUnicastRefcounting(a,a,ra);
     }
 
     @Test(dataProvider="createMulticastProtocol")
@@ -110,7 +112,7 @@ public class RefcountedNioMessageTest {
         b=createMulticast("B", cl);
         c=createMulticast("C", cl);
         Util.waitUntilAllChannelsHaveSameView(3000, 100, a,b,c);
-        a.setReceiver(r); b.setReceiver(r); c.setReceiver(r);
+        a.setReceiver(ra); b.setReceiver(rb); c.setReceiver(rc);
 
         Sender[] senders=new Sender[NUM_SENDERS];
         for(int i=0;i < senders.length; i++) {
@@ -118,19 +120,18 @@ public class RefcountedNioMessageTest {
             new Thread(senders[i], "sender-" + (i+i)).start();
         }
         Util.waitUntil(10000, 500,
-                       () -> received.get() == NUM_MSGS * NUM_SENDERS * 3,
-                       () -> String.format("received=%d (expected=%d)", received.get(), NUM_MSGS * NUM_SENDERS * 3));
+                       () -> sum(ra,rb,rc) == NUM_MSGS * NUM_SENDERS * 3,
+                       () -> String.format("received=%d (expected=%d)", sum(ra,rb,rc), NUM_MSGS * NUM_SENDERS * 3));
         assert msgs.size() == NUM_MSGS * NUM_SENDERS;
         assert msgs.stream().allMatch(m -> m instanceof RefcountedNioMessage);
 
         Util.waitUntil(10000, 500,
                        () -> msgs.stream().allMatch(m -> m.refCount() == 0));
-        assert msgs.stream().allMatch(m -> m.refCount() == 0);
         System.out.printf("\n*** pool size: %d, %d msgs\n", pool.size(), msgs.size());
         assert pool.size() == POOL_SIZE;
     }
 
-    protected void testUnicastRefcounting(JChannel from, JChannel to) throws Exception {
+    protected void testUnicastRefcounting(JChannel from, JChannel to, Receiver r) throws Exception {
         Address dest=to.getAddress();
         to.setReceiver(r);
 
@@ -140,8 +141,8 @@ public class RefcountedNioMessageTest {
             new Thread(senders[i], "sender-" + (i+i)).start();
         }
         Util.waitUntil(10000, 500,
-                       () -> received.get() == NUM_MSGS * NUM_SENDERS,
-                       () -> String.format("received=%d (expected=%d)", received.get(), NUM_MSGS * NUM_SENDERS));
+                       () -> r.count() == NUM_MSGS * NUM_SENDERS,
+                       () -> String.format("received=%d (expected=%d)", r.count(), NUM_MSGS * NUM_SENDERS));
         assert msgs.size() == NUM_MSGS * NUM_SENDERS;
         assert msgs.stream().allMatch(m -> m instanceof RefcountedNioMessage);
 
@@ -187,7 +188,7 @@ public class RefcountedNioMessageTest {
                 }
                 if(protocols[i] instanceof NAKACK2) {
                     STABLE stable=find(STABLE.class, protocols);
-                    stable.setDesiredAverageGossip(1000);
+                    stable.setMaxBytes(500).setDesiredAverageGossip(500);
                 }
                 break;
             }
@@ -202,6 +203,14 @@ public class RefcountedNioMessageTest {
                 return (T)p;
         }
         throw new IllegalStateException(String.format("protocol of type %s not found", cl.getSimpleName()));
+    }
+
+    protected static String print(Receiver ... receivers) {
+        return Stream.of(receivers).map(Receiver::toString).collect(Collectors.joining(", "));
+    }
+
+    protected static int sum(Receiver ... receivers) {
+        return Stream.of(receivers).map(Receiver::count).mapToInt(i -> i).sum();
     }
 
     protected record Sender(JChannel ch, BlockingQueue<ByteBuffer> pool, Address dest,
@@ -229,6 +238,31 @@ public class RefcountedNioMessageTest {
                     e.printStackTrace();
                 }
             }
+        }
+    }
+
+    protected static class Receiver implements org.jgroups.Receiver {
+        protected final AtomicInteger count=new AtomicInteger();
+
+        protected Receiver(String name) {
+            this.name=name;
+        }
+
+        protected int count() {return count.get();}
+        protected final String name;
+
+
+        @Override public void receive(MessageBatch batch) {
+            count.addAndGet(batch.size());
+        }
+
+        @Override public void receive(Message msg) {
+            count.incrementAndGet();
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s: %,d", name, count());
         }
     }
 }
