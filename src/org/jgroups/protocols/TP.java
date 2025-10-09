@@ -162,7 +162,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     @Property(description="The type of bundler used (\"ring-buffer\", \"transfer-queue\" (default), \"sender-sends\" or " +
       "\"no-bundler\") or the fully qualified classname of a Bundler implementation")
-    protected String bundler_type="transfer-queue";
+    protected String bundler_type="per-destination";
 
     @ManagedAttribute(description="Fully qualified classname of bundler")
     public String getBundlerClass() {
