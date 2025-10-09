@@ -204,7 +204,7 @@ public abstract class BasicTCP extends TP implements Receiver, ConnectionListene
             return;
         Address peer_ip=conn.peerAddress();
         Address peer=peer_ip != null? logical_addr_cache.getByValue((PhysicalAddress)peer_ip) : null;
-        if(peer != null) {
+        if(peer != null && members.contains(peer)) {
             if(log.isDebugEnabled())
                 log.debug("%s: connection closed by peer %s (IP=%s), sending up a suspect event",
                           local_addr, peer, peer_ip);
