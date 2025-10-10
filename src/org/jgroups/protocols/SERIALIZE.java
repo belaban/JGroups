@@ -26,6 +26,13 @@ import org.jgroups.util.Util;
 @MBean(description="Serializes entire message into the payload of another message")
 public class SERIALIZE extends Protocol {
     protected static final short GMS_ID=ClassConfigurator.getProtocolId(GMS.class);
+    protected TP transport;
+
+    @Override
+    public void init() throws Exception {
+        super.init();
+        transport=getTransport();
+    }
 
     public Object down(Message msg) {
         if(msg.getSrc() == null)
@@ -77,7 +84,7 @@ public class SERIALIZE extends Protocol {
 
     protected Message deserialize(Address sender, byte[] buf, int offset, int length) throws Exception {
         try {
-            Message msg=Util.messageFromBuffer(buf, offset, length);
+            Message msg=Util.messageFromBuffer(buf, offset, length, transport.getMessageFactory());
             if(msg.getDest() == null)
                 msg.setDest(msg.getDest());
             if(msg.getSrc() == null)

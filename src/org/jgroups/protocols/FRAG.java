@@ -226,7 +226,7 @@ public class FRAG extends Fragmentation {
             return null;
 
         try {
-            Message assembled_msg=Util.messageFromBuffer(buf, 0, buf.length);
+            Message assembled_msg=Util.messageFromBuffer(buf, 0, buf.length, transport.getMessageFactory());
             assembled_msg.setSrc(sender); // needed ? YES, because fragments have a null src !!
             if(log.isTraceEnabled()) log.trace("assembled_msg is " + assembled_msg);
             num_received_msgs++;

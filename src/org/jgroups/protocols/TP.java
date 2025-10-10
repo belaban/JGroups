@@ -361,13 +361,13 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     /** Factory which is used by the thread pool */
     protected ThreadFactory           thread_factory;
 
-    // ================================== Timer thread pool  =========================
+    /** Can be set to create custom messages (https://issues.redhat.com/browse/JGRP-2944) */
+    protected MessageFactory          msg_factory;
+
     protected TimeScheduler           timer;
 
     protected TimeService             time_service;
 
-
-    // ================================= Default SocketFactory ========================
     protected SocketFactory           socket_factory=new DefaultSocketFactory();
 
     @Component(name="bundler")
@@ -578,9 +578,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @ManagedAttribute(type=SCALAR) @Deprecated
     public long     getNumMcastMsgsReceived()   {return msg_stats.getNumMcastsReceived();}
 
-    public ThreadFactory getThreadFactory() {
-        return thread_factory;
-    }
+    public ThreadFactory getThreadFactory()     {return thread_factory;}
 
     public <T extends TP> T setThreadFactory(ThreadFactory factory) {
         thread_factory=factory;
@@ -588,6 +586,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         return (T)this;
     }
 
+    public MessageFactory        getMessageFactory()                       {return msg_factory;}
+    public <T extends TP> T      setMessageFactory(MessageFactory mf)      {this.msg_factory=mf; return (T)this;}
     public AsyncExecutor<Object> getAsyncExecutor()                        {return async_executor;}
     public <T extends TP> T      setAsyncExecutor(AsyncExecutor<Object> e) {async_executor=e; return (T)this;}
 
@@ -1224,7 +1224,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     protected void handleMessageBatch(DataInput in, boolean multicast) {
         try {
-            final MessageBatch[] batches=Util.readMessageBatch(in, multicast);
+            final MessageBatch[] batches=Util.readMessageBatch(in, multicast, msg_factory);
             final MessageBatch regular=batches[0], oob=batches[1];
 
             // we need to update the stats *before* processing the batches: protocols can remove msgs from the batch
@@ -1242,7 +1242,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected void handleSingleMessage(DataInput in, boolean multicast) {
         try {
             short type=in.readShort();
-            Message msg=MessageFactory.create(type); // don't create headers, readFrom() will do this
+            Message msg=Util.createMessage(type, msg_factory);
             msg.readFrom(in);
 
             if(!multicast && unicastDestMismatch(msg.getDest()))

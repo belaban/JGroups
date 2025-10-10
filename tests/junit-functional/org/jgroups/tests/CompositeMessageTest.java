@@ -60,7 +60,7 @@ public class CompositeMessageTest extends MessageTestBase {
         CompositeMessage msg=new CompositeMessage(DEST, M1, M2, M3).collapse(true);
         int length=msg.getLength();
         ByteArray buf=Util.messageToBuffer(msg);
-        Message msg2=Util.messageFromBuffer(buf.array(), buf.offset(), buf.length());
+        Message msg2=Util.messageFromBuffer(buf.array(), buf.offset(), buf.length(), null);
         assert msg2 instanceof BytesMessage;
         assert msg2.getLength() == length;
     }
@@ -73,7 +73,7 @@ public class CompositeMessageTest extends MessageTestBase {
           .collapse(true);
         int length=msg.getLength();
         ByteArray buf=Util.messageToBuffer(msg);
-        Message msg2=Util.messageFromBuffer(buf.array(), buf.offset(), buf.length());
+        Message msg2=Util.messageFromBuffer(buf.array(), buf.offset(), buf.length(), null);
         assert msg2 instanceof BytesMessage;
         assert msg2.getLength() == length;
 

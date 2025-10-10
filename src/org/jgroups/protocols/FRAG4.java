@@ -39,6 +39,10 @@ import java.util.Objects;
  */
 public class FRAG4 extends FRAG2 {
 
+    @Override
+    public void init() throws Exception {
+        super.init();
+    }
 
     protected void fragment(Message msg) {
         try {
@@ -82,7 +86,8 @@ public class FRAG4 extends FRAG2 {
                                                                                                      m.getOffset(),
                                                                                                      m.getLength())));
             DataInput in=new DataInputStream(seq);
-            Message retval=MessageFactory.create(hdr.getOriginalType());
+            MessageFactory msg_factory=transport.getMessageFactory();
+            Message retval=Util.createMessage(hdr.getOriginalType(), msg_factory);
             retval.readFrom(in);
             return retval;
         }

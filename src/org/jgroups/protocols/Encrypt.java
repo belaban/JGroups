@@ -55,6 +55,7 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
     protected int                           key_map_max_size=20;
 
     protected volatile View                 view;
+    protected TP                            transport;
 
     // Cipher pools used for encryption and decryption. Size is cipher_pool_size
     protected volatile BlockingQueue<Cipher> encoding_ciphers, decoding_ciphers;
@@ -113,6 +114,7 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
         }
         key_map=new BoundedHashMap<>(key_map_max_size);
         initSymCiphers(sym_algorithm, secret_key);
+        transport=getTransport();
     }
 
 
@@ -317,7 +319,7 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
             decrypted_msg=cipher.doFinal(msg.getArray(), msg.getOffset(), msg.getLength());
         }
         if(hdr.needsDeserialization())
-            return Util.messageFromBuffer(decrypted_msg, 0, decrypted_msg.length);
+            return Util.messageFromBuffer(decrypted_msg, 0, decrypted_msg.length, transport.getMessageFactory());
         else
             return msg.setArray(decrypted_msg, 0, decrypted_msg.length);
     }

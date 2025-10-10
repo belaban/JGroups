@@ -108,7 +108,7 @@ public class FragmentedMessageTest {
           new SequenceInputStream(Util.enumerate(msgs, 0, msgs.length,
                                                  m -> new ByteArrayDataInputStream(m.getArray(),m.getOffset(),m.getLength())));
         DataInput input=new DataInputStream(seq);
-        Message new_msg=MessageFactory.create(original_msg.getType());
+        Message new_msg=MessageFactory.get().create(original_msg.getType());
         new_msg.readFrom(input);
         assert original_msg.getLength() == new_msg.getLength();
         verifier.accept(new_msg);

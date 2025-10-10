@@ -152,7 +152,7 @@ public class BatchMessage extends BaseMessage implements Iterable<Message> {
             msgs=new Message[index]; // a bit of additional space should we add byte arrays
             for(int i=0; i < index; i++) {
                 short type=in.readShort();
-                msgs[i]=MessageFactory.create(type).setDest(dest()).setSrc(orig_src);
+                msgs[i]=MessageFactory.get().create(type).setDest(dest()).setSrc(orig_src);
                 msgs[i].readFrom(in);
             }
         }
