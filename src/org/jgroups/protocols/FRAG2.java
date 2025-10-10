@@ -44,7 +44,6 @@ public class FRAG2 extends Fragmentation {
 
     /** Used to assign fragmentation-specific sequence IDs (monotonically increasing) */
     protected final AtomicLong    curr_id=new AtomicLong(1);
-
     protected final List<Address> members=new ArrayList<>(11);
 
     protected final AverageMinMax avg_size_down=new AverageMinMax();
@@ -66,14 +65,10 @@ public class FRAG2 extends Fragmentation {
         int old_frag_size=frag_size;
         if(frag_size <=0)
             throw new Exception("frag_size=" + old_frag_size + ", new frag_size=" + frag_size + ": new frag_size is invalid");
-
-        TP transport=getTransport();
-        if(transport != null) {
-            int max_bundle_size=transport.getBundler().getMaxSize();
-            if(frag_size >= max_bundle_size)
-                throw new IllegalArgumentException("frag_size (" + frag_size + ") has to be < TP.max_bundle_size (" +
-                                                     max_bundle_size + ")");
-        }
+        int max_bundle_size=transport.getBundler().getMaxSize();
+        if(frag_size >= max_bundle_size)
+            throw new IllegalArgumentException("frag_size (" + frag_size + ") has to be < TP.max_bundle_size (" +
+                                                 max_bundle_size + ")");
         Map<String,Object> info=new HashMap<>(1);
         info.put("frag_size", frag_size);
         down_prot.down(new Event(Event.CONFIG, info));
@@ -312,7 +307,7 @@ public class FRAG2 extends Fragmentation {
             index+=length;
         }
         if(needs_deserialization)
-            retval=Util.messageFromBuffer(combined_buffer, 0, combined_buffer.length);
+            retval=Util.messageFromBuffer(combined_buffer, 0, combined_buffer.length, transport.getMessageFactory());
         else
             retval.setArray(combined_buffer, 0, combined_buffer.length);
         return retval;

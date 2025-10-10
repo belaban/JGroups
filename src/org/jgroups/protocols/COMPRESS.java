@@ -36,19 +36,19 @@ public class COMPRESS extends Protocol {
     
     @Property(description="Compression level (from java.util.zip.Deflater) " +
       "(0=no compression, 1=best speed, 9=best compression). Default is 9")
-    protected int compression_level=Deflater.BEST_COMPRESSION; // this is 9
+    protected int                     compression_level=Deflater.BEST_COMPRESSION; // this is 9
    
     @Property(description="Minimal payload size of a message (in bytes) for compression to kick in. Default is 500 bytes",
       type=AttributeType.BYTES)
-    protected int min_size=500;
+    protected int                     min_size=500;
     
     @Property(description="Number of inflaters/deflaters for concurrent processing. Default is 2 ")
-    protected int pool_size=2;
+    protected int                     pool_size=2;
     
     protected BlockingQueue<Deflater> deflater_pool;
     protected BlockingQueue<Inflater> inflater_pool;
     protected final LongAdder         num_compressions=new LongAdder(), num_decompressions=new LongAdder();
-
+    protected TP                      transport;
 
 
 
@@ -76,6 +76,7 @@ public class COMPRESS extends Protocol {
         inflater_pool=new ArrayBlockingQueue<>(pool_size);
         for(int i=0; i < pool_size; i++)
             inflater_pool.add(new Inflater());
+        transport=getTransport();
     }
 
     public void destroy() {
@@ -219,9 +220,10 @@ public class COMPRESS extends Protocol {
         }
     }
 
-    protected static Message messageFromByteArray(byte[] uncompressed_payload) {
+    protected Message messageFromByteArray(byte[] uncompressed_payload) {
         try {
-            return Util.messageFromBuffer(uncompressed_payload, 0, uncompressed_payload.length);
+            return Util.messageFromBuffer(uncompressed_payload, 0, uncompressed_payload.length,
+                                          transport.getMessageFactory());
         }
         catch(Exception ex) {
             throw new RuntimeException("failed unmarshalling message", ex);

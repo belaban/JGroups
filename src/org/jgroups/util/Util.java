@@ -1307,10 +1307,10 @@ public class Util {
     }
 
 
-    public static Message messageFromBuffer(byte[] buf, int offset, int length) throws Exception {
+    public static Message messageFromBuffer(byte[] buf, int offset, int length, MessageFactory mf) throws Exception {
         ByteArrayDataInputStream in=new ByteArrayDataInputStream(buf, offset, length);
         short type=in.readShort();
-        Message msg=MessageFactory.create(type);
+        Message msg=Util.createMessage(type, mf);
         msg.readFrom(in);
         return msg;
     }
@@ -1331,7 +1331,7 @@ public class Util {
         if(!in.readBoolean())
             return null;
         short type=in.readShort();
-        Message msg=MessageFactory.create(type);
+        Message msg=MessageFactory.get().create(type);
         msg.readFrom(in);
         return msg;
     }
@@ -1463,13 +1463,21 @@ public class Util {
         msg.writeTo(dos);
     }
 
-    public static Message readMessage(DataInput in) throws IOException, ClassNotFoundException {
+    public static Message readMessage(DataInput in, MessageFactory mf) throws IOException, ClassNotFoundException {
         short type=in.readShort();
-        Message msg=MessageFactory.create(type);
+        Message msg=Util.createMessage(type, mf);
         msg.readFrom(in);
         return msg;
     }
 
+    public static Message createMessage(short type, MessageFactory msg_factory) {
+        Message msg=null;
+        if(msg_factory != null)
+            msg=msg_factory.create(type);
+        if(msg == null)
+            msg=MessageFactory.get().create(type);
+        return msg;
+    }
 
     /**
      * Write a list of messages with the *same* destination and src addresses. The message list is
@@ -1555,7 +1563,7 @@ public class Util {
 
         for(int i=0; i < len; i++) {
             short type=in.readShort(); // skip the
-            Message msg=MessageFactory.create(type);
+            Message msg=MessageFactory.get().create(type);
             msg.readFrom(in);
             msg.setDest(dest);
             if(msg.getSrc() == null)
@@ -1577,7 +1585,7 @@ public class Util {
      * </ol>
      * @return an array of 2 MessageBatches in the order above, the first batch is at index 0
      */
-    public static MessageBatch[] readMessageBatch(DataInput in, boolean multicast)
+    public static MessageBatch[] readMessageBatch(DataInput in, boolean multicast, MessageFactory mf)
       throws IOException, ClassNotFoundException {
         MessageBatch[] batches=new MessageBatch[2]; // [0]: reg, [1]: OOB
         Address dest=Util.readAddress(in);
@@ -1590,7 +1598,7 @@ public class Util {
         int len=in.readInt();
         for(int i=0; i < len; i++) {
             short type=in.readShort();
-            Message msg=MessageFactory.create(type).setDest(dest).setSrc(src);
+            Message msg=Util.createMessage(type, mf).setDest(dest).setSrc(src);
             msg.readFrom(in);
             boolean oob=msg.isFlagSet(Message.Flag.OOB);
             int index=0;
@@ -1650,7 +1658,7 @@ public class Util {
                 boolean is_message_list=(flags & LIST) == LIST;
                 boolean multicast=(flags & MULTICAST) == MULTICAST;
                 if(is_message_list) { // used if message bundling is enabled
-                    final MessageBatch[] batches=Util.readMessageBatch(dis,multicast);
+                    final MessageBatch[] batches=Util.readMessageBatch(dis, multicast, null);
                     for(MessageBatch batch: batches) {
                         if(batch == null)
                             continue;
@@ -1663,7 +1671,7 @@ public class Util {
                     }
                 }
                 else {
-                    Message msg=Util.readMessage(dis);
+                    Message msg=Util.readMessage(dis, null);
                     if(msg_consumer != null)
                         msg_consumer.accept(version, msg);
                 }

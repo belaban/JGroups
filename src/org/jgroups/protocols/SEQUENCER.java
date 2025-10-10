@@ -32,6 +32,7 @@ import java.util.function.Supplier;
 public class SEQUENCER extends Protocol {
     protected volatile Address                  coord;
     protected volatile View                     view;
+    protected TP                                transport;
     @ManagedAttribute
     protected volatile boolean                  is_coord;
     protected final AtomicLong                  seqno=new AtomicLong(0);
@@ -104,6 +105,7 @@ public class SEQUENCER extends Protocol {
 
     public void init() throws Exception {
         super.init();
+        transport=getTransport();
     }
 
     public void start() throws Exception {
@@ -454,7 +456,8 @@ public class SEQUENCER extends Protocol {
     protected void unwrapAndDeliver(final Message msg, boolean flush_ack) {
         try {
             // Message msg_to_deliver=Util.streamableFromBuffer(BytesMessage::new, msg.array(), msg.offset(), msg.length());
-            Message msg_to_deliver=Util.messageFromBuffer(msg.getArray(), msg.getOffset(), msg.getLength());
+            Message msg_to_deliver=Util.messageFromBuffer(msg.getArray(), msg.getOffset(), msg.getLength(),
+                                                          transport.getMessageFactory());
             SequencerHeader hdr=msg_to_deliver.getHeader(this.id);
             if(flush_ack)
                 hdr.flush_ack=true;

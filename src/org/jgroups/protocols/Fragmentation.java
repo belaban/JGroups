@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.LongAdder;
  */
 @MBean(description="Fragments messages larger than fragmentation size into smaller messages")
 public class Fragmentation extends Protocol {
+    protected TP transport;
 
     @Property(description="The max number of bytes in a message. Larger messages will be fragmented",
       type=AttributeType.BYTES)
@@ -31,6 +32,12 @@ public class Fragmentation extends Protocol {
 
     @ManagedAttribute(description="Number of received fragments",type=AttributeType.SCALAR)
     public long                        getNumberOfReceivedFragments() {return num_frags_received.sum();}
+
+    @Override
+    public void init() throws Exception {
+        super.init();
+        transport=getTransport();
+    }
 
     public void resetStats() {
         super.resetStats();

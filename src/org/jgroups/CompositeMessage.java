@@ -152,7 +152,7 @@ public class CompositeMessage extends BaseMessage implements Iterable<Message> {
             msgs=new Message[index]; // a bit of additional space should we add byte arrays
             for(int i=0; i < index; i++) {
                 short type=in.readShort();
-                Message msg=MessageFactory.create(type).setDest(getDest());
+                Message msg=MessageFactory.get().create(type).setDest(getDest());
                 if(msg.getSrc() == null)
                     msg.setSrc(getSrc());
                 msg.readFrom(in);

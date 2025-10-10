@@ -348,7 +348,7 @@ public class FRAG3 extends Fragmentation {
          * @return the complete message in one buffer
          */
         protected Message assembleMessage() throws Exception {
-            return needs_deserialization? Util.messageFromBuffer(buffer, 0, buffer.length)
+            return needs_deserialization? Util.messageFromBuffer(buffer, 0, buffer.length, transport.getMessageFactory())
               : msg.setArray(buffer, 0, buffer.length);
         }
 
