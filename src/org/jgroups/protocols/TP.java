@@ -368,8 +368,6 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     protected TimeService             time_service;
 
-
-    // ================================= Default SocketFactory ========================
     protected SocketFactory           socket_factory=new DefaultSocketFactory();
 
     @Component(name="bundler")
@@ -580,9 +578,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @ManagedAttribute(type=SCALAR) @Deprecated
     public long     getNumMcastMsgsReceived()   {return msg_stats.getNumMcastsReceived();}
 
-    public ThreadFactory getThreadFactory() {
-        return thread_factory;
-    }
+    public ThreadFactory getThreadFactory()     {return thread_factory;}
 
     public <T extends TP> T setThreadFactory(ThreadFactory factory) {
         thread_factory=factory;

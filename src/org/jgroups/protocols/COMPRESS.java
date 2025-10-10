@@ -36,14 +36,14 @@ public class COMPRESS extends Protocol {
     
     @Property(description="Compression level (from java.util.zip.Deflater) " +
       "(0=no compression, 1=best speed, 9=best compression). Default is 9")
-    protected int compression_level=Deflater.BEST_COMPRESSION; // this is 9
+    protected int                     compression_level=Deflater.BEST_COMPRESSION; // this is 9
    
     @Property(description="Minimal payload size of a message (in bytes) for compression to kick in. Default is 500 bytes",
       type=AttributeType.BYTES)
-    protected int min_size=500;
+    protected int                     min_size=500;
     
     @Property(description="Number of inflaters/deflaters for concurrent processing. Default is 2 ")
-    protected int pool_size=2;
+    protected int                     pool_size=2;
     
     protected BlockingQueue<Deflater> deflater_pool;
     protected BlockingQueue<Inflater> inflater_pool;

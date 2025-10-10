@@ -102,9 +102,6 @@ public class SEQUENCER extends Protocol {
         forwarded_msgs=bcast_msgs=received_forwards=received_bcasts=delivered_bcasts=0L;
     }
 
-    public void init() throws Exception {
-        super.init();
-    }
 
     public void start() throws Exception {
         super.start();

@@ -23,6 +23,5 @@
     <UNICAST4 />
     <pbcast.GMS print_local_addr="true" join_timeout="1s"/>
     <FRAG2 frag_size="60K"  />
-    <!--RSVP resend_interval="2s" timeout="10s"/-->
     <pbcast.STATE_TRANSFER/>
 </config>

@@ -44,7 +44,6 @@ public class FRAG2 extends Fragmentation {
 
     /** Used to assign fragmentation-specific sequence IDs (monotonically increasing) */
     protected final AtomicLong    curr_id=new AtomicLong(1);
-
     protected final List<Address> members=new ArrayList<>(11);
 
     protected final AverageMinMax avg_size_down=new AverageMinMax();

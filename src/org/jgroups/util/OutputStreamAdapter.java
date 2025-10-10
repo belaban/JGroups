@@ -15,6 +15,10 @@ public class OutputStreamAdapter extends OutputStream {
         this.output=output;
     }
 
+    public ByteArrayDataOutputStream output() {
+        return output;
+    }
+
     public void write(int b) throws IOException {
         output.write(b);
     }
