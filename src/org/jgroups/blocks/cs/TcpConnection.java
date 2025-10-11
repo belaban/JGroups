@@ -243,8 +243,8 @@ public class TcpConnection extends Connection {
             byte[] input_cookie=new byte[cookie.length];
             in.readFully(input_cookie, 0, input_cookie.length);
             if(!Arrays.equals(cookie, input_cookie))
-                throw new IOException(String.format("%s: readPeerAddress(): cookie sent by %s does not match own cookie; terminating connection",
-                                                    server.localAddress(), client_sock.getRemoteSocketAddress()));
+                throw new IOException(String.format("%s: readPeerAddress(): cookie %s sent by %s does not match own cookie; terminating connection",
+                                                    server.localAddress(), Util.byteArrayToHexString(input_cookie), client_sock.getRemoteSocketAddress()));
             // then read the version
             short version=in.readShort();
             if(!Version.isBinaryCompatible(version))
