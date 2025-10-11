@@ -321,8 +321,8 @@ public class NioConnection extends Connection {
                 case 0:      // cookie
                     byte[] cookie_buf=getBuffer(buf);
                     if(!Arrays.equals(cookie, cookie_buf))
-                        throw new IOException(String.format("%s: readPeerAddress(): cookie sent by %s does not match own cookie; terminating connection",
-                                                            server.localAddress(), channel.getRemoteAddress()));
+                        throw new IOException(String.format("%s: readPeerAddress(): cookie %s sent by %s does not match own cookie; terminating connection",
+                                                            server.localAddress(), Util.byteArrayToHexString(cookie_buf), channel.getRemoteAddress()));
                     recv_buf.add(ByteBuffer.allocate(Global.SHORT_SIZE));
                     break;
                 case 1:      // version
