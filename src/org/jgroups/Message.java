@@ -16,7 +16,7 @@ import java.util.Map;
  * @author Bela Ban
  * @since  5.0
  */
-public interface Message extends SizeStreamable, Constructable<Message> {
+public interface Message extends SizeStreamable, Constructable<Message>, Refcountable<Message> {
 
     // The type of the message. Cannot be an enum, as users can register additional types
     short BYTES_MSG        = 0,

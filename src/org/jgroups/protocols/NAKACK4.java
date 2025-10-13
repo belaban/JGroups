@@ -208,8 +208,12 @@ public class NAKACK4 extends ReliableMulticast {
             return;
         }
         long old_min=rc[0], new_min=rc[1];
-        if(new_min > old_min)
+        if(new_min > old_min) {
+
+            buf.forEach(buf.low()+1, buf.hd(), DECR, false);
+
             buf.purge(new_min); // unblocks senders waiting for space to become available
+        }
     }
 
     @Override

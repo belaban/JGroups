@@ -549,7 +549,13 @@ public class JChannel implements Closeable {
     }
 
     public Object down(Message msg) {
-        return msg != null? prot_stack.down(msg) : null;
+        msg.incr();
+        try {
+            return prot_stack.down(msg);
+        }
+        finally {
+            msg.decr();
+        }
     }
 
     /**

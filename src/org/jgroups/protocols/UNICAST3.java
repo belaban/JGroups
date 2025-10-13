@@ -196,6 +196,12 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     protected static final BiConsumer<MessageBatch,Message> BATCH_ACCUMULATOR=MessageBatch::add;
 
+    protected static final Table.Visitor<Message> DECR=(seqno, msg, row, col) -> {
+        if(msg != null)
+            msg.decr();
+        return true;
+    };
+
     /** Used for testing only! */
     public Table<Message> getSendWindow(Address target) {
         SenderEntry entry=send_table.get(target);
@@ -222,8 +228,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     @ManagedAttribute(description="Next seqno issued by the timestamper",type=SCALAR)
     public int getTimestamper() {return timestamper.get();}
 
-    public int getAckThreshold() {return ack_threshold;}
-
+    public int getAckThreshold()           {return ack_threshold;}
+    public UNICAST3 ackThreshold(int a)    {return setAckThreshold(a);}
     public UNICAST3 setAckThreshold(int a) {ack_threshold=a; return this;}
 
     @Property(name="level", description="Sets the level")
@@ -706,12 +712,13 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             num_loopbacks.increment();
             return up_prot.up(msg);
         }
-
         SenderEntry entry=getSenderEntry(dst);
-        boolean dont_loopback_set=msg.isFlagSet(DONT_LOOPBACK) && dst.equals(local_addr);
+        boolean is_loopback=dst.equals(local_addr), dont_loopback_set=msg.isFlagSet(DONT_LOOPBACK) && is_loopback;
         short send_conn_id=entry.connId();
         long seqno=entry.sent_msgs_seqno.getAndIncrement();
         long sleep=10;
+        if(!dont_loopback_set && !is_loopback)
+            msg.incr();
         do {
             try {
                 msg.putHeader(this.id,UnicastHeader3.createDataHeader(seqno,send_conn_id,seqno == DEFAULT_FIRST_SEQNO));
@@ -1100,7 +1107,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
         Table<Message> win=entry != null? entry.msgs : null;
         if(win != null && entry.updateLastTimestamp(timestamp)) {
-            // win.forEach(win.getLow(), seqno, null);
+            win.forEach(win.getLow()+1, seqno, DECR);
             win.purge(seqno, true); // removes all messages <= seqno (forced purge)
             num_acks_received.increment();
         }

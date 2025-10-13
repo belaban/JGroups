@@ -76,7 +76,6 @@ public class NioMessage extends BaseMessage {
     public int               getOffset()                {return hasArray()? buf.arrayOffset()+buf.position() : 0;}
     public int               getLength()                {return buf != null? buf.remaining() : 0;}
 
-
     public byte[] getArray() {
         return buf != null? (isDirect()?Util.bufferToArray(buf) : buf.array()) : null;
     }

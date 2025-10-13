@@ -162,6 +162,11 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         return hdr == null || hdr.getType() != NakAckHeader2.MSG? -1 : hdr.getSeqno();
     };
     protected final Predicate<Message> HAS_HEADER=m -> m != null && m.getHeader(id) != null;
+    protected static final Table.Visitor<Message> DECR=(seqno, msg, row, col) -> {
+        if(msg != null)
+            msg.decr();
+        return true;
+    };
 
 
     @ManagedAttribute(description="Number of retransmit requests received",type=AttributeType.SCALAR)
@@ -793,7 +798,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         Table<Message> buf=local_xmit_table;
         if(buf == null && (buf=local_xmit_table=xmit_table.get(local_addr)) == null) // discard message if there is no entry for local_addr
             return;
-
+        msg.incr();
         if(msg.getSrc() == null)
             msg.setSrc(local_addr); // this needs to be done so we can check whether the message sender is the local_addr
 
@@ -1304,7 +1309,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
 
             // delete *delivered* msgs that are stable (all messages with seqnos <= seqno)
             if(hd >= 0 && buf != null) {
-                // buf.forEach(buf.getLow(), hd, null);
+                buf.forEach(buf.getLow()+1, hd, DECR);
                 log.trace("%s: deleting msgs <= %s from %s", local_addr, hd, member);
                 buf.purge(hd);
             }
