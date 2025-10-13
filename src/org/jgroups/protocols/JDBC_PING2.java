@@ -245,6 +245,10 @@ public class JDBC_PING2 extends FILE_PING {
 
     protected void findMembersInitialDiscovery() {
         try {
+            // Sending the discovery here, as the parent class will not execute it once there is data in the table
+            PhysicalAddress physical_addr = (PhysicalAddress) down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
+            sendDiscoveryResponse(local_addr, physical_addr, NameCache.get(local_addr), null, is_coord);
+
             List<PingData> pingData = readFromDB(cluster_name);
             writeLocalAddress();
             while (pingData.stream().noneMatch(PingData::isCoord)) {
