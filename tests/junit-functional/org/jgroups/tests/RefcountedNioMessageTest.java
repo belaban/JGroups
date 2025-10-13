@@ -1,10 +1,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.protocols.ReliableMulticast;
-import org.jgroups.protocols.ReliableUnicast;
-import org.jgroups.protocols.UNICAST3;
-import org.jgroups.protocols.UNICAST4;
+import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.Protocol;
@@ -52,9 +49,9 @@ public class RefcountedNioMessageTest {
     @DataProvider
     static Object[][] createMulticastProtocol() {
         return new Object[][]{
-          {NAKACK2.class},
+          // {NAKACK2.class},
           //{NAKACK3.class},
-          //{NAKACK4.class}
+          {NAKACK4.class}
         };
     }
 
@@ -186,10 +183,12 @@ public class RefcountedNioMessageTest {
                     protocols[i]=null;
                     protocols[i]=mcast_cl.getConstructor().newInstance();
                 }
-                if(protocols[i] instanceof NAKACK2) {
+                if(protocols[i] instanceof NAKACK2 || protocols[i] instanceof NAKACK3) {
                     STABLE stable=find(STABLE.class, protocols);
                     stable.setMaxBytes(500).setDesiredAverageGossip(500);
                 }
+                if(protocols[i] instanceof NAKACK4)
+                    ((NAKACK4)protocols[i]).ackThreshold(1);
                 break;
             }
         }
@@ -229,7 +228,7 @@ public class RefcountedNioMessageTest {
 
             for(int i=0; i < NUM_MSGS; i++) {
                 ByteBuffer buf=pool.take();
-                Message msg=new RefcountedNioMessage(dest, buf).onRelease(reclaimer); //.setFlag(Message.Flag.NO_RELIABILITY);
+                Message msg=new RefcountedNioMessage(dest, buf).onRelease(reclaimer);
                 msgs.add(msg);
                 try {
                     ch.send(msg);
