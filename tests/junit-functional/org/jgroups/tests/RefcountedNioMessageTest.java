@@ -49,8 +49,8 @@ public class RefcountedNioMessageTest {
     @DataProvider
     static Object[][] createMulticastProtocol() {
         return new Object[][]{
-          // {NAKACK2.class},
-          //{NAKACK3.class},
+          {NAKACK2.class},
+          {NAKACK3.class},
           {NAKACK4.class}
         };
     }
