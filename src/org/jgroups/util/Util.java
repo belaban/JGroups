@@ -1396,13 +1396,7 @@ public class Util {
     public static String byteArrayToHexString(byte[] b, int offset, int length) {
         if(b == null)
             return "null";
-        StringBuilder sb = new StringBuilder(length * 2);
-        for (int i = 0; i < length; i++){
-            int v = b[i+offset] & 0xff;
-            if (v < 16) { sb.append('0'); }
-            sb.append(Integer.toHexString(v));
-        }
-        return sb.toString().toUpperCase();
+        return HexFormat.of().withUpperCase().formatHex(b, offset, offset + length);
     }
 
     public static boolean isAsciiString(String str) {
