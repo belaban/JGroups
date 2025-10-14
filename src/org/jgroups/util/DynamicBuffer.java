@@ -416,29 +416,35 @@ public class DynamicBuffer<T> extends Buffer<T> {
     public void forEach(long from, long to, Visitor<T> visitor, boolean nullify) {
         if(from - to > 0) // same as if(from > to), but prevents long overflow
             return;
-        int row=computeRow(from), column=computeIndex(from);
-        int distance=(int)(to - from +1);
-        T[] current_row=row+1 > matrix.length? null : matrix[row];
+        lock.lock();
+        try {
+            int row=computeRow(from), column=computeIndex(from);
+            int distance=(int)(to - from + 1);
+            T[] current_row=row + 1 > matrix.length? null : matrix[row];
 
-        for(int i=0; i < distance; i++) {
-            T element=current_row == null? null : current_row[column];
-            boolean stop=visitor != null && !visitor.visit(from, element);
-            if(nullify && element != null) {
-                matrix[row][column]=null;
-                // if we're nulling the last element of a row, null the row as well
-                if(column == elements_per_row-1)
-                    matrix[row]=null;
-                if(from - low > 0)
-                    low=from;
+            for(int i=0; i < distance; i++) {
+                T element=current_row == null? null : current_row[column];
+                boolean stop=visitor != null && !visitor.visit(from, element);
+                if(nullify && element != null) {
+                    matrix[row][column]=null;
+                    // if we're nulling the last element of a row, null the row as well
+                    if(column == elements_per_row - 1)
+                        matrix[row]=null;
+                    if(from - low > 0)
+                        low=from;
+                }
+                if(stop)
+                    break;
+                from++;
+                if(++column >= elements_per_row) {
+                    column=0;
+                    row++;
+                    current_row=row + 1 > matrix.length? null : matrix[row];
+                }
             }
-            if(stop)
-                break;
-            from++;
-            if(++column >= elements_per_row) {
-                column=0;
-                row++;
-                current_row=row+1 > matrix.length? null : matrix[row];
-            }
+        }
+        finally {
+            lock.unlock();
         }
     }
 

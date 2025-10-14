@@ -1234,11 +1234,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
 
             // delete *delivered* msgs that are stable (all messages with seqnos <= seqno)
             if(hd >= 0 && win != null) {
-
-
                 win.forEach(win.low()+1, win.hd(), DECR, false);
-
-
                 log.trace("%s: deleting msgs <= %s from %s", local_addr, hd, member);
                 win.purge(hd);
             }

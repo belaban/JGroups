@@ -292,24 +292,30 @@ public class FixedBuffer<T> extends Buffer<T> {
         if(from - to > 0) // same as if(from > to), but prevents long overflow
             return;
         int distance=(int)(to - from +1);
-        long start=low;
-        for(int i=0; i < distance; i++) {
-            int index=index(from);
-            T element=buf[index];
-            boolean stop=visitor != null && !visitor.visit(from, element);
-            if(stop && respect_stop)
-                break;
-            if(nullify && element != null) {
-                buf[index]=null;
-                if(from - low > 0)
-                    low=from;
+        lock.lock();
+        try {
+            long start=low;
+            for(int i=0; i < distance; i++) {
+                int index=index(from);
+                T element=buf[index];
+                boolean stop=visitor != null && !visitor.visit(from, element);
+                if(stop && respect_stop)
+                    break;
+                if(nullify && element != null) {
+                    buf[index]=null;
+                    if(from - low > 0)
+                        low=from;
+                }
+                if(stop)
+                    break;
+                from++;
             }
-            if(stop)
-                break;
-            from++;
+            if(low - start > 0)
+                buffer_full.signalAll();
         }
-        if(low - start > 0)
-            buffer_full.signalAll();
+        finally {
+            lock.unlock();
+        }
     }
 
     @Override
