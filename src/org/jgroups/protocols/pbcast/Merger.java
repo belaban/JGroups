@@ -420,7 +420,6 @@ public class Merger {
         merge_task.stop();
     }
 
-
     protected void cancelMerge(MergeId id) {
         lock.lock();
         try {
@@ -436,8 +435,6 @@ public class Merger {
         }
     }
 
-
-
     protected void forceCancelMerge() {
         lock.lock();
         try {
@@ -447,7 +444,6 @@ public class Merger {
             lock.unlock();
         }
     }
-
 
     protected void startMergeKiller() {
         lock.lock();
@@ -472,8 +468,6 @@ public class Merger {
             lock.unlock();
         }
     }
-
-
 
 
 
