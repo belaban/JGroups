@@ -123,11 +123,6 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
         return hdr == null || hdr.getType() != NakAckHeader.MSG? -1 : hdr.getSeqno();
     };
     protected final Predicate<Message> HAS_HEADER=m -> m != null && m.getHeader(id) != null;
-    protected static final Buffer.Visitor<Message> DECR=(seqno, msg) -> {
-        if(msg != null)
-            msg.decr();
-        return true;
-    };
 
 
     @ManagedAttribute(description="Number of retransmit requests received",type=SCALAR)
@@ -519,10 +514,8 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
             if(dont_loopback_set && needToSendAck(send_entry, 1))
                 handleAck(local_addr, win.highestDelivered()); // https://issues.redhat.com/browse/JGRP-2829
         }
-        else {
-            msg.decr();
+        else
             log.trace("%s: dropped message due to closed send buffer, message: %s", local_addr, msg);
-        }
         last_seqno_resender.skipNext();
         return null;    // don't pass down the stack
     }
@@ -714,7 +707,6 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
             msg.putHeader(this.id, NakAckHeader.createMessageHeader(msg_id));
             if(!addToSendBuffer(win, msg_id, msg, dont_loopback_set? remove_filter : null))
                 return false; // e.g. message already present in send buffer, or buffer is closed
-            msg.incr();
             down_prot.down(msg); // if this fails, since msg is in sent_msgs, it can be retransmitted
             return true;
         }
@@ -1234,7 +1226,6 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
 
             // delete *delivered* msgs that are stable (all messages with seqnos <= seqno)
             if(hd >= 0 && win != null) {
-                win.forEach(win.low()+1, win.hd(), DECR, false);
                 log.trace("%s: deleting msgs <= %s from %s", local_addr, hd, member);
                 win.purge(hd);
             }
