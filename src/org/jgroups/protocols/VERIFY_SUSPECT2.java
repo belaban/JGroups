@@ -215,7 +215,7 @@ public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
             return false;
 
         long target_time=getCurrentTimeMillis() + timeout;
-        List<Entry> tmp=list.stream().map(a -> new Entry(a, target_time)).toList();
+        List<Entry> tmp=list.stream().map(a -> new Entry(a, target_time)).collect(Collectors.toUnmodifiableList());
         return suspects.addAll(tmp);
     }
 

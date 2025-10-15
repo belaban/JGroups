@@ -8,6 +8,9 @@ import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 
 import static org.jgroups.Message.Flag.OOB;
 import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
@@ -20,7 +23,6 @@ import static org.jgroups.protocols.pbcast.GMS.GmsHeader.CANCEL_MERGE;
 public class Merger {
     protected final GMS                          gms;
     protected final Log                          log;
-
     protected final MergeTask                    merge_task=new MergeTask();
 
     /** For MERGE_REQ/MERGE_RSP correlation, contains MergeData elements */
@@ -28,13 +30,10 @@ public class Merger {
 
     /** For GET_DIGEST / DIGEST_RSP correlation */
     protected final ResponseCollector<Digest>    digest_collector=new ResponseCollector<>();
-
-    protected MergeId                            merge_id=null;
-
+    protected MergeId                            merge_id;
     protected final BoundedList<MergeId>         merge_id_history=new BoundedList<>(20);
-
     protected Future<?>                          merge_killer=null;
-
+    protected final Lock                         lock=new ReentrantLock();
 
 
     public Merger(GMS gms) {
@@ -46,29 +45,42 @@ public class Merger {
     public String               getMergeIdHistory()        {return merge_id_history.toString();}
     public boolean              isMergeTaskRunning()       {return merge_task.isRunning();}
     public boolean              isMergeKillerTaskRunning() {return merge_killer != null && !merge_killer.isDone();}
-    public synchronized MergeId getMergeId()               {return merge_id;} // only used for testing; do not use
-    public synchronized boolean isMergeInProgress()        {return merge_id != null;}
-    public synchronized boolean matchMergeId(MergeId id)   {return Util.match(this.merge_id, id);}
 
-
-    public synchronized boolean setMergeId(MergeId expected, MergeId new_value) {
-        boolean match=Util.match(this.merge_id, expected);
-        if(match) {
-            if(new_value != null && merge_id_history.contains(new_value))
-                return false;
-            else
-                merge_id_history.add(new_value);
-            this.merge_id=new_value;
-            if(this.merge_id != null) {
-                // Clears the view handler queue and discards all JOIN/LEAVE/MERGE requests until after the MERGE
-                gms.getViewHandler().suspend();
-                gms.getDownProtocol().down(new Event(Event.SUSPEND_STABLE, 20000));
-                startMergeKiller();
-            }
-        }
-        return match;
+    // only used for testing; do not use
+    public MergeId getMergeId() {
+        return withLock(() -> merge_id);
     }
 
+    public boolean isMergeInProgress() {
+        return withLock(() -> merge_id != null);
+    }
+
+    public boolean matchMergeId(MergeId id) {
+        return withLock(() -> Util.match(merge_id, id));
+    }
+
+    public boolean setMergeId(MergeId expected, MergeId new_value) {
+        lock.lock();
+        try {
+            boolean match = Util.match(this.merge_id, expected);
+            if (match) {
+                if (new_value != null && merge_id_history.contains(new_value))
+                    return false;
+                else
+                    merge_id_history.add(new_value);
+                this.merge_id = new_value;
+                if (this.merge_id != null) {
+                    // Clears the view handler queue and discards all JOIN/LEAVE/MERGE requests until after the MERGE
+                    gms.getViewHandler().suspend();
+                    gms.getDownProtocol().down(new Event(Event.SUSPEND_STABLE, 20000));
+                    startMergeKiller();
+                }
+            }
+            return match;
+        } finally {
+            lock.unlock();
+        }
+    }
 
     /**
      * Invoked upon receiving a MERGE event from the MERGE layer. Starts the merge protocol.
@@ -131,7 +143,6 @@ public class Merger {
         merge_rsps.add(data.getSender(), data);
     }
 
-
     /**
      * If merge_id is not equal to this.merge_id then discard. Else cast the view/digest to all members of this group.
      */
@@ -158,7 +169,6 @@ public class Merger {
         log.trace("%s: merge %s is cancelled", gms.getAddress(), merge_id);
         cancelMerge(merge_id);
     }
-
 
     public void handleDigestResponse(Address sender, Digest digest) {
         digest_collector.add(sender, digest);
@@ -206,8 +216,17 @@ public class Merger {
         }
     }
 
-
-
+    protected <T extends Object> T withLock(Supplier<T> s) {
+        if(s == null)
+            return null;
+        lock.lock();
+        try {
+            return s.get();
+        }
+        finally {
+            lock.unlock();
+        }
+    }
 
 
     /** Returns the address of the merge leader */
@@ -228,24 +247,23 @@ public class Merger {
      * is defined in https://issues.redhat.com/browse/JGRP-1910
      */
     protected static Map<Address,Collection<Address>> determineMergeCoords(Map<Address,View> views) {
-           Map<Address,Collection<Address>> retval=new HashMap<>();
-           for(View view: views.values()) {
-               Address coord=view.getCreator();
-               Collection<Address> members=retval.computeIfAbsent(coord, __ -> new ArrayList<>());
-               for(Address mbr: view.getMembersRaw())
-                   if(!members.contains(mbr))
-                       members.add(mbr);
-           }
+        Map<Address,Collection<Address>> retval=new HashMap<>();
+        for(View view: views.values()) {
+            Address coord=view.getCreator();
+            Collection<Address> members=retval.computeIfAbsent(coord, __ -> new ArrayList<>());
+            for(Address mbr: view.getMembersRaw())
+                if(!members.contains(mbr))
+                    members.add(mbr);
+        }
 
-           // For the merge participants which are not coordinator, we simply add them, and the associated
-           // membership list consists only of themselves
-           Collection<Address> merge_participants=Util.determineMergeParticipants(views);
-           merge_participants.removeAll(retval.keySet());
-           merge_participants.stream().filter(merge_participant -> !retval.containsKey(merge_participant))
-             .forEach(merge_participant -> retval.put(merge_participant, Collections.singletonList(merge_participant)));
-           return retval;
-       }
-
+        // For the merge participants which are not coordinator, we simply add them, and the associated
+        // membership list consists only of themselves
+        Collection<Address> merge_participants=Util.determineMergeParticipants(views);
+        merge_participants.removeAll(retval.keySet());
+        merge_participants.stream().filter(merge_participant -> !retval.containsKey(merge_participant))
+          .forEach(merge_participant -> retval.put(merge_participant, Collections.singletonList(merge_participant)));
+        return retval;
+    }
 
     protected void _handleMergeRequest(Address sender, MergeId merge_id, Collection<? extends Address> mbrs) throws Exception {
         MergeId current_merge_id=this.merge_id;
@@ -402,40 +420,54 @@ public class Merger {
         merge_task.stop();
     }
 
-
-    protected synchronized void cancelMerge(MergeId id) {
-        if(setMergeId(id, null)) {
-            merge_task.stop();
-            stopMergeKiller();
-            merge_rsps.reset();
-            gms.getViewHandler().resume();
-            gms.getDownProtocol().down(new Event(Event.RESUME_STABLE));
+    protected void cancelMerge(MergeId id) {
+        lock.lock();
+        try {
+            if (setMergeId(id, null)) {
+                merge_task.stop();
+                stopMergeKiller();
+                merge_rsps.reset();
+                gms.getViewHandler().resume();
+                gms.getDownProtocol().down(new Event(Event.RESUME_STABLE));
+            }
+        } finally {
+            lock.unlock();
         }
     }
 
-
-
-    protected synchronized void forceCancelMerge() {
-        if(this.merge_id != null)
-            cancelMerge(this.merge_id);
-    }
-
-
-    protected synchronized void startMergeKiller() {
-        if(merge_killer == null || merge_killer.isDone()) {
-            MergeKiller task=new MergeKiller(this.merge_id);
-            merge_killer=gms.timer.schedule(task, gms.merge_timeout * 2, TimeUnit.MILLISECONDS, false);
+    protected void forceCancelMerge() {
+        lock.lock();
+        try {
+            if (this.merge_id != null)
+                cancelMerge(this.merge_id);
+        } finally {
+            lock.unlock();
         }
     }
 
-    protected synchronized void stopMergeKiller() {
-        if(merge_killer != null) {
-            merge_killer.cancel(false);
-            merge_killer=null;
+    protected void startMergeKiller() {
+        lock.lock();
+        try {
+            if (merge_killer == null || merge_killer.isDone()) {
+                MergeKiller task = new MergeKiller(this.merge_id);
+                merge_killer = gms.timer.schedule(task, gms.merge_timeout * 2, TimeUnit.MILLISECONDS, false);
+            }
+        } finally {
+            lock.unlock();
         }
     }
 
-
+    protected void stopMergeKiller() {
+        lock.lock();
+        try {
+            if (merge_killer != null) {
+                merge_killer.cancel(false);
+                merge_killer = null;
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
 
 
 
@@ -453,44 +485,56 @@ public class Merger {
         /** List of all subpartition coordinators and their members */
         protected final ConcurrentMap<Address,Collection<Address>> coords=Util.createConcurrentMap(8, 0.75f, 8);
         protected final Set<View>                                  subviews=new HashSet<>();
-
+        protected final Lock                                       l=new ReentrantLock();
 
         /**
          * @param views Guaranteed to be non-null and to have {@literal >= 2} members, or else this thread would not be started
          */
-        public synchronized void start(Map<Address, View> views) {
-            if(thread != null && thread.isAlive()) // the merge thread is already running
-                return;
+        public void start(Map<Address, View> views) {
+            l.lock();
+            try {
+                if (thread != null && thread.isAlive()) // the merge thread is already running
+                    return;
 
-            this.coords.clear();
-            this.subviews.clear();
-            subviews.addAll(views.values());
+                this.coords.clear();
+                this.subviews.clear();
+                subviews.addAll(views.values());
 
-            // now remove all members which don't have us in their view, so RPCs won't block
-            // https://issues.redhat.com/browse/JGRP-1061
-            sanitizeViews(views);
+                // now remove all members which don't have us in their view, so RPCs won't block
+                // https://issues.redhat.com/browse/JGRP-1061
+                sanitizeViews(views);
 
-            Map<Address,Collection<Address>> tmp_coords=determineMergeCoords(views);
-            this.coords.putAll(tmp_coords);
+                Map<Address, Collection<Address>> tmp_coords = determineMergeCoords(views);
+                this.coords.putAll(tmp_coords);
 
-            thread=gms.getThreadFactory().newThread(this, "MergeTask");
-            thread.setDaemon(true);
-            thread.start();
+                thread = gms.getThreadFactory().newThread(this, "MergeTask");
+                thread.setDaemon(true);
+                thread.start();
+            }  finally {
+                l.unlock();
+            }
         }
 
-
-        public synchronized void stop() {
-            Thread tmp=thread;
-            if(thread != null && thread.isAlive())
-                tmp.interrupt();
-            thread=null;
+        public void stop() {
+            l.lock();
+            try {
+                Thread tmp = thread;
+                if (thread != null && thread.isAlive())
+                    tmp.interrupt();
+                thread = null;
+            } finally {
+                l.unlock();
+            }
         }
 
-
-        public synchronized boolean isRunning() {
-            return thread != null && thread.isAlive();
+        public boolean isRunning() {
+            l.lock();
+            try {
+                return thread != null && thread.isAlive();
+            } finally {
+                l.unlock();
+            }
         }
-
 
         public void run() {
             // 1. Generate merge_id
@@ -563,8 +607,6 @@ public class Merger {
             sendMergeView(coords.keySet(), combined_merge_data, new_merge_id);
         }
 
-
-
         /**
          * Sends a MERGE_REQ to all coords and populates a list of MergeData (in merge_rsps). Returns after coords.size()
          * response have been received, or timeout msecs have elapsed (whichever is first).<p>
@@ -596,7 +638,6 @@ public class Merger {
             log.trace("%s: collected %d merge response(s) in %d ms", gms.getAddress(), merge_rsps.numberOfValidResponses(), time);
             return gotAllResponses;
         }
-
 
         /** Removed rejected merge requests from merge_rsps and coords. This method has a lock on merge_rsps */
         protected void removeRejectedMergeRequests(Collection<Address> coords) {
@@ -692,7 +733,7 @@ public class Merger {
          * Merge all digests into one. For each sender, the new value is max(highest_delivered),
          * max(highest_received). This method has a lock on merge_rsps
          */
-        protected MutableDigest consolidateDigests(final View new_view, final List<MergeData> merge_rsps) {
+        protected  MutableDigest consolidateDigests(final View new_view, final List<MergeData> merge_rsps) {
             MutableDigest retval=new MutableDigest(new_view.getMembersRaw());
             for(MergeData data: merge_rsps) {
                 Digest tmp_digest=data.getDigest();
