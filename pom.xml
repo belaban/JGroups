@@ -104,7 +104,7 @@
         <dependency>
             <groupId>org.jboss.byteman</groupId>
             <artifactId>byteman</artifactId>
-            <version>4.0.25</version>
+            <version>4.0.26</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
