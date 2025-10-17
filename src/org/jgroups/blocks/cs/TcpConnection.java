@@ -149,9 +149,9 @@ public class TcpConnection extends Connection {
             return;
         int offset=buf.hasArray()? buf.arrayOffset() + buf.position() : buf.position(),
           len=buf.remaining();
-        if(!buf.isDirect())
+        if(buf.hasArray())
             send(buf.array(), offset, len);
-        else { // by default use a copy; but of course implementers of Receiver can override this
+        else {
             byte[] tmp=new byte[len];
             buf.get(tmp, 0, len);
             send(tmp, 0, len); // will get copied again if send-queues are enabled
