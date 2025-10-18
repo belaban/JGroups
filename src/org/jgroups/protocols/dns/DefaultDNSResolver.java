@@ -91,7 +91,7 @@ public class DefaultDNSResolver implements DNSResolver {
                 }
             }
         } catch (NamingException ex) {
-            log.trace("no DNS records for query %s, ex: %s", dnsQuery, ex.getMessage());
+            log.trace("no DNS records for query " + dnsQuery, ex);
         }
 
         return addresses;
