@@ -77,9 +77,10 @@ public abstract class NioBaseServer extends BaseServer {
         StringBuilder sb=new StringBuilder("\n");
         synchronized(this) {
             for(Map.Entry<Address,Connection> entry: conns.entrySet()) {
-                NioConnection val=(NioConnection)entry.getValue();
-                sb.append(entry.getKey()).append(":\n  ").append("recv_buf: ").append(val.recv_buf)
-                  .append("\n  send_buf: ").append(val.send_buf).append("\n");
+                NioConnection conn=(NioConnection)entry.getValue();
+                sb.append(entry.getKey()).append(":\n")
+                  .append("  message_reader: ").append(conn.message_reader).append("\n")
+                  .append("  send_buf: ").append(conn.send_buf).append("\n");
             }
         }
         return sb.toString();
