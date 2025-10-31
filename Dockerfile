@@ -1,4 +1,3 @@
-
 ## Builds an image containing JGroups.
 
 ## **********************************************************
@@ -20,15 +19,18 @@
 # podman manifest push belaban/jgrp
 
 
-FROM adoptopenjdk/openjdk11:jre as build-stage
-RUN apt-get update ; apt-get install -y git ant net-tools netcat iputils-ping
+FROM eclipse-temurin:17-jre as build-stage
+RUN apt-get update && \
+    apt-get install -y git ant net-tools netcat-traditional iputils-ping
 
 # For the runtime, we only need a JRE (smaller footprint)
-FROM adoptopenjdk/openjdk11:jre as make-dirs
+FROM eclipse-temurin:17-jre as make-dirs
 LABEL maintainer="Bela Ban (belaban@mailbox.org)"
-RUN useradd --uid 1000 --home /opt/jgroups --create-home --shell /bin/bash jgroups
-RUN echo root:root | chpasswd ; echo jgroups:jgroups | chpasswd
-RUN printf "\njgroups ALL=(ALL) NOPASSWD: ALL\n" >> /etc/sudoers
+RUN useradd --uid 1001 --home /opt/jgroups --create-home --shell /bin/bash jgroups && \
+    echo root:root | chpasswd && \
+    echo jgroups:jgroups | chpasswd && \
+    printf "\njgroups ALL=(ALL) NOPASSWD: ALL\n" >> /etc/sudoers
+
 # EXPOSE 7800-7900:7800-7900 9000-9100:9000-9100
 ENV HOME /opt/jgroups
 ENV PATH $PATH:$HOME/JGroups/bin
@@ -41,7 +43,7 @@ COPY ./classes $JGROUPS_HOME/classes
 COPY ./lib $JGROUPS_HOME/lib
 COPY ./bin $JGROUPS_HOME/bin
 
-RUN chown -R jgroups.jgroups $HOME/*
+RUN chown -R jgroups:jgroups $HOME/*
 
 # Run everything below as the jgroups user. Unfortunately, USER is only observed by RUN, *not* by ADD or COPY !!
 USER jgroups
