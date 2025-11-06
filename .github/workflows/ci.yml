@@ -13,24 +13,26 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-latest, windows-latest, macos-latest ]
-        # Keep this list as: all supported LTS JDKs, the latest GA JDK, and the latest EA JDK (optional).
-        java: [ 11, 17, 21, 23 ]
+        os:
+          - macos-latest
+          - ubuntu-latest
+          - windows-latest
+        # Keep this list as: all supported LTS JDKs, the latest GA JDK, and optionally the latest EA JDK (if available).
+        # Reference: https://adoptium.net/support/
+        java:
+          - 11
+          - 17
+          - 21
+          - 25
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Set up JDK ${{ matrix.java }}
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: ${{ matrix.java }}
-      - name: Cache local Maven repository
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
+          cache: maven
       - name: Build with Maven
         # In order to support Windows PowerShell, a space between --define property=true is required.
         run: mvn --batch-mode --no-transfer-progress verify --define skipTests=true
