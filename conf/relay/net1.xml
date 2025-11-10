@@ -7,14 +7,9 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xmlns="urn:org:jgroups"
         xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
-    <UDP
-         bind_addr="192.168.2.2"
-         bind_port="7000"
-         mcast_addr="225.0.0.1"
-
-         thread_pool.min_threads="0"
-         thread_pool.max_threads="200"
-         thread_pool.keep_alive_time="30000"/>
+    <include file="${transport-config:udp-default.xml}"
+             mcast_addr="239.5.5.5" mcast_port="21000"
+    />
 
     <PING />
 
