@@ -90,7 +90,7 @@ echo "changing pom.xml to version $NEXT_VERSION:"
 mvn -B -q -f $POM versions:set -DnewVersion="$NEXT_VERSION" -DgenerateBackupPoms=false
 
 ## uncomment
-"git commit -m 'Changed version from $RELEASE_VERSION to $NEXT_VERSION' . ; git push"
+git commit -m 'Changed version from $RELEASE_VERSION to $NEXT_VERSION' . ; git push
 echo ""
 
 echo "--------------------------------------------------------"
