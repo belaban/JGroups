@@ -2,6 +2,7 @@ package org.jgroups.blocks.cs;
 
 import org.jgroups.Address;
 import org.jgroups.Global;
+import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
@@ -26,6 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -41,7 +43,7 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     protected final ThreadFactory             factory;
     protected SocketFactory                   socket_factory=new DefaultSocketFactory();
     protected long                            reaperInterval;
-    protected Reaper reaper;
+    protected Reaper                          reaper;
     protected Receiver                        receiver;
     protected final AtomicBoolean             running=new AtomicBoolean(false);
     protected Log                             log=LogFactory.getLog(getClass());
@@ -57,8 +59,7 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     protected int                             send_buf_size;
 
     @ManagedAttribute(description="The max number of bytes a message can have. If greater, an exception will be " +
-      "thrown. 0 disables this",
-      writable=true,type=AttributeType.BYTES)
+      "thrown. 0 disables this", writable=true,type=AttributeType.BYTES)
     protected int                             max_length;
 
     @ManagedAttribute(description="When A connects to B, B reuses the same TCP connection to send data to A")
@@ -462,8 +463,12 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         conns.forEach(c);
     }
 
-    /** Removes all connections which are not in current_mbrs */
     public void retainAll(Collection<Address> current_mbrs) {
+        retainAll(current_mbrs, null);
+    }
+
+    /** Removes all connections which are not in current_mbrs */
+    public void retainAll(Collection<Address> current_mbrs, Predicate<PhysicalAddress> is_mbr) {
         if(current_mbrs == null)
             return;
 
@@ -476,8 +481,13 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
             lock.unlock();
         }
         copy.keySet().removeAll(current_mbrs);
-        for(Map.Entry<Address,Connection> entry: copy.entrySet())
-            Util.close(entry.getValue());
+        for(Map.Entry<Address,Connection> e: copy.entrySet()) {
+            PhysicalAddress key=(PhysicalAddress)e.getKey();
+            if(is_mbr != null && is_mbr.test(key))
+                continue;
+            Connection conn=e.getValue();
+            Util.close(conn);
+        }
         copy.clear();
     }
 

@@ -99,7 +99,7 @@ public class TCP_NIO2 extends BasicTCP {
     }
 
     public void retainAll(Collection<Address> members) {
-        server.retainAll(members);
+        server.retainAll(members, is_member);
     }
 
     public void start() throws Exception {
