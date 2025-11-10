@@ -117,7 +117,7 @@ public class TCP extends BasicTCP {
     }
 
     public void retainAll(Collection<Address> members) {
-        srv.retainAll(members);
+        srv.retainAll(members, is_member);
     }
 
     public void start() throws Exception {

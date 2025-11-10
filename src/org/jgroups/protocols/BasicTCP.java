@@ -18,6 +18,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Predicate;
 
 /**
  * Shared base class for TCP protocols
@@ -83,6 +84,11 @@ public abstract class BasicTCP extends TP implements Receiver, ConnectionListene
 
     @ManagedAttribute(description="Number of suspect events sent up the stack due to peers closing connections")
     protected final LongAdder num_suspect_events=new LongAdder();
+
+    protected final Predicate<PhysicalAddress> is_member=pa -> {
+        Address addr=logical_addr_cache.getByValue(pa);
+        return addr != null && members.contains(addr);
+    };
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
     
