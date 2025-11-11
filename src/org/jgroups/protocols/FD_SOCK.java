@@ -2,6 +2,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.annotations.*;
+import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.util.LazyRemovalCache;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.IpAddress;
@@ -526,12 +527,15 @@ public class FD_SOCK extends Protocol implements Runnable {
         suspects.forEach(suspect -> suspect_history.add(String.format("%s: %s", Util.utcNow(), suspect)));
 
         suspected_mbrs.addAll(suspects);
-        List<Address> eligible_mbrs=new ArrayList<>(this.members);
-        eligible_mbrs.removeAll(suspected_mbrs);
+        GMS gms=stack.findProtocol(GMS.class);
+        // Use the MembershipChangePolicy in GMS to compute the membership (https://issues.redhat.com/browse/JGRP-2952)
+        List<Address> mbrs=gms == null? null :
+          gms.computeNewMembership(this.members, null, null, suspected_mbrs);
+        Membership eligible_mbrs=mbrs != null? new Membership(mbrs) :
+          new Membership(this.members).remove(suspected_mbrs);
         Collection<Address> suspects_copy=new ArrayList<>(suspected_mbrs);
-
         // Check if we're coord, then send up the stack, make a copy (https://issues.redhat.com/browse/JGRP-2552)
-        if(!suspects_copy.isEmpty() && local_addr != null && !eligible_mbrs.isEmpty() && local_addr.equals(eligible_mbrs.get(0))) {
+        if(!suspects_copy.isEmpty() && local_addr != null && !eligible_mbrs.isEmpty() && eligible_mbrs.isCoord(local_addr)) {
             log.debug("%s: suspecting %s", local_addr, suspects_copy);
             up_prot.up(new Event(Event.SUSPECT, suspects_copy));
             down_prot.down(new Event(Event.SUSPECT, suspects_copy));
