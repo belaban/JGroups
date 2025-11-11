@@ -3,6 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.annotations.*;
 import org.jgroups.conf.AttributeType;
+import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
@@ -218,18 +219,21 @@ public abstract class FailureDetection extends Protocol {
         if(suspects == null || suspects.isEmpty())
             return;
         num_suspect_events+=suspects.size();
-        final List<Address> eligible_mbrs;
+        Membership eligible_mbrs;
         synchronized(this) {
             for(Address suspect: suspects) {
                 suspect_history.add(new Tuple<>(suspect, System.currentTimeMillis())); // need wall clock time
                 suspected_mbrs.add(suspect);
             }
-            eligible_mbrs=new ArrayList<>(members);
-            eligible_mbrs.removeAll(suspected_mbrs);
+            GMS gms=stack.findProtocol(GMS.class);
+            // Use the MembershipChangePolicy in GMS to compute the membership (https://issues.redhat.com/browse/JGRP-2952)
+            List<Address> mbrs=gms == null? null :
+              gms.computeNewMembership(this.members, null, null, suspected_mbrs);
+            eligible_mbrs=mbrs != null? new Membership(mbrs) : new Membership(this.members).remove(suspected_mbrs);
             has_suspected_mbrs=!suspected_mbrs.isEmpty();
         }
         // Check if we're coord, then send up the stack
-        if(local_addr != null && !eligible_mbrs.isEmpty() && local_addr.equals(eligible_mbrs.get(0))) {
+        if(local_addr != null && !eligible_mbrs.isEmpty() && eligible_mbrs.isCoord(local_addr)) {
             log.debug("%s: suspecting %s", local_addr, suspects);
             up_prot.up(new Event(Event.SUSPECT, suspects));
             down_prot.down(new Event(Event.SUSPECT, suspects));
