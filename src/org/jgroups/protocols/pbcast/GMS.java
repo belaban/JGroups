@@ -464,7 +464,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     }
 
     /** Computes the regular membership */
-    protected List<Address> computeNewMembership(final List<Address> current_members, final Collection<Address> joiners,
+    public List<Address> computeNewMembership(final List<Address> current_members, final Collection<Address> joiners,
                                                  final Collection<Address> leavers, final Collection<Address> suspects) {
         List<Address> joiners_copy, leavers_copy, suspects_copy;
         joiners_copy=joiners == null? Collections.emptyList() : new ArrayList<>(joiners);
