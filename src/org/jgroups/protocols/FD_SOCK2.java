@@ -7,6 +7,7 @@ import org.jgroups.blocks.cs.ConnectionListener;
 import org.jgroups.blocks.cs.NioServer;
 import org.jgroups.blocks.cs.Receiver;
 import org.jgroups.conf.AttributeType;
+import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
@@ -485,7 +486,12 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
             return;
 
         // Check if we're coord, then send up the stack, make a copy (https://issues.redhat.com/browse/JGRP-2552)
-        Membership eligible_mbrs=this.members.copy().remove(suspected_mbrs.getMembers());
+        GMS gms=stack.findProtocol(GMS.class);
+        // Use the MembershipChangePolicy in GMS to compute the membership (https://issues.redhat.com/browse/JGRP-2952)
+        List<Address> mbrs=gms == null? null :
+          gms.computeNewMembership(this.members.getMembers(), null, null, suspected_mbrs.getMembers());
+        Membership eligible_mbrs=mbrs != null? new Membership(mbrs) :
+          this.members.copy().remove(suspected_mbrs.getMembers());
         if(eligible_mbrs.isCoord(local_addr)) {
             log.debug("%s: suspecting %s", local_addr, suspects_copy);
             up_prot.up(new Event(Event.SUSPECT, suspects_copy));
@@ -500,7 +506,6 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
         bcast_task.removeSuspect(mbr);
         pingable_mbrs.add(mbr);
     }
-
 
     /**
      * Sends a SUSPECT message to all group members. Only the coordinator (or the next member in line if the coord
