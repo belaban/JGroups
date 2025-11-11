@@ -45,11 +45,12 @@ public class PromoteNewestMemberTest {
         List<Address> current=new ArrayList<>(ALL);
         List<Address> mbrs=new ArrayList<>(current);
         Address coordinator=mbrs.get(mbrs.size()-1);
+        System.out.printf("mbrs (%s will  leave): %s\n", current.get(0), mbrs);
         for(Address coord: current) {
             mbrs=p.getNewMembership(mbrs, null, List.of(coord), null);
+            System.out.printf("mbrs (%s left): %s\n", coord, mbrs);
             if(mbrs.isEmpty())
                 break;
-            System.out.println("new_mbrs = " + mbrs);
             assert mbrs.get(0).equals(coordinator);
         }
     }
