@@ -16,12 +16,12 @@ import java.util.Arrays;
 @Test(groups=Global.FUNCTIONAL)
 public class ReceiverAdapterTest {
 
-    public static void testSimpleReceive() {
+    public static void testSimpleReceive() throws Exception {
         testSimpleReceive(ByteBuffer.allocate(50));
         testSimpleReceive(ByteBuffer.allocateDirect(50));
     }
 
-    public static void testSimpleWrap() {
+    public static void testSimpleWrap() throws Exception {
         MyReceiver rec=new MyReceiver();
         ByteBuffer buf=ByteBuffer.wrap("Bela Ban".getBytes(), 5, 3);
         rec.receive(null, buf);
@@ -31,7 +31,7 @@ public class ReceiverAdapterTest {
         assert Arrays.equals(tmp, "Ban".getBytes());
     }
 
-    protected static void testSimpleReceive(final ByteBuffer buf) {
+    protected static void testSimpleReceive(final ByteBuffer buf) throws Exception {
         MyReceiver rec=new MyReceiver();
         buf.putInt(1).putInt(2).putInt(3);
         buf.flip();
