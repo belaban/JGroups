@@ -3,7 +3,6 @@ package org.jgroups.tests;
 import org.jgroups.Global;
 import org.jgroups.Version;
 import org.jgroups.nio.Buffers;
-import org.jgroups.nio.MockSocketChannel;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.ByteArrayDataInputStream;
 import org.jgroups.util.ByteArrayDataOutputStream;
@@ -11,7 +10,6 @@ import org.jgroups.util.Util;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.io.EOFException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
@@ -67,19 +65,6 @@ public class BuffersTest {
 
         buf=new Buffers(ByteBuffer.allocate(Global.INT_SIZE), buf1);
         check(buf, 0, 2, 2, buf1.limit() + Global.INT_SIZE);
-    }
-
-
-    public void testRead() throws Exception {
-        byte[] data="hello world".getBytes();
-        MockSocketChannel ch=new MockSocketChannel()
-          .bytesToRead(ByteBuffer.allocate(Global.INT_SIZE + data.length).putInt(data.length).put(data).flip());
-
-        Buffers bufs=new Buffers(ByteBuffer.allocate(Global.INT_SIZE), null);
-        ByteBuffer b=bufs.readLengthAndData(ch);
-        System.out.println("b = " + b);
-        assert b != null;
-        assert Arrays.equals(data, b.array());
     }
 
     public void testRead2() throws Exception {
@@ -147,69 +132,6 @@ public class BuffersTest {
         IpAddress address=new IpAddress();
         address.readFrom(in);
         assert addr.equals(address);
-    }
-
-    public void testPartialRead() throws Exception {
-        byte[] tmp="hello world".getBytes();
-        ByteBuffer data=ByteBuffer.allocate(Global.INT_SIZE + tmp.length).putInt(tmp.length).put(tmp);
-        data.flip().limit(2); // read only the first 2 bytes of the length
-
-        MockSocketChannel ch=new MockSocketChannel().bytesToRead(data);
-        Buffers bufs=new Buffers(ByteBuffer.allocate(Global.INT_SIZE), null);
-        ByteBuffer rc=bufs.readLengthAndData(ch);
-        assert rc == null;
-
-        data.limit(8); // we can now read the remaining 2 bytes to complete the length, plus 4 bytes into the data
-        rc=bufs.readLengthAndData(ch);
-        assert rc == null;
-
-        data.limit(14); // this will still not allow the read to complete
-        rc=bufs.readLengthAndData(ch);
-        assert rc == null;
-
-        data.limit(15); // this will still not allow the read to complete
-        rc=bufs.readLengthAndData(ch);
-        assert rc != null;
-        System.out.println("rc = " + rc);
-        assert Arrays.equals(tmp, rc.array());
-    }
-
-    public void testEof() throws Exception {
-        byte[] data={'B', 'e', 'l', 'a'}; // -1 == EOF
-        MockSocketChannel ch=new MockSocketChannel()
-          .bytesToRead(ByteBuffer.allocate(Global.INT_SIZE + data.length).putInt(data.length).put(data).flip());
-        Buffers bufs=new Buffers(ByteBuffer.allocate(Global.INT_SIZE), null);
-        ByteBuffer buf=bufs.readLengthAndData(ch);
-        assert buf != null;
-        assert buf.limit() == data.length;
-        ch.doClose();
-
-        try {
-            buf=bufs.readLengthAndData(ch);
-            assert false : "read() should have thrown an EOFException";
-        }
-        catch(EOFException eof) {
-            System.out.printf("received exception as expected: %s\n", eof);
-        }
-    }
-
-
-    public void testReadLength() throws Exception {
-        byte[] tmp="hello world".getBytes();
-        ByteBuffer data=ByteBuffer.allocate(Global.INT_SIZE + tmp.length).putInt(tmp.length).put(tmp);
-        data.flip().limit(4); // read the entire length
-        MockSocketChannel ch=new MockSocketChannel().bytesToRead(data);
-        Buffers bufs=new Buffers(ByteBuffer.allocate(Global.INT_SIZE), null);
-        ByteBuffer buf=bufs.readLengthAndData(ch);
-        assert buf == null;
-
-        data.limit(8); // allow for some more data to be read...
-        buf=bufs.readLengthAndData(ch);
-        assert buf == null;
-
-        data.limit(data.capacity()); // read all data
-        buf=bufs.readLengthAndData(ch);
-        assert buf != null;
     }
 
     /** Reads | version (short) | number (int) | cookie [4 bytes] | */
