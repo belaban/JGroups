@@ -564,8 +564,8 @@ public class UtilTest {
     }
 
     private static void _testMessage(Message msg) throws Exception {
-        ByteArray buf=Util.messageToByteBuffer(msg);
-        Message msg2=Util.messageFromByteBuffer(buf.array(), buf.offset(), buf.length());
+        ByteArray buf=Util.messageToBuffer(msg);
+        Message msg2=Util.messageFromBuffer(buf.array(), buf.offset(), buf.length(), null);
         Assert.assertEquals(msg.getSrc(), msg2.getSrc());
         Assert.assertEquals(msg.getDest(), msg2.getDest());
         Assert.assertEquals(msg.getLength(), msg2.getLength());

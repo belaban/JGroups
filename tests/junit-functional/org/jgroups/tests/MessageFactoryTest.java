@@ -24,7 +24,7 @@ public class MessageFactoryTest {
     public void testCustomMessages() throws Exception {
         try(JChannel a=new JChannel(Util.getTestStack()).name("A");
             JChannel b=new JChannel(Util.getTestStack()).name("B")) {
-            MessageFactory mf=MessageFactory.createDefaultMessageFactory();
+            MessageFactory mf=MessageFactory.get();
             mf.registerDefaultMessage((short)10, () -> new MyLongMessage("mf-10"));
             mf.registerDefaultMessage((short)11, () -> new MyLongMessage("mf-11"));
             mf.registerDefaultMessage((short)12, () -> new MyLongMessage("mf-12"));

@@ -1306,32 +1306,10 @@ public class Util {
         return out.getBuffer();
     }
 
-
     public static Message messageFromBuffer(byte[] buf, int offset, int length, MessageFactory mf) throws Exception {
         ByteArrayDataInputStream in=new ByteArrayDataInputStream(buf, offset, length);
         short type=in.readShort();
         Message msg=Util.createMessage(type, mf);
-        msg.readFrom(in);
-        return msg;
-    }
-
-    public static ByteArray messageToByteBuffer(Message msg) throws Exception {
-        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(msg.size() +2);
-        out.writeBoolean(msg != null);
-        if(msg != null) {
-            out.writeShort(msg.getType());
-            msg.writeTo(out);
-        }
-        return out.getBuffer();
-    }
-
-
-    public static Message messageFromByteBuffer(byte[] buffer, int offset, int length) throws Exception {
-        DataInput in=new ByteArrayDataInputStream(buffer,offset,length);
-        if(!in.readBoolean())
-            return null;
-        short type=in.readShort();
-        Message msg=MessageFactory.get().create(type);
         msg.readFrom(in);
         return msg;
     }
@@ -1457,9 +1435,9 @@ public class Util {
         msg.writeTo(dos);
     }
 
-    public static Message readMessage(DataInput in, MessageFactory mf) throws IOException, ClassNotFoundException {
+    public static Message readMessage(DataInput in) throws IOException, ClassNotFoundException {
         short type=in.readShort();
-        Message msg=Util.createMessage(type, mf);
+        Message msg=MessageFactory.get().create(type);
         msg.readFrom(in);
         return msg;
     }
@@ -1665,7 +1643,7 @@ public class Util {
                     }
                 }
                 else {
-                    Message msg=Util.readMessage(dis, null);
+                    Message msg=Util.readMessage(dis);
                     if(msg_consumer != null)
                         msg_consumer.accept(version, msg);
                 }

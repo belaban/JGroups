@@ -22,19 +22,12 @@ public class MessageFactory {
         MessageFactory mf=singleton;
         if(mf != null)
             return mf;
-        synchronized(MessageFactory.class) {
-            if(singleton == null)
-                singleton=createDefaultMessageFactory();
-            return singleton;
-        }
+        if(singleton == null)
+            registerDefaultTypes(singleton=new MessageFactory());
+        return singleton;
     }
 
-    public static MessageFactory createDefaultMessageFactory() {
-        MessageFactory mf=new MessageFactory();
-        return registerDefaultTypes(mf);
-    }
-
-    public static MessageFactory registerDefaultTypes(MessageFactory mf) {
+    public static void registerDefaultTypes(MessageFactory mf) {
         mf.registerDefaultMessage(Message.BYTES_MSG, BytesMessage::new);
         mf.registerDefaultMessage(Message.NIO_MSG, NioMessage::new);
         mf.registerDefaultMessage(Message.EMPTY_MSG, EmptyMessage::new);
@@ -43,7 +36,6 @@ public class MessageFactory {
         mf.registerDefaultMessage(Message.COMPOSITE_MSG, CompositeMessage::new);
         mf.registerDefaultMessage(Message.FRAG_MSG, FragmentedMessage::new);
         mf.registerDefaultMessage(Message.EARLYBATCH_MSG, BatchMessage::new);
-        return mf;
     }
     
     /**
@@ -63,6 +55,8 @@ public class MessageFactory {
         Objects.requireNonNull(generator, "the creator must be non-null");
         if(type > MIN_TYPE)
             throw new IllegalArgumentException(String.format("type (%d) must be <= 32", type));
+        if(creators[type] != null)
+            throw new IllegalArgumentException(String.format("type %d is already taken", type));
         creators[type]=generator;
     }
 
