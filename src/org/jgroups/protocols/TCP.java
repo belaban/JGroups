@@ -175,9 +175,13 @@ public class TCP extends BasicTCP {
 
     protected void handleConnect() throws Exception {
         srv.start();
+        this.connected=true;
+        super.handleConnect();
     }
 
     protected void handleDisconnect() {
+        super.handleDisconnect();
+        this.connected=false;
         srv.stop();
     }   
 
