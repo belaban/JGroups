@@ -388,6 +388,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     /** The header including the cluster name, sent with each message */
     protected TpHeader                header;
 
+    protected volatile boolean connected = false;
 
     /**
      * Cache which maintains mappings between logical and physical addresses. When sending a message to a logical
@@ -905,9 +906,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
     protected void handleConnect() throws Exception {
+        this.connected = true;
     }
 
     protected void handleDisconnect() {
+        this.connected = false;
     }
 
 
