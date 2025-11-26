@@ -18,24 +18,27 @@ public class MessageFactory {
 
     private static volatile MessageFactory singleton=null;
 
+    public static byte minType() {return MIN_TYPE;}
+
     public synchronized static MessageFactory get() {
         MessageFactory mf=singleton;
         if(mf != null)
             return mf;
         if(singleton == null)
-            registerDefaultTypes(singleton=new MessageFactory());
+            singleton=new MessageFactory().registerDefaultTypes();
         return singleton;
     }
 
-    public static void registerDefaultTypes(MessageFactory mf) {
-        mf.registerDefaultMessage(Message.BYTES_MSG, BytesMessage::new);
-        mf.registerDefaultMessage(Message.NIO_MSG, NioMessage::new);
-        mf.registerDefaultMessage(Message.EMPTY_MSG, EmptyMessage::new);
-        mf.registerDefaultMessage(Message.OBJ_MSG, ObjectMessage::new);
-        mf.registerDefaultMessage(Message.LONG_MSG, LongMessage::new);
-        mf.registerDefaultMessage(Message.COMPOSITE_MSG, CompositeMessage::new);
-        mf.registerDefaultMessage(Message.FRAG_MSG, FragmentedMessage::new);
-        mf.registerDefaultMessage(Message.EARLYBATCH_MSG, BatchMessage::new);
+    public MessageFactory registerDefaultTypes() {
+        registerDefaultMessage(Message.BYTES_MSG, BytesMessage::new);
+        registerDefaultMessage(Message.NIO_MSG, NioMessage::new);
+        registerDefaultMessage(Message.EMPTY_MSG, EmptyMessage::new);
+        registerDefaultMessage(Message.OBJ_MSG, ObjectMessage::new);
+        registerDefaultMessage(Message.LONG_MSG, LongMessage::new);
+        registerDefaultMessage(Message.COMPOSITE_MSG, CompositeMessage::new);
+        registerDefaultMessage(Message.FRAG_MSG, FragmentedMessage::new);
+        registerDefaultMessage(Message.EARLYBATCH_MSG, BatchMessage::new);
+        return this;
     }
     
     /**
@@ -49,6 +52,11 @@ public class MessageFactory {
         if(creator == null)
             throw new IllegalArgumentException("no creator found for type " + type);
         return (T)creator.get();
+    }
+
+    public <T extends Message> T createIfExists(short type) {
+        Supplier<? extends Message> creator=type < MIN_TYPE? creators[type] : map.get(type);
+        return creator == null? null : (T)creator.get();
     }
 
     public void registerDefaultMessage(short type, Supplier<? extends Message> generator) {

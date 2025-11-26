@@ -1445,7 +1445,7 @@ public class Util {
     public static Message createMessage(short type, MessageFactory msg_factory) {
         Message msg=null;
         if(msg_factory != null)
-            msg=msg_factory.create(type);
+            msg=msg_factory.createIfExists(type);
         if(msg == null)
             msg=MessageFactory.get().create(type);
         return msg;
