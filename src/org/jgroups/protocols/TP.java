@@ -388,6 +388,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     /** The header including the cluster name, sent with each message */
     protected TpHeader                header;
 
+    /**
+     * Indicates whether the transport is connected to the cluster.
+     * Used by TCP-based transports to skip SUSPECT events during graceful disconnect when connections are closed.
+     */
     protected volatile boolean connected = false;
 
     /**
