@@ -356,6 +356,7 @@ public class UDP extends TP {
 
     protected void handleConnect() throws Exception {
         startThreads();
+        super.handleConnect();
     }
 
     protected void setCorrectSocketBufferSize(MulticastSocket s, int buf_size, int new_size, boolean send, boolean mcast)

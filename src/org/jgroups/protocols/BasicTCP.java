@@ -62,6 +62,13 @@ public abstract class BasicTCP extends TP implements Receiver, ConnectionListene
     @Deprecated(since="5.4.4",forRemoval=true)
     protected boolean     use_acks;
 
+    /**
+     * Indicates whether the transport is connected to the cluster.
+     * Used by TCP-based transports to skip SUSPECT events during graceful disconnect when connections are closed.
+     */
+    @ManagedAttribute(description="Indicates whether the transport is connected to the cluster")
+    protected volatile boolean connected;
+
     @LocalAddress
     @Property(name="client_bind_addr",
               description="The address of a local network interface which should be used by client sockets to bind to. " +
@@ -210,7 +217,7 @@ public abstract class BasicTCP extends TP implements Receiver, ConnectionListene
             return;
         Address peer_ip=conn.peerAddress();
         Address peer=peer_ip != null? logical_addr_cache.getByValue((PhysicalAddress)peer_ip) : null;
-        if(peer != null && members.contains(peer)) {
+        if(peer != null && members.contains(peer) && connected) {
             if(log.isDebugEnabled())
                 log.debug("%s: connection closed by peer %s (IP=%s), sending up a suspect event",
                           local_addr, peer, peer_ip);

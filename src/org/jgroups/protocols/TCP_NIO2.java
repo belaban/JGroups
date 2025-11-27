@@ -147,9 +147,13 @@ public class TCP_NIO2 extends BasicTCP {
 
     protected void handleConnect() throws Exception {
         server.start();
+        this.connected=true;
+        super.handleConnect();
     }
 
     protected void handleDisconnect() {
+        super.handleDisconnect();
+        this.connected=false;
         server.stop();
     }   
 
