@@ -11,6 +11,18 @@ public record ByteArray(byte[] array, int offset, int length) {
         this(array, 0, array.length);
     }
 
+    public byte[] getArray() {
+        return array;
+    }
+
+    public int getLength() {
+        return length;
+    }
+
+    public int getOffset() {
+        return offset;
+    }
+
     public ByteArray copy() {
         byte[] new_buf=array != null? new byte[length] : null;
         int new_length=new_buf != null? new_buf.length : 0;
