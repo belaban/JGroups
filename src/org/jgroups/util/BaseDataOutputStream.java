@@ -1,6 +1,7 @@
 package org.jgroups.util;
 
 import java.io.DataOutput;
+import java.io.OutputStream;
 
 /**
  * Implements {@link DataOutput} in a generic manner, so that subclasses can implement specific behavior. Some write()
@@ -9,7 +10,7 @@ import java.io.DataOutput;
  * @author Bela Ban
  * @since  5.0
  */
-public abstract class BaseDataOutputStream implements DataOutput {
+public abstract class BaseDataOutputStream extends OutputStream implements DataOutput {
     protected int     pos;
 
     public BaseDataOutputStream  position(int pos) {this.pos=checkBounds(pos); return this;}
