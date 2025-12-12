@@ -215,7 +215,7 @@ public abstract class BaseMessage implements Message {
     public Message setPayload(Object pl) {return setObject(pl);}
 
     public String toString() {
-        return String.format("[%s to %s, %d bytes%s%s]", sender, dest == null? "<all>" : dest,
+        return String.format("[%s to %s, %,d bytes%s%s]", sender, dest == null? "<all>" : dest,
                              getLength(), flags > 0? ", flags=" + Util.flagsToString(flags) : "",
                              transient_flags > 0? ", transient_flags=" + Util.transientFlagsToString(transient_flags) : "");
     }
