@@ -14,7 +14,7 @@ public class PassRegularMessagesUpDirectly extends SubmitToThreadPool {
     public boolean loopback(Message msg, boolean oob) {
         if(oob)
             return super.loopback(msg, oob);
-        tp.passMessageUp(msg, null, false, msg.getDest() == null, false);
+        tp.passMessageUp(msg, false, msg.getDest() == null, false);
         return true;
     }
 

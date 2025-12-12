@@ -4,7 +4,6 @@ import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.logging.Log;
 import org.jgroups.protocols.TP;
-import org.jgroups.protocols.TpHeader;
 import org.jgroups.stack.MessageProcessingPolicy;
 
 import java.util.Iterator;
@@ -16,14 +15,12 @@ import java.util.Iterator;
  */
 public class SubmitToThreadPool implements MessageProcessingPolicy {
     protected TP    tp;
-    protected short tp_id;
     protected Log   log;
 
     protected TP getTransport() {return tp;}
 
     public void init(TP transport) {
         this.tp=transport;
-        this.tp_id=tp.getId();
         this.log=tp.getLog();
     }
 
@@ -68,7 +65,7 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
             Message msg=it.next();
             if(msg.isFlagSet(Message.Flag.DONT_BUNDLE) && msg.isFlagSet(Message.Flag.OOB)) {
                 it.remove();
-                Runnable handler=loopback? new SingleLoopbackHandler(msg) : new SingleMessageHandlerWithClusterName(msg, cname);
+                Runnable handler=loopback? new SingleLoopbackHandler(msg) : new SingleMessageHandler(msg);
                 tp.getThreadPool().execute(handler);
                 removed=true;
             }
@@ -84,7 +81,7 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
         }
 
         public void run() {
-            tp.passMessageUp(msg, null, false, msg.getDest() == null, false);
+            tp.passMessageUp(msg, false, msg.getDest() == null, false);
         }
     }
 
@@ -101,30 +98,11 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
             Address dest=msg.getDest();
             boolean multicast=dest == null;
             try {
-                byte[] cname=getClusterName();
-                tp.passMessageUp(msg, cname, true, multicast, true);
+                tp.passMessageUp(msg, true, multicast, true);
             }
             catch(Throwable t) {
                 log.error(Util.getMessage("PassUpFailure"), t);
             }
-        }
-
-        protected byte[] getClusterName() {
-            TpHeader hdr=msg.getHeader(tp_id);
-            return hdr.clusterName();
-        }
-    }
-
-    protected class SingleMessageHandlerWithClusterName extends SingleMessageHandler {
-        protected final byte[] cluster;
-
-        @Override protected byte[] getClusterName() {
-            return cluster;
-        }
-
-        protected SingleMessageHandlerWithClusterName(Message msg, byte[] cluster_name) {
-            super(msg);
-            this.cluster=cluster_name;
         }
     }
 

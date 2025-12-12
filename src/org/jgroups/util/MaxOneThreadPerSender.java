@@ -264,7 +264,13 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
                                 mb.dest(dest);
                         }
                     }
-                    tp.passBatchUp(mb, !loopback, !loopback);
+                    // https://issues.redhat.com/browse/JGRP-2958
+                    if(mb.size() == 1) {
+                        Message msg=mb.first();
+                        tp.passMessageUp(msg, !loopback, msg.dest() == null, !loopback);
+                    }
+                    else
+                        tp.passBatchUp(mb, !loopback, !loopback);
                 }
                 catch(Throwable t) {
                     log.error("failed processing batch", t);

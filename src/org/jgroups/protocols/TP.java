@@ -1093,7 +1093,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             msg.setSrc(local_addr);
     }
 
-    public void passMessageUp(Message msg, byte[] cluster_name, boolean perform_cluster_name_matching,
+    public void passMessageUp(Message msg, boolean perform_cluster_name_matching,
                               boolean multicast, boolean discard_own_mcast) {
         if(is_trace)
             log.trace("%s: received %s, headers are %s", local_addr, msg, msg.printHeaders());
@@ -1105,18 +1105,23 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             return;
 
         // Discard if message's cluster name is not the same as our cluster name
-        if(perform_cluster_name_matching && this.cluster_name != null && !this.cluster_name.equals(cluster_name)) {
-            if(log_discard_msgs && log.isWarnEnabled()) {
-                Address sender=msg.getSrc();
-                if(suppress_log_different_cluster != null)
-                    suppress_log_different_cluster.log(SuppressLog.Level.warn, sender,
-                                                       suppress_time_different_cluster_warnings,
-                                                       new AsciiString(cluster_name),this.cluster_name, sender);
-                else
-                    log.warn(Util.getMessage("MsgDroppedDiffCluster"), new AsciiString(cluster_name),this.cluster_name, sender);
+        if(perform_cluster_name_matching && this.cluster_name != null) {
+            TpHeader hdr=msg.getHeader(id);
+            byte[] cname=hdr != null? hdr.clusterName() : null;
+            if(cname != null && !this.cluster_name.equals(cname)) {
+                if(log_discard_msgs && log.isWarnEnabled()) {
+                    Address sender=msg.getSrc();
+                    if(suppress_log_different_cluster != null)
+                        suppress_log_different_cluster.log(SuppressLog.Level.warn, sender,
+                                                           suppress_time_different_cluster_warnings,
+                                                           new AsciiString(cname), this.cluster_name, sender);
+                    else
+                        log.warn(Util.getMessage("MsgDroppedDiffCluster"), new AsciiString(cname), this.cluster_name, sender);
+                }
+                return;
             }
-            return;
         }
+
         if(rtt.enabled()) {
             TpHeader hdr=msg.getHeader(id);
             if(hdr != null && hdr.flag() > 0) {
