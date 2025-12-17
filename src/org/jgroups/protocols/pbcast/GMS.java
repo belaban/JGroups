@@ -722,7 +722,9 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     /** Returns the second-in-line */
     protected Address determineNextCoordinator() {
-        return members.nextCoord();
+        // Use the MembershipChangePolicy to compute new membership without current coordinator
+        List<Address> mbrs = computeNewMembership(members.getMembers(), null, List.of(members.getFirst()), null);
+        return !mbrs.isEmpty()? mbrs.get(0) : null;
     }
 
     protected static View createDeltaView(final View current_view, final View next_view) {
@@ -733,6 +735,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     }
 
     /** Checks whether the potential_new_coord would be the new coordinator (2nd in line) */
+    @Deprecated(since="5.5.3",forRemoval=true)
     protected boolean wouldBeNewCoordinator(Address potential_new_coord) {
         if(potential_new_coord == null) return false;
         lock.lock();
