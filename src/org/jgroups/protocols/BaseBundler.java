@@ -23,6 +23,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
 import static org.jgroups.conf.AttributeType.SCALAR;
@@ -84,6 +85,9 @@ public abstract class BaseBundler implements Bundler {
       "suppressed. 0 disables the suppress log", type=AttributeType.TIME)
     protected long                                  suppress_log_timeout;
 
+    @Property(description="Delay (in ms) after which queued messages to non-members are removed",unit=MILLISECONDS,type=AttributeType.TIME)
+    protected long                                  remove_delay=5000;
+
     @ManagedAttribute(description="Average fill size of the queue (in bytes) when messages are sent")
     protected final AverageMinMax                   avg_fill_count=new AverageMinMax(512);
 
@@ -132,6 +136,8 @@ public abstract class BaseBundler implements Bundler {
     public Bundler               useRingBuffer(boolean u)         {this.use_ringbuffer=u; return this;}
     public long                  suppressLogTimeout()             {return suppress_log_timeout;}
     public void                  suppressLogTimeout(long s)       {this.suppress_log_timeout=s;}
+    public long                  removeDelay()                    {return remove_delay;}
+    public Bundler               removeDelay(long remove_delay)   {this.remove_delay=remove_delay; return this;}
 
     @ManagedAttribute(description="Average number of messages in an BatchMessage")
     public double avgBatchSize() {
