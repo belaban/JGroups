@@ -23,6 +23,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.jgroups.Message.TransientFlag.DONT_LOOPBACK;
 import static org.jgroups.conf.AttributeType.SCALAR;
@@ -69,6 +70,9 @@ public abstract class BaseBundler implements Bundler {
     @Deprecated(since="5.4.9",forRemoval=true)
     protected boolean                               drop_when_full=true;
 
+    @Property(description="Delay (in ms) after which queued messages to non-members are removed",unit=MILLISECONDS,type=AttributeType.TIME)
+    protected long                                  remove_delay=5000;
+
     @ManagedAttribute(description="Average fill size of the queue (in bytes) when messages are sent")
     protected final AverageMinMax                   avg_fill_count=new AverageMinMax(512);
 
@@ -103,14 +107,16 @@ public abstract class BaseBundler implements Bundler {
           .collect(Collectors.joining("\n"));
     }
 
-    public int                   getCapacity()              {return capacity;}
-    public Bundler               setCapacity(int c)         {this.capacity=c; return this;}
-    public int                   removeQueueCapacity()      {return remove_queue_capacity;}
-    public Bundler               removeQueueCapacity(int c) {this.remove_queue_capacity=c; return this;}
-    public int                   getMaxSize()               {return max_size;}
-    public Bundler               setMaxSize(int s)          {max_size=s; return this;}
-    public boolean               dropWhenFull()             {return true;}
-    public <T extends Bundler> T dropWhenFull(boolean d)    {return (T)this;}
+    public int                   getCapacity()                    {return capacity;}
+    public Bundler               setCapacity(int c)               {this.capacity=c; return this;}
+    public int                   removeQueueCapacity()            {return remove_queue_capacity;}
+    public Bundler               removeQueueCapacity(int c)       {this.remove_queue_capacity=c; return this;}
+    public int                   getMaxSize()                     {return max_size;}
+    public Bundler               setMaxSize(int s)                {max_size=s; return this;}
+    public boolean               dropWhenFull()                   {return true;}
+    public Bundler               dropWhenFull(boolean ignored)    {return this;}
+    public long                  removeDelay()                    {return remove_delay;}
+    public Bundler               removeDelay(long remove_delay)   {this.remove_delay=remove_delay; return this;}
 
     @ManagedAttribute(description="Average number of messages in an BatchMessage")
     public double avgBatchSize() {

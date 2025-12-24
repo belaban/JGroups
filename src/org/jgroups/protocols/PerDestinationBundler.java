@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -158,27 +159,12 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
     }
 
     public void viewChange(View view) {
-        List<Address> mbrs=view.getMembers();
-
-        // add new members
-        mbrs.stream().filter(dest -> !dests.containsKey(dest))
-          .forEach(dest -> {
-              SendBuffer buf=dests.get(dest);
-              if(buf == null) {
-                  buf=dests.computeIfAbsent(dest, k -> new SendBuffer(dest));
-                  // start() needs to be called here (*not* above): the lambda might be called multiple times, and we'd
-                  // have multiple zombie sender threads!
-                  buf.start();
-              }
-          });
-
-        // remove left members
-        dests.entrySet().stream()
-          .filter(e -> e.getKey() != NULL && !mbrs.contains(e.getKey()))
-          .forEach(e -> {
-              e.getValue().stop();
-              dests.remove(e.getKey());
-          });
+        // code removed (https://issues.redhat.com/browse/JGRP-2324, https://issues.redhat.com/browse/JGRP-2960)
+        // remove left members after remove_delay ms
+        TimeScheduler timer=transport.getTimer();
+        final List<Address> mbrs=view.getMembers();
+        Runnable r=() -> removeNonMembers(mbrs);
+        timer.schedule(r, remove_delay, TimeUnit.MILLISECONDS);
     }
 
     protected void signalNotEmpty() {
@@ -189,6 +175,15 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
         finally {
             lock.unlock();
         }
+    }
+
+    protected void removeNonMembers(final List<Address> mbrs) {
+        dests.entrySet().stream()
+          .filter(e -> e.getKey() != NULL && !mbrs.contains(e.getKey()))
+          .forEach(e -> {
+              e.getValue().stop();
+              dests.remove(e.getKey());
+          });
     }
 
     protected void waitUntilMessagesAreAvailable() {
