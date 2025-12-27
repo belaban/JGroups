@@ -30,7 +30,6 @@ public class ByteBufferInputStream extends InputStream implements DataInput {
         }
     }
 
-
     public int skipBytes(int n) throws IOException {
         int skip=Math.min(n, buf.limit() - buf.position());
         buf.position(buf.position() + skip);
@@ -53,11 +52,45 @@ public class ByteBufferInputStream extends InputStream implements DataInput {
         return !buf.hasRemaining() ? -1 : (buf.get() & 0xff);
     }
 
+    @Override
+    public int read(byte[] b, int off, int len) {
+        if (!buf.hasRemaining()) {
+            return -1;
+        }
+
+        len = Math.min(len, buf.remaining());
+        buf.get(b, off, len);
+        return len;
+    }
+
+    @Override
+    public int available() {
+        return buf.remaining();
+    }
+
+    @Override
+    public boolean markSupported() {
+        return true;
+    }
+
+    @Override
+    public synchronized void mark(int readlimit) {
+        buf.mark();
+    }
+
+    @Override
+    public synchronized void reset() {
+        try {
+            buf.reset();
+        } catch (java.nio.InvalidMarkException e) {}
+    }
+
     public int readUnsignedByte() throws IOException {
-        int ch=readByte() & 0xff;
-        if(ch < 0)
+        try {
+            return buf.get() & 0xff;
+        } catch (BufferUnderflowException e) {
             throw new EOFException();
-        return ch;
+        }
     }
 
     public short readShort() throws IOException {
@@ -69,10 +102,11 @@ public class ByteBufferInputStream extends InputStream implements DataInput {
     }
 
     public int readUnsignedShort() throws IOException {
-        int retval=readShort() & 0xffff;
-        if(retval < 0)
+        try {
+            return buf.getShort() & 0xffff;
+        } catch (BufferUnderflowException e) {
             throw new EOFException();
-        return retval;
+        }
     }
 
     public char readChar() throws IOException {
@@ -116,6 +150,10 @@ public class ByteBufferInputStream extends InputStream implements DataInput {
     }
 
     public String readLine() throws IOException {
+        if (!buf.hasRemaining()) {
+            return null;
+        }
+        
         char[] lineBuffer=new char[128];
         char[] buffer= lineBuffer;
 
@@ -124,15 +162,27 @@ public class ByteBufferInputStream extends InputStream implements DataInput {
         int c;
 
         loop:	while (true) {
-            switch (c = readByte()) {
+            if (!buf.hasRemaining()) {
+                c = -1;
+                break;
+            }
+            
+            c = buf.get() & 0xff;
+            
+            switch (c) {
                 case -1:
                 case '\n':
                     break loop;
 
                 case '\r':
-                    int c2 = readByte();
-                    if ((c2 != '\n') && (c2 != -1))
-                        ;
+                    if (buf.hasRemaining()) {
+                        buf.mark();
+                        int c2 = buf.get() & 0xff;
+                        if (c2 != '\n') {
+                            // Not a line feed, reset to after the CR
+                            buf.reset();
+                        }
+                    }
                     break loop;
 
                 default:

@@ -36,12 +36,12 @@ public class ByteArrayDataInputStream extends InputStream implements DataInput {
     public ByteArrayDataInputStream(ByteBuffer buffer) {
         int offset=buffer.hasArray()? buffer.arrayOffset() + buffer.position() : buffer.position(),
           len=buffer.remaining();
-        if(!buffer.isDirect()) {
+        if(buffer.hasArray()) {
             this.buf=buffer.array();
             this.pos=offset;
             this.limit=offset+len;
         }
-        else { // by default use a copy; but of course implementers of Receiver can override this
+        else { // by default use a copy
             byte[] tmp=new byte[len];
             buffer.get(tmp, 0, len);
             this.buf=tmp;
@@ -250,13 +250,21 @@ public class ByteArrayDataInputStream extends InputStream implements DataInput {
             ch=read();
             if(ch == -1)
                 return sb.isEmpty()? null : sb.toString();
-            if(ch == '\r')
-                ;
-            else {
-                if(ch == '\n')
-                    break;
-                sb.append((char)ch);
+            if(ch == '\n')
+                break;
+            if(ch == '\r') {
+                // Check if next character is '\n' (CRLF)
+                if(pos < limit) {
+                    int saved_pos = pos;
+                    int next_ch = read();
+                    if(next_ch != '\n' && next_ch != -1) {
+                        // Not a line feed, rewind
+                        pos = saved_pos;
+                    }
+                }
+                break;
             }
+            sb.append((char)ch);
         }
         return sb.toString();
     }
