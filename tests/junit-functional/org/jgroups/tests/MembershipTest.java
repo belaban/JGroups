@@ -127,6 +127,7 @@ public class MembershipTest {
         assert !coord;
     }
 
+    @Deprecated(since="5.5.3",forRemoval=true)
     public void testNextCoord() {
         m1.add(a1,a2);
         assert m1.isCoord(a1);

@@ -254,6 +254,7 @@ public class Membership {
         }
     }
 
+    @Deprecated(since="5.5.3",forRemoval=true)
     public Address nextCoord() {
         synchronized(members) {
             return members.size() > 1? members.get(1) : null;
