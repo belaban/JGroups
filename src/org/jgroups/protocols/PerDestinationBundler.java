@@ -162,9 +162,12 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
         // code removed (https://issues.redhat.com/browse/JGRP-2324, https://issues.redhat.com/browse/JGRP-2960)
         // remove left members after remove_delay ms
         TimeScheduler timer=transport.getTimer();
-        final List<Address> mbrs=view.getMembers();
-        Runnable r=() -> removeNonMembers(mbrs);
-        timer.schedule(r, remove_delay, TimeUnit.MILLISECONDS);
+        final List<Address> left=Util.leftMembers(this.members, view.getMembers());
+        super.viewChange(view); // sets this.members
+        if(left != null && !left.isEmpty()) {
+            Runnable r=() -> removeLeftMembers(left);
+            timer.schedule(r, remove_delay, TimeUnit.MILLISECONDS);
+        }
     }
 
     protected void signalNotEmpty() {
@@ -177,13 +180,12 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
         }
     }
 
-    protected void removeNonMembers(final List<Address> mbrs) {
-        dests.entrySet().stream()
-          .filter(e -> e.getKey() != NULL && !mbrs.contains(e.getKey()))
-          .forEach(e -> {
-              e.getValue().stop();
-              dests.remove(e.getKey());
-          });
+    protected void removeLeftMembers(final List<Address> left_mbrs) {
+        for(Address left: left_mbrs) {
+            SendBuffer send_buf=dests.remove(left);
+            if(send_buf != null)
+                send_buf.stop();
+        }
     }
 
     protected void waitUntilMessagesAreAvailable() {

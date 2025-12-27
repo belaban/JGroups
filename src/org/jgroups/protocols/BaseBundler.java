@@ -100,6 +100,9 @@ public abstract class BaseBundler implements Bundler {
     @ManagedAttribute(description="Number of dropped messages (when drop_when_full is true)",type=SCALAR)
     protected final LongAdder                       num_drops_on_full_queue=new LongAdder();
 
+    @ManagedAttribute(description="The current members")
+    protected volatile List<Address>                members;
+
     @ManagedOperation(description="Prints the capacity of the buffers")
     public String printBuffers() {
         return msgs.entrySet().stream()
@@ -147,6 +150,7 @@ public abstract class BaseBundler implements Bundler {
 
     public void viewChange(View view) {
         // code removed (https://issues.redhat.com/browse/JGRP-2324)
+        this.members=view.getMembers();
     }
 
     /** Returns the total number of messages in the hashmap */
