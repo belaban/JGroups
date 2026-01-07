@@ -117,7 +117,7 @@ public class UPerf implements Receiver {
         thread_factory=new DefaultThreadFactory("invoker", false, true)
           .useVirtualThreads(use_virtual_threads);
         if(use_virtual_threads && Util.virtualThreadsAvailable())
-            System.out.println("-- using virtual threads instead of threads");
+            System.out.println("-- using virtual threads");
 
         channel=new JChannel(props).addAddressGenerator(generator).setName(name);
         if(bind_port > 0) {
