@@ -558,7 +558,7 @@ public final class Bits {
         if(buf.get() == 0)
             return null;
         int len=readIntCompressed(buf);
-        if(buf.isDirect()) {
+        if(!buf.hasArray()) {
             byte[] bytes=new byte[len];
             buf.get(bytes);
             return new String(bytes);
