@@ -1,7 +1,5 @@
 package org.jgroups.nio;
 
-import org.jgroups.util.Util;
-
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -125,49 +123,6 @@ public class Buffers implements Iterable<ByteBuffer> {
     /** Nulls the buffer at index */
     public Buffers remove(int index) {
         return set(index, null);
-    }
-
-
-    /**
-     * Reads length and then length bytes into the data buffer, which is grown if needed.
-     * @param ch The channel to read data from
-     * @return The data buffer (position is 0 and limit is length), or null if not all data could be read.
-     */
-    public ByteBuffer readLengthAndData(SocketChannel ch) throws Exception {
-        if(bufs[0].hasRemaining() && ch.read(bufs[0]) < 0)
-            throw new EOFException();
-
-        if(bufs[0].hasRemaining())
-            return null;
-
-        int len=bufs[0].getInt(0);
-        // https://issues.redhat.com/browse/JGRP-2523: check if max_length has been exceeded
-        if(max_length > 0 && len > max_length)
-            throw new IllegalStateException(String.format("the length of a message (%s) from %s is bigger than the " +
-                                                            "max accepted length (%s): discarding the message",
-                                                          Util.printBytes(len), ch.getRemoteAddress(),
-                                                          Util.printBytes(max_length)));
-        if(bufs[1] == null || len > bufs[1].capacity())
-            bufs[1]=ByteBuffer.allocate(len);
-        // Workaround for JDK8 compatibility
-        // limit() returns java.nio.Buffer in JDK8, but java.nio.ByteBuffer since JDK9.
-        ((java.nio.Buffer) bufs[1]).limit(len);
-
-        if(bufs[1].hasRemaining() && ch.read(bufs[1]) < 0)
-            throw new EOFException();
-
-        if(bufs[1].hasRemaining())
-            return null;
-
-        try {
-            // Workaround for JDK8 compatibility
-            // flip() returns java.nio.Buffer in JDK8, but java.nio.ByteBuffer since JDK9.
-            return (ByteBuffer) ((java.nio.Buffer) bufs[1].duplicate()).flip();
-        }
-        finally {
-            bufs[0].clear();
-            bufs[1].clear();
-        }
     }
 
     /**
@@ -300,17 +255,10 @@ public class Buffers implements Iterable<ByteBuffer> {
     /** Copies a ByteBuffer by copying and wrapping the underlying array of a heap-based buffer. Direct buffers
         are converted to heap-based buffers */
     public static ByteBuffer copyBuffer(final ByteBuffer buf) {
-        if(buf == null)
-            return null;
-        int offset=buf.hasArray()? buf.arrayOffset() + buf.position() : buf.position(), len=buf.remaining();
-        byte[] tmp=new byte[len];
-        if(!buf.isDirect())
-            System.arraycopy(buf.array(), offset, tmp, 0, len);
-        else {
-            for(int i=0; i < len; i++)
-                tmp[i]=buf.get(i+offset);
-        }
-        return ByteBuffer.wrap(tmp);
+        ByteBuffer copy = ByteBuffer.allocate(buf.remaining());
+        copy.put(buf.duplicate());
+        copy.flip();
+        return copy;
     }
 
     @Override

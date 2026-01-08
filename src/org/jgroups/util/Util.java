@@ -1240,6 +1240,7 @@ public class Util {
         return retval;
     }
 
+    @Deprecated(since = "5.5.3", forRemoval = true)
     public static void bufferToArray(final Address sender, final ByteBuffer buf, org.jgroups.blocks.cs.Receiver target) {
         if(buf == null)
             return;

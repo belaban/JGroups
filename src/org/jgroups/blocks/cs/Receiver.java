@@ -1,10 +1,9 @@
 package org.jgroups.blocks.cs;
 
-import org.jgroups.Address;
-import org.jgroups.util.Util;
-
 import java.io.DataInput;
 import java.nio.ByteBuffer;
+import org.jgroups.Address;
+import org.jgroups.util.ByteBufferInputStream;
 
 /**
  * Receiver interface to be used with {@link BaseServer} instances
@@ -33,7 +32,13 @@ public interface Receiver {
      *            Note that buf could be a direct ByteBuffer.
      */
     default void receive(Address sender, ByteBuffer buf) {
-        Util.bufferToArray(sender, buf, this);
+        try {
+            receive(sender, new ByteBufferInputStream(buf), buf.remaining());
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Deprecated(since="5.3.3",forRemoval=true)

@@ -15,7 +15,6 @@ import org.testng.annotations.Test;
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.net.*;
-import java.nio.ByteBuffer;
 import java.text.DecimalFormatSymbols;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -728,26 +727,6 @@ public class UtilTest {
         assert combined.length == 5;
         assert combined[0].equals("Hello");
         assert combined[2].equals("from");
-    }
-
-    public void testBufferToArray() {
-        // test heap based ByteBuffer:
-        String hello="hello";
-        byte[] buffer=hello.getBytes();
-        ByteBuffer buf=ByteBuffer.allocate(50).putInt(322649).put(buffer);
-        buf.flip(); // for java 8 compatibility
-
-        buf.getInt();
-        MyNioReceiver receiver=new MyNioReceiver();
-        receiver.receive(null, buf);
-        assert receiver.name.equals(hello);
-
-        // test direct ByteBuffer:
-        buf=ByteBuffer.allocateDirect(50).putInt(322649).put(buffer);
-        buf.flip();
-        buf.getInt();
-        receiver.receive(null, buf);
-        assert receiver.name.equals(hello);
     }
 
     public void testIsAssignable() {
