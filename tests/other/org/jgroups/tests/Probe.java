@@ -35,9 +35,27 @@ public class Probe {
     protected boolean               verbose;
     protected static final String   PREFIX="**";
 
+    protected Consumer<ByteArray>   default_rsp_handler=buf -> {
+        if(buf == null) {
+            System.out.println("\n");
+            return;
+        }
+        String response=new String(buf.array(), 0, buf.length());
+        if(weed_out_duplicates && checkDuplicateResponse(response))
+            return;
+        count.incrementAndGet();
+        if(matches(response, match)) {
+            matched.incrementAndGet();
+            System.out.printf("#%d (%d bytes):\n%s\n", count.get(), buf.length(), response);
+        }
+        else
+            not_matched.incrementAndGet();
+    };
 
-    public boolean verbose()          {return verbose;}
-    public Probe   verbose(boolean b) {verbose=b; return this;}
+
+    public boolean verbose()                                         {return verbose;}
+    public Probe   verbose(boolean b)                                {verbose=b; return this;}
+    public Probe   setDefaultResponseHandler(Consumer<ByteArray> rh) {this.default_rsp_handler=rh; return this;}
 
 
     public void start(List<InetAddress> addrs, InetAddress bind_addr, int port, int ttl,
@@ -111,7 +129,6 @@ public class Probe {
         }
     }
 
-
     /**
      * Returns a list of addr:port responses. Counting the occurrences of a given address, e.g. 3 assumes we have 3
      * processes on the same host, yielding requests to host:port, host:port+1 and host_port+3. This is a quick-n-dirty
@@ -146,7 +163,6 @@ public class Probe {
         }
         return retval;
     }
-
 
     private boolean checkDuplicateResponse(String response) {
         int index=response.indexOf("local_addr");
@@ -295,15 +311,18 @@ public class Probe {
     }
 
     protected static void help() {
-        System.out.println("Probe [-help] [-addr <addr>] [-4] [-6] [-bind_addr <addr>] " +
-                             "[-port <port>] [-ttl <ttl>] [-timeout <timeout>] [-passcode <code>] [-weed_out_duplicates] " +
-                             "[-cluster regexp-pattern] [-match pattern] [-udp true|false] [-tcp true|false] " +
-                             "[-v] [key[=value]]*\n\n" +
-                             "Examples:\n" +
-                             "probe.sh keys // dumps all valid commands\n" +
-                             "probe.sh jmx=NAKACK // dumps JMX info about all NAKACK protocols\n" +
-                             "probe.sh op=STABLE.runMessageGarbageCollection // invokes the method in all STABLE protocols\n" +
-                             "probe.sh jmx=UDP.oob,thread_pool // dumps all attrs of UDP starting with oob* or thread_pool*\n");
+        System.out.println("""
+                             Probe [-help] [-addr <addr>] [-4] [-6] [-bind_addr <addr>] \
+                             [-port <port>] [-ttl <ttl>] [-timeout <timeout>] [-passcode <code>] [-weed_out_duplicates] \
+                             [-cluster regexp-pattern] [-match pattern] [-udp true|false] [-tcp true|false] \
+                             [-v] [key[=value]]*
+                             
+                             Examples:
+                             probe.sh keys // dumps all valid commands
+                             probe.sh jmx=NAKACK2 // dumps JMX info about the NAKACK2 protocols
+                             probe.sh op=STABLE.runMessageGarbageCollection // invokes the method in all STABLE protocols
+                             probe.sh jmx=UDP.oob,thread_pool // dumps all attrs of UDP starting with oob* or thread_pool*
+                             """);
     }
 
 
@@ -312,30 +331,11 @@ public class Probe {
         protected final String        request, passcode;
         protected Consumer<ByteArray> on_rsp;
 
-
-        protected final Consumer<ByteArray> ON_RSP=buf -> {
-            if(buf == null) {
-                System.out.println("\n");
-                return;
-            }
-            String response=new String(buf.array(), 0, buf.length());
-            if(weed_out_duplicates && checkDuplicateResponse(response))
-                return;
-            count.incrementAndGet();
-            if(matches(response, Probe.this.match)) {
-                matched.incrementAndGet();
-                System.out.printf("#%d (%d bytes):\n%s\n", count.get(), buf.length(), response);
-            }
-            else
-                not_matched.incrementAndGet();
-        };
-
-
         protected Requester(SocketAddress dest, String request, String passcode, Consumer<ByteArray> on_rsp) {
             this.dest=dest;
             this.request=request;
             this.passcode=passcode;
-            this.on_rsp=on_rsp != null? on_rsp : ON_RSP;
+            this.on_rsp=on_rsp != null? on_rsp : default_rsp_handler;
         }
 
         protected abstract <T extends Requester> T start(InetAddress bind_addr, long timeout, int ttl) throws IOException;
@@ -350,7 +350,6 @@ public class Probe {
             try {
                 byte[] req=createRequest();
                 sendRequest(req);
-                // System.out.println("\n");
                 while(isRunning()) {
                     ByteArray data=fetchResponse();
                     if(data == null)
@@ -363,7 +362,6 @@ public class Probe {
                 System.err.printf("failed sending request to %s: %s\n", dest, t);
             }
         }
-
 
         protected byte[] createRequest() throws IOException, NoSuchAlgorithmException {
             byte[] authenticationDigest=null;
@@ -381,7 +379,6 @@ public class Probe {
             }
             return payload;
         }
-
     }
 
     protected class UdpRequester extends Requester {
