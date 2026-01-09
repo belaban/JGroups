@@ -475,7 +475,7 @@ public class ByteArrayDataInputOutputStreamTest {
         assert tmp == null;
     }
 
-    public static void testReadLine() throws IOException {
+    public void testReadLine() throws IOException {
         String str="Gallia est omnis divisa in partes tres,\n\rquarum unam incolunt Belgae,\naliam Aquitani," +
           "\ntertiam qui ipsorum lingua Celtae, nostra Galli appellantur";
         byte[] buf=str.getBytes();

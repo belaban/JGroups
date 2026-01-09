@@ -165,10 +165,9 @@ public class ByteBufferInputStream extends InputStream implements DataInput {
 
     @Override
     public String readLine() throws IOException {
-        if (!buf.hasRemaining()) {
+        if(!buf.hasRemaining())
             return null;
-        }
-        
+
         char[] lineBuffer=new char[128];
         char[] buffer= lineBuffer;
 

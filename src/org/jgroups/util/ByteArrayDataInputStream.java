@@ -266,21 +266,13 @@ public class ByteArrayDataInputStream extends InputStream implements DataInput {
             ch=read();
             if(ch == -1)
                 return sb.isEmpty()? null : sb.toString();
-            if(ch == '\n')
-                break;
-            if(ch == '\r') {
-                // Check if next character is '\n' (CRLF)
-                if(pos < limit) {
-                    int saved_pos = pos;
-                    int next_ch = read();
-                    if(next_ch != '\n' && next_ch != -1) {
-                        // Not a line feed, rewind
-                        pos = saved_pos;
-                    }
-                }
-                break;
+            if(ch == '\r')
+                ;
+            else {
+                if(ch == '\n')
+                    break;
+                sb.append((char)ch);
             }
-            sb.append((char)ch);
         }
         return sb.toString();
     }

@@ -1,10 +1,11 @@
 package org.jgroups.nio;
 
+import org.jgroups.util.Util;
+
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
-import org.jgroups.util.Util;
 
 /**
  * Class for reading length prefix messages from a channel.
@@ -23,7 +24,12 @@ public class MessageReader {
     protected int max_length; // max number of bytes to read (JGRP-2523)
 
     public MessageReader(SocketChannel channel) {
+        this(channel, 1024);
+    }
+
+    public MessageReader(SocketChannel channel, int initial_buf_size) {
         this.channel = channel;
+        buffer = ByteBuffer.allocateDirect(initial_buf_size);
     }
 
     /**

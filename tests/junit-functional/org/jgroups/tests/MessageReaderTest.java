@@ -1,12 +1,13 @@
 package org.jgroups.tests;
 
-import java.io.EOFException;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
 import org.jgroups.Global;
 import org.jgroups.nio.MessageReader;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import java.io.EOFException;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 /**
  * 
@@ -96,6 +97,20 @@ public class MessageReaderTest {
         data.limit(data.capacity()); // read all data
         buf = bufs.readMessage();
         assert buf != null;
+    }
+
+    public void testReadWithBufferExpansion() throws Exception {
+        byte[] data = new byte[20];
+        for(int i=0; i < data.length; i++)
+            data[i]=(byte)i;
+        MockSocketChannel ch = new MockSocketChannel()
+          .bytesToRead(ByteBuffer.allocate(Global.INT_SIZE + data.length).putInt(data.length).put(data).flip());
+
+        MessageReader bufs = new MessageReader(ch, 16);
+        ByteBuffer b = bufs.readMessage();
+        System.out.println("b = " + b);
+        assert b != null;
+        assert Arrays.equals(data, array(b));
     }
 
     private static byte[] array(ByteBuffer buffer) {
