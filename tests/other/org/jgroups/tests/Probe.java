@@ -34,7 +34,7 @@ public class Probe {
     protected final AtomicInteger   matched=new AtomicInteger(), not_matched=new AtomicInteger(), count=new AtomicInteger();
     protected boolean               verbose;
     protected static final String   PREFIX="**";
-
+    protected boolean               rsp_handler_set;
     protected Consumer<ByteArray>   default_rsp_handler=buf -> {
         if(buf == null) {
             System.out.println("\n");
@@ -55,7 +55,7 @@ public class Probe {
 
     public boolean verbose()                                         {return verbose;}
     public Probe   verbose(boolean b)                                {verbose=b; return this;}
-    public Probe   setDefaultResponseHandler(Consumer<ByteArray> rh) {this.default_rsp_handler=rh; return this;}
+    public Probe   setDefaultResponseHandler(Consumer<ByteArray> rh) {this.default_rsp_handler=rh; rsp_handler_set=true; return this;}
 
 
     public void start(List<InetAddress> addrs, InetAddress bind_addr, int port, int ttl,
@@ -83,7 +83,8 @@ public class Probe {
         requesters.forEach(Requester::stop);
         thread_pool.shutdown();
         thread_pool.awaitTermination(timeout, TimeUnit.MILLISECONDS);
-        System.out.printf("%d responses (%d matches, %d non matches)\n", count.get(), matched.get(), not_matched.get());
+        if(!rsp_handler_set)
+            System.out.printf("%d responses (%d matches, %d non matches)\n", count.get(), matched.get(), not_matched.get());
     }
 
 
