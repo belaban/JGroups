@@ -53,7 +53,7 @@ public class NioConnection extends Connection {
         channel.configureBlocking(false);
         setSocketParameters(channel.socket());
         last_access=getTimestamp(); // last time a message was sent or received (ns)
-        message_reader=new MessageReader(channel).maxLength(server.getMaxLength());
+        message_reader=new MessageReader(channel, 1024, server.useDirectMemory()).maxLength(server.getMaxLength());
     }
 
     public NioConnection(SocketChannel channel, NioBaseServer server) throws Exception {
@@ -67,7 +67,7 @@ public class NioConnection extends Connection {
         } else {
             peer_addr=new IpAddress((InetSocketAddress)channel.getRemoteAddress());
         }
-        message_reader=new MessageReader(channel).maxLength(server.getMaxLength());
+        message_reader=new MessageReader(channel, 1024, server.useDirectMemory()).maxLength(server.getMaxLength());
         last_access=getTimestamp(); // last time a message was sent or received (ns)
     }
 

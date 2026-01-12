@@ -106,7 +106,7 @@ public class MessageReaderTest {
         MockSocketChannel ch = new MockSocketChannel()
           .bytesToRead(ByteBuffer.allocate(Global.INT_SIZE + data.length).putInt(data.length).put(data).flip());
 
-        MessageReader bufs = new MessageReader(ch, 16);
+        MessageReader bufs = new MessageReader(ch, 16, false);
         ByteBuffer b = bufs.readMessage();
         System.out.println("b = " + b);
         assert b != null;

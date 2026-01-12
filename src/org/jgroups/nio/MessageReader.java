@@ -19,17 +19,19 @@ import java.nio.channels.SocketChannel;
 public class MessageReader {
 
     private final SocketChannel channel;
-    private ByteBuffer buffer = ByteBuffer.allocateDirect(1024);
+    private ByteBuffer buffer;
     private int readerIndex;
     protected int max_length; // max number of bytes to read (JGRP-2523)
+    protected boolean use_direct_buffers;
 
     public MessageReader(SocketChannel channel) {
-        this(channel, 1024);
+        this(channel, 1024, true);
     }
 
-    public MessageReader(SocketChannel channel, int initial_buf_size) {
+    public MessageReader(SocketChannel channel, int initial_buf_size, boolean use_direct_buffers) {
         this.channel = channel;
-        buffer = ByteBuffer.allocateDirect(initial_buf_size);
+        this.use_direct_buffers = use_direct_buffers;
+        buffer = use_direct_buffers? ByteBuffer.allocateDirect(initial_buf_size) : ByteBuffer.allocate(initial_buf_size);
     }
 
     /**
@@ -134,7 +136,7 @@ public class MessageReader {
             buffer.compact();
         } else {
             int newCapacity = Math.max(totalSpace, buffer.capacity() * 2);
-            ByteBuffer newBuffer = ByteBuffer.allocateDirect(newCapacity);
+            ByteBuffer newBuffer = use_direct_buffers? ByteBuffer.allocateDirect(newCapacity) : ByteBuffer.allocate(newCapacity);
             newBuffer.put(buffer);
             buffer = newBuffer;
         }

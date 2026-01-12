@@ -33,13 +33,13 @@ public abstract class NioBaseServer extends BaseServer {
 
     protected long              reader_idle_time=20000;
 
+    protected boolean           use_direct_memory=true;
+
 
 
     protected NioBaseServer(ThreadFactory f, SocketFactory sf, int recv_buf_size) {
         super(f, sf, recv_buf_size);
     }
-
-
 
     public int            maxSendBuffers()              {return max_send_buffers;}
     public NioBaseServer  maxSendBuffers(int num)       {this.max_send_buffers=num; return this;}
@@ -49,6 +49,8 @@ public abstract class NioBaseServer extends BaseServer {
     public boolean        copyOnPartialWrite()          {return copy_on_partial_write;}
     public long           readerIdleTime()              {return reader_idle_time;}
     public NioBaseServer  readerIdleTime(long t)        {reader_idle_time=t; return this;}
+    public boolean        useDirectMemory()             {return use_direct_memory;}
+    public NioBaseServer  useDirectMemory(boolean b)    {this.use_direct_memory=b; return this;}
 
     public NioBaseServer  copyOnPartialWrite(boolean b) {
         this.copy_on_partial_write=b;
