@@ -163,6 +163,8 @@ public abstract class Discovery extends Protocol {
     public <T extends Discovery> T sendCacheOnJoin(boolean b)         {this.send_cache_on_join=b; return (T)this;}
     public int                     maxRankToReply()                   {return max_rank_to_reply;}
     public void                    maxRankToReply(int m)              {this.max_rank_to_reply=m;}
+    public int                     numDiscoveryRuns()                 {return num_discovery_runs;}
+    public <T extends Discovery> T numDiscoveryRuns(int runs)         {this.num_discovery_runs=runs; return (T)this;}
     public boolean                 transportSupportsMulticasting()    {return transport_supports_multicasting;}
     public boolean                 asyncDiscovery()                   {return async_discovery;}
     public void                    asyncDiscovery(boolean ad)         {this.async_discovery=ad;}
