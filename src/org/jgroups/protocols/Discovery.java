@@ -158,21 +158,19 @@ public abstract class Discovery extends Protocol {
     public <T extends Discovery> T staggerTimeout(long timeout)       {stagger_timeout=timeout; return (T)this;}
     public boolean                 useDiskCache()                     {return use_disk_cache;}
     public <T extends Discovery> T useDiskCache(boolean flag)         {use_disk_cache=flag; return (T)this;}
+    public long                    discoveryRspExpiryTime()           {return discovery_rsp_expiry_time;}
     public <T extends Discovery> T discoveryRspExpiryTime(long t)     {this.discovery_rsp_expiry_time=t; return (T)this;}
     public boolean                 sendCacheOnJoin()                  {return send_cache_on_join;}
     public <T extends Discovery> T sendCacheOnJoin(boolean b)         {this.send_cache_on_join=b; return (T)this;}
     public int                     maxRankToReply()                   {return max_rank_to_reply;}
-    public void                    maxRankToReply(int m)              {this.max_rank_to_reply=m;}
+    public <T extends Discovery> T maxRankToReply(int m)              {this.max_rank_to_reply=m; return (T)this;}
     public int                     numDiscoveryRuns()                 {return num_discovery_runs;}
     public <T extends Discovery> T numDiscoveryRuns(int runs)         {this.num_discovery_runs=runs; return (T)this;}
     public boolean                 transportSupportsMulticasting()    {return transport_supports_multicasting;}
     public boolean                 asyncDiscovery()                   {return async_discovery;}
-    public void                    asyncDiscovery(boolean ad)         {this.async_discovery=ad;}
+    public <T extends Discovery> T asyncDiscovery(boolean ad)         {this.async_discovery=ad; return (T)this;}
     public boolean                 asyncDiscoveryUseSeparateThread()  {return async_discovery_use_separate_thread_per_request;}
-
-    public void                    asyncDiscoveryUseSeparateThread(boolean a) {
-        this.async_discovery_use_separate_thread_per_request=a;
-    }
+    public <T extends Discovery> T asyncDiscoveryUseSeparateThread(boolean a) {this.async_discovery_use_separate_thread_per_request = a; return (T)this;}
 
     @ManagedAttribute
     public String getView() {return view != null? view.getViewId().toString() : "null";}
