@@ -1,0 +1,112 @@
+package org.jgroups.tests;
+
+import org.jgroups.Global;
+import org.jgroups.JChannel;
+import org.jgroups.protocols.MERGE3;
+import org.jgroups.protocols.TP;
+import org.jgroups.protocols.pbcast.GMS;
+import org.jgroups.stack.DiagnosticsHandler;
+import org.jgroups.util.ThreadFactory;
+import org.jgroups.util.Util;
+import org.testng.annotations.Test;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+/**
+ * Misc tests for {@link org.jgroups.protocols.JDBC_PING2}. The mongo DB needs to be running
+ * needs to be on the classpath
+ * @author Bela Ban
+ * @since  5.4, 5.3.7
+ */
+@Test(groups=Global.MONGO,singleThreaded=true)
+public class MONGO_PING_Test {
+    protected static final String CLUSTER="mongo-test";
+    protected static final String CONFIG="mongo.xml";
+    protected static final int NUM_NODES=8;
+
+
+    public void testClusterFormedAfterRestart() throws Exception {
+        try(var a=createChannel(CONFIG, "A")) {
+            a.connect(CLUSTER);
+            for(int i=1; i <= 100; i++) {
+                long start=System.nanoTime();
+                try(var b=createChannel(CONFIG, "B")) {
+                    b.connect(CLUSTER);
+                    Util.waitUntilAllChannelsHaveSameView(10000, 10, a,b);
+                    long time=System.nanoTime()-start;
+                    System.out.printf("-- join #%d took %s\n", i, Util.printTime(time, TimeUnit.NANOSECONDS));
+                }
+            }
+        }
+    }
+
+    public void testConcurrentStartup() throws Exception {
+        JChannel[] channels=new JChannel[NUM_NODES];
+        for(int i=0; i < channels.length; i++)
+            channels[i]=createChannel(CONFIG, String.valueOf(i+1));
+        CountDownLatch latch=new CountDownLatch(1);
+        int index=1;
+        for(JChannel ch: channels) {
+            ThreadFactory thread_factory=ch.stack().getTransport().getThreadFactory();
+            Connector connector=new Connector(latch, ch);
+            thread_factory.newThread(connector, "connector-" +index++).start();
+        }
+        try {
+            latch.countDown();
+            long start=System.nanoTime();
+            Util.waitUntilAllChannelsHaveSameView(30_000, 500, channels);
+            long time=System.nanoTime() - start;
+            System.out.printf("\n-- cluster of %d formed in %s:\n%s", NUM_NODES, Util.printTime(time),
+                              Stream.of(channels).map(ch -> String.format("%s: %s", ch.address(), ch.view()))
+                                .collect(Collectors.joining("\n")));
+            System.out.println();
+        }
+        finally {
+            Util.close(channels);
+        }
+    }
+
+    protected static JChannel modify(JChannel ch) {
+        GMS gms=ch.stack().findProtocol(GMS.class);
+        gms.setJoinTimeout(3000).setMaxJoinAttempts(5);
+        MERGE3 merge=ch.stack().findProtocol(MERGE3.class);
+        merge.setMinInterval(2000).setMaxInterval(5000);
+        TP transport=ch.stack().getTransport();
+        DiagnosticsHandler diag=transport.getDiagnosticsHandler();
+        diag.enableTcp(false);
+        return ch;
+    }
+
+    protected static JChannel createChannel(String cfg, String name) throws Exception {
+        return modify(new JChannel(cfg).name(name));
+    }
+
+    protected static class Connector implements Runnable {
+        protected final CountDownLatch latch;
+        protected final JChannel       ch;
+
+        protected Connector(CountDownLatch latch, JChannel ch) {
+            this.latch=latch;
+            this.ch=ch;
+        }
+
+        @Override
+        public void run() {
+            try {
+                latch.await();
+                ch.connect(CLUSTER);
+            }
+            catch(Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public static void main(String[] args) throws Exception {
+        MONGO_PING_Test test=new MONGO_PING_Test();
+        test.testConcurrentStartup();
+    }
+}

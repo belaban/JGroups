@@ -88,6 +88,7 @@ public final class Global {
     public static final String ENCRYPT="encrypt";
     public static final String RELAY="relay";
     public static final String JDBC="jdbc";
+    public static final String MONGO="mongo";
 
     public static final String INITIAL_MCAST_ADDR="INITIAL_MCAST_ADDR";
     public static final String INITIAL_MCAST_PORT="INITIAL_MCAST_PORT";

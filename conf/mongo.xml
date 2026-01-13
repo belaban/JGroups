@@ -1,0 +1,35 @@
+<!--
+  JDBC_PING2 for Postgresql
+-->
+<config xmlns="urn:org:jgroups"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
+    <include file="${transport-config:tcp-default.xml}" />
+    <!-- Uncomment attributes 'insert_sp' and 'call_insert_sp' if you want to use stored procedures -->
+    <MONGO_PING
+            connection_url="mongodb://localhost:27017/test"
+    />
+    <MERGE3 min_interval="10000"
+            max_interval="30000"/>
+    <FD_SOCK2/>
+    <FD_ALL3 timeout="40s" interval="5s" />
+    <VERIFY_SUSPECT2 />
+    <pbcast.NAKACK2
+            use_mcast_xmit="false"
+            xmit_interval="500ms"/>
+    <UNICAST3
+            xmit_interval="500ms"/>
+    <pbcast.STABLE
+            desired_avg_gossip="5s"
+            max_bytes="1000000"/>
+    <pbcast.GMS
+            print_local_addr="false"
+            join_timeout="1s"
+            max_join_attempts="5"/>
+    <UFC max_credits="2M"
+         min_threshold="0.40"/>
+    <MFC max_credits="2M"
+         min_threshold="0.4"/>
+    <FRAG3 frag_size="60000"  />
+    <pbcast.STATE_TRANSFER/>
+</config>

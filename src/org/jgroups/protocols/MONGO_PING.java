@@ -19,14 +19,13 @@ import java.util.List;
 
 public class MONGO_PING extends JDBC_PING2 {
 
-    protected static final String CLUSTERNAME="clustername";
-    protected static final String NAME="name";
-    protected static final String IP="ip";
-    protected static final String ISCOORD="isCoord";
+    protected static final String CLUSTERNAME = "clustername";
+    protected static final String NAME = "name";
+    protected static final String IP = "ip";
+    protected static final String ISCOORD = "isCoord";
 
-
-    @Property(description="todo")
-    protected String collectionName = "jgroups-apps";
+    @Property(description = "todo")
+    protected String collection_name = "jgroups-apps";
 
     @Override
     public MONGO_PING setConnectionUrl(String c) {
@@ -34,9 +33,12 @@ public class MONGO_PING extends JDBC_PING2 {
         return this;
     }
 
-    public String getCollectionName() { return collectionName;}
-    public MONGO_PING setCollectionName(String collectionName) {
-        this.collectionName = collectionName;
+    public String getCollection_name() {
+        return collection_name;
+    }
+
+    public MONGO_PING setCollection_name(String collection_name) {
+        this.collection_name = collection_name;
         return this;
     }
 
@@ -77,7 +79,6 @@ public class MONGO_PING extends JDBC_PING2 {
         } finally {
             lock.unlock();
         }
-
     }
 
     protected void insert(PingData data, String clustername) {
@@ -101,8 +102,8 @@ public class MONGO_PING extends JDBC_PING2 {
 
     @Override
     protected void createSchema() {
-        mongoDb.createCollection(collectionName);
-        collection = mongoDb.getCollection(collectionName);
+        mongoDb.createCollection(collection_name);
+        collection = mongoDb.getCollection(collection_name);
     }
 
     @Override
