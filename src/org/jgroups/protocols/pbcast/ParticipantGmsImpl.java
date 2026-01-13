@@ -7,13 +7,14 @@ import org.jgroups.util.Digest;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 
 /**
  * This is the role of a regular member, which has successfully joined the cluster, but is not the coordinator
  */
 public class ParticipantGmsImpl extends ServerGmsImpl {
-    private final Collection<Address> suspected_mbrs=new LinkedHashSet<>();
+    private final Collection<Address> suspected_mbrs = new CopyOnWriteArraySet<>();
 
     public ParticipantGmsImpl(GMS g) {
         super(g);
