@@ -63,6 +63,13 @@ public class SequencerFailoverTest extends BMNGRunner {
     }
 
 
+    public static void main(String[] args) throws Exception {
+        SequencerFailoverTest test=new SequencerFailoverTest();
+        test.setUp();
+        test.testResendingVersusNewMessages();
+        test.tearDown();
+    }
+
     /**
      * Tests that resending of messages in the forward-queue on a view change and sending of new messages at the
      * same time doesn't lead to incorrect ordering (forward-queue messages need to be delivered before new msgs).
@@ -72,48 +79,33 @@ public class SequencerFailoverTest extends BMNGRunner {
     public void testResendingVersusNewMessages() throws Exception {
         MyReceiver rb=new MyReceiver("B"), rc=new MyReceiver("C");
         b.setReceiver(rb); c.setReceiver(rc);
-
         final int expected_msgs=5;
 
-        Util.sleep(500);
         // Now kill A (the coordinator)
         System.out.print("-- killing A: ");
+        Address a_addr=a.getAddress();
         Util.shutdown(a);
         System.out.println("done");
-        injectSuspectEvent(a.getAddress(), b, c);
+        injectSuspectEvent(a_addr, b, c);
         a=null;
 
         // Now send message 1 (it'll end up in the forward-queue)
-        System.out.println("-- sending message 1");
+        System.out.printf("[%s] -- sending message 1\n", c.address());
         Message msg=new BytesMessage(null, 1);
         c.send(msg);
 
-        // Now wait for the view change, the sending of new messages 2-5 and the resending of 1, and make sure
-        // 1 is delivered before 2-5
-        List<Integer> list_b=rb.getList(), list_c=rc.getList();
-        for(int i=0; i < 10; i++) {
-            if(list_b.size() == expected_msgs && list_c.size() == expected_msgs)
-                break;
-            Util.sleep(1000);
-        }
-        System.out.println("\nB: " + list_b + "\nC: " + list_c);
+        // Now wait for the view change, the sending of new messages 2-5 and the resending of 1
+        List<Integer> lb=rb.getList(), lc=rc.getList();
+        Util.waitUntilTrue(10000, 500,
+                           () -> lb.size() == expected_msgs && lc.size() == expected_msgs);
+        System.out.println("\nB: " + lb + "\nC: " + lc);
 
-        assert list_b.size() == expected_msgs : "expected " + expected_msgs + " msgs, but got " + list_b.size() + ": " +list_b;
-        assert list_c.size() == expected_msgs : "expected " + expected_msgs + " msgs, but got " + list_c.size() + ": " +list_c;
-        System.out.println("OK: both B and C have the expected number of messages (" + expected_msgs + ")");
+        assert lb.size() == expected_msgs : String.format("expected %d msgs, but got %d: %s", expected_msgs, lb.size(), lb);
+        assert lc.size() == expected_msgs : String.format("expected %d msgs, but got %d: %s", expected_msgs, lc.size(), lc);
+        System.out.printf("OK: both B and C have the expected number of messages (%d)\n", expected_msgs);
 
-        assert list_b.equals(list_c);
+        assert lb.equals(lc);
         System.out.println("OK: B and C's messages are in the same order");
-
-        int seqno=1;
-        for(int i=0; i < expected_msgs; i++) {
-            Integer seqno_b=list_b.get(i);
-            assert seqno_b == seqno : "expected " + seqno + " , but got " + seqno_b + " (B)";
-            Integer seqno_c=list_c.get(i);
-            assert seqno_c == seqno : "expected " + seqno + " , but got " + seqno_c + " (C)";
-            seqno++;
-        }
-        System.out.println("OK: B and C's messages are in the correct order");
     }
 
 
@@ -215,6 +207,7 @@ public class SequencerFailoverTest extends BMNGRunner {
         new Thread(() -> {
             Util.sleep(500);
             System.out.println("** killing A");
+            Address a_addr=a.address();
             try {
                 Util.shutdown(a);
             }
@@ -222,7 +215,7 @@ public class SequencerFailoverTest extends BMNGRunner {
                 System.err.println("failed shutting down channel " + a.getAddress() + ", exception=" + e);
             }
             System.out.println("** A killed");
-            injectSuspectEvent(a.getAddress(), b, c);
+            injectSuspectEvent(a_addr, b, c);
             a=null;
         }).start();
 

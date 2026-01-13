@@ -15,10 +15,10 @@ HELPER org.jgroups.tests.helpers.SequencerFailoverTestHelper
 AFTER WRITE flushing ALL
 BIND local_addr_name=org.jgroups.util.NameCache.get($0.local_addr);
      map:java.util.Map=$0.forward_table;
-     empty=map.isEmpty();
-     flushing=$0.flushing
-IF flushing && local_addr_name.equals("C") && !empty
-DO System.out.println("[byteman] --> sending new messages 2-5");
+     flushing=$0.flushing;
+     new_coord_name=org.jgroups.util.NameCache.get($1);
+IF flushing && local_addr_name.equals("C") && new_coord_name.equals("B")
+DO System.out.println("[byteman] --> sending new messages 2-5, new coord: " + new_coord_name);
    sendMessages($0, 2, 5);
 ENDRULE
 

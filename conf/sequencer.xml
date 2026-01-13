@@ -13,7 +13,6 @@
     <FD_SOCK2/>
     <FD_ALL3/>
     <VERIFY_SUSPECT/>
-    <BARRIER/>
     <pbcast.NAKACK2/>
     <UNICAST3/>
     <pbcast.STABLE/>

@@ -5,6 +5,7 @@ import org.jboss.byteman.rule.helper.Helper;
 import org.jgroups.BytesMessage;
 import org.jgroups.Message;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.Util;
 
 /**
  * @author Bela Ban
@@ -19,6 +20,7 @@ public class SequencerFailoverTestHelper extends Helper {
     // Do *NOT* make this method static, or else Byteman won't be able to find it!
     public void sendMessages(final Protocol prot, final int start, final int end) {
         final Thread sender=new Thread(() -> {
+            Util.sleep(500);
             for(int i=start; i <= end; i++) {
                 Message msg=new BytesMessage(null, i);
                 System.out.println("[" + prot.getValue("local_addr") + "] --> sending message " + i);
@@ -27,10 +29,5 @@ public class SequencerFailoverTestHelper extends Helper {
         });
         sender.setName("BytemanSenderThread");
         sender.start();
-        try {
-            sender.join(1000);
-        }
-        catch(InterruptedException e) {
-        }
     }
 }
