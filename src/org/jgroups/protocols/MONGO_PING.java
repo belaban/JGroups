@@ -9,6 +9,7 @@ import com.mongodb.client.model.Filters;
 import org.bson.Document;
 import org.jgroups.Address;
 import org.jgroups.PhysicalAddress;
+import org.jgroups.annotations.Property;
 import org.jgroups.protocols.relay.SiteUUID;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.NameCache;
@@ -18,14 +19,24 @@ import java.util.List;
 
 public class MONGO_PING extends JDBC_PING2 {
 
+    protected static final String CLUSTERNAME="clustername";
+    protected static final String NAME="name";
+    protected static final String IP="ip";
+    protected static final String ISCOORD="isCoord";
+
+
+    @Property(description="todo")
     protected String collectionName = "jgroups-apps";
 
-    public String getConnectionUrl() {
-        return connection_url;
-    }
-
+    @Override
     public MONGO_PING setConnectionUrl(String c) {
         this.connection_url = c;
+        return this;
+    }
+
+    public String getCollectionName() { return collectionName;}
+    public MONGO_PING setCollectionName(String collectionName) {
+        this.collectionName = collectionName;
         return this;
     }
 
@@ -35,7 +46,6 @@ public class MONGO_PING extends JDBC_PING2 {
 
     @Override
     public void init() throws Exception {
-
         var connString = new ConnectionString(connection_url);
         mongoClient = MongoClients.create(connString);
         mongoDb = mongoClient.getDatabase(connString.getDatabase());
@@ -79,10 +89,10 @@ public class MONGO_PING extends JDBC_PING2 {
             PhysicalAddress ip_addr = data.getPhysicalAddr();
             String ip = ip_addr.toString();
             collection.insertOne(new Document("_id", addr)
-                    .append("name", name)
-                    .append("clustername", clustername)
-                    .append("ip", ip)
-                    .append("isCoord", data.isCoord())
+                    .append(NAME, name)
+                    .append(CLUSTERNAME, clustername)
+                    .append(IP, ip)
+                    .append(ISCOORD, data.isCoord())
             );
         } finally {
             lock.unlock();
@@ -102,7 +112,7 @@ public class MONGO_PING extends JDBC_PING2 {
 
     @Override
     protected List<PingData> readFromDB(String cluster) throws Exception {
-        try (var iterator = collection.find().iterator()) {
+        try (var iterator = collection.find(Filters.eq(CLUSTERNAME, cluster)).iterator()) {
             reads++;
             List<PingData> retval = new LinkedList<>();
 
@@ -110,10 +120,10 @@ public class MONGO_PING extends JDBC_PING2 {
                 var doc = iterator.next();
                 String uuid = doc.get("_id", String.class);
                 Address addr = Util.addressFromString(uuid);
-                String name = doc.get("name", String.class);
-                String ip = doc.get("ip", String.class);
+                String name = doc.get(NAME, String.class);
+                String ip = doc.get(IP, String.class);
                 IpAddress ip_addr = new IpAddress(ip);
-                boolean coord = doc.get("isCoord", Boolean.class);
+                boolean coord = doc.get(ISCOORD, Boolean.class);
                 PingData data = new PingData(addr, true, name, ip_addr).coord(coord);
                 retval.add(data);
             }
