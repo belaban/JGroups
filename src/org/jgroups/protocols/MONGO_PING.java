@@ -74,7 +74,7 @@ public class MONGO_PING extends JDBC_PING2 {
         try(var mongoClient = getMongoConnection()){
             var collection = getCollection(mongoClient);
             try {
-                List<PingData> list = readFromDB(getClusterName());
+                List<PingData> list = readFromDB(mongoClient, getClusterName());
                 for (PingData data : list) {
                     Address addr = data.getAddress();
                     if (!local_view.containsMember(addr)) {
@@ -146,28 +146,32 @@ public class MONGO_PING extends JDBC_PING2 {
         //do nothing
     }
 
+    protected List<PingData> readFromDB(MongoClient mongoClient, String cluster) throws Exception {
+        var collection = getCollection(mongoClient);
+        try (var iterator = collection.find(eq(CLUSTERNAME, cluster)).iterator()) {
+            reads++;
+            List<PingData> retval = new LinkedList<>();
+
+            while (iterator.hasNext()) {
+                var doc = iterator.next();
+                String uuid = doc.get("_id", String.class);
+                Address addr = Util.addressFromString(uuid);
+                String name = doc.get(NAME, String.class);
+                String ip = doc.get(IP, String.class);
+                IpAddress ip_addr = new IpAddress(ip);
+                boolean coord = doc.get(ISCOORD, Boolean.class);
+                PingData data = new PingData(addr, true, name, ip_addr).coord(coord);
+                retval.add(data);
+            }
+
+            return retval;
+        }
+    }
+
     @Override
     protected List<PingData> readFromDB(String cluster) throws Exception {
         try (var mongoClient = getMongoConnection()) {
-            var collection = getCollection(mongoClient);
-            try (var iterator = collection.find(eq(CLUSTERNAME, cluster)).iterator()) {
-                reads++;
-                List<PingData> retval = new LinkedList<>();
-
-                while (iterator.hasNext()) {
-                    var doc = iterator.next();
-                    String uuid = doc.get("_id", String.class);
-                    Address addr = Util.addressFromString(uuid);
-                    String name = doc.get(NAME, String.class);
-                    String ip = doc.get(IP, String.class);
-                    IpAddress ip_addr = new IpAddress(ip);
-                    boolean coord = doc.get(ISCOORD, Boolean.class);
-                    PingData data = new PingData(addr, true, name, ip_addr).coord(coord);
-                    retval.add(data);
-                }
-
-                return retval;
-            }
+            return readFromDB(mongoClient, cluster);
         }
     }
 
