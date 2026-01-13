@@ -17,6 +17,9 @@ import org.jgroups.util.Util;
 import java.util.LinkedList;
 import java.util.List;
 
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.eq;
+
 public class MONGO_PING extends JDBC_PING2 {
 
     protected static final String CLUSTERNAME = "clustername";
@@ -67,7 +70,7 @@ public class MONGO_PING extends JDBC_PING2 {
 
     @Override
     protected void clearTable(String clustername) {
-        collection.deleteMany(Filters.empty());
+        collection.deleteMany(eq(CLUSTERNAME, clustername));
     }
 
     @Override
@@ -113,7 +116,7 @@ public class MONGO_PING extends JDBC_PING2 {
 
     @Override
     protected List<PingData> readFromDB(String cluster) throws Exception {
-        try (var iterator = collection.find(Filters.eq(CLUSTERNAME, cluster)).iterator()) {
+        try (var iterator = collection.find(eq(CLUSTERNAME, cluster)).iterator()) {
             reads++;
             List<PingData> retval = new LinkedList<>();
 
@@ -136,6 +139,6 @@ public class MONGO_PING extends JDBC_PING2 {
     @Override
     protected void delete(String clustername, Address addressToDelete) {
         String addr = Util.addressToString(addressToDelete);
-        collection.deleteOne(Filters.eq("_id", addr));
+        collection.deleteOne(and(eq("_id", addr), eq(CLUSTERNAME, clustername)));
     }
 }

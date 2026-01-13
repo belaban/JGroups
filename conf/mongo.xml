@@ -1,5 +1,5 @@
 <!--
-  JDBC_PING2 for Postgresql
+  MONGO_PING for mongo
 -->
 <config xmlns="urn:org:jgroups"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
