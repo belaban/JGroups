@@ -71,17 +71,20 @@ public class MONGO_PING extends JDBC_PING2 {
             return;
         }
         String cluster_name = getClusterName();
-        try {
-            List<PingData> list = readFromDB(getClusterName());
-            for (PingData data : list) {
-                Address addr = data.getAddress();
-                if (!local_view.containsMember(addr)) {
-                    addDiscoveryResponseToCaches(addr, data.getLogicalName(), data.getPhysicalAddr());
-                    delete(cluster_name, addr);
+        try(var mongoClient = getMongoConnection()){
+            var collection = getCollection(mongoClient);
+            try {
+                List<PingData> list = readFromDB(getClusterName());
+                for (PingData data : list) {
+                    Address addr = data.getAddress();
+                    if (!local_view.containsMember(addr)) {
+                        addDiscoveryResponseToCaches(addr, data.getLogicalName(), data.getPhysicalAddr());
+                        delete(collection, cluster_name, addr);
+                    }
                 }
+            } catch (Exception e) {
+                log.error(String.format("%s: failed reading from the DB", local_addr), e);
             }
-        } catch (Exception e) {
-            log.error(String.format("%s: failed reading from the DB", local_addr), e);
         }
     }
 
@@ -168,12 +171,22 @@ public class MONGO_PING extends JDBC_PING2 {
         }
     }
 
+    protected void delete(MongoCollection<Document> collection, String clustername, Address addressToDelete) {
+        lock.lock();
+        try {
+            String addr = Util.addressToString(addressToDelete);
+            collection.deleteOne(and(eq("_id", addr), eq(CLUSTERNAME, clustername)));
+        }
+       finally {
+            lock.unlock();
+        }
+    }
+
     @Override
     protected void delete(String clustername, Address addressToDelete) {
         try (var mongoClient = getMongoConnection()) {
             var collection = getCollection(mongoClient);
-            String addr = Util.addressToString(addressToDelete);
-            collection.deleteOne(and(eq("_id", addr), eq(CLUSTERNAME, clustername)));
+            delete(collection, clustername, addressToDelete);
         }
     }
 }
