@@ -7,13 +7,15 @@ import org.jgroups.util.Digest;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
-
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * This is the role of a regular member, which has successfully joined the cluster, but is not the coordinator
  */
 public class ParticipantGmsImpl extends ServerGmsImpl {
-    private final Collection<Address> suspected_mbrs=new LinkedHashSet<>();
+    // JGRP-2966: Concurrent collection for thread-safety. Snapshots used for consistent reads in compound operations.
+    private final Set<Address> suspected_mbrs=ConcurrentHashMap.newKeySet();
 
     public ParticipantGmsImpl(GMS g) {
         super(g);
@@ -85,19 +87,21 @@ public class ParticipantGmsImpl extends ServerGmsImpl {
                 leaving_mbrs.add(r.mbr);
         });
 
-        if(suspected_mbrs.isEmpty() && leaving_mbrs.isEmpty())
+        // Use snapshot of the concurrent collection to make atomic decision for isEmpty + wouldIBeCoordinator(..)
+        Set<Address> suspected_snapshot=new LinkedHashSet<>(suspected_mbrs);
+        if(suspected_snapshot.isEmpty() && leaving_mbrs.isEmpty())
             return;
 
-        if(wouldIBeCoordinator(leaving_mbrs, suspected_mbrs)) {
+        if(wouldIBeCoordinator(leaving_mbrs, suspected_snapshot)) {
             log.debug("%s: members are %s, coord=%s: I'm the new coordinator", gms.getAddress(), gms.members, gms.getAddress());
             gms.becomeCoordinator();
             Collection<Request> leavingOrSuspectedMembers=new LinkedHashSet<>();
             leaving_mbrs.forEach(mbr -> leavingOrSuspectedMembers.add(new Request(Request.LEAVE, mbr)));
-            suspected_mbrs.forEach(mbr -> {
+            suspected_mbrs.removeIf(mbr -> {
                 leavingOrSuspectedMembers.add(new Request(Request.SUSPECT, mbr));
                 gms.ack_collector.suspect(mbr);
+                return true;
             });
-            suspected_mbrs.clear();
             if(gms.isLeaving())
                 leavingOrSuspectedMembers.add(new Request(Request.COORD_LEAVE));
             gms.getViewHandler().add(leavingOrSuspectedMembers);
