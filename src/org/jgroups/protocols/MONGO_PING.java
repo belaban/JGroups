@@ -9,13 +9,19 @@ import com.mongodb.client.model.Filters;
 import org.bson.Document;
 import org.jgroups.Address;
 import org.jgroups.PhysicalAddress;
+import org.jgroups.View;
 import org.jgroups.annotations.Property;
 import org.jgroups.protocols.relay.SiteUUID;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.NameCache;
 import org.jgroups.util.Util;
+
+import java.sql.*;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.Executor;
 
 import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
@@ -45,22 +51,38 @@ public class MONGO_PING extends JDBC_PING2 {
         return this;
     }
 
-    protected MongoDatabase mongoDb;
-    protected MongoCollection<Document> collection;
-    protected MongoClient mongoClient;
-
-    @Override
-    public void init() throws Exception {
+    protected MongoClient getMongoConnection() {
         var connString = new ConnectionString(connection_url);
-        mongoClient = MongoClients.create(connString);
-        mongoDb = mongoClient.getDatabase(connString.getDatabase());
-        super.init();
+        return MongoClients.create(connString);
     }
 
+    protected MongoCollection<Document> getCollection(MongoClient client) {
+        var connString = new ConnectionString(connection_url);
+        var db = client.getDatabase(connString.getDatabase());
+        return db.getCollection(collection_name);
+    }
+
+    protected ConnectionString connectionString;
+
     @Override
-    public void stop() {
-        super.stop();
-        mongoClient.close();
+    protected void removeAllNotInCurrentView() {
+        View local_view = view;
+        if (local_view == null) {
+            return;
+        }
+        String cluster_name = getClusterName();
+        try {
+            List<PingData> list = readFromDB(getClusterName());
+            for (PingData data : list) {
+                Address addr = data.getAddress();
+                if (!local_view.containsMember(addr)) {
+                    addDiscoveryResponseToCaches(addr, data.getLogicalName(), data.getPhysicalAddr());
+                    delete(cluster_name, addr);
+                }
+            }
+        } catch (Exception e) {
+            log.error(String.format("%s: failed reading from the DB", local_addr), e);
+        }
     }
 
     @Override
@@ -70,7 +92,10 @@ public class MONGO_PING extends JDBC_PING2 {
 
     @Override
     protected void clearTable(String clustername) {
-        collection.deleteMany(eq(CLUSTERNAME, clustername));
+        try (var mongoClient = getMongoConnection()) {
+            var collection = getCollection(mongoClient);
+            collection.deleteMany(eq(CLUSTERNAME, clustername));
+        }
     }
 
     @Override
@@ -86,7 +111,8 @@ public class MONGO_PING extends JDBC_PING2 {
 
     protected void insert(PingData data, String clustername) {
         lock.lock();
-        try {
+        try (var mongoClient = getMongoConnection()) {
+            var collection = getCollection(mongoClient);
             Address address = data.getAddress();
             String addr = Util.addressToString(address);
             String name = address instanceof SiteUUID ? ((SiteUUID) address).getName() : NameCache.get(address);
@@ -105,8 +131,11 @@ public class MONGO_PING extends JDBC_PING2 {
 
     @Override
     protected void createSchema() {
-        mongoDb.createCollection(collection_name);
-        collection = mongoDb.getCollection(collection_name);
+        connectionString = new ConnectionString(connection_url);
+        try (var mongoClient = getMongoConnection()) {
+            var db = mongoClient.getDatabase(connectionString.getDatabase());
+            db.createCollection(collection_name);
+        }
     }
 
     @Override
@@ -116,29 +145,35 @@ public class MONGO_PING extends JDBC_PING2 {
 
     @Override
     protected List<PingData> readFromDB(String cluster) throws Exception {
-        try (var iterator = collection.find(eq(CLUSTERNAME, cluster)).iterator()) {
-            reads++;
-            List<PingData> retval = new LinkedList<>();
+        try (var mongoClient = getMongoConnection()) {
+            var collection = getCollection(mongoClient);
+            try (var iterator = collection.find(eq(CLUSTERNAME, cluster)).iterator()) {
+                reads++;
+                List<PingData> retval = new LinkedList<>();
 
-            while (iterator.hasNext()) {
-                var doc = iterator.next();
-                String uuid = doc.get("_id", String.class);
-                Address addr = Util.addressFromString(uuid);
-                String name = doc.get(NAME, String.class);
-                String ip = doc.get(IP, String.class);
-                IpAddress ip_addr = new IpAddress(ip);
-                boolean coord = doc.get(ISCOORD, Boolean.class);
-                PingData data = new PingData(addr, true, name, ip_addr).coord(coord);
-                retval.add(data);
+                while (iterator.hasNext()) {
+                    var doc = iterator.next();
+                    String uuid = doc.get("_id", String.class);
+                    Address addr = Util.addressFromString(uuid);
+                    String name = doc.get(NAME, String.class);
+                    String ip = doc.get(IP, String.class);
+                    IpAddress ip_addr = new IpAddress(ip);
+                    boolean coord = doc.get(ISCOORD, Boolean.class);
+                    PingData data = new PingData(addr, true, name, ip_addr).coord(coord);
+                    retval.add(data);
+                }
+
+                return retval;
             }
-
-            return retval;
         }
     }
 
     @Override
     protected void delete(String clustername, Address addressToDelete) {
-        String addr = Util.addressToString(addressToDelete);
-        collection.deleteOne(and(eq("_id", addr), eq(CLUSTERNAME, clustername)));
+        try (var mongoClient = getMongoConnection()) {
+            var collection = getCollection(mongoClient);
+            String addr = Util.addressToString(addressToDelete);
+            collection.deleteOne(and(eq("_id", addr), eq(CLUSTERNAME, clustername)));
+        }
     }
 }
