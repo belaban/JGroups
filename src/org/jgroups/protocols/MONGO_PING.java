@@ -52,8 +52,7 @@ public class MONGO_PING extends JDBC_PING2 {
     }
 
     protected MongoClient getMongoConnection() {
-        var connString = new ConnectionString(connection_url);
-        return MongoClients.create(connString);
+        return MongoClients.create(connectionString);
     }
 
     protected MongoCollection<Document> getCollection(MongoClient client) {
