@@ -321,9 +321,16 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
     }
 
     protected NioServer createServer(int[] bind_ports) {
+        ThreadFactory threadFactory=getThreadFactory();
+        if(threadFactory instanceof DefaultThreadFactory f && f.useVirtualThreads() && Runtime.version().feature() < 24) {
+            // With JDK < 24, the EPollSelectorImpl.doSelect keeps the virtual thread busy, preventing the carrier
+            // thread to be used by other virtual threads.
+            // It is a problem with systems with few CPUs. Can be removed after JGroups adopts JDK 24 as minimum version.
+            threadFactory=new LazyThreadFactory("jgroups", true, true).useVirtualThreads(false).log(log);
+        }
         for(int bind_port: bind_ports) {
             try {
-                return new NioServer(getThreadFactory(), getSocketFactory(), bind_addr, bind_port, bind_port,
+                return new NioServer(threadFactory, getSocketFactory(), bind_addr, bind_port, bind_port,
                                      external_addr, external_port, 0, "jgroups.nio.server.fd_sock");
             }
             catch(Exception ignored) {
