@@ -173,10 +173,11 @@ public class CoordGmsImpl extends ServerGmsImpl {
                              gms.getAddress(), Arrays.toString(join_digest.getNonSetMembers()));
             }
 
-            sendLeaveResponses(leaving_mbrs); // no-op if no leaving members
-
             // we don't need to send the digest to existing members: https://issues.redhat.com/browse/JGRP-1317
             gms.castViewChangeAndSendJoinRsps(new_view, null, new_view.getMembers(), new_mbrs, join_rsp);
+
+            // Defer sending leave response until other members have received the new view
+            sendLeaveResponses(leaving_mbrs); // no-op if no leaving members
         }
         finally {
             if(hasJoiningMembers)
