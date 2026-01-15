@@ -11,11 +11,13 @@ import org.jgroups.blocks.cs.Connection;
 import org.jgroups.blocks.cs.ConnectionListener;
 import org.jgroups.blocks.cs.Receiver;
 import org.jgroups.conf.AttributeType;
+import org.jgroups.protocols.pbcast.GMS;
 
 import java.net.InetAddress;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Predicate;
@@ -98,7 +100,6 @@ public abstract class BasicTCP extends TP implements Receiver, ConnectionListene
     };
 
     /* --------------------------------------------- Fields ------------------------------------------------------ */
-    
 
     protected BasicTCP() {
         super();        
@@ -217,7 +218,7 @@ public abstract class BasicTCP extends TP implements Receiver, ConnectionListene
             return;
         Address peer_ip=conn.peerAddress();
         Address peer=peer_ip != null? logical_addr_cache.getByValue((PhysicalAddress)peer_ip) : null;
-        if(peer != null && members.contains(peer) && connected) {
+        if(peer != null && members.contains(peer) && connected && Optional.ofNullable(stack.<GMS>findProtocol(GMS.class)).filter(Predicate.not(GMS::isLeaving)).isPresent()) {
             if(log.isDebugEnabled())
                 log.debug("%s: connection closed by peer %s (IP=%s), sending up a suspect event",
                           local_addr, peer, peer_ip);
