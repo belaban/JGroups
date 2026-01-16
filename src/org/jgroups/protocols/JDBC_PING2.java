@@ -197,7 +197,7 @@ public class JDBC_PING2 extends FILE_PING {
         }
         String cluster_name = getClusterName();
         try (var conn = getConnection()) {
-            List<PingData> list = readFromDB(getClusterName());
+            List<PingData> list = readFromDB(conn, getClusterName());
             for (PingData data : list) {
                 Address addr = data.getAddress();
                 if (!local_view.containsMember(addr)) {
@@ -208,6 +208,29 @@ public class JDBC_PING2 extends FILE_PING {
         } catch (Exception e) {
             log.error(String.format("%s: failed reading from the DB", local_addr), e);
         }
+    }
+
+    protected List<PingData> readFromDB(Connection conn, String cluster) throws Exception {
+       try(PreparedStatement ps=prepare(conn, select_all_pingdata_sql, TYPE_FORWARD_ONLY, CONCUR_UPDATABLE)) {
+           ps.setString(1, cluster);
+           if (log.isTraceEnabled())
+               log.trace("%s: SQL for reading: %s", local_addr, ps);
+           try (ResultSet resultSet = ps.executeQuery()) {
+               reads++;
+               List<PingData> retval = new LinkedList<>();
+               while (resultSet.next()) {
+                   String uuid = resultSet.getString(1);
+                   String name = resultSet.getString(2);
+                   String ip = resultSet.getString(3);
+                   boolean coord = resultSet.getBoolean(4);
+                   Address addr = Util.addressFromString(uuid);
+                   IpAddress ip_addr = new IpAddress(ip);
+                   PingData data = new PingData(addr, true, name, ip_addr).coord(coord);
+                   retval.add(data);
+               }
+               return retval;
+           }
+       }
     }
 
     protected void learnExistingAddresses() {
@@ -352,26 +375,8 @@ public class JDBC_PING2 extends FILE_PING {
     }
 
     protected List<PingData> readFromDB(String cluster) throws Exception {
-        try(Connection conn=getConnection();
-            PreparedStatement ps=prepare(conn, select_all_pingdata_sql, TYPE_FORWARD_ONLY, CONCUR_UPDATABLE)) {
-            ps.setString(1, cluster);
-            if(log.isTraceEnabled())
-                log.trace("%s: SQL for reading: %s", local_addr, ps);
-            try(ResultSet resultSet=ps.executeQuery()) {
-                reads++;
-                List<PingData> retval=new LinkedList<>();
-                while(resultSet.next()) {
-                    String uuid=resultSet.getString(1);
-                    String name=resultSet.getString(2);
-                    String ip=resultSet.getString(3);
-                    boolean coord=resultSet.getBoolean(4);
-                    Address addr=Util.addressFromString(uuid);
-                    IpAddress ip_addr=new IpAddress(ip);
-                    PingData data=new PingData(addr, true, name, ip_addr).coord(coord);
-                    retval.add(data);
-                }
-                return retval;
-            }
+        try(Connection conn=getConnection()){
+            return readFromDB(conn, cluster);
         }
     }
 
