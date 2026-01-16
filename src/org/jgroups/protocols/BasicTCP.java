@@ -152,6 +152,8 @@ public abstract class BasicTCP extends TP implements Receiver, ConnectionListene
     public boolean     enableSuspectEvents()            {return enable_suspect_events;}
     public BasicTCP    enableSuspectEvents(boolean b)   {enable_suspect_events=b; return this;}
 
+    public long        numSuspectEvents()               {return num_suspect_events.sum();}
+
 
 
     public void init() throws Exception {

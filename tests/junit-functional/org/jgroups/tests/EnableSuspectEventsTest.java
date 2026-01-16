@@ -1,31 +1,17 @@
 package org.jgroups.tests;
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-
-import org.jgroups.Event;
-import org.jgroups.Global;
-import org.jgroups.JChannel;
-import org.jgroups.Receiver;
-import org.jgroups.View;
-import org.jgroups.protocols.BasicTCP;
-import org.jgroups.protocols.FD_ALL3;
-import org.jgroups.protocols.FRAG4;
-import org.jgroups.protocols.MERGE3;
-import org.jgroups.protocols.NAKACK4;
-import org.jgroups.protocols.RED;
-import org.jgroups.protocols.TCP;
-import org.jgroups.protocols.TCPPING;
-import org.jgroups.protocols.UNICAST4;
-import org.jgroups.protocols.VERIFY_SUSPECT2;
+import org.jgroups.*;
+import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Tests {@link BasicTCP#enableSuspectEvents(boolean)} to reproduce https://issues.redhat.com/browse/JGRP-2968 / https://issues.redhat.com/browse/WFLY-21236
@@ -40,7 +26,7 @@ public class EnableSuspectEventsTest {
     private static final String CLUSTER_NAME = EnableSuspectEventsTest.class.getSimpleName();
     private static final int NUM_NODES = 3;
     private static final int BASE_PORT = 7800;
-    private static final int NUM_ITERATIONS = 2;
+    private static final int NUM_ITERATIONS = 10;
     private static final boolean FORCE_IPV6 = false;
 
     private JChannel[] channels;
@@ -127,10 +113,10 @@ public class EnableSuspectEventsTest {
             coordinator.disconnect();
 
             // Wait a bit for views to stabilize
-            Util.sleep(100);
+            Util.sleep(1000);
 
             // Check the views on the remaining nodes
-            System.out.printf("   Checking remaining nodes:\n");
+            System.out.print("   Checking remaining nodes:\n");
             boolean foundBug = false;
             for (JChannel ch : stableChannels) {
                 View view = ch.getView();
@@ -174,7 +160,7 @@ public class EnableSuspectEventsTest {
      * Stack mimicking WF stack - https://github.com/wildfly/wildfly/blob/39.0.0.Beta1/ee-feature-pack/galleon-shared/src/main/resources/feature_groups/jgroups.xml
      * With the matching defaults - https://github.com/wildfly/wildfly/blob/39.0.0.Beta1/clustering/jgroups/extension/src/main/resources/jgroups-defaults.xml
      */
-    private JChannel createChannel(int index, List<InetSocketAddress> initialHosts, InetAddress bindAddr) throws Exception {
+    private static JChannel createChannel(int index, List<InetSocketAddress> initialHosts, InetAddress bindAddr) throws Exception {
         String name = "node-" + index;
 
         TCP tcp = new TCP();
