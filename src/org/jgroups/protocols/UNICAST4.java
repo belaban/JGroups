@@ -3,6 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.Message;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Preview;
 import org.jgroups.annotations.Property;
 import org.jgroups.util.AverageMinMax;
 import org.jgroups.util.Buffer;
@@ -18,6 +19,7 @@ import static org.jgroups.conf.AttributeType.SCALAR;
  * @author Bela Ban
  * @since  5.4
  */
+@Preview
 public class UNICAST4 extends ReliableUnicast {
     @Property(description="Size of the send/receive buffers, in messages",writable=false)
     protected int capacity=2048;
