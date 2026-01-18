@@ -33,12 +33,6 @@ interface DbComponent extends AutoCloseable {
     void initDb() throws Exception;
 }
 
-class DBException extends Exception {
-    public DBException(String message) {
-        super(message);
-    }
-}
-
 /**
  * AbstractDbPing is an abstract extension of the {@link FILE_PING} discovery protocol.
  * It introduces database-centric logic for handling discovery data, utilizing custom
@@ -210,6 +204,13 @@ public abstract class AbstractDbPing extends FILE_PING {
         write(Collections.singletonList(coord_data), cluster_name);
     }
 
+    // It's possible that multiple threads in the same cluster node invoke this concurrently;
+    // Since delete and insert operations are not atomic
+    // (and there is no SQL standard way to do this without introducing a transaction)
+    // we need the synchronization or risk a duplicate insertion on same primary key.
+    // This synchronization should not be a performance problem as this is just a Discovery protocol.
+    // Many SQL dialects have some "insert or update" expression, but that would need
+    // additional configuration and testing on each database. See JGRP-1440
     @Override
     protected void write(List<PingData> list, String clustername) {
         lock.lock();
@@ -224,23 +225,6 @@ public abstract class AbstractDbPing extends FILE_PING {
             writes++;
         } catch (Exception e) {
             log.error("%s: failed writing to DB: %s", local_addr, e);
-        } finally {
-            lock.unlock();
-        }
-    }
-
-
-    // It's possible that multiple threads in the same cluster node invoke this concurrently;
-    // Since delete and insert operations are not atomic
-    // (and there is no SQL standard way to do this without introducing a transaction)
-    // we need the synchronization or risk a duplicate insertion on same primary key.
-    // This synchronization should not be a performance problem as this is just a Discovery protocol.
-    // Many SQL dialects have some "insert or update" expression, but that would need
-    // additional configuration and testing on each database. See JGRP-1440
-    protected void writeToDB(PingData data, String clustername) throws Exception {
-        lock.lock();
-        try (DbComponent dbComponent = getDbComponent()) {
-            dbComponent.writePingData(clustername, data);
         } finally {
             lock.unlock();
         }
