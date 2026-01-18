@@ -54,7 +54,6 @@ interface DbComponent extends AutoCloseable {
  * - Writing member information during initialization and view transitions.
  *
  * @author Bela Ban, rsobies
- * @since 5.4, 5.3.7
  */
 public abstract class AbstractDbPing extends FILE_PING {
     protected final Lock lock = new ReentrantLock();
