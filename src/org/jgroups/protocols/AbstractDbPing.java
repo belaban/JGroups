@@ -5,60 +5,56 @@ import org.jgroups.Event;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.View;
 import org.jgroups.annotations.ManagedOperation;
-import org.jgroups.annotations.Property;
-import org.jgroups.protocols.relay.SiteUUID;
-import org.jgroups.stack.IpAddress;
 import org.jgroups.util.NameCache;
 import org.jgroups.util.Responses;
-import org.jgroups.util.Util;
 
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
-import javax.sql.DataSource;
-import java.sql.*;
+import java.sql.SQLException;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static java.sql.ResultSet.CONCUR_UPDATABLE;
-import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
-
 /**
- * The DbComponent interface represents a component responsible for managing persistence of
+ * The DbComponent interface represents a component responsible for managing the persistence of
  * cluster-related information such as cluster members and discovery data. Implementations of
  * this interface handle reading, writing, and deletion of data related to cluster configurations.
+ *
+ * @author rsobies
  */
 interface DbComponent extends AutoCloseable {
 
     void delete(String clusterName, Address addressToDelete);
 
-    List<PingData> readPingData(String clusterName);
+    List<PingData> readPingData(String clusterName) throws Exception;
 
-    void writePingData(String clustername, PingData data);
+    void writePingData(String clustername, PingData data) throws Exception;
 
-    void createSchema();
+    void initDb() throws Exception;
+}
+
+class DBException extends Exception {
+    public DBException(String message) {
+        super(message);
+    }
 }
 
 /**
  * AbstractDbPing is an abstract extension of the {@link FILE_PING} discovery protocol.
  * It introduces database-centric logic for handling discovery data, utilizing custom
  * schema management and database operations to coordinate and manage cluster member information.
- *
+ * <p>
  * This class provides the capability to read, write, and remove data related to cluster members
  * from a persistent database storage using database components. Additionally, it overrides
  * certain behaviors to enhance the handling of cluster membership information during
  * coordinator transitions and view changes.
- *
+ * <p>
  * Subclasses are expected to define specific database operations such as schema creation
  * and database component initialization.
  * Responsibilities for subclass implementation:
  * - Provide the database-specific interactions by implementing the abstract {@code getDbComponent()} method.
  * - Implement the database schema creation logic in {@code createSchema()}.
- *
+ * <p>
  * This class handles scenarios such as:
  * - Discovery and removal of outdated or unnecessary entries in the database upon view change.
  * - Writing member information during initialization and view transitions.
@@ -69,19 +65,23 @@ interface DbComponent extends AutoCloseable {
 public abstract class AbstractDbPing extends FILE_PING {
     protected final Lock lock = new ReentrantLock();
 
-    protected abstract DbComponent getDbComponent();
+    protected abstract DbComponent getDbComponent() throws SQLException;
 
     @Override
     protected void createRootDir() {
         // do *not* create root file system (don't remove !)
     }
 
+    protected boolean schemaWasCreated = false;
+
     @Override
     public void init() throws Exception {
         super.init();
-        try(DbComponent dbComponent = getDbComponent()){
-            dbComponent.createSchema();
+        if (schemaWasCreated) return;
+        try (DbComponent dbComponent = getDbComponent()) {
+            dbComponent.initDb();
         }
+        schemaWasCreated = true;
     }
 
     @ManagedOperation(description = "Lists all rows in the database")
@@ -129,28 +129,27 @@ public abstract class AbstractDbPing extends FILE_PING {
         if (local_view == null) {
             return;
         }
-
+        lock.lock();
         try (var dbComponent = getDbComponent()) {
-            List<PingData> list = dbComponent.readPingData(cluster_name);
+            List<PingData> list = readFromDB(dbComponent, cluster_name);
             for (PingData data : list) {
                 Address addr = data.getAddress();
                 if (!local_view.containsMember(addr)) {
                     addDiscoveryResponseToCaches(addr, data.getLogicalName(), data.getPhysicalAddr());
-                    delete(dbComponent, cluster_name, addr);
+                    dbComponent.delete(cluster_name, addr);
                 }
             }
         } catch (Exception e) {
             log.error(String.format("%s: failed reading from the DB", local_addr), e);
         }
-    }
-
-    protected void delete(DbComponent dbComponent, String clusterName, Address addressToDelete) {
-        lock.lock();
-        try {
-            dbComponent.delete(clusterName, addressToDelete);
-        } finally {
+        finally {
             lock.unlock();
         }
+    }
+
+    protected List<PingData> readFromDB(DbComponent dbComponent, String cluster) throws Exception {
+        reads++;
+        return dbComponent.readPingData(cluster);
     }
 
     protected void learnExistingAddresses() {
@@ -188,11 +187,11 @@ public abstract class AbstractDbPing extends FILE_PING {
             sendDiscoveryResponse(local_addr, physical_addr, NameCache.get(local_addr), null, is_coord);
 
             try (DbComponent dbComponent = getDbComponent()) {
-                List<PingData> pingData = dbComponent.readPingData(cluster_name);
+                List<PingData> pingData = readFromDB(dbComponent, cluster_name);
                 writeLocalAddress();
                 while (pingData.stream().noneMatch(PingData::isCoord)) {
                     // Do a quick check if more nodes have arrived, to have a more complete list of nodes to start with.
-                    List<PingData> newPingData = dbComponent.readPingData(cluster_name);
+                    List<PingData> newPingData = readFromDB(dbComponent, cluster_name);
                     if (newPingData.stream().map(PingData::getAddress).collect(Collectors.toSet()).equals(pingData.stream().map(PingData::getAddress).collect(Collectors.toSet()))
                             || pingData.stream().anyMatch(PingData::isCoord)) {
                         break;
@@ -249,16 +248,19 @@ public abstract class AbstractDbPing extends FILE_PING {
 
     protected void delete(String clustername, Address addressToDelete) throws Exception {
         try (DbComponent dbComponent = getDbComponent()) {
-            delete(dbComponent, clustername, addressToDelete);
+            dbComponent.delete(clustername, addressToDelete);
         }
     }
 
     @Override
     protected void remove(String clustername, Address addr) {
+        lock.lock();
         try {
             delete(clustername, addr);
         } catch (Exception e) {
             log.error(String.format("%s: failed deleting %s from the table", local_addr, addr), e);
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -287,7 +289,7 @@ public abstract class AbstractDbPing extends FILE_PING {
 
     protected List<PingData> readFromDB(String cluster) throws Exception {
         try (DbComponent dbComponent = getDbComponent()) {
-            return dbComponent.readPingData(cluster);
+            return readFromDB(dbComponent, cluster);
         }
     }
 }
