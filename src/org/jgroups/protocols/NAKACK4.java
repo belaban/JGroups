@@ -5,6 +5,7 @@ import org.jgroups.EmptyMessage;
 import org.jgroups.Message;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Preview;
 import org.jgroups.annotations.Property;
 import org.jgroups.util.*;
 
@@ -24,6 +25,7 @@ import static org.jgroups.conf.AttributeType.SCALAR;
  * @author Bela Ban
  * @since  5.4
  */
+@Preview
 public class NAKACK4 extends ReliableMulticast {
     protected final AckTable          ack_table=new AckTable();
 

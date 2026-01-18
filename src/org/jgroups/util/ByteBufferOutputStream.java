@@ -13,7 +13,8 @@ import java.nio.ByteBuffer;
  * @since  3.5
  */
 public record ByteBufferOutputStream(ByteBuffer buf) implements DataOutput {
-    public void reset() {buf.clear();}
+    public void                   reset() {buf.clear();}
+    public ByteBufferOutputStream flip()  {buf.flip(); return this;}
 
     public void write(int b) throws IOException {
         buf.put((byte)b);

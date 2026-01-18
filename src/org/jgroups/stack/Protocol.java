@@ -62,6 +62,9 @@ public abstract class Protocol implements Lifecycle {
             "instances of it in the same stack",writable=false)
     protected short                id=ClassConfigurator.getProtocolId(getClass());
 
+    @Property(description="If true, log a warning if a protocol annotated with @Preview is used")
+    protected boolean              preview_warning=true;
+
     @ManagedAttribute(description="The local address of this member")
     protected Address              local_addr;
 
@@ -99,6 +102,8 @@ public abstract class Protocol implements Lifecycle {
     public <T extends Protocol> T  setDownProtocol(Protocol prot)    {this.down_prot=prot; return (T)this;}
     public <T extends Protocol> T  setProtocolStack(ProtocolStack s) {this.stack=s; return (T)this;}
     public String                  afterCreationHook()               {return after_creation_hook;}
+    public boolean                 previewWarning()                  {return preview_warning;}
+    public <T extends Protocol> T  previewWarning(boolean b)         {preview_warning=b; return (T)this;}
     public Log                     getLog()                          {return log;}
     public List<? extends Policy>  getPolicies()                     {return policies;}
 

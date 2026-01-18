@@ -18,10 +18,12 @@ public class ByteBufferInputStream extends InputStream implements DataInput {
 
     public ByteBuffer buf() {return buf;}
 
+    @Override
     public void readFully(byte[] b) throws IOException {
         readFully(b, 0, b.length);
     }
 
+    @Override
     public void readFully(byte[] b, int off, int len) throws IOException {
         try {
             buf.get(b, off, len);
@@ -30,17 +32,19 @@ public class ByteBufferInputStream extends InputStream implements DataInput {
         }
     }
 
-
+    @Override
     public int skipBytes(int n) throws IOException {
         int skip=Math.min(n, buf.limit() - buf.position());
         buf.position(buf.position() + skip);
         return skip;
     }
 
+    @Override
     public boolean readBoolean() throws IOException {
         return readByte() == 1;
     }
 
+    @Override
     public byte readByte() throws IOException {
         try {
             return buf.get();
@@ -49,17 +53,54 @@ public class ByteBufferInputStream extends InputStream implements DataInput {
         }
     }
 
+    @Override
     public int read() {
         return !buf.hasRemaining() ? -1 : (buf.get() & 0xff);
     }
 
-    public int readUnsignedByte() throws IOException {
-        int ch=readByte() & 0xff;
-        if(ch < 0)
-            throw new EOFException();
-        return ch;
+    @Override
+    public int read(byte[] b, int off, int len) {
+        if (!buf.hasRemaining()) {
+            return -1;
+        }
+
+        len = Math.min(len, buf.remaining());
+        buf.get(b, off, len);
+        return len;
     }
 
+    @Override
+    public int available() {
+        return buf.remaining();
+    }
+
+    @Override
+    public boolean markSupported() {
+        return true;
+    }
+
+    @Override
+    public synchronized void mark(int readlimit) {
+        buf.mark();
+    }
+
+    @Override
+    public synchronized void reset() {
+        try {
+            buf.reset();
+        } catch (java.nio.InvalidMarkException e) {}
+    }
+
+    @Override
+    public int readUnsignedByte() throws IOException {
+        try {
+            return buf.get() & 0xff;
+        } catch (BufferUnderflowException e) {
+            throw new EOFException();
+        }
+    }
+
+    @Override
     public short readShort() throws IOException {
         try {
             return buf.getShort();
@@ -68,13 +109,16 @@ public class ByteBufferInputStream extends InputStream implements DataInput {
         }
     }
 
+    @Override
     public int readUnsignedShort() throws IOException {
-        int retval=readShort() & 0xffff;
-        if(retval < 0)
+        try {
+            return buf.getShort() & 0xffff;
+        } catch (BufferUnderflowException e) {
             throw new EOFException();
-        return retval;
+        }
     }
 
+    @Override
     public char readChar() throws IOException {
         try {
             return buf.getChar();
@@ -83,6 +127,7 @@ public class ByteBufferInputStream extends InputStream implements DataInput {
         }
     }
 
+    @Override
     public int readInt() throws IOException {
         try {
             return buf.getInt();
@@ -91,6 +136,7 @@ public class ByteBufferInputStream extends InputStream implements DataInput {
         }
     }
 
+    @Override
     public long readLong() throws IOException {
         try {
             return buf.getLong();
@@ -99,6 +145,7 @@ public class ByteBufferInputStream extends InputStream implements DataInput {
         }
     }
 
+    @Override
     public float readFloat() throws IOException {
         try {
             return buf.getFloat();
@@ -107,6 +154,7 @@ public class ByteBufferInputStream extends InputStream implements DataInput {
         }
     }
 
+    @Override
     public double readDouble() throws IOException {
         try {
             return buf.getDouble();
@@ -115,7 +163,11 @@ public class ByteBufferInputStream extends InputStream implements DataInput {
         }
     }
 
+    @Override
     public String readLine() throws IOException {
+        if(!buf.hasRemaining())
+            return null;
+
         char[] lineBuffer=new char[128];
         char[] buffer= lineBuffer;
 
@@ -124,15 +176,27 @@ public class ByteBufferInputStream extends InputStream implements DataInput {
         int c;
 
         loop:	while (true) {
-            switch (c = readByte()) {
+            if (!buf.hasRemaining()) {
+                c = -1;
+                break;
+            }
+            
+            c = buf.get() & 0xff;
+            
+            switch (c) {
                 case -1:
                 case '\n':
                     break loop;
 
                 case '\r':
-                    int c2 = readByte();
-                    if ((c2 != '\n') && (c2 != -1))
-                        ;
+                    if (buf.hasRemaining()) {
+                        buf.mark();
+                        int c2 = buf.get() & 0xff;
+                        if (c2 != '\n') {
+                            // Not a line feed, reset to after the CR
+                            buf.reset();
+                        }
+                    }
                     break loop;
 
                 default:
@@ -152,6 +216,7 @@ public class ByteBufferInputStream extends InputStream implements DataInput {
         return String.copyValueOf(buffer, 0, offset);
     }
 
+    @Override
     public String readUTF() throws IOException {
         int utflen = readUnsignedShort();
         byte[] bytearr = new byte[utflen];
@@ -216,6 +281,7 @@ public class ByteBufferInputStream extends InputStream implements DataInput {
         return new String(chararr, 0, chararr_count);
     }
 
+    @Override
     public String toString() {
         return buf.toString();
     }

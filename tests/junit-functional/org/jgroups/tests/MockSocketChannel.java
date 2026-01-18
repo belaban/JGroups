@@ -1,4 +1,4 @@
-package org.jgroups.nio;
+package org.jgroups.tests;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -13,9 +13,7 @@ import java.util.Set;
  * A mock {@link java.nio.channels.SocketChannel} for testing
  * @author Bela Ban
  * @since  3.6.5
- * @deprecated This is a test class, moved to org.jgroups.tests
  */
-@Deprecated(since = "5.5.3", forRemoval = true)
 public class MockSocketChannel extends SocketChannel {
     protected int        bytes_to_write;
     protected ByteBuffer bytes_to_read;

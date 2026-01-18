@@ -113,9 +113,9 @@ public class NioTransport implements RtTransport {
                     if(receiver != null) {
                         buf.flip();
                         int offset=buf.hasArray()? buf.arrayOffset() + buf.position() : buf.position(), len=buf.remaining();
-                        if(!buf.isDirect())
+                        if(buf.hasArray())
                             receiver.receive(null, buf.array(), offset, len);
-                        else { // by default use a copy; but of course implementers of Receiver can override this
+                        else { // by default use a copy
                             byte[] tmp=new byte[len];
                             buf.get(tmp, 0, len);
                             receiver.receive(null, tmp, 0, len);

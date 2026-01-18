@@ -36,12 +36,12 @@ public class ByteArrayDataInputStream extends InputStream implements DataInput {
     public ByteArrayDataInputStream(ByteBuffer buffer) {
         int offset=buffer.hasArray()? buffer.arrayOffset() + buffer.position() : buffer.position(),
           len=buffer.remaining();
-        if(!buffer.isDirect()) {
+        if(buffer.hasArray()) {
             this.buf=buffer.array();
             this.pos=offset;
             this.limit=offset+len;
         }
-        else { // by default use a copy; but of course implementers of Receiver can override this
+        else { // by default use a copy
             byte[] tmp=new byte[len];
             buffer.get(tmp, 0, len);
             this.buf=tmp;
@@ -83,10 +83,12 @@ public class ByteArrayDataInputStream extends InputStream implements DataInput {
      * returned.
      * @return  the next byte of data, or {@code -1} if the end of the stream has been reached.
      */
+    @Override
     public int read() {
         return (pos < limit) ? (buf[pos++] & 0xff) : -1;
     }
 
+    @Override
     public int read(byte[] b, int off, int len) {
         Objects.requireNonNull(b);
 
@@ -138,10 +140,12 @@ public class ByteArrayDataInputStream extends InputStream implements DataInput {
         pos=marked_pos;
     }
 
+    @Override
     public void readFully(byte[] b) throws IOException {
         readFully(b, 0, b.length);
     }
 
+    @Override
     public void readFully(byte[] b, int off, int len) throws IOException {
         if (len < 0)
             throw new IndexOutOfBoundsException();
@@ -172,6 +176,7 @@ public class ByteArrayDataInputStream extends InputStream implements DataInput {
         return val;
     }
 
+    @Override
     public int skipBytes(int n) {
         int k = limit - pos;
         if (n < k)
@@ -180,6 +185,7 @@ public class ByteArrayDataInputStream extends InputStream implements DataInput {
         return k;
     }
 
+    @Override
     public boolean readBoolean() throws IOException {
         int ch=read();
         if(ch < 0)
@@ -187,6 +193,7 @@ public class ByteArrayDataInputStream extends InputStream implements DataInput {
         return ch != 0;
     }
 
+    @Override
     public byte readByte() throws IOException {
         int ch=read();
         if (ch < 0)
@@ -194,6 +201,7 @@ public class ByteArrayDataInputStream extends InputStream implements DataInput {
         return (byte)(ch);
     }
 
+    @Override
     public int readUnsignedByte() throws IOException {
         int ch=read();
         if (ch < 0)
@@ -201,10 +209,12 @@ public class ByteArrayDataInputStream extends InputStream implements DataInput {
         return ch;
     }
 
+    @Override
     public short readShort() throws IOException {
         return (short)readUnsignedShort();
     }
 
+    @Override
     public int readUnsignedShort() throws IOException {
         var index=pos;
         var array=buf;
@@ -214,10 +224,12 @@ public class ByteArrayDataInputStream extends InputStream implements DataInput {
         return ((array[index] & 0xFF) << 8) + (array[index + 1] & 0xFF);
     }
 
+    @Override
     public char readChar() throws IOException {
         return (char)readUnsignedShort();
     }
 
+    @Override
     public int readInt() throws IOException {
         var index=pos;
         if(index + 4 > limit)
@@ -226,6 +238,7 @@ public class ByteArrayDataInputStream extends InputStream implements DataInput {
         return (int)Util.INT_ARRAY_VIEW.get(buf, index);
     }
 
+    @Override
     public long readLong() throws IOException {
         var index=pos;
         if(index + 8 > limit)
@@ -234,14 +247,17 @@ public class ByteArrayDataInputStream extends InputStream implements DataInput {
         return (long)Util.LONG_ARRAY_VIEW.get(buf, index);
     }
 
+    @Override
     public float readFloat() throws IOException {
         return Float.intBitsToFloat(readInt());
     }
 
+    @Override
     public double readDouble() throws IOException {
         return Double.longBitsToDouble(readLong());
     }
 
+    @Override
     public String readLine() throws IOException {
         StringBuilder sb=new StringBuilder(35);
         int ch;
@@ -261,6 +277,7 @@ public class ByteArrayDataInputStream extends InputStream implements DataInput {
         return sb.toString();
     }
 
+    @Override
     public String readUTF() throws IOException {
         int utflen=readUnsignedShort();
         byte[] bytearr=new byte[utflen];
@@ -328,6 +345,7 @@ public class ByteArrayDataInputStream extends InputStream implements DataInput {
         return new String(chararr, 0, chararr_count);
     }
 
+    @Override
     public String toString() {
         return "pos=" + pos + " lim=" + limit + " cap=" + buf.length;
     }

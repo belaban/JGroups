@@ -4,6 +4,7 @@ import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.Version;
 import org.jgroups.nio.Buffers;
+import org.jgroups.nio.MessageReader;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.ByteArrayDataInputStream;
 import org.jgroups.util.ByteArrayDataOutputStream;
@@ -30,13 +31,14 @@ import static java.nio.channels.SelectionKey.*;
  * @since  3.6.5
  */
 public class NioConnection extends Connection {
-    protected SocketChannel       channel;      // the channel to the peer
+    protected final SocketChannel channel;      // the channel to the peer
     protected SelectionKey        key;
     protected final Buffers       send_buf;     // send messages via gathering writes
+    protected final MessageReader message_reader;
     protected final ByteBuffer    length_buf=ByteBuffer.allocate(Integer.BYTES); // reused: send the length of the next buf
     protected boolean             copy_on_partial_write=true;
     protected int                 partial_writes; // number of partial writes (write which did not write all bytes)
-    protected Buffers             recv_buf=new Buffers(4).add(ByteBuffer.allocate(cookie.length)); //new Buffers(2).add(ByteBuffer.allocate(cookie.length));
+    protected Buffers             peer_addr_recv_buf;
 
 
 
@@ -51,7 +53,7 @@ public class NioConnection extends Connection {
         channel.configureBlocking(false);
         setSocketParameters(channel.socket());
         last_access=getTimestamp(); // last time a message was sent or received (ns)
-        recv_buf.maxLength(server.getMaxLength());
+        message_reader=new MessageReader(channel, 1024, server.useDirectMemory()).maxLength(server.getMaxLength());
     }
 
     public NioConnection(SocketChannel channel, NioBaseServer server) throws Exception {
@@ -60,10 +62,13 @@ public class NioConnection extends Connection {
         setSocketParameters(this.channel.socket());
         channel.configureBlocking(false);
         send_buf=new Buffers(server.maxSendBuffers() *2); // space for actual bufs and length bufs!
-        this.peer_addr=server.usePeerConnections()? null /* read by first receive() */
-          : new IpAddress((InetSocketAddress)channel.getRemoteAddress());
+        if (server.usePeerConnections()) {
+            peer_addr_recv_buf=new Buffers(4).add(ByteBuffer.allocate(cookie.length));
+        } else {
+            peer_addr=new IpAddress((InetSocketAddress)channel.getRemoteAddress());
+        }
+        message_reader=new MessageReader(channel, 1024, server.useDirectMemory()).maxLength(server.getMaxLength());
         last_access=getTimestamp(); // last time a message was sent or received (ns)
-        recv_buf.maxLength(server.getMaxLength());
     }
 
     @Override
@@ -210,12 +215,12 @@ public class NioConnection extends Connection {
         ByteBuffer msg;
         Receiver   receiver=server.receiver();
 
-        if(peer_addr == null && server.usePeerConnections() && (peer_addr=readPeerAddress()) != null) {
-            recv_buf=new Buffers(2).add(ByteBuffer.allocate(Global.INT_SIZE), null).maxLength(server.max_length);
+        if(peer_addr == null && (peer_addr=readPeerAddress()) != null) {
+            peer_addr_recv_buf=null;
             server.addConnection(peer_addr, this);
             return true;
         }
-        if((msg=recv_buf.readLengthAndData(channel)) == null)
+        if((msg=message_reader.readMessage()) == null)
             return false;
         if(receiver != null)
             receiver.receive(peer_addr, msg);
@@ -254,9 +259,9 @@ public class NioConnection extends Connection {
         try {remote=channel != null? (InetSocketAddress)channel.getRemoteAddress() : null;} catch(Throwable t) {}
         String loc=local == null ? "n/a" : local.getHostString() + ":" + local.getPort(),
           rem=remote == null? "n/a" : remote.getHostString() + ":" + remote.getPort();
-        return String.format("<%s --> %s> (%d secs old) [%s] [recv_buf: %d]",
+        return String.format("<%s --> %s> (%d secs old) [%s] send_buf: %s, message_reader: %s",
                              loc, rem, TimeUnit.SECONDS.convert(getTimestamp() - last_access, TimeUnit.NANOSECONDS),
-                             status(), recv_buf.get(1) != null? recv_buf.get(1).capacity() : 0);
+                             status(), send_buf, message_reader);
     }
 
     @Override
@@ -311,9 +316,9 @@ public class NioConnection extends Connection {
     }
 
     protected Address readPeerAddress() throws Exception {
-        while(recv_buf.read(channel)) {
-            int current_position=recv_buf.position()-1;
-            ByteBuffer buf=recv_buf.get(current_position);
+        while(peer_addr_recv_buf.read(channel)) {
+            int current_position=peer_addr_recv_buf.position()-1;
+            ByteBuffer buf=peer_addr_recv_buf.get(current_position);
             if(buf == null)
                 return null;
             buf.flip();
@@ -323,18 +328,18 @@ public class NioConnection extends Connection {
                     if(!Arrays.equals(cookie, cookie_buf))
                         throw new IOException(String.format("%s: readPeerAddress(): cookie %s sent by %s does not match own cookie; terminating connection",
                                                             server.localAddress(), Util.byteArrayToHexString(cookie_buf), channel.getRemoteAddress()));
-                    recv_buf.add(ByteBuffer.allocate(Global.SHORT_SIZE));
+                    peer_addr_recv_buf.add(ByteBuffer.allocate(Global.SHORT_SIZE));
                     break;
                 case 1:      // version
                     short version=buf.getShort();
                     if(!Version.isBinaryCompatible(version))
                         throw new IOException(String.format("%s: readPeerAddress(): packet from %s has different version (%s) from ours (%s); discarding it",
                                                             server.localAddress(), channel.getRemoteAddress(), Version.print(version), Version.printVersion()));
-                    recv_buf.add(ByteBuffer.allocate(Global.SHORT_SIZE));
+                    peer_addr_recv_buf.add(ByteBuffer.allocate(Global.SHORT_SIZE));
                     break;
                 case 2:      // length of address
                     short addr_len=buf.getShort();
-                    recv_buf.add(ByteBuffer.allocate(addr_len));
+                    peer_addr_recv_buf.add(ByteBuffer.allocate(addr_len));
                     break;
                 case 3:      // address
                     byte[] addr_buf=getBuffer(buf);
@@ -343,7 +348,7 @@ public class NioConnection extends Connection {
                     addr.readFrom(in);
                     return addr;
                 default:
-                    throw new IllegalStateException(String.format("position %d is invalid", recv_buf.position()));
+                    throw new IllegalStateException(String.format("position %d is invalid", peer_addr_recv_buf.position()));
             }
         }
         return null;
@@ -357,13 +362,8 @@ public class NioConnection extends Connection {
 
 
     protected ByteBuffer makeLengthBuffer(int length) {
-        // Workaround for JDK8 compatibility
-        // clear() returns java.nio.Buffer in JDK8, but java.nio.ByteBuffer since JDK9.
-        ((java.nio.Buffer)length_buf).clear(); // buf was used before to write, so reset it again
+        length_buf.clear(); // buf was used before to write, so reset it again
         length_buf.putInt(0, length); // absolute put; doesn't move position or limit
-
-
-        // ((java.nio.Buffer)length_buf).clear(); // to read from the correct offset (0)
         return length_buf;
     }
 

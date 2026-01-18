@@ -3,7 +3,6 @@ package org.jgroups.tests;
 import org.jgroups.Global;
 import org.jgroups.Version;
 import org.jgroups.nio.Buffers;
-import org.jgroups.nio.MockSocketChannel;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.ByteArrayDataInputStream;
 import org.jgroups.util.ByteArrayDataOutputStream;

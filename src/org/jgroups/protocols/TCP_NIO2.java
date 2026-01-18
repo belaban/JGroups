@@ -39,6 +39,9 @@ public class TCP_NIO2 extends BasicTCP {
       "until it terminates. New messages will start a new reader",type=AttributeType.TIME)
     protected long    reader_idle_time=5000;
 
+    @Property(description="When true, direct bytebuffers are used for reading messages, otherwise heap-based ones")
+    protected boolean use_direct_memory=true;
+
 
     public TCP_NIO2() {}
 
@@ -50,6 +53,9 @@ public class TCP_NIO2 extends BasicTCP {
 
     public long     getReaderIdleTime() {return reader_idle_time;}
     public TCP_NIO2 setReaderIdleTime(long r) {this.reader_idle_time=r; return this;}
+
+    public boolean  useDirectMemory()          {return use_direct_memory;}
+    public TCP_NIO2 useDirectMemory(boolean b) {this.use_direct_memory=b; return this;}
 
     @ManagedAttribute
     public int getOpenConnections() {return server.getNumConnections();}

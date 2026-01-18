@@ -173,6 +173,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
                              gms.getAddress(), Arrays.toString(join_digest.getNonSetMembers()));
             }
 
+            // We need to send the LEAVE-RSP first: https://github.com/belaban/JGroups/pull/978
             sendLeaveResponses(leaving_mbrs); // no-op if no leaving members
 
             // we don't need to send the digest to existing members: https://issues.redhat.com/browse/JGRP-1317
