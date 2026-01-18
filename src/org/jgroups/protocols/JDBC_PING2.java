@@ -84,7 +84,7 @@ public class JDBC_PING2 extends AbstractDbPing {
     protected DataSource dataSource;
 
     @Override
-    protected DbComponent getDbComponent() throws SQLException {
+    protected DbComponent getDbComponent() throws Exception{
 
         return new DbComponent() {
             private final Connection connection = getConnection();

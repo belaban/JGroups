@@ -58,7 +58,7 @@ interface DbComponent extends AutoCloseable {
 public abstract class AbstractDbPing extends FILE_PING {
     protected final Lock lock = new ReentrantLock();
 
-    protected abstract DbComponent getDbComponent() throws SQLException;
+    protected abstract DbComponent getDbComponent() throws Exception;
 
     @Override
     protected void createRootDir() {
