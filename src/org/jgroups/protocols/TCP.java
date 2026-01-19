@@ -168,8 +168,8 @@ public class TCP extends BasicTCP {
     
     public void stop() {
         if(log.isDebugEnabled()) log.debug("%s: closing sockets and stopping threads", local_addr);
-        super.stop();
         Util.close(srv); //not needed, but just in case
+        super.stop();
     }
 
 
@@ -180,12 +180,11 @@ public class TCP extends BasicTCP {
     }
 
     protected void handleDisconnect() {
+        if(log.isDebugEnabled()) log.debug("%s: server closed", local_addr);
         super.handleDisconnect();
         this.connected=false;
         srv.stop();
-    }   
-
-
+    }
 
     protected PhysicalAddress getPhysicalAddress() {
         return srv != null? (PhysicalAddress)srv.localAddress() : null;

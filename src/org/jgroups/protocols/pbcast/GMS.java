@@ -355,6 +355,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
 
     public void becomeCoordinator() {
+        log.info("%s: become the coordinator", local_addr);
         CoordGmsImpl tmp=(CoordGmsImpl)impls.get(COORD);
         if(tmp == null) {
             tmp=new CoordGmsImpl(this);
@@ -372,6 +373,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
 
     public void becomeParticipant() {
+        log.info("%s: become the participant", local_addr);
         ParticipantGmsImpl tmp=(ParticipantGmsImpl)impls.get(PART);
 
         if(tmp == null) {
@@ -388,6 +390,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     }
 
     public void becomeClient() {
+        log.info("%s: become the client", local_addr);
         ClientGmsImpl tmp=(ClientGmsImpl)impls.get(CLIENT);
         if(tmp == null) {
             tmp=new ClientGmsImpl(this);

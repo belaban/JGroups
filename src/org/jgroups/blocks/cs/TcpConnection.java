@@ -13,6 +13,7 @@ import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSocket;
 import java.io.*;
+import java.lang.System.Logger;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -28,13 +29,13 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * @since  3.6.5
  */
 public class TcpConnection extends Connection {
+    protected long                createdTimestamp;
     protected final Socket        sock; // socket to/from peer (result of srv_sock.accept() or new Socket())
-    protected OutputStream        out;
+    protected DataOutputStream    out;
     protected DataInputStream     in;
     protected volatile Receiver   receiver;
     protected final AtomicInteger writers=new AtomicInteger(0); // to determine the last writer to flush
     protected volatile boolean    connected;
-    protected final byte[]        length_buf=new byte[Integer.BYTES]; // used to write the length of the data
     protected boolean             use_lock_to_send=true; // e.g. a single sender doesn't need to acquire the send_lock
 
     /** Creates a connection to a remote peer, use {@link #connect(Address)} to connect */
@@ -48,6 +49,7 @@ public class TcpConnection extends Connection {
         last_access=getTimestamp(); // last time a message was sent or received (ns)
         if(sock instanceof SSLSocket) // https://issues.redhat.com/browse/JGRP-2748
             sock.setSoLinger(true, 0);
+        this.createdTimestamp = System.nanoTime();
     }
 
     /** Called by {@link TcpServer.Acceptor#handleAccept(Socket)} */
@@ -65,6 +67,7 @@ public class TcpConnection extends Connection {
         last_access=getTimestamp(); // last time a message was sent or received (ns)
         if(sock instanceof SSLSocket) // https://issues.redhat.com/browse/JGRP-2748
             sock.setSoLinger(true, 0);
+        this.createdTimestamp = this.in.readLong();
     }
 
     public boolean                  useLockToSend() {return use_lock_to_send;}
@@ -102,14 +105,64 @@ public class TcpConnection extends Connection {
             this.in=createDataInputStream(sock.getInputStream());
             if(send_local_addr)
                 sendLocalAddress(server.localAddress());
-            // needs to be at the end or else isConnected() will return this connection and threads can start sending
-            // even though we haven't yet sent the local address and waited for the ack (if use_acks==true)
-            connected=sock.isConnected();
+            this.out.writeLong(createdTimestamp);
+            this.out.flush();
         }
         catch(Exception t) {
             Util.close(this.sock);
             connected=false;
             throw t;
+        }
+    }
+
+    @Override
+    public long getCreatedTimestamp() {
+        return createdTimestamp;
+    }
+
+    @Override
+    public void ack() {
+        try {
+            // a bit ugly for now
+            byte []ok = new byte[] {'o', 'k'};
+            this.out.write(ok);
+            this.out.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void nack() {
+        try {
+            // a bit ugly for now
+            byte []ok = new byte[] {'k', 'o'};
+            this.out.write(ok);
+            this.out.flush();
+        } catch(IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void waitForAck() {
+        try {
+            // a bit ugly for now
+            byte[] ok = new byte[2];
+            this.in.read(ok);
+            if (Arrays.equals(new byte[] { 'o', 'k' }, ok)) {
+                // needs to be at the end or else isConnected() will return this connection and threads can start sending
+                // even though we haven't yet sent the local address and waited for the ack (if use_acks==true)
+                connected = sock.isConnected();
+                rejected = false;
+            } else {
+                rejected = true;
+                connected = false;
+                Util.close(this.sock);
+            }
+        } catch(Exception t) {
+            Util.close(this.sock);
+            connected=false;
         }
     }
 
@@ -160,10 +213,14 @@ public class TcpConnection extends Connection {
 
     @GuardedBy("send_lock")
     protected void doSend(byte[] data, int offset, int length, boolean flush) throws Exception {
+        byte[] length_buf=new byte[Integer.BYTES]; // used to write the length of the data
         Bits.writeInt(length, length_buf, 0); // write the length of the data buffer first
-        out.write(length_buf, 0, length_buf.length);
-        out.write(data, offset, length);
-        if(flush)
+
+        ByteArrayOutputStream array = new ByteArrayOutputStream();
+        array.writeBytes(length_buf);
+        array.write(data, offset, length);
+        out.write(array.toByteArray());
+        if (flush)
             out.flush();
     }
 
@@ -175,9 +232,9 @@ public class TcpConnection extends Connection {
         }
     }
 
-    protected OutputStream createDataOutputStream(OutputStream out) {
+    protected DataOutputStream createDataOutputStream(OutputStream out) {
         int size=((TcpBaseServer)server).getBufferedOutputStreamSize();
-        return size == 0? out : new BufferedOutputStream(out, size);
+        return new DataOutputStream(size == 0? out : new BufferedOutputStream(out, size));
     }
 
     protected DataInputStream createDataInputStream(InputStream in) {
@@ -235,6 +292,7 @@ public class TcpConnection extends Connection {
      * match my own cookie, otherwise the connection will be refused
      */
     protected Address readPeerAddress(Socket client_sock) throws Exception {
+
         int timeout=client_sock.getSoTimeout();
         client_sock.setSoTimeout(((TcpBaseServer)server).peerAddressReadTimeout());
 
@@ -281,6 +339,7 @@ public class TcpConnection extends Connection {
         }
 
         public Receiver stop() {
+            recv.interrupt();
             receiving=false;
             return this;
         }
@@ -296,22 +355,38 @@ public class TcpConnection extends Connection {
                     updateLastAccessed();
                 }
             }
-            catch(EOFException | SocketException ex) {
-                ; // regular use case when a peer closes its connection - we don't want to log this as exception
+            catch (InterruptedException e) {
+                server.log.debug("%s: was interrupted %s", server.local_addr, peer_addr);
             }
-            catch(Exception e) {
-                if (e instanceof SSLException && e.getMessage().contains("Socket closed")) {
-                    ; // regular use case when a peer closes its connection - we don't want to log this as exception
-                }
-                else if (e instanceof SSLHandshakeException && e.getCause() instanceof EOFException) {
+            catch(EOFException e) {
+                ; // regular use case when a peer closes its connection - we don't want to log this as exception
+                server.log.debug("%s: end of stream %s", server.local_addr, peer_addr);
+            }
+            catch(SocketException ex) {
+                ; // socket has been closed
+                server.log.debug("%s: closed socket %s", server.local_addr, peer_addr);
+            }
+            catch(SSLHandshakeException e) {
+                server.log.debug("%s: ssl handshake problem %s", server.local_addr, peer_addr);
+                if (e.getCause() instanceof EOFException) {
                     ; // Ignore SSL handshakes closed early (usually liveness probes)
                 }
-                else {
-                    if(server.logDetails())
-                        server.log.warn("failed handling message", e);
-                    else
-                        server.log.warn("failed handling message: " + e);
+            }
+            catch (SSLException e) {
+                server.log.debug("%s: ssl general exception %s", server.local_addr, peer_addr);
+                if (e.getMessage().contains("Socket closed")) {
+                    ; // regular use case when a peer closes its connection - we don't want to log this as exception
                 }
+            }
+            catch(IOException e) {
+                ; // the stream has been closed and the contained input stream does not support reading after close, or another I/O error occurs.
+                server.log.debug("%s: the input stream not support reading after close %s", server.local_addr, peer_addr);
+            }
+            catch(Exception e) {
+                if(server.logDetails())
+                    server.log.warn("%s: failed handling message for %s with exception message %s", server.local_addr, TcpConnection.this, e);
+                else
+                    server.log.warn("%s: failed handling message for %s with exception message %s", server.local_addr, TcpConnection.this, e);
             }
             finally {
                 server.notifyConnectionClosed(TcpConnection.this);
@@ -335,6 +410,7 @@ public class TcpConnection extends Connection {
     @Override
     public String status() {
         if(sock == null)  return "n/a";
+        if(isRejected())  return "rejected";
         if(isClosed())    return "closed";
         if(isConnected()) return "connected";
         return                   "open";
@@ -353,13 +429,22 @@ public class TcpConnection extends Connection {
     }
 
     @Override public void close() throws IOException {
-        Util.close(sock); // fix for https://issues.redhat.com/browse/JGRP-2350
+        if (!connected) {
+            return;
+        }
+        try {
+            this.out.flush();
+        } catch (Exception e) {
+            ; // do nothing
+        }
+        connected=false;
         Receiver r=receiver;
         if(r != null) {
             r.stop();
             receiver=null;
         }
         Util.close(out,in);
-        connected=false;
+        Util.close(sock); // fix for https://issues.redhat.com/browse/JGRP-2350
+        server.log.info("%s: TcpConnetion::close %s", server.local_addr, this);
     }
 }

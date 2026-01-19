@@ -227,7 +227,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
             return;
         if(addSuspects(mbrs)) {
             startTimer(); // start timer before we send out are you dead messages
-            log.trace("verifying that %s %s dead", mbrs, mbrs.size() == 1? "is" : "are");
+            log.info("verifying that %s %s dead", mbrs, mbrs.size() == 1? "is" : "are");
         }
         for(Address mbr: mbrs) {
             for(int i=0; i < num_msgs; i++) {

@@ -395,6 +395,7 @@ public class JChannel implements Closeable {
     public JChannel disconnect() {
         lock.lock();
         try {
+            log.debug("%s: disconnected started", local_addr);
             switch(state) {
                 case OPEN:
                 case CLOSED:
@@ -417,6 +418,7 @@ public class JChannel implements Closeable {
                 default:
                     throw new IllegalStateException("state " + state + " unknown");
             }
+            log.debug("%s: disconnected completed", local_addr);
             return this;
         }
         finally {

@@ -61,7 +61,7 @@ public class TcpServerTest {
                     client.send(array, 0, array.length);
                     total+=array.length;
                     System.out.printf("- wrote %d bytes\n", total);
-                    timestamp=System.currentTimeMillis();
+                    createdTimestamp=System.currentTimeMillis();
                 }
             }
             catch(Exception e) {
