@@ -50,8 +50,8 @@ public class FILE_PING extends Discovery {
       "disk (if true). JIRA: https://issues.redhat.com/browse/JGRP-2288")
     protected boolean write_data_on_find;
 
-    @Property(description = "If set, a shutdown hook is registered with the JVM to remove the local address "
-      + "from the store. Default is true", writable = false)
+    @Property(description = "If true, a shutdown hook is registered with the JVM to remove the local address "
+      + "from the store. Default is true.", writable = false)
     protected boolean register_shutdown_hook = true;
 
     @Property(description="Change the backend store when the view changes. If off, then the file is only changed on " +
