@@ -34,6 +34,17 @@ public class SizeCountingInputStreamTest {
         assert in.position() == buf.length;
     }
 
+    public void testReadSingle0Value() throws IOException {
+        byte[] array={'b', 0, 1, 2};
+        SizeCountingInputStream in=new SizeCountingInputStream(new ByteArrayDataInputStream(array));
+        int pos=0;
+        for(int expected: array) {
+            int b=in.read();
+            assert b == expected;
+            assert in.position() == ++pos;
+        }
+    }
+
     public void testReadByteArray() throws IOException {
         byte[] tmp=new byte[5];
         SizeCountingInputStream in=new SizeCountingInputStream(input);

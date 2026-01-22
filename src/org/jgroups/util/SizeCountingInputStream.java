@@ -22,10 +22,21 @@ public class SizeCountingInputStream extends InputStream {
     public SizeCountingInputStream position(int pos) {this.position=pos; return this;}
 
     @Override
+    public int available() throws IOException {
+        return in.available();
+    }
+
+    @Override
+    public void close() throws IOException {
+        Util.close(in);
+    }
+
+    @Override
     public int read() throws IOException {
         int b=in.read();
-        if(b > 0)
-            position++;
+        if(b == -1)
+            return b;
+        position++;
         return b;
     }
 
