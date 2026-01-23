@@ -8,7 +8,6 @@ import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.util.NameCache;
 import org.jgroups.util.Responses;
 
-import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
@@ -216,6 +215,7 @@ public abstract class AbstractDbPing extends FILE_PING {
         try (DbComponent dbComponent = getDbComponent()) {
             for (PingData data : list) {
                 try {
+                    dbComponent.delete(clustername, data.getAddress());
                     dbComponent.writePingData(clustername, data);
                 } catch (Exception e) {
                     log.error("%s: failed writing to DB: %s", local_addr, e);

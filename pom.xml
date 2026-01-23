@@ -139,11 +139,11 @@
                 </includes>
             </resource>
             <resource>
-               <directory>${project.basedir}</directory>
-               <includes>
-                  <include>LICENSE</include>
-                  <include>README</include>
-               </includes>
+                <directory>${project.basedir}</directory>
+                <includes>
+                    <include>LICENSE</include>
+                    <include>README</include>
+                </includes>
             </resource>
         </resources>
         <testResources>
@@ -229,44 +229,44 @@
                     </rules>
                 </configuration>
             </plugin>
-           <plugin>
-              <groupId>org.codehaus.mojo</groupId>
-              <artifactId>build-helper-maven-plugin</artifactId>
-              <version>3.6.1</version>
-              <executions>
-                 <execution>
-                    <id>add-source</id>
-                    <phase>validate</phase>
-                    <goals>
-                       <goal>add-source</goal>
-                    </goals>
-                    <configuration>
-                       <sources>
-                          <!-- These tests have to go in the main jar -->
-                          <source>tests/other</source>
-                          <source>tests/perf</source>
-                       </sources>
-                    </configuration>
-                 </execution>
-                 <execution>
-                    <id>add-test-source</id>
-                    <phase>validate</phase>
-                    <goals>
-                       <goal>add-test-source</goal>
-                    </goals>
-                    <configuration>
-                       <sources>
-                          <source>tests/byteman</source>
-                          <source>tests/junit</source>
-                          <source>tests/junit-functional</source>
-                          <!-- tests/other and tests/perf are included in the normal sources -->
-                          <source>tests/stress</source>
-                       </sources>
-                    </configuration>
-                 </execution>
-              </executions>
-           </plugin>
-           <plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.6.1</version>
+                <executions>
+                    <execution>
+                        <id>add-source</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <!-- These tests have to go in the main jar -->
+                                <source>tests/other</source>
+                                <source>tests/perf</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>add-test-source</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>add-test-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>tests/byteman</source>
+                                <source>tests/junit</source>
+                                <source>tests/junit-functional</source>
+                                <!-- tests/other and tests/perf are included in the normal sources -->
+                                <source>tests/stress</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <artifactId>maven-antrun-plugin</artifactId>
                 <executions>
                     <execution>
@@ -300,9 +300,9 @@
             </plugin>
             <!-- Make sure we generate src jars too -->
             <plugin>
-               <groupId>org.apache.maven.plugins</groupId>
-               <artifactId>maven-source-plugin</artifactId>
-               <inherited>true</inherited>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <inherited>true</inherited>
                 <configuration>
                     <excludes>
                         <exclude>
