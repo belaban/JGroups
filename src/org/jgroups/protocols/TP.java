@@ -243,6 +243,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             msg_processing_policy=new MaxOneThreadPerSender();
         else if(policy.startsWith("direct"))
             msg_processing_policy=new PassRegularMessagesUpDirectly();
+        else if(policy.startsWith("all-direct"))
+            msg_processing_policy=new PassAllMessagesUpDirectly();
         else if(policy.startsWith("unbatch"))
             msg_processing_policy=new UnbatchOOBBatches();
         try {
