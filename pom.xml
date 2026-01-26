@@ -373,6 +373,9 @@
                     <skip>true</skip>
                     <skipTests>true</skipTests>
                 </configuration-->
+                <configuration>
+                    <argLine>-Djdk.attach.allowAttachSelf=true</argLine>
+                </configuration>
                 <executions>
                     <execution>
                         <phase>test</phase>

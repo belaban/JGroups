@@ -216,8 +216,9 @@ public abstract class BasicTCP extends TP implements Receiver, ConnectionListene
 
     @Override
     public void connectionClosed(Connection conn) {
-        if(!enable_suspect_events)
+        if(!enable_suspect_events && !conn.isClosedGracefuly())
             return;
+
         Address peer_ip=conn.peerAddress();
         Address peer=peer_ip != null? logical_addr_cache.getByValue((PhysicalAddress)peer_ip) : null;
         if(peer != null && members.contains(peer) && connected &&
@@ -226,12 +227,16 @@ public abstract class BasicTCP extends TP implements Receiver, ConnectionListene
                 log.debug("%s: connection closed by peer %s (IP=%s), sending up a suspect event",
                           local_addr, peer, peer_ip);
             Event suspect=new Event(Event.SUSPECT, List.of(peer));
-            Runnable r=() -> up_prot.up(suspect);
-            boolean rc=thread_pool.execute(r);
-            if(!rc)
-                getThreadFactory().newThread(r).start();
+            sendUpEvent(suspect);
             num_suspect_events.increment();
         }
+    }
+
+    private void sendUpEvent(Event event) {
+        Runnable r=() -> up_prot.up(event);
+        boolean rc=thread_pool.execute(r);
+        if(!rc)
+            getThreadFactory().newThread(r).start();
     }
 
     @Override

@@ -238,6 +238,15 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         catch(Exception ex) {
             removeConnectionIfPresent(dest, conn);
             throw ex;
+        } finally {
+            // two different cases
+            // get connection after stop being invoked (clear by this) as the conns map will be filled already by this
+            // get connection before stop being invoked (clear by the stop call)
+            // it cannot happen any other case
+            if (!running()) {
+                log.info("%s: detected dangling connection. closing it: %s", local_addr, conn);
+                removeConnectionIfPresent(dest, conn);
+            }
         }
     }
 
@@ -264,6 +273,15 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         catch(Exception ex) {
             removeConnectionIfPresent(dest, conn);
             throw ex;
+        } finally {
+            // two different cases
+            // get connection after stop being invoked (clear by this) as the conns map will be filled already by this
+            // get connection before stop being invoked (clear by the stop call)
+            // it cannot happen any other case
+            if (!running()) {
+                log.info("%s: detected dangling connection. closing it: %s", local_addr, conn);
+                removeConnectionIfPresent(dest, conn);
+            }
         }
     }
 

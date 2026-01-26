@@ -17,10 +17,12 @@ public abstract class Connection implements Closeable {
     protected Address          peer_addr;             // address of the 'other end' of the connection
     protected long             last_access;           // timestamp of the last access to this connection (read or write)
     protected final Lock       send_lock=new ReentrantLock(); // serialize send()
+    protected volatile boolean closeGracefuly = false;
 
     abstract public boolean    isConnected();
     abstract public boolean    isConnectionPending();
     abstract public boolean    isClosed();
+   
     abstract public Address    localAddress();
     public Address             peerAddress() {return peer_addr;}
     abstract public void       flush(); // sends pending data
@@ -29,6 +31,10 @@ public abstract class Connection implements Closeable {
     abstract public void       send(byte[] buf, int offset, int length) throws Exception;
     abstract public void       send(ByteBuffer buf) throws Exception;
     abstract public String     status();
+
+    public boolean    isClosedGracefuly() {
+        return closeGracefuly;
+    }
 
     protected long getTimestamp() {
         return server.timeService() != null? server.timeService().timestamp() : System.nanoTime();

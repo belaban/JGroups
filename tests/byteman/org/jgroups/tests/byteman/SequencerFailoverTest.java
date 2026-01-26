@@ -75,7 +75,7 @@ public class SequencerFailoverTest extends BMNGRunner {
      * same time doesn't lead to incorrect ordering (forward-queue messages need to be delivered before new msgs).
      * https://issues.redhat.com/browse/JGRP-1449
      */
-    @BMScript(dir="scripts/SequencerFailoverTest", value="testResendingVersusNewMessages")
+    @BMScript(dir="conf/scripts/SequencerFailoverTest", value="testResendingVersusNewMessages")
     public void testResendingVersusNewMessages() throws Exception {
         MyReceiver rb=new MyReceiver("B"), rc=new MyReceiver("C");
         b.setReceiver(rb); c.setReceiver(rc);
