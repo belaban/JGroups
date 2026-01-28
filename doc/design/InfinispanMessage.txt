@@ -9,11 +9,11 @@ Problem
 -------
 In Infinispan [1], commands (requests and responses) are exchanged as JGroups messages between cluster nodes.
 
-When sending a command (in JGroupsTransport), it is serialized into a newly created byte array and a BytesMessage is
-created containing the byte array (eager serialization). The message is then sent down.
+When sending a command (in JGroupsTransport), it is serialized into a newly created byte array (eager serialization)
+and a BytesMessage is created containing the byte array. The message is then sent down.
 
-On reception of a message (at the transport level), the bytes are read into a newly created byte array and a
-BytesMessage is created with it, and sent up the stack. Infinispan then deserialized the message into a command (lazy
+On reception of a message (at the JGroups transport level), the bytes are read into a newly created byte array and a
+BytesMessage is created with it, and sent up the stack. Infinispan then deserializes the message into a command (lazy
 deserialization).
 
 This means that we have one memory allocation in both the down and up direction for every message.
@@ -51,7 +51,7 @@ These problems were identified:
   a (no-op) output stream and counts the resulting bytes. It also allocates memory doing so.
 * JGroups reads a message and deserializes it on the thread reading off of the socket, before passing it on to a thread
   pool for further (concurrent) processing. Because this is done on the critical path and because protostream is slow,
-  this was identified as main issue.
+  it affects performance in a big way. This was identified as main issue.
 
 
 Proposed change
@@ -63,7 +63,7 @@ An InfinispanMessage is lazily serialized on the send side (in the bundler), but
 read into an InfinispanBytesMessage. This is a subclass of BytesMessage and contains the byte array.
 
 The reading of a byte array off of the socket (on the critical path) is fast and deserialization happens in Infinispan
-on a thread from the thread pool (not on the critical path).
+on a separate thread from the thread pool (not on the critical path).
 
 This moving of protostream deserialization code from the critical path to a separate thread in Infinispan improved
 performance from 83'000 to 141'000 requests/sec/node!
