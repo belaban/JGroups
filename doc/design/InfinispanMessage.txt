@@ -71,8 +71,8 @@ performance from 83'000 to 141'000 requests/sec/node!
 This is still not 168'000 requests/sec/node as on master, so a further change was needed.
 
 
-Problems
---------
+Further problem
+---------------
 The problem which still existed was that the send side had a similar issue with slow serialization via protostream:
 when a bundler sent messages (InfinispanMessages), serialization was still slowing down the single bundler thread
 (DestinationBundler.use_single_sender_thread=true). Even changing this attribute to false (so that every destination
@@ -80,8 +80,8 @@ has its separate thread) didn't change much.
 
 
 
-Reasons for rejection
----------------------
+Reason for rejection
+--------------------
 Achieving 141'000 requests/sec/node compared to 168'000 is not acceptable.
 
 The assumption above that eliminating byte array creations on the send and receive paths for every message would reduce
@@ -90,7 +90,7 @@ memory pressure and increase performance was wrong!
 Evidently the JVM (tested on 24 only) is excellent at memory de/allocation and the cost incurred by slow protostream
 de/serialization outweighs the cost of memory allocation with respect to performance.
 
-
+The change in MessageFactory ([4]) can therefore be reverted.
 
 
 [1] https://github.com/infinispan/infinispan
