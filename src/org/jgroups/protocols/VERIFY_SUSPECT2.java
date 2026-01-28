@@ -28,7 +28,7 @@ import java.util.function.Supplier;
  * @author Bela Ban
  */
 @MBean(description="Double-checks suspicions reports")
-public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
+public class VERIFY_SUSPECT2 extends Protocol implements Callable<Void> {
 
     @Property(description="Number of millis to wait for verification that a suspect is really dead (approximation)",
       type=AttributeType.TIME)
@@ -53,6 +53,7 @@ public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
     @ManagedAttribute(description = "List of currently suspected members")
     public synchronized String getSuspects() {return suspects.toString();}
 
+    private Future<Void> suspectsThread;
 
 
 
@@ -122,37 +123,39 @@ public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
      * Started when a suspected member is added to suspects. Clears the bucket and sends the contents up the stack as
      * SUSPECT events, then moves suspects from the queue to the bucket. Runs until the queue and bucket are both empty.
      */
-    public void run() {
-        List<Address> suspected_mbrs=new ArrayList<>();
-        while(running) {
-            long target_time=System.currentTimeMillis() + timeout;
-            do {
-                LockSupport.parkUntil(target_time);
+    public Void call() {
+        List<Entry> suspected_mbrs=new ArrayList<>();
+        while(true) {
+            long target_timeout=System.currentTimeMillis() + timeout;
+            log.debug("%s: VERIFY_SUSPECT2 verification polling thread has started with timeout %d, next timeout in %d", local_addr, timeout, target_timeout);
+            while(target_timeout - System.currentTimeMillis() > 0 && !Thread.currentThread().isInterrupted()) {
+                LockSupport.parkUntil(target_timeout);
+            } 
+
+            if (Thread.currentThread().isInterrupted()) {
+                log.debug("%s: VERIFY_SUSPECT2 verification thread has beeing stoped due to shutdown", local_addr);
+                synchronized(VERIFY_SUSPECT2.this) {
+                    suspectsThread = null;
+                    break;
+                }
             }
-            while(System.currentTimeMillis() < target_time);
 
             suspected_mbrs.clear();
             synchronized(this) {
-                suspects.forEach(e -> {
-                    if(e.target_time <= target_time)
-                        suspected_mbrs.add(e.suspect);
-                });
-                suspects.removeIf(e -> e.target_time <= target_time);
+                long currentMillis = System.currentTimeMillis();
+                suspects.stream().filter(e -> e.target_time <= currentMillis).forEach(suspected_mbrs::add);
+                suspects.removeAll(suspected_mbrs);
             }
 
+            // send event up for suspect being found.
             if(!suspected_mbrs.isEmpty()) {
+                List<Address> suspectedAddresses = suspected_mbrs.stream().map(Entry::suspect).toList();
                 log.debug("%s: sending up SUSPECT(%s)", local_addr, suspected_mbrs);
-                up_prot.up(new Event(Event.SUSPECT, suspected_mbrs));
+                up_prot.up(new Event(Event.SUSPECT, suspectedAddresses));
             }
-            else {
-                synchronized(this) {
-                    if(suspects.isEmpty()) {
-                        running=false;
-                        break;
-                    }
-                }
-            }
+
         }
+        return null;
     }
 
 
@@ -190,10 +193,8 @@ public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
     protected void verifySuspect(Collection<Address> mbrs) {
         if(mbrs == null || mbrs.isEmpty())
             return;
-        if(addSuspects(mbrs)) {
-            startTask(); // start timer before we send out are you dead messages
-            log.trace("verifying that %s %s dead", mbrs, mbrs.size() == 1? "is" : "are");
-        }
+        addSuspects(mbrs);
+
         for(Address mbr: mbrs) {
             for(int i=0; i < num_msgs; i++) {
                 Message msg=new EmptyMessage(mbr).setFlag(Message.TransientFlag.DONT_BLOCK)
@@ -209,13 +210,14 @@ public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
      * @param list The list of suspected members
      * @return true if the timer needs to be started, or false otherwise
      */
-    protected synchronized boolean addSuspects(Collection<Address> list) {
+    protected synchronized void addSuspects(Collection<Address> list) {
         if(list == null || list.isEmpty())
-            return false;
+            return;
 
-        long target_time=getCurrentTimeMillis() + timeout;
+        long target_time=System.currentTimeMillis() + timeout;
         List<Entry> tmp=list.stream().map(a -> new Entry(a, target_time)).toList();
-        return suspects.addAll(tmp);
+        suspects.addAll(tmp);
+        log.debug("verifying that %s %s dead", suspects, suspects.size() == 1? "is" : "are");
     }
 
     protected synchronized boolean removeSuspect(Address suspect) {
@@ -232,14 +234,6 @@ public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
         }
     }
 
-
-    protected synchronized void startTask() {
-        if(!running) {
-            running=true;
-            thread_pool.execute(this);
-        }
-    }
-
     @GuardedBy("lock")
     protected void stopThreadPool() {
         if(thread_pool != null)
@@ -253,22 +247,31 @@ public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
                                            0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(), f);
     }
 
+    @Override public synchronized void start() throws Exception {
+        log.debug("%s: VERIFY_SUSPECT2 is being started", local_addr);
+        running=true;
+        if(suspectsThread == null) {
+            suspectsThread = thread_pool.submit(this);
+        }
+        super.start();
+    }
 
-    public synchronized void stop() {
+    @Override public synchronized void stop() {
+        log.debug("%s: VERIFY_SUSPECT2 is being shutdown", local_addr);
+        running = false;
+        if (suspectsThread!=null) {
+            suspectsThread.cancel(true);
+            suspectsThread=null;
+        }
         suspects.clear();
+        super.stop();
     }
 
     public void destroy() {
         stopThreadPool();
-        synchronized(this) {
-            running=false;
-        }
         super.destroy();
     }
 
-    private static long getCurrentTimeMillis() {
-        return TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-    }
     /* ----------------------------- End of Private Methods -------------------------------- */
 
     protected record Entry(Address suspect, long target_time) implements Comparable<Entry> {
@@ -288,7 +291,7 @@ public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
         }
 
         protected long expiry() {
-            return target_time - getCurrentTimeMillis();
+            return target_time - System.currentTimeMillis();
         }
 
         public int compareTo(Entry o) {
