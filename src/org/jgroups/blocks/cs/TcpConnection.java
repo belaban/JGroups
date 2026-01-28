@@ -298,10 +298,12 @@ public class TcpConnection extends Connection {
             }
             catch(EOFException | SocketException ex) {
                 ; // regular use case when a peer closes its connection - we don't want to log this as exception
+                closeGracefuly = true;
             }
             catch(Exception e) {
                 if (e instanceof SSLException && e.getMessage().contains("Socket closed")) {
                     ; // regular use case when a peer closes its connection - we don't want to log this as exception
+                    closeGracefuly = true;
                 }
                 else if (e instanceof SSLHandshakeException && e.getCause() instanceof EOFException) {
                     ; // Ignore SSL handshakes closed early (usually liveness probes)
