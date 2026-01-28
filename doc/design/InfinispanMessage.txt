@@ -1,0 +1,99 @@
+
+Lazy serialization and eager deserialization of JGroups messages in Infinispan
+==============================================================================
+Author: Bela Ban
+Date:   Feb 2026
+JIRA:   https://issues.redhat.com/browse/JGRP-2975
+
+Problem
+-------
+In Infinispan [1], commands (requests and responses) are exchanged as JGroups messages between cluster nodes.
+
+When sending a command (in JGroupsTransport), it is serialized into a newly created byte array and a BytesMessage is
+created containing the byte array (eager serialization). The message is then sent down.
+
+On reception of a message (at the transport level), the bytes are read into a newly created byte array and a
+BytesMessage is created with it, and sent up the stack. Infinispan then deserialized the message into a command (lazy
+deserialization).
+
+This means that we have one memory allocation in both the down and up direction for every message.
+
+The baseline for measuring performance is running 4 IspnPerfTest [2] processes on the same box. It was roughly
+168'000 requests/sec/node.
+
+
+
+Proposed improvement
+--------------------
+The goal is to remove the byte array allocation in the down and up directions. The expectation is that this will
+reduce memory pressure and thus improve performance.
+
+When sending a command, an InfinispanMessage is created which contains only the command to be sent. When serialized
+(e.g. in the bundler), the serialization is performed directly into the socket's output stream (lazy serialization).
+This eliminated one byte array allocation.
+
+When receiving a message, an InfinispanMessage is created and the command in it is created by reading direcly from
+the socket's input stream (eager deserialization). This eliminates another byte array allocation.
+
+The change from eager to lazy serialization on the send side and from lazy to eager deserialization on the receive side
+therefore eliminates 2 byte array allocations.
+
+The implementation is in [3]. Changed classes are JGroupsTransport, InfinispanMessage and InfinispanBytesMessage.
+
+
+Problems
+--------
+Performance went from 168'000 down to 83'000!
+
+These problems were identified:
+* Protostream (used for de/serialization) is slow (root cause for the issues below)
+* The method in protostream to compute the length of a serialized command is slow: it serializes the command into
+  a (no-op) output stream and counts the resulting bytes. It also allocates memory doing so.
+* JGroups reads a message and deserializes it on the thread reading off of the socket, before passing it on to a thread
+  pool for further (concurrent) processing. Because this is done on the critical path and because protostream is slow,
+  this was identified as main issue.
+
+
+Proposed change
+---------------
+The above solution was changed from eager to lazy deserialization on the receive side. This is similar to what's
+currently done in master.
+
+An InfinispanMessage is lazily serialized on the send side (in the bundler), but on the receive side it is *eagerly*
+read into an InfinispanBytesMessage. This is a subclass of BytesMessage and contains the byte array.
+
+The reading of a byte array off of the socket (on the critical path) is fast and deserialization happens in Infinispan
+on a thread from the thread pool (not on the critical path).
+
+This moving of protostream deserialization code from the critical path to a separate thread in Infinispan improved
+performance from 83'000 to 141'000 requests/sec/node!
+
+This is still not 168'000 requests/sec/node as on master, so a further change was needed.
+
+
+Problems
+--------
+The problem which still existed was that the send side had a similar issue with slow serialization via protostream:
+when a bundler sent messages (InfinispanMessages), serialization was still slowing down the single bundler thread
+(DestinationBundler.use_single_sender_thread=true). Even changing this attribute to false (so that every destination
+has its separate thread) didn't change much.
+
+
+
+Reasons for rejection
+---------------------
+Achieving 141'000 requests/sec/node compared to 168'000 is not acceptable.
+
+The assumption above that eliminating byte array creations on the send and receive paths for every message would reduce
+memory pressure and increase performance was wrong!
+
+Evidently the JVM (tested on 24 only) is excellent at memory de/allocation and the cost incurred by slow protostream
+de/serialization outweighs the cost of memory allocation with respect to performance.
+
+
+
+
+[1] https://github.com/infinispan/infinispan
+[2] https://github.com/jgroups-extras/IspnPerfTest
+[3] https://github.com/belaban/infinispan/tree/ispn-msg
+[4] https://issues.redhat.com/browse/JGRP-2944
