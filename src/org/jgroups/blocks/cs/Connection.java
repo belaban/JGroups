@@ -17,7 +17,8 @@ public abstract class Connection implements Closeable {
     protected Address          peer_addr;             // address of the 'other end' of the connection
     protected long             last_access;           // timestamp of the last access to this connection (read or write)
     protected final Lock       send_lock=new ReentrantLock(); // serialize send()
-
+    protected boolean          rejected=false;
+    
     abstract public boolean    isConnected();
     abstract public boolean    isConnectionPending();
     abstract public boolean    isClosed();
@@ -30,6 +31,10 @@ public abstract class Connection implements Closeable {
     abstract public void       send(ByteBuffer buf) throws Exception;
     abstract public String     status();
 
+    public boolean isRejected() {
+        return rejected;
+    }
+
     protected long getTimestamp() {
         return server.timeService() != null? server.timeService().timestamp() : System.nanoTime();
     }
@@ -41,5 +46,21 @@ public abstract class Connection implements Closeable {
 
     public boolean isExpired(long now) {
         return server.connExpireTime() > 0 && now - last_access >= server.connExpireTime();
+    }
+
+    public void ack() {
+        // do nothing
+    }
+
+    public void nack() {
+        // do nothing
+    }
+
+    protected void waitForAck() {
+        
+    }
+
+    public long getCreatedTimestamp() {
+        return 0L;
     }
 }

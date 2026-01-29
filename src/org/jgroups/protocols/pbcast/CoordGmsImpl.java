@@ -85,7 +85,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
         Collection<Address> suspected_mbrs=new LinkedHashSet<>(requests.size());
         Collection<Address> leaving_mbrs=new LinkedHashSet<>(requests.size());
 
-        log.trace("%s: handleMembershipChange(%s)", gms.getAddress(), requests);
+        log.info("%s: handleMembershipChange(%s)", gms.getAddress(), requests);
         boolean self_leaving=false; // is the coord leaving
         for(Request req: requests) {
             switch(req.type) {

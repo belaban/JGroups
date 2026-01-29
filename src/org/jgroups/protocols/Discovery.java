@@ -388,7 +388,7 @@ public abstract class Discovery extends Protocol {
                 if(data != null) {
                     // find the top discovery prot and deliver the response: https://issues.redhat.com/browse/JGRP-2230
                     Discovery d=findTopmostDiscoveryProtocol();
-                    log.trace("%s: received GET_MBRS_RSP from %s: %s%s", local_addr, msg.getSrc(), print(data),
+                    log.info("%s: received GET_MBRS_RSP from %s: %s%s", local_addr, msg.getSrc(), print(data),
                               d != this? ", delivering it to " + d.getClass().getSimpleName() : "");
                     d.handleDiscoveryResponse(data, msg.getSrc());
                 }
@@ -694,13 +694,13 @@ public abstract class Discovery extends Protocol {
             long sleep_time=rank == 0? Util.random(stagger_timeout)
               : stagger_timeout * rank / view_size - (stagger_timeout / view_size);
             timer.schedule(() -> {
-                log.trace("%s: received GET_MBRS_REQ from %s, sending staggered response %s", local_addr, sender, data);
+                log.info("%s: received GET_MBRS_REQ from %s, sending staggered response %s", local_addr, sender, data);
                 down_prot.down(rsp_msg);
             }, sleep_time, TimeUnit.MILLISECONDS, sends_can_block);
             return;
         }
 
-        log.trace("%s: received GET_MBRS_REQ from %s, sending response %s", local_addr, sender, data);
+        log.info("%s: received GET_MBRS_REQ from %s, sending response %s", local_addr, sender, data);
         down_prot.down(rsp_msg);
     }
 
@@ -721,7 +721,7 @@ public abstract class Discovery extends Protocol {
             return;
         }
 
-        log.trace("%s: received GET_MBRS_REQ from %s, sending response %s", local_addr, sender, print(list));
+        log.info("%s: received GET_MBRS_REQ from %s, sending response %s", local_addr, sender, print(list));
         down_prot.down(rsp_msg);
     }
 

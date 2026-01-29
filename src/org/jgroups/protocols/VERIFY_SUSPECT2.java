@@ -28,7 +28,7 @@ import java.util.function.Supplier;
  * @author Bela Ban
  */
 @MBean(description="Double-checks suspicions reports")
-public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
+public class VERIFY_SUSPECT2 extends Protocol implements Callable<Void> {
 
     @Property(description="Number of millis to wait for verification that a suspect is really dead (approximation)",
       type=AttributeType.TIME)
@@ -48,7 +48,7 @@ public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
 
     protected ExecutorService         thread_pool; // single-threaded+queue, runs the task when suspects are added
 
-
+    private Future<Void> task;
 
     @ManagedAttribute(description = "List of currently suspected members")
     public synchronized String getSuspects() {return suspects.toString();}
@@ -79,13 +79,15 @@ public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
                     suspects.removeIf(e -> !v.containsMember(e.suspect));
                 }
                 break;
+            case Event.DISCONNECT:
+                log.debug("%s: We got disconnected", local_addr);
+                stop();
         }
         return down_prot.down(evt);
     }
 
     public Object up(Event evt) {
         switch(evt.getType()) {
-
             case Event.SUSPECT:  // it all starts here ...
                 if(evt.arg() == null)
                     return null;
@@ -94,6 +96,7 @@ public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
                 s.remove(local_addr); // ignoring suspect of self
                 verifySuspect(s);
                 return null;  // don't pass up; we will decide later (after verification) whether to pass it up
+
         }
         return up_prot.up(evt);
     }
@@ -122,27 +125,29 @@ public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
      * Started when a suspected member is added to suspects. Clears the bucket and sends the contents up the stack as
      * SUSPECT events, then moves suspects from the queue to the bucket. Runs until the queue and bucket are both empty.
      */
-    public void run() {
-        List<Address> suspected_mbrs=new ArrayList<>();
+    @Override
+    public Void call() {
+        List<Entry> suspected_mbrs=new ArrayList<>();
         while(running) {
             long target_time=System.currentTimeMillis() + timeout;
             do {
                 LockSupport.parkUntil(target_time);
             }
-            while(System.currentTimeMillis() < target_time);
+            while(System.currentTimeMillis() < target_time && !Thread.currentThread().isInterrupted());
 
+            if (Thread.currentThread().isInterrupted()) {
+                log.debug("%s: VERIFY_SUSPECT2 was interrupted. Terminating SUSPECT UP EVENTS.", local_addr);
+                continue;
+            }
             suspected_mbrs.clear();
             synchronized(this) {
-                suspects.forEach(e -> {
-                    if(e.target_time <= target_time)
-                        suspected_mbrs.add(e.suspect);
-                });
-                suspects.removeIf(e -> e.target_time <= target_time);
+                suspects.stream().filter(e -> e.expiry() < 0).forEach(suspected_mbrs::add);
+                suspects.removeAll(suspected_mbrs);
             }
 
             if(!suspected_mbrs.isEmpty()) {
                 log.debug("%s: sending up SUSPECT(%s)", local_addr, suspected_mbrs);
-                up_prot.up(new Event(Event.SUSPECT, suspected_mbrs));
+                up_prot.up(new Event(Event.SUSPECT, suspected_mbrs.stream().map(Entry::suspect).toList()));
             }
             else {
                 synchronized(this) {
@@ -153,6 +158,7 @@ public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
                 }
             }
         }
+        return null;
     }
 
 
@@ -161,6 +167,7 @@ public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
     protected Object handle(VerifyHeader hdr) {
         switch(hdr.type) {
             case VerifyHeader.ARE_YOU_DEAD:
+                log.info("%s: receive that %s are you dead", local_addr, hdr.from);
                 if(hdr.from == null) {
                     log.error(Util.getMessage("AREYOUDEADHdrFromIsNull"));
                     return null;
@@ -173,6 +180,7 @@ public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
                 }
                 return null;
             case VerifyHeader.I_AM_NOT_DEAD:
+                log.info("%s: receive that %s I am not dead", local_addr, hdr.from);
                 if(hdr.from == null) {
                     log.error(Util.getMessage("IAMNOTDEADHdrFromIsNull"));
                     return null;
@@ -188,6 +196,11 @@ public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
      * Sends ARE_YOU_DEAD message to suspected_mbr, wait for return or timeout
      */
     protected void verifySuspect(Collection<Address> mbrs) {
+        synchronized(this) {
+            if (!running) {
+                return;
+            }
+        }
         if(mbrs == null || mbrs.isEmpty())
             return;
         if(addSuspects(mbrs)) {
@@ -195,6 +208,7 @@ public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
             log.trace("verifying that %s %s dead", mbrs, mbrs.size() == 1? "is" : "are");
         }
         for(Address mbr: mbrs) {
+            log.info("%s: sending that %s dead", local_addr, mbr);
             for(int i=0; i < num_msgs; i++) {
                 Message msg=new EmptyMessage(mbr).setFlag(Message.TransientFlag.DONT_BLOCK)
                   .putHeader(this.id, new VerifyHeader(VerifyHeader.ARE_YOU_DEAD, local_addr));
@@ -236,7 +250,7 @@ public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
     protected synchronized void startTask() {
         if(!running) {
             running=true;
-            thread_pool.execute(this);
+            task = thread_pool.submit(this);
         }
     }
 
@@ -255,12 +269,19 @@ public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
 
 
     public synchronized void stop() {
-        suspects.clear();
+        synchronized(this) {
+            running=false;
+            suspects.clear();
+            if (task != null) {
+                task.cancel(true);
+            }
+        }
     }
 
     public void destroy() {
         stopThreadPool();
         synchronized(this) {
+            suspects.clear();
             running=false;
         }
         super.destroy();

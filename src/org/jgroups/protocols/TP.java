@@ -1,19 +1,6 @@
 package org.jgroups.protocols;
 
 
-import org.jgroups.*;
-import org.jgroups.annotations.*;
-import org.jgroups.util.LazyRemovalCache;
-import org.jgroups.conf.AttributeType;
-import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.conf.PropertyConverters;
-import org.jgroups.logging.LogFactory;
-import org.jgroups.stack.DiagnosticsHandler;
-import org.jgroups.stack.MessageProcessingPolicy;
-import org.jgroups.stack.Protocol;
-import org.jgroups.util.UUID;
-import org.jgroups.util.*;
-
 import java.io.DataInput;
 import java.io.InterruptedIOException;
 import java.lang.management.ManagementFactory;
@@ -21,12 +8,69 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HexFormat;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
+
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Global;
+import org.jgroups.Message;
+import org.jgroups.MessageFactory;
+import org.jgroups.PhysicalAddress;
+import org.jgroups.Version;
+import org.jgroups.View;
+import org.jgroups.annotations.Component;
+import org.jgroups.annotations.LocalAddress;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
+import org.jgroups.conf.AttributeType;
+import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.conf.PropertyConverters;
+import org.jgroups.logging.LogFactory;
+import org.jgroups.stack.DiagnosticsHandler;
+import org.jgroups.stack.MessageProcessingPolicy;
+import org.jgroups.stack.Protocol;
+import org.jgroups.util.AsciiString;
+import org.jgroups.util.AsyncExecutor;
+import org.jgroups.util.Bits;
+import org.jgroups.util.ByteArrayDataInputStream;
+import org.jgroups.util.DefaultSocketFactory;
+import org.jgroups.util.ExpiryCache;
+import org.jgroups.util.LazyRemovalCache;
+import org.jgroups.util.LazyThreadFactory;
+import org.jgroups.util.MaxOneThreadPerSender;
+import org.jgroups.util.MessageBatch;
+import org.jgroups.util.NameCache;
+import org.jgroups.util.PassRegularMessagesUpDirectly;
+import org.jgroups.util.RTT;
+import org.jgroups.util.Responses;
+import org.jgroups.util.SocketFactory;
+import org.jgroups.util.SubmitToThreadPool;
+import org.jgroups.util.SuppressLog;
+import org.jgroups.util.ThreadFactory;
+import org.jgroups.util.ThreadPool;
+import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.TimeScheduler3;
+import org.jgroups.util.TimeService;
+import org.jgroups.util.Tuple;
+import org.jgroups.util.UUID;
+import org.jgroups.util.UnbatchOOBBatches;
+import org.jgroups.util.Util;
 
 import static org.jgroups.conf.AttributeType.SCALAR;
 
@@ -1312,7 +1356,9 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         }
 
         PhysicalAddress physical_dest=dest instanceof PhysicalAddress? (PhysicalAddress)dest : getPhysicalAddressFromCache(dest);
+
         if(physical_dest != null) {
+            log.trace("%s: %s sendTo %s with physical addresss %s", local_addr, getPhysicalAddress(), dest, physical_dest);
             sendUnicast(physical_dest,buf,offset,length);
             return;
         }
@@ -1320,6 +1366,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             // FIND_MBRS must return quickly
             Responses responses=fetchResponsesFromDiscoveryProtocol(Collections.singletonList(dest));
             try {
+
                 for(PingData data: responses) {
                     if(data.getAddress() != null && data.getAddress().equals(dest)) {
                         if((physical_dest=data.getPhysicalAddr()) != null) {
@@ -1328,6 +1375,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                         }
                     }
                 }
+
                 log.warn(Util.getMessage("PhysicalAddrMissing"), local_addr, dest);
             }
             finally {

@@ -1,5 +1,29 @@
 package org.jgroups.blocks.cs;
 
+import java.io.Closeable;
+import java.io.DataInput;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.nio.ByteBuffer;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.PhysicalAddress;
@@ -11,24 +35,11 @@ import org.jgroups.conf.AttributeType;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.util.*;
-
-import java.io.Closeable;
-import java.io.DataInput;
-import java.io.IOException;
-import java.net.InetAddress;
-import java.nio.ByteBuffer;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.BiConsumer;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
+import org.jgroups.util.DefaultSocketFactory;
+import org.jgroups.util.SocketFactory;
+import org.jgroups.util.ThreadFactory;
+import org.jgroups.util.TimeService;
+import org.jgroups.util.Util;
 
 /**
  * Abstract class for a server handling sending, receiving and connection management.
@@ -39,6 +50,11 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     protected Address                         local_addr; // typically the address of the server socket or channel
     protected final List<ConnectionListener>  conn_listeners=new CopyOnWriteArrayList<>();
     protected final Map<Address,Connection>   conns=new ConcurrentHashMap<>();
+    protected final Map<Address,Connection>   candidates=new ConcurrentHashMap<>();
+    protected final Map<Address,ReentrantLock> 
+                                              candidatesLock=new ConcurrentHashMap<>();
+    protected final Map<Address,CountDownLatch>
+                                              latches=new ConcurrentHashMap<>();
     protected final ThreadFactory             factory;
     protected SocketFactory                   socket_factory=new DefaultSocketFactory();
     protected long                            reaperInterval;
@@ -75,7 +91,8 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     protected int                             linger=-1;
     protected TimeService                     time_service;
     // to access the connection map, 1 lock / destination
-    protected final Map<Address,Lock>         locks=new ConcurrentHashMap<>();
+    protected final Map<Address,ReentrantLock>
+                                              locks=new ConcurrentHashMap<>();
 
 
     protected BaseServer(ThreadFactory f, SocketFactory sf, int recv_buf_size) {
@@ -156,13 +173,13 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
      * and server sockets or channels are closed.
      */
     public void stop() {
+        conn_listeners.clear();
+        for(Connection c: conns.values()) {
+            closeConnection(c);
+        }
+        locks.clear();
         Util.close(reaper);
         reaper=null;
-        for(Connection c: conns.values())
-            Util.close(c);
-        conns.clear();
-        locks.clear();
-        conn_listeners.clear();
     }
 
     public void close() throws IOException {
@@ -170,16 +187,11 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     }
 
     public void flush(Address dest) {
-        if(dest != null) {
-            Connection conn=conns.get(dest);
-            if(conn != null)
-                conn.flush();
-        }
+        syncOperation(dest, connection -> connection.flush());
     }
 
     public void flushAll() {
-        for(Connection c: conns.values())
-            c.flush();
+        conns.keySet().forEach(this::flush);
     }
 
     /**
@@ -216,6 +228,10 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     }
 
     public void send(Address dest, byte[] data, int offset, int length) throws Exception {
+        if(!running.get()) {
+            log.debug("%s: dropping package to %s. server not running!", local_addr, dest);
+            return;
+        }
         if(!validateArgs(dest, data))
             return;
 
@@ -242,6 +258,10 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     }
 
     public void send(Address dest, ByteBuffer data) throws Exception {
+        if(!running.get()) {
+            log.debug("%s: dropping package to %s. server not running!", local_addr, dest);
+            return;
+        }
         if(!validateArgs(dest, data))
             return;
 
@@ -280,101 +300,244 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     /** Creates a new connection object to target dest, but doesn't yet connect it */
     protected abstract Connection createConnection(Address dest) throws Exception;
 
+
+    // connection pool operations must be synchronize
+    private void syncOperation(Address address, Consumer<Connection> operation) {
+        syncConnection(address, connection -> {
+            operation.accept(connection);
+            return null;
+        });
+    }
+    
+    private <T> T syncConnection(Address address, Function<Connection, T> operation) {
+        return this.syncConnection(address, operation, (T) null);
+    }
+
+    private <T> T syncConnection(Address address, Function<Connection, T> operation, T valueIfConnectionNotExist) {
+        Lock addressLock = getLock(address);
+        addressLock.lock();
+        try {
+            Connection connection = conns.get(address);
+            return connection != null ? operation.apply(connection) : valueIfConnectionNotExist;
+        } finally {
+            addressLock.unlock();
+        }
+    }
+
     public boolean hasConnection(Address address) {
-        return conns.containsKey(address);
+        return syncConnection(address, connection -> connection != null, false);
     }
 
     public boolean connectionEstablishedTo(Address address) {
-        return connected(conns.get(address));
+        return syncConnection(address, BaseServer::connected);
+    }
+
+    public boolean closeConnection(Address addr, boolean notify) {
+        if (addr == null) {
+            return false;
+        }
+        return syncConnection(addr, connection -> {
+            closeConnection(connection, notify);
+            return true;
+        }, false);
+    }
+
+    protected void handleAccept(Connection conn) throws Exception {
+        try {
+            Address peer_addr=conn.peerAddress();
+            log.info("%s: handleAccept %s on %s", local_addr, peer_addr, conn);
+            addConnection(peer_addr, conn);
+        }
+        catch(Exception ex) {
+            Util.close(conn);
+            throw ex;
+        }
+    }
+
+    public void addConnection(Address peer_addr, Connection newConnection) throws Exception {
+        boolean close_conn=false;
+        ReentrantLock candidateLock = candidatesLock.computeIfAbsent(peer_addr, key -> new ReentrantLock());
+        ReentrantLock lock=getLock(peer_addr);
+        try {
+            candidateLock.lock();
+            // try lock won't fail if we got the lock first than getting a candidate connection
+            // it will fail if the get connection got the lock first
+            if(!lock.tryLock(500, TimeUnit.MILLISECONDS)) {
+                // we are certain we have produce a candidate already otherwise the tryLock won't fail
+                Connection candidate = candidates.remove(peer_addr);
+                // deadlock resolution algorithm, It is pretty simple we just get the higher timestamp
+                log.info("%s: connection deadlock %s detected", local_addr, newConnection);
+
+                if (candidate != null && candidate.getCreatedTimestamp() > newConnection.getCreatedTimestamp()) {
+                    log.info("%s: connection deadlock %s detected with candidate %s -> discarded", local_addr, newConnection, candidate);
+                    newConnection.nack();
+                    Util.close(newConnection);
+                    return;
+                } else {
+                    log.info("%s: connection deadlock %s detected with candidate %s -> resolved", local_addr, newConnection, candidate);
+                    lock.lock();
+                }
+            }
+            
+            log.info("%s: accept ok to go %s", local_addr, newConnection);
+
+            if (!running.get()) {
+                log.info("%s: server not running! not accepted connection from %s", local_addr, peer_addr);
+                newConnection.nack();
+                close_conn=true;
+            } else {
+                Connection existingConn = conns.get(peer_addr);
+                if(existingConn == null) {
+                    log.info("%s: accepted connection from %s", local_addr, peer_addr);
+                }
+                else {
+                    log.info("%s: dangling connection detected from %s existing %s will be replaced by %s", local_addr, peer_addr, existingConn, newConnection);
+                }
+                replaceConnection(peer_addr, newConnection); // closes old conn
+                newConnection.ack();
+                newConnection.start();
+            }
+        } 
+        catch(InterruptedException e) {
+            newConnection.nack();
+            Util.close(newConnection);
+        }
+        finally {
+            if(latches.containsKey(peer_addr)) { 
+                latches.get(peer_addr).countDown();
+            }
+            if (lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
+            candidates.remove(peer_addr);
+            candidateLock.unlock();
+        }
+
+        if (close_conn) {
+            Util.close(newConnection);
+        }
     }
 
     /** Creates a new connection to dest, or returns an existing one */
     public Connection getConnection(Address dest) throws Exception {
-        Connection conn;
-        // keep FAST path on the most common case
-        if(connected(conn=conns.get(dest)))
-            return conn;
-
+        Connection newConnection=null;
         // we acquire a separate lock for each destination, so that connection/send attempts to destination D2
         // are not blocked by connection/send attempts to destination D1 (https://issues.redhat.com/browse/JGRP-2905)
+        ReentrantLock candidateLock = candidatesLock.computeIfAbsent(dest, key -> new ReentrantLock());
+        candidateLock.lock();
+
         Lock lock=getLock(dest);
         lock.lock();
         try {
-            if(connected(conn=conns.get(dest)))
-                return conn;
-            conn=createConnection(dest);
-            replaceConnection(dest, conn);
-
-            try {
-                log.trace("%s: connecting to %s", local_addr, dest);
-                conn.connect(dest);
-                notifyConnectionEstablished(conn);
-                conn.start();
+            latches.put(dest, new CountDownLatch(1));
+            if(connected(newConnection=conns.get(dest))) {
+                return newConnection;
             }
-            catch(Exception connect_ex) {
-                removeConnectionIfPresent(dest, conn); // removes and closes the conn
-                throw connect_ex;
+            candidates.remove(dest);
+            newConnection = createConnection(dest);
+            newConnection.connect(dest);
+            log.info("%s: connecting to %s with %s", local_addr, dest, newConnection);
+            candidates.put(dest, newConnection);
+            candidateLock.unlock();
+            newConnection.waitForAck();
+            if (newConnection.isConnected()) {
+                newConnection.start();
+                replaceConnection(dest, newConnection);
+                notifyConnectionEstablished(newConnection);
             }
         }
+        catch(Exception connect_ex) {
+            throw connect_ex;
+        } 
         finally {
             lock.unlock();
+            if (candidateLock.isHeldByCurrentThread()) {
+                candidateLock.unlock();
+            }
         }
-        return conn;
+
+        if (newConnection.isRejected()) {
+            log.info("%s: rejected client connection %s with connection %s... waiting till connection available", local_addr,  dest, newConnection);
+            if(!latches.get(dest).await(5, TimeUnit.SECONDS)) {
+                log.info("%s: rejected client connection %s with connection %s... waiting till connection available failed", local_addr,  dest, newConnection);
+            }
+            lock.lock();
+            try {
+                newConnection = conns.get(dest);
+            } finally {
+                lock.unlock();
+            }
+        }
+        if (newConnection.isConnected()) {
+            log.info("%s: get connection is %s", local_addr, newConnection);
+        } else {
+            log.info("%s: this should not happend we got a closed connection %s", local_addr, newConnection);
+        }
+        if (!running.get()) {
+            log.info("%s: this should not happend we got a closed connection, sever not running %s", local_addr, newConnection);
+            closeConnection(newConnection);
+            throw new RuntimeException("server not running");
+        }
+        return newConnection;
     }
 
     @GuardedBy("this")
-    public void replaceConnection(Address address, Connection conn) {
-        Connection previous=conns.put(address, conn);
-        if(previous != null) {
-            previous.flush();
-            Util.close(previous);
+    public void replaceConnection(Address address, Connection newConnection) {
+        Lock lock=getLock(address);
+        lock.lock();
+        try {
+            Connection oldConnection=conns.put(address, newConnection);
+            log.info("%s [%s] replaceConnection %s with %s", local_addr, address, oldConnection, newConnection);
+            if(oldConnection != null) {
+                oldConnection.flush();
+                Util.close(oldConnection);
+            }
+        } finally {
+            lock.unlock();
         }
     }
 
-    public void closeConnection(Connection conn) {
-        closeConnection(conn, true);
-    }
+    /** Only removes the connection if conns.get(address) == conn */
+    public void removeConnectionIfPresent(Address address, Connection conn) {
+        if(address == null || conn == null)
+            return;
+        Connection tmp=null;
+        Lock lock=getLock(address);
+        lock.lock();
 
-    public void closeConnection(Connection conn, boolean notify) {
-        boolean closed=conn.isClosed();
-        Util.close(conn);
-        if(notify && !closed)
-            notifyConnectionClosed(conn);
-        removeConnectionIfPresent(conn != null? conn.peerAddress() : null, conn);
+        try {
+            Connection existing = conns.get(address);
+            log.info("%s [%s] removeConnectionIfPresent %s with %s", local_addr, address, existing, conn);
+            if(conn.equals(existing)) {
+                tmp=conns.remove(address);
+            }
+            if(existing == null) {
+                tmp = conn;
+            }
+        } finally {
+            lock.unlock();
+        }
+        if(tmp != null) { // Moved conn close outside of sync block (https://issues.redhat.com/browse/JGRP-2053)
+            log.info("%s: removed connection to %s", local_addr, tmp);
+            Util.close(tmp);
+        }
     }
 
     public boolean closeConnection(Address addr) {
         return closeConnection(addr, true);
     }
 
-    public boolean closeConnection(Address addr, boolean notify) {
-        Connection c;
-        if(addr != null && (c=conns.get(addr)) != null) {
-            closeConnection(c, notify);
-            return true;
-        }
-        return false;
+    public void closeConnection(Connection conn) {
+        closeConnection(conn, true);
     }
 
-    public void addConnection(Address peer_addr, Connection conn) throws Exception {
-        Lock lock=getLock(peer_addr);
-        lock.lock();
-        try {
-            boolean conn_exists=hasConnection(peer_addr),
-              replace=conn_exists && local_addr.compareTo(peer_addr) < 0; // bigger conn wins
-
-            if(!conn_exists || replace) {
-                replaceConnection(peer_addr, conn); // closes old conn
-                conn.start();
-            }
-            else {
-                log.trace("%s: rejected connection from %s %s", local_addr, peer_addr, explanation(conn_exists, replace));
-                Util.close(conn); // keep our existing conn, reject accept() and close client_sock
-            }
-        }
-        finally {
-            lock.unlock();
-        }
+    private void closeConnection(Connection conn, boolean notify) {
+        syncOperation(conn.peerAddress(), connection -> {
+            boolean closed=conn.isClosed();
+            if(notify && !closed)
+                notifyConnectionClosed(conn);
+            removeConnectionIfPresent(conn.peerAddress(), conn);
+        });
     }
 
     public BaseServer addConnectionListener(ConnectionListener cl) {
@@ -404,30 +567,9 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         return sb.toString();
     }
 
-    /** Only removes the connection if conns.get(address) == conn */
-    public void removeConnectionIfPresent(Address address, Connection conn) {
-        if(address == null || conn == null)
-            return;
-        Connection tmp=null;
-        Lock lock=getLock(address);
-        lock.lock();
-        try {
-            Connection existing=conns.get(address);
-            if(conn == existing)
-                tmp=conns.remove(address);
-        } finally {
-            lock.unlock();
-        }
-        if(tmp != null) { // Moved conn close outside of sync block (https://issues.redhat.com/browse/JGRP-2053)
-            log.trace("%s: removed connection to %s", local_addr, address);
-            Util.close(tmp);
-        }
-    }
-
     /** Used only for testing ! */
     public void clearConnections() {
-        conns.values().forEach(Util::close);
-        conns.clear();
+        conns.keySet().forEach(this::closeConnection);
     }
 
     public void forAllConnections(BiConsumer<Address,Connection> c) {
@@ -468,6 +610,7 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     }
 
     public void notifyConnectionEstablished(Connection conn) {
+        candidates.remove(conn.peerAddress());
         for(ConnectionListener l: conn_listeners) {
             try {
                 l.connectionEstablished(conn);
@@ -519,9 +662,8 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         }
     }
 
-    protected Lock getLock(Address dest) {
-        Lock l=locks.get(dest);
-        return l != null? l : locks.computeIfAbsent(dest, __ -> new ReentrantLock());
+    protected ReentrantLock getLock(Address dest) {
+        return locks.computeIfAbsent(dest, __ -> new ReentrantLock());
     }
 
     protected static boolean connected(Connection c) {
@@ -546,8 +688,6 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         }
         return true;
     }
-
-
 
     protected static String explanation(boolean connection_existed, boolean replace) {
         StringBuilder sb=new StringBuilder();

@@ -1,17 +1,34 @@
 package org.jgroups.tests;
 
-import org.jgroups.*;
-import org.jgroups.protocols.*;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+import org.jgroups.Event;
+import org.jgroups.Global;
+import org.jgroups.JChannel;
+import org.jgroups.Receiver;
+import org.jgroups.View;
+import org.jgroups.protocols.BasicTCP;
+import org.jgroups.protocols.FD_ALL3;
+import org.jgroups.protocols.FRAG4;
+import org.jgroups.protocols.MERGE3;
+import org.jgroups.protocols.NAKACK4;
+import org.jgroups.protocols.RED;
+import org.jgroups.protocols.TCP;
+import org.jgroups.protocols.TCPPING;
+import org.jgroups.protocols.UNICAST4;
+import org.jgroups.protocols.VERIFY_SUSPECT2;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.List;
+
 
 /**
  * Tests {@link BasicTCP#enableSuspectEvents(boolean)} to reproduce https://issues.redhat.com/browse/JGRP-2968 / https://issues.redhat.com/browse/WFLY-21236
@@ -30,6 +47,7 @@ public class EnableSuspectEventsTest {
     private static final boolean FORCE_IPV6 = false;
 
     private JChannel[] channels;
+    private TopologyMonitor[] monitors;
 
     @BeforeMethod
     protected void setup() throws Exception {
@@ -42,12 +60,13 @@ public class EnableSuspectEventsTest {
         }
 
         channels = new JChannel[NUM_NODES];
-        TopologyMonitor[] monitors = new TopologyMonitor[NUM_NODES];
+        monitors = new TopologyMonitor[NUM_NODES];
 
         InetAddress localhost = InetAddress.getByName(hostname);
         List<InetSocketAddress> initialHosts = new ArrayList<>();
         for (int i = 0; i < NUM_NODES; i++) {
             initialHosts.add(new InetSocketAddress(localhost, BASE_PORT + i));
+
         }
 
         // Create all channels
@@ -79,7 +98,8 @@ public class EnableSuspectEventsTest {
         Util.closeFast(channels);
     }
 
-    public void testRepeatedLeaveAndJoin() throws Exception {
+    @Test
+    public void testEnableSuspects() throws Exception {
         for (int iteration = 0; iteration < NUM_ITERATIONS; iteration++) {
             JChannel coordinator = null;
             int coordIndex = -1;
@@ -98,7 +118,6 @@ public class EnableSuspectEventsTest {
             }
 
             System.out.printf("\n=== Iteration %d: Coordinator %s leaving ===\n", iteration + 1, coordinator.getName());
-
             // Build list of stable channels (all except the coordinator)
             List<JChannel> stableChannelsList = new ArrayList<>();
             for (int i = 0; i < channels.length; i++) {
@@ -106,17 +125,24 @@ public class EnableSuspectEventsTest {
                     stableChannelsList.add(channels[i]);
                 }
             }
-            JChannel[] stableChannels = stableChannelsList.toArray(new JChannel[0]);
 
-            // Gracefully disconnect the coordinator simulating graceful node shutdown
+            JChannel[] stableChannels = stableChannelsList.toArray(JChannel[]::new);
+
+            // Reset monitoring state
+            for (TopologyMonitor monitor : monitors) {
+                if (monitor != null) {
+                    monitor.reset();
+                }
+            }
+
             // The bug manifests when TCP connections close after LEAVE, triggering suspect events
             coordinator.disconnect();
 
-            // Wait a bit for views to stabilize
-            Util.sleep(1000);
+            // Check the views on the remaining nodes
+            Util.waitUntilAllChannelsHaveSameView(10000, 100, stableChannels);
 
             // Check the views on the remaining nodes
-            System.out.print("   Checking remaining nodes:\n");
+            System.out.printf("   Checking remaining nodes:\n");
             boolean foundBug = false;
             for (JChannel ch : stableChannels) {
                 View view = ch.getView();
@@ -130,7 +156,7 @@ public class EnableSuspectEventsTest {
             }
 
             if (!foundBug) {
-                // Verify all stable nodes have a view of size NUM_NODES-1 (nodes did not create partitions)
+                // Verify all stable nodes have view of size NUM_NODES-1 (stayed together)
                 for (JChannel ch : stableChannels) {
                     View view = ch.getView();
                     assert view.size() == NUM_NODES - 1 : String.format(
@@ -160,7 +186,9 @@ public class EnableSuspectEventsTest {
      * Stack mimicking WF stack - https://github.com/wildfly/wildfly/blob/39.0.0.Beta1/ee-feature-pack/galleon-shared/src/main/resources/feature_groups/jgroups.xml
      * With the matching defaults - https://github.com/wildfly/wildfly/blob/39.0.0.Beta1/clustering/jgroups/extension/src/main/resources/jgroups-defaults.xml
      */
+
     private static JChannel createChannel(int index, List<InetSocketAddress> initialHosts, InetAddress bindAddr) throws Exception {
+
         String name = "node-" + index;
 
         TCP tcp = new TCP();
@@ -172,12 +200,14 @@ public class EnableSuspectEventsTest {
         tcp.enableSuspectEvents(true); // Critical: enable suspect events on connection close!
         tcp.setLevel("debug");
 
+
         RED red = new RED();
 
         TCPPING tcpping = new TCPPING()
                 .setInitialHosts(initialHosts)
                 .setPortRange(0)
                 .numDiscoveryRuns(3);
+
 
         MERGE3 merge3 = new MERGE3()
                 .setMinInterval(10000)  // 10s
@@ -211,6 +241,9 @@ public class EnableSuspectEventsTest {
      */
     private static class TopologyMonitor implements Receiver {
         private final String channelName;
+
+        private final List<ViewChange> viewChanges = new CopyOnWriteArrayList<>();
+
         private View previousView;
 
         public TopologyMonitor(String channelName) {
@@ -227,8 +260,15 @@ public class EnableSuspectEventsTest {
                     change.oldView != null ? (change.oldView.size() - change.newView.size()) : 0);
             previousView = newView;
         }
+
+
+        public void reset() {
+            viewChanges.clear();
+        }
+
+        private record ViewChange(View oldView, View newView) {
+        }
     }
 
-    private record ViewChange(View oldView, View newView) {
-    }
 }
+

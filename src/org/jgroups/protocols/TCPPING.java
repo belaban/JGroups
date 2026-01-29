@@ -226,7 +226,6 @@ public class TCPPING extends Discovery {
             if(list != null)
                 list.stream().filter(phys_addr -> !cluster_members.contains(phys_addr)).forEach(cluster_members::add);
         }
-
         ByteArray data_buf=data != null? marshal(data) : null;
         PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ).clusterName(cluster_name).initialDiscovery(initial_discovery);
         for(final PhysicalAddress addr: cluster_members) {
@@ -248,11 +247,11 @@ public class TCPPING extends Discovery {
 
     protected void sendDiscoveryRequest(Message req) {
         try {
-            log.trace("%s: sending discovery request to %s", local_addr, req.getDest());
+            log.info("%s: sending discovery request to %s", local_addr, req.getDest());
             down_prot.down(req);
         }
         catch(Throwable t) {
-            log.trace("sending discovery request to %s failed: %s", req.getDest(), t);
+            log.info("sending discovery request to %s failed: %s", req.getDest(), t);
         }
     }
 
