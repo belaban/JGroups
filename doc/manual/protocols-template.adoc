@@ -1458,6 +1458,9 @@ Because of positive acks (when a sender received acks from all members, it can p
 highest ack received), `STABLE` is not needed anymore. Also, because a sender blocks when the fixed buffer is full,
 flow control protocol `MFC` is also not needed anymore.
 
+As of 5.5.3, `NAKACK4` can be configured (`dynamic_buffers`) to use dynamic (unbounded) retransmission buffers; this
+prevents blocking, but it is recommended to use a multicast flow control (such as MFC) to avoid out-of-memory failures.
+
 Details: https://issues.redhat.com/browse/JGRP-2780
 Design: https://github.com/belaban/JGroups/blob/master/doc/design/NAKACK4.txt
 
