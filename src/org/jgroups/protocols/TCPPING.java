@@ -247,11 +247,11 @@ public class TCPPING extends Discovery {
 
     protected void sendDiscoveryRequest(Message req) {
         try {
-            log.info("%s: sending discovery request to %s", local_addr, req.getDest());
+            log.trace("%s: sending discovery request to %s", local_addr, req.getDest());
             down_prot.down(req);
         }
         catch(Throwable t) {
-            log.info("sending discovery request to %s failed: %s", req.getDest(), t);
+            log.trace("sending discovery request to %s failed: %s", req.getDest(), t);
         }
     }
 
