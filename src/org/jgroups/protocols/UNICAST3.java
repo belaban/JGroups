@@ -447,7 +447,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                      local_addr, xmit_interval, DEFAULT_XMIT_INTERVAL);
             xmit_interval=DEFAULT_XMIT_INTERVAL;
         }
-        relay_present=ProtocolStack.findProtocol(this.down_prot, true, RELAY.class) != null;
+        relay_present=ProtocolStack.findProtocol(this.down_prot, true, RELAY.class, null) != null;
     }
 
     public void start() throws Exception {
