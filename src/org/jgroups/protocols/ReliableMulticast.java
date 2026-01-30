@@ -96,6 +96,24 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
     @ManagedAttribute(description="True if sending a message can block at the transport level")
     protected boolean sends_can_block;
 
+    @Property(description="Number of rows of the matrix in the retransmission table (only for experts)",writable=false)
+    protected int     xmit_table_num_rows=100;
+
+    @Property(description="Number of elements of a row of the matrix in the retransmission table; gets rounded to the " +
+      "next power of 2 (only for experts). The capacity of the matrix is xmit_table_num_rows * xmit_table_msgs_per_row",
+      writable=false)
+    protected int     xmit_table_msgs_per_row=1024;
+
+    @Property(description="Resize factor of the matrix in the retransmission table (only for experts)",writable=false)
+    protected double  xmit_table_resize_factor=1.2;
+
+    @Property(description="Number of milliseconds after which the matrix in the retransmission table " +
+      "is compacted (only for experts)",writable=false,type=AttributeType.TIME)
+    protected long    xmit_table_max_compaction_time=10000;
+
+
+
+
     /* -------------------------------------------------- JMX ---------------------------------------------------------- */
 
 
@@ -246,8 +264,16 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
     public ReliableMulticast reuseMessageBatches(boolean b)           {this.reuse_message_batches=b; return this;}
     public boolean           sendAtomically()                         {return send_atomically;}
     public ReliableMulticast sendAtomically(boolean f)                {send_atomically=f; return this;}
-    public boolean           isTrace() {return is_trace;}
-    public ReliableMulticast isTrace(boolean i) {this.is_trace=i; return this;}
+    public int               getXmitTableNumRows()                    {return xmit_table_num_rows;}
+    public ReliableMulticast setXmitTableNumRows(int x)               {this.xmit_table_num_rows=x; return this;}
+    public int               getXmitTableMsgsPerRow()                 {return xmit_table_msgs_per_row;}
+    public ReliableMulticast setXmitTableMsgsPerRow(int x)            {this.xmit_table_msgs_per_row=x; return this;}
+    public double            getXmitTableResizeFactor()               {return xmit_table_resize_factor;}
+    public ReliableMulticast setXmitTableResizeFactor(double x)       {this.xmit_table_resize_factor=x; return this;}
+    public long              getXmitTableMaxCompactionTime()          {return xmit_table_max_compaction_time;}
+    public ReliableMulticast setXmitTableMaxCompactionTime(long x)    {this.xmit_table_max_compaction_time=x; return this;}
+    public boolean           isTrace()                                {return is_trace;}
+    public ReliableMulticast isTrace(boolean i)                       {this.is_trace=i; return this;}
 
     public <T extends Protocol> T setLevel(String level) {
         T retval=super.setLevel(level);
