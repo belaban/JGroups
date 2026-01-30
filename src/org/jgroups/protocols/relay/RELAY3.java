@@ -73,7 +73,7 @@ public class RELAY3 extends RELAY {
     public void init() throws Exception {
         super.init();
         site_unreachable_delayer=new Delayer<>(delay_site_unreachable_events);
-        unicast=ProtocolStack.findProtocol(up_prot, false, UNICAST3.class);
+        unicast=ProtocolStack.findProtocol(up_prot, false, UNICAST3.class, null);
     }
 
     @Override

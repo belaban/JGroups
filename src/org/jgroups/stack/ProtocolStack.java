@@ -19,6 +19,7 @@ import java.net.InetAddress;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 
@@ -698,14 +699,19 @@ public class ProtocolStack extends Protocol {
     }
 
     public <T extends Protocol> T findProtocol(Class<? extends Protocol> clazz) {
-        return findProtocol(top_prot, true, clazz);
+        return findProtocol(top_prot, true, clazz, null);
     }
 
-    public static <T extends Protocol> T findProtocol(Protocol start, boolean down, Class<? extends Protocol> clazz) {
+    public <T extends Protocol> T findProtocol(Class<? extends Protocol> clazz, Predicate<Protocol> filter) {
+        return findProtocol(top_prot, true, clazz, filter);
+    }
+
+    public static <T extends Protocol> T findProtocol(Protocol start, boolean down, Class<? extends Protocol> clazz,
+                                                      Predicate<Protocol> filter) {
         Protocol tmp=start;
         while(tmp != null) {
             Class<?> protClass=tmp.getClass();
-            if(clazz.isAssignableFrom(protClass))
+            if(clazz.isAssignableFrom(protClass) && (filter == null || filter.test(tmp)))
                 return (T)tmp;
             tmp=down? tmp.getDownProtocol() : tmp.getUpProtocol();
         }
