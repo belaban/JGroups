@@ -7,6 +7,7 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Preview;
 import org.jgroups.annotations.Property;
+import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.util.*;
 
 import java.util.List;
@@ -36,6 +37,10 @@ public class NAKACK4 extends ReliableMulticast {
       "every 500th ACk is sent; all others are dropped. If not set, defaulted to capacity/4",type=SCALAR)
     protected int                     ack_threshold;
 
+    @Property(description="If enabled, create DynamicBuffers instead of FixedBuffers. For details see " +
+      "https://issues.redhat.com/browse/JGRP-2969",writable=false)
+    protected boolean                 dynamic_buffers;
+
     @ManagedAttribute(description="Number of ACKs received",type=SCALAR)
     protected final LongAdder         acks_received=new LongAdder();
 
@@ -50,6 +55,7 @@ public class NAKACK4 extends ReliableMulticast {
     public NAKACK4           capacity(int c)           {capacity=c; return this;}
     public int               ackThreshold()            {return ack_threshold;}
     public NAKACK4           ackThreshold(int t)       {ack_threshold=t; return this;}
+    public boolean           dynamicBuffers()          {return dynamic_buffers;}
 
     @ManagedAttribute(type = SCALAR)
     public long getNumUnackedMessages() {
@@ -97,12 +103,15 @@ public class NAKACK4 extends ReliableMulticast {
 
     @Override
     protected Buffer<Message> createXmitWindow(long initial_seqno) {
+        if(dynamic_buffers)
+            return new DynamicBuffer<>(xmit_table_num_rows, xmit_table_msgs_per_row,
+                                       initial_seqno, xmit_table_resize_factor, xmit_table_max_compaction_time);
         return new FixedBuffer<>(capacity, initial_seqno);
     }
 
     @Override
     public boolean sendBufferCanBlock() {
-        return true;
+        return dynamic_buffers == false;
     }
 
     @Override
@@ -121,6 +130,17 @@ public class NAKACK4 extends ReliableMulticast {
         if(ack_threshold <= 0) {
             ack_threshold=capacity / 4;
             log.debug("defaulted ack_threshold to %d", ack_threshold);
+        }
+        STABLE stable=stack.findProtocol(STABLE.class);
+        if(stable != null) {
+            log.warn("%s protocol found in stack; this is not needed with %s", STABLE.class.getSimpleName(),
+                     NAKACK4.class.getSimpleName());
+        }
+        if(dynamic_buffers) {
+            FlowControl fc=stack.findProtocol(FlowControl.class, p -> ((FlowControl)p).handleMulticastMessage());
+            if(fc == null || !fc.handleMulticastMessage())
+                log.warn("no multicast flow control protocol found in stack: when setting dynamic_buffers to " +
+                           "true, it is recommended to use one");
         }
     }
 
@@ -161,7 +181,7 @@ public class NAKACK4 extends ReliableMulticast {
     public void changeCapacity(int new_capacity) {
         if(new_capacity == this.capacity)
             return;
-        xmit_table.values().stream().map(Entry::buf)
+        xmit_table.values().stream().map(Entry::buf).filter(buf -> buf instanceof FixedBuffer<Message>)
           .forEach(buf -> ((FixedBuffer<Message>)buf).changeCapacity(new_capacity));
         this.capacity=new_capacity;
     }
@@ -183,7 +203,7 @@ public class NAKACK4 extends ReliableMulticast {
 
     @Override
     protected void reset() {
-        FixedBuffer<Message> buf=(FixedBuffer<Message>)sendBuf();
+        Buffer<Message> buf=sendBuf();
         Util.close(buf);
         super.reset();
     }
