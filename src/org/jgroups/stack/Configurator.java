@@ -197,9 +197,9 @@ public record Configurator(ProtocolStack stack) {
         Map<String,String> properties=new HashMap<>(config.getProperties());
         initializeAttrs(prot, properties, ip_version);
 
-        // check for preview protocols, we need to do this after initializing the attrs as preview_warnings might get changed
+        // check for preview protocols, we need to do this after initializing the attrs as preview_warning might get changed
         if(prot.getClass().isAnnotationPresent(Preview.class) && prot.previewWarning())
-            log.warn("note that %s is in preview state. Set %s.preview_warnings to false to disable this warning.",
+            log.warn("note that %s is in preview state. Set %s.preview_warning to false to disable this warning.",
                      protocol_name, protocol_name);
 
         // don't yet initialize attrs of components, but later (after init() has been called); therefore remove all
