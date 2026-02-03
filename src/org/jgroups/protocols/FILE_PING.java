@@ -76,6 +76,7 @@ public class FILE_PING extends Discovery {
     protected File                        root_dir=null;
     protected static final FilenameFilter filter=(dir, name1) -> name1.endsWith(SUFFIX);
     protected Future<?>                   info_writer;
+    protected Thread                      shutdown_hook;
 
     public boolean   isDynamic()                          {return true;}
     public String    getLocation()                        {return location;}
@@ -113,12 +114,26 @@ public class FILE_PING extends Discovery {
     public void init() throws Exception {
         super.init();
         createRootDir();
+    }
+
+    public void start() throws Exception {
+        super.start();
         if(register_shutdown_hook) {
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> remove(cluster_name, local_addr)));
+            shutdown_hook=new Thread(() -> remove(cluster_name, local_addr));
+            Runtime.getRuntime().addShutdownHook(shutdown_hook);
         }
     }
 
     public void stop() {
+        if(shutdown_hook != null) {
+            try {
+                Runtime.getRuntime().removeShutdownHook(shutdown_hook);
+            }
+            catch(IllegalStateException ignored) {
+                // JVM is already shutting down
+            }
+            shutdown_hook=null;
+        }
         super.stop();
         stopInfoWriter();
         remove(cluster_name, local_addr);
