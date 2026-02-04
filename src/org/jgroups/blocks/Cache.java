@@ -228,12 +228,14 @@ public class Cache<K,V> {
         for(Iterator<Map.Entry<K,Value<V>>> it=map.entrySet().iterator(); it.hasNext();) {
             Map.Entry<K,Value<V>> entry=it.next();
             Value<V> val=entry.getValue();
-            evicted = isExpired(val);
-            if (evicted) {
+            boolean currentEvicted = isExpired(val);
+            evicted |= currentEvicted;
+            if (currentEvicted) {
                 if(log.isTraceEnabled())
                     log.trace("evicting " + entry.getKey() + ": " + getValue(val));
                 it.remove();
             }
+            
         }
         if(evicted)
             notifyChangeListeners();
