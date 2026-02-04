@@ -1,13 +1,15 @@
 package org.jgroups.protocols.dns;
 
-import java.util.Arrays;
-import java.util.List;
-
 import org.jgroups.Address;
+import org.jgroups.Global;
 import org.jgroups.stack.IpAddress;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
+import java.util.List;
+
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class AddressedDNSResolverTest {
 
    @Test
