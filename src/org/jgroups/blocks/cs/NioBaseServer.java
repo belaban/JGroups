@@ -114,8 +114,6 @@ public abstract class NioBaseServer extends BaseServer {
 
     }
 
-
-
     protected class Acceptor implements Runnable {
 
         public void run() {

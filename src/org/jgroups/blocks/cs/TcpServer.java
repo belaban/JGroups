@@ -7,7 +7,6 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.concurrent.locks.Lock;
 
 /**
  * Class that manages allows to send and receive messages via TCP sockets. Uses 1 thread/connection to read messages.
@@ -120,29 +119,7 @@ public class TcpServer extends TcpBaseServer {
                   : new TcpConnection(client_sock, TcpServer.this);
                 conn.useLockToSend(use_lock_to_send);
                 Address peer_addr=conn.peerAddress();
-                boolean close_conn=false;
-                Lock lock=getLock(peer_addr);
-                lock.lock();
-                try {
-                    boolean conn_exists=hasConnection(peer_addr),
-                      replace=conn_exists && use_peer_connections && local_addr.compareTo(peer_addr) < 0; // bigger conn wins
-
-                    if(!conn_exists || replace) {
-                        replaceConnection(peer_addr, conn); // closes old conn
-                        conn.start();
-                        log.trace("%s: accepted connection from %s", local_addr, peer_addr);
-                    }
-                    else {
-                        log.trace("%s: rejected connection from %s %s", local_addr, peer_addr, explanation(conn_exists, replace));
-                        // Util.close(conn); // keep our existing conn and close client_sock
-                        close_conn=true;
-                    }
-                }
-                finally {
-                    lock.unlock();
-                }
-                if(close_conn)
-                    Util.close(conn); // closing the connection outside the lock scope (might block if TLS)
+                handleIncomingConnection(peer_addr, conn);
             }
             catch(Exception ex) {
                 Util.close(conn);

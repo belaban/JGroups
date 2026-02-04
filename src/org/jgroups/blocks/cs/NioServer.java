@@ -92,11 +92,7 @@ public class NioServer extends NioBaseServer {
             if(use_peer_connections)
                 return;
 
-            synchronized(this) {
-                replaceConnection(peer_addr, conn); // closes old conn
-                conn.start();
-                log.trace("%s: accepted connection from %s", local_addr, peer_addr);
-            }
+            handleIncomingConnection(peer_addr, conn);
         }
         catch(Throwable ex) {
             Util.close(conn);
