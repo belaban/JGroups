@@ -5,6 +5,8 @@ import org.testng.annotations.Test;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 public class CacheTest {
 
@@ -69,7 +71,7 @@ public class CacheTest {
 
         // Setup
         Cache<String, String> cache = new Cache<>();
-        TestChangeListener listener = new TestChangeListener(cache);
+        TestChangeListener listener = new TestChangeListener(2, cache);
         cache.addChangeListener(listener);
         cache.enableReaping(100);
         cache.start();
@@ -77,7 +79,7 @@ public class CacheTest {
         // Run
         cache.put(KEY1, VALUE1, 250);
         cache.put(KEY2, VALUE2, 500);
-        Thread.sleep(750);
+        listener.await(2, TimeUnit.SECONDS);
         cache.stop();
 
         // Verify
@@ -201,7 +203,7 @@ public class CacheTest {
 
         // Setup
         Cache<String, String> cache = new Cache<>();
-        TestChangeListener listener = new TestChangeListener(cache);
+        TestChangeListener listener = new TestChangeListener(1, cache);
         cache.addChangeListener(listener);
         cache.enableReaping(100);
         cache.start();
@@ -209,7 +211,7 @@ public class CacheTest {
         // Run
         cache.put(KEY1, VALUE1, 200);
         cache.put(KEY2, VALUE2, 800);
-        Thread.sleep(500);
+        listener.await(1, TimeUnit.SECONDS);
         cache.removeChangeListener(listener);
         Thread.sleep(500);
         cache.stop();
@@ -230,7 +232,7 @@ public class CacheTest {
 
         // Listeners are notified in the order they are added, so add the bad listener first
         // to ensure we throw an exception before the good listener is notified of changes
-        TestChangeListener goodListener = new TestChangeListener(cache);
+        TestChangeListener goodListener = new TestChangeListener(1, cache);
         cache.addChangeListener(new BadChangeListener());
         cache.addChangeListener(goodListener);
         cache.enableReaping(100);
@@ -238,7 +240,7 @@ public class CacheTest {
 
         // Run
         cache.put(KEY1, VALUE1, 200);
-        Thread.sleep(400);
+        goodListener.await(1, TimeUnit.SECONDS);
         cache.stop();
 
         // Good listener should have been notified that KEY1 was evicted
@@ -318,17 +320,23 @@ public class CacheTest {
     }
 
     private static final class TestChangeListener implements Cache.ChangeListener {
-
+        final CountDownLatch latch;
         final Cache cache;
         final List<CacheState> changes = new ArrayList<>();
 
-        public TestChangeListener(Cache cache) {
+        public TestChangeListener(int numberOfExpectedChanges, Cache cache) {
+            this.latch = new CountDownLatch(numberOfExpectedChanges);
             this.cache = cache;
         }
 
         @Override
         public void changed() {
            changes.add(new CacheState(cache.entrySet(), cache.getSize(), cache.isReapingEnabled()));
+           latch.countDown();
+        }
+
+        public boolean await(long timeout, TimeUnit unit) throws InterruptedException {
+            return latch.await(timeout, unit);
         }
     }
 
