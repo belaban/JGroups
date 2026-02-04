@@ -303,24 +303,15 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
             if(connected(conn=conns.get(dest)))
                 return conn;
             conn=createConnection(dest);
-            replaceConnection(dest, conn);
-
-            try {
-                log.trace("%s: connecting to %s", local_addr, dest);
-                conn.connect(dest);
-                notifyConnectionEstablished(conn);
-                conn.start();
-            }
-            catch(Exception connect_ex) {
-                removeConnectionIfPresent(dest, conn); // removes and closes the conn
-                throw connect_ex;
-            }
+            handleOutgoingConnection(dest, conn);
         }
         finally {
             lock.unlock();
         }
         return conn;
     }
+
+
 
     @GuardedBy("this")
     public void replaceConnection(Address address, Connection conn) {
@@ -356,7 +347,22 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         return false;
     }
 
-    public void addConnection(Address peer_addr, Connection conn) throws Exception {
+    private void handleOutgoingConnection(Address dest, Connection conn) throws Exception {
+        try {
+            log.trace("%s: connecting to %s", local_addr, dest);
+            conn.connect(dest);
+            notifyConnectionEstablished(conn);
+            conn.start();
+            replaceConnection(dest, conn);
+        }
+        catch(Exception connect_ex) {
+            removeConnectionIfPresent(dest, conn); // removes and closes the conn
+            throw connect_ex;
+        }
+    }
+
+    public void handleIncomingConnection(Address peer_addr, Connection conn) throws Exception {
+        boolean close_conn=false;
         Lock lock=getLock(peer_addr);
         lock.lock();
         try {
@@ -364,17 +370,22 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
               replace=conn_exists && local_addr.compareTo(peer_addr) < 0; // bigger conn wins
 
             if(!conn_exists || replace) {
-                replaceConnection(peer_addr, conn); // closes old conn
+                notifyConnectionEstablished(conn);
                 conn.start();
+                replaceConnection(peer_addr, conn); // closes old conn
+                log.trace("%s: accepted connection from %s", local_addr, peer_addr);
             }
             else {
                 log.trace("%s: rejected connection from %s %s", local_addr, peer_addr, explanation(conn_exists, replace));
                 Util.close(conn); // keep our existing conn, reject accept() and close client_sock
+                close_conn=true;
             }
         }
         finally {
             lock.unlock();
         }
+        if(close_conn)
+            Util.close(conn); // closing the connection outside the lock scope (might block if TLS)
     }
 
     public BaseServer addConnectionListener(ConnectionListener cl) {
