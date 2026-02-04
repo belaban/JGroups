@@ -1,6 +1,7 @@
 package org.jgroups.protocols.dns;
 
 import org.jgroups.Address;
+import org.jgroups.Global;
 import org.jgroups.stack.IpAddress;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
@@ -13,6 +14,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+@Test(groups=Global.FUNCTIONAL,singleThreaded=true)
 public class DNS_PINGTest {
 
    private static final int PORT_START = 1234;
