@@ -20,7 +20,7 @@
         <log4j2.version>2.25.3</log4j2.version>
         <version.maven.sonatype.central>0.8.0</version.maven.sonatype.central>
         <javadoc.plugin.version>3.12.0</javadoc.plugin.version>
-        <compiler.plugin.version>3.14.0</compiler.plugin.version>
+        <compiler.plugin.version>3.15.0</compiler.plugin.version>
         <nexus3.plugin.version>1.0.13</nexus3.plugin.version>
         <enforcer.plugin.version>3.6.2</enforcer.plugin.version>
         <gpg.plugin.version>3.2.8</gpg.plugin.version>
