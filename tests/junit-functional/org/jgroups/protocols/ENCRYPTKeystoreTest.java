@@ -4,6 +4,10 @@
 package org.jgroups.protocols;
 
 
+import java.security.MessageDigest;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.jgroups.BytesMessage;
 import org.jgroups.Global;
 import org.jgroups.Message;
@@ -12,20 +16,16 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.MessageBatch;
 import org.testng.annotations.Test;
 
-import java.security.MessageDigest;
-import java.util.HashMap;
-import java.util.Map;
-
 /**
  * @author xenephon
  * @author Bela Ban
  */
 @Test(groups=Global.ENCRYPT)
-public class ENCRYPTKeystoreTest {
+public class ENCRYPTKeystoreTest extends EncryptGroupUtil {
 
     static final short ENCRYPT_ID=ClassConfigurator.getProtocolId(SYM_ENCRYPT.class);
 
-    protected String symAlgorithm() { return "AES"; }
+    protected String symAlgorithm() { return EncryptGroupUtil.ENCRYTP_ALGORITHM; }
     protected int symIvLength() { return 0; }
 
     public void testInitWrongKeystoreProperties() {
@@ -39,12 +39,12 @@ public class ENCRYPTKeystoreTest {
     }
 
     public void testInitKeystoreProperties() throws Exception {
-        SYM_ENCRYPT encrypt=new SYM_ENCRYPT().keystoreName("defaultStore.keystore");
+        SYM_ENCRYPT encrypt=new SYM_ENCRYPT().keystoreName(EncryptGroupUtil.KEY_STORE_FILE);
         encrypt.init();
     }
 
     public void testMessageDownEncode() throws Exception {
-        SYM_ENCRYPT encrypt=create("defaultStore.keystore");
+        SYM_ENCRYPT encrypt=create(EncryptGroupUtil.KEY_STORE_FILE);
         MockProtocol observer=new MockProtocol();
         encrypt.setDownProtocol(observer);
 
@@ -65,7 +65,7 @@ public class ENCRYPTKeystoreTest {
 
 
     public void testMessageUpDecode() throws Exception {
-        SYM_ENCRYPT encrypt=create("defaultStore.keystore"), encrypt2=create("defaultStore.keystore");
+        SYM_ENCRYPT encrypt=create(EncryptGroupUtil.KEY_STORE_FILE), encrypt2=create(EncryptGroupUtil.KEY_STORE_FILE);
         
         MockProtocol observer=new MockProtocol();
         encrypt.setUpProtocol(observer);
@@ -90,7 +90,7 @@ public class ENCRYPTKeystoreTest {
     }
 
     public void testMessageUpWrongKey() throws Exception {
-        SYM_ENCRYPT encrypt=create("defaultStore.keystore"), encrypt2=create("defaultStore2.keystore");
+        SYM_ENCRYPT encrypt=create(EncryptGroupUtil.KEY_STORE_FILE), encrypt2=create(EncryptGroupUtil.KEY_STORE2_FILE);
         MockProtocol observer=new MockProtocol();
         encrypt.setUpProtocol(observer);
 
@@ -112,7 +112,7 @@ public class ENCRYPTKeystoreTest {
     }
 
     public void testMessageUpNoEncryptHeader() throws Exception {
-        SYM_ENCRYPT encrypt=create("defaultStore.keystore"), encrypt2=create("defaultStore.keystore");
+        SYM_ENCRYPT encrypt=create(EncryptGroupUtil.KEY_STORE_FILE), encrypt2=create(EncryptGroupUtil.KEY_STORE_FILE);
         MockProtocol observer=new MockProtocol();
         encrypt.setUpProtocol(observer);
         String messageText="hello this is a test message";
@@ -126,7 +126,7 @@ public class ENCRYPTKeystoreTest {
 
 
     public void testMessageUpNoBuffer() throws Exception {
-        SYM_ENCRYPT encrypt=create("defaultStore.keystore");
+        SYM_ENCRYPT encrypt=create(EncryptGroupUtil.KEY_STORE_FILE);
         MockProtocol observer=new MockProtocol();
         encrypt.setUpProtocol(observer);
         encrypt.up((Message)new BytesMessage().putHeader(ENCRYPT_ID, new EncryptHeader((byte)0, "bla".getBytes(), encrypt.makeIv())));
@@ -134,7 +134,7 @@ public class ENCRYPTKeystoreTest {
     }
 
     public void testEncryptEntireMessage() throws Exception {
-        SYM_ENCRYPT encrypt=create("defaultStore.keystore");
+        SYM_ENCRYPT encrypt=create(EncryptGroupUtil.KEY_STORE_FILE);
         Message msg=new BytesMessage(null, "hello world".getBytes()).putHeader((short)1, new TpHeader("cluster"));
         MockProtocol mock=new MockProtocol();
         encrypt.setDownProtocol(mock);

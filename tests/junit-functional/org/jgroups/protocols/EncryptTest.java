@@ -14,6 +14,7 @@ import org.jgroups.util.MyReceiver;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
+
 import javax.crypto.SecretKey;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -31,7 +32,7 @@ import java.util.stream.Stream;
  * @since  4.0
  */
 @Test(groups=Global.ENCRYPT,singleThreaded=true)
-public abstract class EncryptTest {
+public abstract class EncryptTest extends EncryptGroupUtil {
     protected JChannel                a,b,c,d,rogue;
     protected MyReceiver<Message>     ra, rb, rc, r_rogue;
     protected final String            cluster_name=getClass().getSimpleName();
@@ -41,7 +42,7 @@ public abstract class EncryptTest {
         GMS_ID=ClassConfigurator.getProtocolId(GMS.class);
     }
 
-    protected String symAlgorithm() { return "AES"; }
+    protected String symAlgorithm() { return EncryptGroupUtil.ENCRYTP_ALGORITHM; }
     protected int symIvLength() { return 0; }
 
     protected void init() throws Exception {
@@ -124,7 +125,7 @@ public abstract class EncryptTest {
     public void testMessageSendingByRogueUsingEncryption() throws Exception {
         SYM_ENCRYPT encrypt=new SYM_ENCRYPT().keystoreName("/tmp/ignored.keystore");
 
-        SecretKey secret_key=KeyStoreGenerator.createSecretKey();
+        SecretKey secret_key= KeyStoreGenerator.createSecretKey();
         Field secretKey=Util.getField(SYM_ENCRYPT.class, "secret_key");
         secretKey.setAccessible(true);
         Util.setField(secretKey, encrypt, secret_key);

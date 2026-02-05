@@ -44,7 +44,6 @@
     <property name="manifest"              value="${dist.dir}/MANIFEST.MF"/>
 
 
-
 	<!-- 5 minutes per test suite timeout -->
     <property name="unittest.timeout" value="1800000"/>
     <property name="test.verbose" value="0"/>
@@ -466,31 +465,11 @@
     <target name="make-keystore" unless="isKeyStoreGenerated" depends="keyStoreGenerated,compile"
             description="Generates a temp keystore in ./keystore (for unit tests)">
         <mkdir dir="${keystore.dir}"/>
-        <java classname="org.jgroups.demos.KeyStoreGenerator" fork="false">
-            <arg value="--storeName"/>
-            <arg value="keystore/defaultStore.keystore"/>
-            <classpath refid="jg.classpath"/>
-        </java>
-        <java classname="org.jgroups.demos.KeyStoreGenerator" fork="false">
-            <arg value="--storeName"/>
-            <arg value="keystore/defaultStore2.keystore"/>
-            <classpath refid="jg.classpath"/>
-        </java>
     </target>
 
     <target name="make-keystore-no-compile" unless="isKeyStoreGenerated" depends="keyStoreGenerated"
             description="Generates a temp keystore in ./keystore (for unit tests)">
         <mkdir dir="${keystore.dir}"/>
-        <java classname="org.jgroups.demos.KeyStoreGenerator" fork="false">
-            <arg value="--storeName"/>
-            <arg value="keystore/defaultStore.keystore"/>
-            <classpath refid="jg.classpath"/>
-        </java>
-        <java classname="org.jgroups.demos.KeyStoreGenerator" fork="false">
-            <arg value="--storeName"/>
-            <arg value="keystore/defaultStore2.keystore"/>
-            <classpath refid="jg.classpath"/>
-        </java>
     </target>
 
 	<target name="keyStoreGenerated">
@@ -795,6 +774,7 @@
                 <sysproperty key="INITIAL_TCP_PORT"   value="@{initial.tcp.port}"/>
                 <sysproperty key="tcp.recv_buf_size"  value="@{tcp.recv.buf.size}"/>
                 <sysproperty key="tcp.send_buf_size"  value="@{tcp.send.buf.size}"/>
+                <sysproperty key="keystore.dir" value="${keystore.dir}"/>
 
                 <jvmarg value="-XX:+HeapDumpOnOutOfMemoryError"/>
                 <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
