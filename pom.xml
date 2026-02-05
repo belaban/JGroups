@@ -229,6 +229,18 @@
                     </rules>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <configuration>
+                    <followSymLinks>false</followSymLinks>
+                    <filesets>
+                        <fileset>
+                            <directory>${basedir}/keystore</directory>
+                        </fileset>
+                    </filesets>
+                </configuration>
+            </plugin>
            <plugin>
               <groupId>org.codehaus.mojo</groupId>
               <artifactId>build-helper-maven-plugin</artifactId>
@@ -373,6 +385,11 @@
                     <skip>true</skip>
                     <skipTests>true</skipTests>
                 </configuration-->
+                <configuration>
+                    <systemPropertyVariables>
+                        <keystore.dir>${project.basedir}/keystore</keystore.dir>
+                    </systemPropertyVariables>
+                </configuration>
                 <executions>
                     <execution>
                         <phase>test</phase>

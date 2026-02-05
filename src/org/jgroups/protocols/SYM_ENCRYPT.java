@@ -35,24 +35,28 @@ import java.security.KeyStore;
   "e.g. via a key store, or injection")
 public class SYM_ENCRYPT extends Encrypt<KeyStore.SecretKeyEntry> {
 
+    public static final String DEFAULT_KEYSTORE_TYPE = "JCEKS"; // supports symmetric keys
+    public static final String DEFAULT_KEYSTORE_PASSWORD = "changeit";
+    public static final String DEFAULT_KEYSTORE_ALIAS = "mykey";
+
     /* -----------------------------------------    Properties     -------------------------------------------------- */
     @Property(description="File on classpath that contains keystore repository")
     protected String   keystore_name;
 
     @Property(description="The type of the keystore. " +
       "Types are listed in http://docs.oracle.com/javase/8/docs/technotes/tools/unix/keytool.html")
-    protected String   keystore_type="pkcs12";
+    protected String   keystore_type=DEFAULT_KEYSTORE_TYPE;
 
     @Property(description="Password used to check the integrity/unlock the keystore. Change the default",
       exposeAsManagedAttribute=false)
-    protected String   store_password="changeit"; // JDK default
+    protected String   store_password=DEFAULT_KEYSTORE_PASSWORD; // JDK default
 
     @Property(description="Password for recovering the key. Change the default", exposeAsManagedAttribute=false)
     protected String   key_password; // allows to assign keypwd=storepwd if not set (https://issues.redhat.com/browse/JGRP-1375)
 
 
     @Property(name="alias", description="Alias used for recovering the key. Change the default",exposeAsManagedAttribute=false)
-    protected String   alias="mykey"; // JDK default
+    protected String   alias=DEFAULT_KEYSTORE_ALIAS; // JDK default
 
 
     public String      keystoreName()                      {return this.keystore_name;}
@@ -96,7 +100,7 @@ public class SYM_ENCRYPT extends Encrypt<KeyStore.SecretKeyEntry> {
      */
     protected void readSecretKeyFromKeystore() throws Exception {
         // must not use default keystore type - as it does not support secret keys
-        KeyStore store=KeyStore.getInstance(keystore_type != null? keystore_type : KeyStore.getDefaultType());
+        KeyStore store=KeyStore.getInstance(keystore_type);
 
         if(key_password == null && store_password != null) {
             key_password=store_password;

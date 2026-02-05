@@ -1,5 +1,9 @@
 package org.jgroups.protocols;
 
+import java.security.SecureRandom;
+import java.util.List;
+import java.util.function.Consumer;
+
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.protocols.pbcast.GMS;
@@ -10,9 +14,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.security.SecureRandom;
-import java.util.List;
-import java.util.function.Consumer;
 
 /**
  * Tests use cases for {@link SYM_ENCRYPT} described in https://issues.redhat.com/browse/JGRP-2021.
@@ -22,10 +23,10 @@ import java.util.function.Consumer;
  */
 @Test(groups=Global.ENCRYPT,singleThreaded=true)
 public class SYM_ENCRYPT_Test extends EncryptTest {
-    protected static final String DEF_PWD="changeit";
 
     @BeforeMethod protected void init() throws Exception {
         super.init();
+
     }
 
     @AfterMethod protected void destroy() {
@@ -41,14 +42,10 @@ public class SYM_ENCRYPT_Test extends EncryptTest {
         // Verify that the SecureRandom instance can be customized
         SecureRandom secureRandom = SecureRandom.getInstance("SHA1PRNG");
         SYM_ENCRYPT encr;
-        try {
-            encr=new SYM_ENCRYPT().keystoreName("keystore/defaultStore.keystore").alias("myKey").storePassword(DEF_PWD)
-              .symAlgorithm(symAlgorithm()).symIvLength(symIvLength()).secureRandom(secureRandom);
-        }
-        catch(Throwable t) {
-            encr=new SYM_ENCRYPT().keystoreName("defaultStore.keystore").alias("myKey").storePassword(DEF_PWD)
-              .symAlgorithm(symAlgorithm()).symIvLength(symIvLength()).secureRandom(secureRandom);
-        }
+
+        encr=new SYM_ENCRYPT().keystoreName(EncryptGroupUtil.KEY_STORE_FILE).alias(EncryptGroupUtil.KEY_ALIAS).storePassword(EncryptGroupUtil.DEF_PWD)
+          .symAlgorithm(symAlgorithm()).symIvLength(symIvLength()).secureRandom(secureRandom);
+
 
         return new JChannel(
           new SHARED_LOOPBACK(),
