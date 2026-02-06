@@ -55,7 +55,7 @@ public class DNSDiscoveryTester {
                new NAKACK2(),
                new UNICAST3(),
                new STABLE(),
-               new GMS().setJoinTimeout(timeout)
+               new GMS().setJoinTimeout(TimeUnit.MILLISECONDS.convert(timeout, unit))
          };
 
          JChannel c = new JChannel(protocols).name(String.valueOf(i+1));
