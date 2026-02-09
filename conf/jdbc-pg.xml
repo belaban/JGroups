@@ -8,13 +8,12 @@
     <!-- Uncomment attributes 'insert_sp' and 'call_insert_sp' if you want to use stored procedures -->
     <JDBC_PING2
             connection_driver="org.postgresql.Driver"
-            connection_url="jdbc:postgresql://localhost:5432/bela"
-            connection_username="bela"
-            connection_password="secret"
+            connection_url="${jdbc.url}"
+            connection_username="${jdbc.user}"
+            connection_password="${jdbc.pass}"
             remove_all_data_on_view_change="true"
             register_shutdown_hook="true"
             return_entire_cache="false"
-            <!--
             insert_sp="CREATE PROCEDURE deleteAndInsert
                         (addr varchar(200), name varchar(200), cluster varchar(200), ip varchar(200), coord boolean)
                         LANGUAGE SQL
@@ -23,7 +22,6 @@
                           INSERT INTO jgroups VALUES(addr, name, cluster, ip, coord);
                         END"
             call_insert_sp="call deleteAndInsert(?,?,?,?,?);"
-            -->
     />
     <MERGE3 min_interval="10000"
             max_interval="30000"/>

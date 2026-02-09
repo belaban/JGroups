@@ -1,5 +1,10 @@
 package org.jgroups.tests;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.protocols.MERGE3;
@@ -8,12 +13,11 @@ import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.Util;
+import org.testcontainers.containers.JdbcDatabaseContainer;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testng.annotations.AfterTest;
+import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
-
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Misc tests for {@link org.jgroups.protocols.JDBC_PING2}. The postgrsql DB needs to be running and its driver JAR
@@ -27,6 +31,27 @@ public class JDBC_PING2_Test {
     protected static final String CONFIG="jdbc-pg.xml";
     protected static final int NUM_NODES=8;
 
+    static JdbcDatabaseContainer<?> database = new PostgreSQLContainer<>(
+            "postgres:16-alpine"
+    );
+    
+    @BeforeTest
+    public void start() {
+        database.start();
+        System.setProperty("jdbc.url", database.getJdbcUrl());
+        System.setProperty("jdbc.user", database.getUsername());
+        System.setProperty("jdbc.pass", database.getPassword());
+    }
+
+    @AfterTest
+    public void stop() {
+        if (database.isRunning()) {
+            database.stop();
+        }
+        System.clearProperty("jdbc.url");
+        System.clearProperty("jdbc.user");
+        System.clearProperty("jdbc.pass");
+    }
 
     public void testClusterFormedAfterRestart() throws Exception {
         try(var a=createChannel(CONFIG, "A")) {
@@ -105,8 +130,4 @@ public class JDBC_PING2_Test {
         }
     }
 
-    public static void main(String[] args) throws Exception {
-        JDBC_PING2_Test test=new JDBC_PING2_Test();
-        test.testConcurrentStartup();
-    }
 }
