@@ -11,7 +11,10 @@ import org.testng.annotations.Test;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Tests {@link BasicTCP#enableSuspectEvents(boolean)} to reproduce https://issues.redhat.com/browse/JGRP-2968 / https://issues.redhat.com/browse/WFLY-21236
@@ -23,13 +26,13 @@ import java.util.List;
 @Test(groups = Global.TIME_SENSITIVE, singleThreaded = true)
 public class EnableSuspectEventsTest {
 
-    private static final String CLUSTER_NAME = EnableSuspectEventsTest.class.getSimpleName();
-    private static final int NUM_NODES = 3;
-    private static final int BASE_PORT = 7800;
-    private static final int NUM_ITERATIONS = 10;
+    private static final String  CLUSTER_NAME = EnableSuspectEventsTest.class.getSimpleName();
+    private static final int     NUM_NODES = 3;
+    private static final int     BASE_PORT = 7800;
+    private static final int     NUM_ITERATIONS = 10;
     private static final boolean FORCE_IPV6 = false;
 
-    private JChannel[] channels;
+    private final LinkedList<JChannel> channels=new LinkedList<>();
 
     @BeforeMethod
     protected void setup() throws Exception {
@@ -41,119 +44,72 @@ public class EnableSuspectEventsTest {
             hostname = "::1";
         }
 
-        channels = new JChannel[NUM_NODES];
-        TopologyMonitor[] monitors = new TopologyMonitor[NUM_NODES];
-
         InetAddress localhost = InetAddress.getByName(hostname);
         List<InetSocketAddress> initialHosts = new ArrayList<>();
         for (int i = 0; i < NUM_NODES; i++) {
             initialHosts.add(new InetSocketAddress(localhost, BASE_PORT + i));
         }
 
-        // Create all channels
+        // Create and connect all channels
         for (int i = 0; i < NUM_NODES; i++) {
-            channels[i] = createChannel(i, initialHosts, localhost);
-            monitors[i] = new TopologyMonitor(channels[i].getName());
-            channels[i].setReceiver(monitors[i]);
-        }
-
-        // Connect all channels
-        for (int i = 0; i < NUM_NODES; i++) {
-            channels[i].connect(CLUSTER_NAME);
+            channels.add(createChannel(i, initialHosts, localhost).connect(CLUSTER_NAME));
         }
 
         // Wait for all channels to have the same view
         Util.waitUntilAllChannelsHaveSameView(10000, 500, channels);
 
-        System.out.printf("-- Initial cluster formed with %d nodes (IPv6)\n", NUM_NODES);
-        for (int i = 0; i < NUM_NODES; i++) {
+        System.out.printf("-- Initial cluster formed with %d nodes\n", NUM_NODES);
+        for (JChannel ch: channels) {
             System.out.printf("   %s: %s, physical address: %s\n",
-                    channels[i].getName(),
-                    channels[i].getView(),
-                    channels[i].down(new Event(Event.GET_PHYSICAL_ADDRESS, channels[i].getAddress())));
+                    ch.getName(),
+                    ch.getView(),
+                    ch.down(new Event(Event.GET_PHYSICAL_ADDRESS, ch.getAddress())));
         }
     }
 
     @AfterMethod
     protected void tearDown() {
-        Util.closeFast(channels);
+        Util.close(channels);
     }
 
     public void testRepeatedLeaveAndJoin() throws Exception {
         for (int iteration = 0; iteration < NUM_ITERATIONS; iteration++) {
-            JChannel coordinator = null;
-            int coordIndex = -1;
-            for (int i = 0; i < channels.length; i++) {
-                if (channels[i] != null && channels[i].isConnected() &&
-                        channels[i].getView() != null &&
-                        channels[i].getAddress().equals(channels[i].getView().getCoord())) {
-                    coordinator = channels[i];
-                    coordIndex = i;
-                    break;
-                }
-            }
-
-            if (coordinator == null) {
+            JChannel coordinator = channels.removeFirst();
+            Address coord_addr=coordinator.address();
+            if (coordinator == null || !Objects.equals(coordinator.view().getCoord(), coordinator.address())) {
                 throw new IllegalStateException("No coordinator found!");
             }
 
-            System.out.printf("\n=== Iteration %d: Coordinator %s leaving ===\n", iteration + 1, coordinator.getName());
-
-            // Build list of stable channels (all except the coordinator)
-            List<JChannel> stableChannelsList = new ArrayList<>();
-            for (int i = 0; i < channels.length; i++) {
-                if (i != coordIndex && channels[i] != null && channels[i].isConnected()) {
-                    stableChannelsList.add(channels[i]);
-                }
-            }
-            JChannel[] stableChannels = stableChannelsList.toArray(new JChannel[0]);
+            System.out.printf("\n=== Iteration %d: Coordinator %s leaving ===\n", iteration + 1, coordinator.name());
 
             // Gracefully disconnect the coordinator simulating graceful node shutdown
             // The bug manifests when TCP connections close after LEAVE, triggering suspect events
             coordinator.disconnect();
 
-            // Wait a bit for views to stabilize
-            Util.sleep(1000);
-
             // Check the views on the remaining nodes
             System.out.print("   Checking remaining nodes:\n");
-            boolean foundBug = false;
-            for (JChannel ch : stableChannels) {
-                View view = ch.getView();
-                System.out.printf("     %s: %s\n", ch.getName(), view);
+            Util.waitUntil(5000, 100,
+                           () -> channels.stream().map(JChannel::view).allMatch(v -> v.size() == 2),
+                           () -> String.format("all views must have 2 members: %s", print(channels)));
+            System.out.printf("%s\n", print(channels));
 
-                if (view.size() == 1) {
-                    System.out.printf("   *** BUG REPRODUCED! Node %s formed singleton cluster!\n",
-                            ch.getName());
-                    foundBug = true;
-                }
-            }
-
-            if (!foundBug) {
-                // Verify all stable nodes have a view of size NUM_NODES-1 (nodes did not create partitions)
-                for (JChannel ch : stableChannels) {
-                    View view = ch.getView();
-                    assert view.size() == NUM_NODES - 1 : String.format(
-                            "FAILURE: Node %s should have view size 2, but got %d in view %s",
-                            ch.getName(), view.size(), view);
-                }
-
-                // Verify they all have the same view
-                Util.waitUntilAllChannelsHaveSameView(10000, 500, stableChannels);
-            } else {
-                throw new AssertionError("BUG REPRODUCED: Remaining nodes formed singleton clusters!");
-            }
-
-            System.out.printf("=== Node %d rejoining ===\n", coordIndex);
+            System.out.printf("=== Node %s rejoining ===\n", coord_addr);
 
             // Reconnect the old coordinator (it was gracefully disconnected)
             coordinator.connect(CLUSTER_NAME);
+            channels.add(coordinator);
 
             // Wait for all nodes to have the same view again (should be 3 nodes)
             Util.waitUntilAllChannelsHaveSameView(10000, 500, channels);
+            System.out.printf("after joining:\n%s\n", print(channels));
         }
 
         System.out.printf("Completed %d iterations without concurrent leaves\n", NUM_ITERATIONS);
+    }
+
+    private static String print(List<JChannel> l) {
+        return l.stream().map(ch -> String.format("%s: %s", ch.address(), ch.view()))
+          .collect(Collectors.joining("\n"));
     }
 
     /**
@@ -161,7 +117,7 @@ public class EnableSuspectEventsTest {
      * With the matching defaults - https://github.com/wildfly/wildfly/blob/39.0.0.Beta1/clustering/jgroups/extension/src/main/resources/jgroups-defaults.xml
      */
     private static JChannel createChannel(int index, List<InetSocketAddress> initialHosts, InetAddress bindAddr) throws Exception {
-        String name = "node-" + index;
+        String name = String.valueOf((char)(index + 'A'));
 
         TCP tcp = new TCP();
         tcp.setBindAddress(bindAddr);  // Use IPv6 address
@@ -206,29 +162,4 @@ public class EnableSuspectEventsTest {
         return new JChannel(tcp, red, tcpping, merge3, fdAll3, verifySuspect2, nakack4, unicast4, gms, frag4).name(name);
     }
 
-    /**
-     * Monitors topology changes on a channel
-     */
-    private static class TopologyMonitor implements Receiver {
-        private final String channelName;
-        private View previousView;
-
-        public TopologyMonitor(String channelName) {
-            this.channelName = channelName;
-        }
-
-        @Override
-        public void viewAccepted(View newView) {
-            ViewChange change = new ViewChange(previousView, newView);
-            System.out.printf("[%s] View changed: %s -> %s (delta=%d)\n",
-                    channelName,
-                    change.oldView != null ? change.oldView.size() : "null",
-                    change.newView.size(),
-                    change.oldView != null ? (change.oldView.size() - change.newView.size()) : 0);
-            previousView = newView;
-        }
-    }
-
-    private record ViewChange(View oldView, View newView) {
-    }
 }
