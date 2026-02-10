@@ -133,14 +133,13 @@ public class NAKACK4 extends ReliableMulticast {
         }
         STABLE stable=stack.findProtocol(STABLE.class);
         if(stable != null) {
-            log.warn("%s protocol found in stack; this is not needed with %s", STABLE.class.getSimpleName(),
+            log.warn(Util.getMessage("ProtocolNotFound"), STABLE.class.getSimpleName(),
                      NAKACK4.class.getSimpleName());
         }
         if(dynamic_buffers) {
             FlowControl fc=stack.findProtocol(FlowControl.class, p -> ((FlowControl)p).handleMulticastMessage());
             if(fc == null || !fc.handleMulticastMessage())
-                log.warn("no multicast flow control protocol found in stack: when setting dynamic_buffers to " +
-                           "true, it is recommended to use one");
+                log.warn(Util.getMessage("NoMcastFound"));
         }
     }
 
@@ -226,7 +225,7 @@ public class NAKACK4 extends ReliableMulticast {
         // don't create an entry if missing: https://issues.redhat.com/browse/JGRP-2904
         long[] rc=ack_table.ack(sender, ack, false);
         if(rc == null) {
-            log.warn("%s: received ACK(%,d) from %s, but ack-table doesn't have an entry", local_addr, ack, sender);
+            log.warn(Util.getMessage("NoAckEntry"), local_addr, ack, sender);
             return;
         }
         long old_min=rc[0], new_min=rc[1];
