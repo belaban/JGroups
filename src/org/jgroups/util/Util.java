@@ -543,6 +543,11 @@ public class Util {
         }
     }
 
+    public static void close(Collection<JChannel> channels) {
+        for(JChannel ch: channels)
+            Util.close(ch);
+    }
+
     /** Closes all non-coordinators first, in parallel, then closes the coord. This should produce just 2 views */
     public static void closeFast(JChannel ... channels) {
         if(channels != null) {
