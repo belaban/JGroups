@@ -10,7 +10,7 @@
 
 == Overview
 
-A release consists of the JGroups JAR, a source JAR and a javadoc JAR. All 3 JARs need to be signed and there ned to be
+A release consists of the JGroups JAR, a source JAR and a javadoc JAR. All 3 JARs need to be signed and there need to be
 checksums (md5 and sha1) for each of them (Sonatype requirement)
 
 The `nxrm3-maven-plugin` plugin is responsible for releasing. We release to repository.jboss.org, which periodically
