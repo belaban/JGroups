@@ -1,0 +1,34 @@
+
+RULE BaseServer_createRendezvous
+CLASS BaseServer
+METHOD <init>
+AT ENTRY
+IF NOT flagged("created")
+    DO System.out.println("--> createRendezvous");
+       createRendezvous("rv", 2);
+       flag("created");
+       clear("getConnection");
+       clear("close");
+ENDRULE
+
+## we stop during message to the other side
+RULE send_message_to_the_other_side
+CLASS BaseServer
+METHOD send(Address, byte[], int, int)
+AT INVOKE getConnection
+IF NOT flagged("getConnection") && $1.toString().equals("127.0.0.1:7800") && "dumb".equals(new String(java.util.Arrays.copyOfRange($2, $4 - 4, $4)))
+  DO System.out.println("--> send("+$1+") : invocation #1");
+     rendezvous("rv");
+     flag("getConnection");
+ENDRULE
+
+## we wait till close everything
+RULE disconnect_server
+CLASS BaseServer
+METHOD close
+AT EXIT
+IF NOT flagged ("close")
+   DO System.out.println("--> BaseServer.stop() returned: rendezvous #2");
+      rendezvous("rv");
+      flag("close");
+ENDRULE
