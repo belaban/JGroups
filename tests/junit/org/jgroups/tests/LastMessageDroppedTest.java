@@ -61,13 +61,15 @@ public class LastMessageDroppedTest extends ChannelTestBase {
 
         MyReceiver receiver=new MyReceiver();
         b.setReceiver(receiver);
-        a.send(null, 1);
-        a.send(null, 2);
-        discard.dropDownMulticasts(1); // drop the next multicast
-        a.send(null, 3);
+        for(int i=1; i <= 5; i++)
+            a.send(null, i);
+        for(int i=6; i <= 10; i++) {
+            discard.dropDownMulticasts(1); // drop the next multicast
+            a.send(null, i);
+        }
 
         Collection<Integer> list=receiver.getMsgs();
-        Util.waitUntil(20000, 500, () -> list.size() == 3, () -> String.format("list: %s", list));
+        Util.waitUntil(20000, 500, () -> list.size() == 10, () -> String.format("list: %s", list));
         System.out.println("list=" + list);
     }
 
