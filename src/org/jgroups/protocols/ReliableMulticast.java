@@ -1040,7 +1040,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
         if(my_highest_received >= 0 && seqno > my_highest_received) {
             log.trace("%s: my_highest_rcvd (%s#%d) < highest received (%s#%d): requesting retransmission",
                       local_addr, sender, my_highest_received, sender, seqno);
-            retransmit(seqno, seqno, sender, false);
+            retransmit(my_highest_received + 1, seqno, sender, false);
         }
         needToSendAck(recv_entry, 1); // https://issues.redhat.com/browse/JGRP-2874
     }
