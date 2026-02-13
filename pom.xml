@@ -22,10 +22,13 @@
         <insecure.repositories>ERROR</insecure.repositories>
         <log4j2.version>2.23.0</log4j2.version>
         <version.maven.javadoc>3.11.2</version.maven.javadoc>
+        <nexus3.plugin.version>1.0.13</nexus3.plugin.version>
+        <enforcer.plugin.version>3.6.2</enforcer.plugin.version>
+        <gpg.plugin.version>3.2.8</gpg.plugin.version>
     </properties>
 
     <organization>
-        <name>JBoss, a division of Red Hat</name>
+        <name>JBoss, IBM</name>
         <url>http://www.jboss.org</url>
     </organization>
 
@@ -33,6 +36,8 @@
         <developer>
             <name>Bela Ban</name>
             <email>belaban@gmail.com</email>
+            <organization>IBM</organization>
+            <organizationUrl>http://www.ibm.com</organizationUrl>
         </developer>
     </developers>
 
@@ -151,7 +156,7 @@
            <plugin>
                 <groupId>org.sonatype.plugins</groupId>
                 <artifactId>nxrm3-maven-plugin</artifactId>
-                <version>1.0.7</version>
+                <version>${nexus3.plugin.version}</version>
                 <extensions>true</extensions>
                 <configuration>
                     <!-- After Nexus migration https://repository.jboss.org will be here instead -->
@@ -203,7 +208,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
-                <version>3.4.0</version>
+                <version>${enforcer.plugin.version}</version>
                 <executions>
                     <execution>
                         <id>enforce-java</id>
@@ -315,6 +320,7 @@
                             <addBuildEnvironmentEntries>true</addBuildEnvironmentEntries>
                         </manifest>
                     </archive>
+                    <defaultManifestFile/>
                 </configuration>
                 <executions>
                     <execution>
@@ -336,8 +342,6 @@
                             <addDefaultEntries>true</addDefaultEntries>
                             <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
                             <addBuildEnvironmentEntries>true</addBuildEnvironmentEntries>
-                            <!--addClasspath>true</addClasspath-->
-                            <!--classpathPrefix>libs/</classpathPrefix-->
                             <mainClass>org.jgroups.Version</mainClass>
                         </manifest>
                         <manifestEntries>
@@ -362,16 +366,6 @@
                 </executions>
             </plugin>
 
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-release-plugin</artifactId>
-                <configuration>
-                    <arguments>-DskipTests=true -Dmaven.test.skip=true -Dmaven.javadoc.skip=true</arguments>
-                    <preparationGoals>clean</preparationGoals>
-                </configuration>
-
-            </plugin>
-
             <!-- Disable default tests: they won't run since they are lacking configuration -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -389,16 +383,6 @@
         </plugins>
         <pluginManagement>
             <plugins>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-release-plugin</artifactId>
-                    <version>3.0.1</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.sonatype.plugins</groupId>
-                    <artifactId>nexus-staging-maven-plugin</artifactId>
-                    <version>1.7.0</version>
-                </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-antrun-plugin</artifactId>
@@ -498,7 +482,7 @@
 
     <profiles>
         <profile>
-            <id>community-release</id>
+            <id>release</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
             </activation>
@@ -507,7 +491,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
-                        <version>3.2.7</version>
+                        <version>${gpg.plugin.version}</version>
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
