@@ -45,7 +45,9 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
     protected boolean use_mcast_xmit_req;
 
     /** Ask a random member for retransmission of a missing message. If true, discard_delivered_msgs is set to false */
-    @Property(description="Ask a random member for retransmission of a missing message")
+    @Property(description="Ask a random member for retransmission of a missing message",
+      deprecatedMessage="will be ignored (always false). See https://issues.redhat.com/browse/JGRP-2985")
+    @Deprecated
     protected boolean xmit_from_random_member;
 
     /**
@@ -53,7 +55,9 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
      * from the retransmit table, so they can get GC'ed. When this property is true, everyone (except the sender of a
      * message) removes the message from their retransmit table as soon as it has been delivered to the application
      */
-    @Property(description="Should messages delivered to application be discarded")
+    @Property(description="Should messages delivered to the application be discarded",
+      deprecatedMessage="will be ignored (always true). See https://issues.redhat.com/browse/JGRP-2985")
+    @Deprecated
     protected boolean discard_delivered_msgs=true;
 
     /** If true, logs messages discarded because received from other members */
@@ -238,16 +242,16 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
     public ReliableMulticast useMcastXmit(boolean u)                  {this.use_mcast_xmit=u; return this;}
     public boolean           useMcastXmitReq()                        {return use_mcast_xmit_req;}
     public ReliableMulticast useMcastXmitReq(boolean flag)            {this.use_mcast_xmit_req=flag; return this;}
-    public boolean           xmitFromRandomMember()                   {return xmit_from_random_member;}
-    public ReliableMulticast xmitFromRandomMember(boolean x)          {this.xmit_from_random_member=x; return this;}
-    public boolean           discardDeliveredMsgs()                   {return discard_delivered_msgs;}
-    public ReliableMulticast discardDeliveredMsgs(boolean d)          {this.discard_delivered_msgs=d; return this;}
+    public boolean           xmitFromRandomMember()                   {return false;}
+    public ReliableMulticast xmitFromRandomMember(boolean ignored)    {return this;}
+    public boolean           discardDeliveredMsgs()                   {return true;}
+    public ReliableMulticast discardDeliveredMsgs(boolean ignored)    {return this;}
     public boolean           logDiscardMessages()                     {return log_discard_msgs;}
     public ReliableMulticast logDiscardMessages(boolean l)            {this.log_discard_msgs=l; return this;}
     public boolean           logNotFoundMessages()                    {return log_not_found_msgs;}
     public ReliableMulticast logNotFoundMessages(boolean flag)        {this.log_not_found_msgs=flag; return this;}
-    public ReliableMulticast setXmitFromRandomMember(boolean r)       {this.xmit_from_random_member=r; return this;}
-    public ReliableMulticast setDiscardDeliveredMsgs(boolean d)       {this.discard_delivered_msgs=d;return this;}
+    public ReliableMulticast setXmitFromRandomMember(boolean r)       {return this;}
+    public ReliableMulticast setDiscardDeliveredMsgs(boolean d)       {return this;}
     public long              getXmitInterval()                        {return xmit_interval;}
     public ReliableMulticast setXmitInterval(long x)                  {this.xmit_interval=x; return this;}
     public int               getBecomeServerQueueSize()               {return become_server_queue_size;}
@@ -397,11 +401,6 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
             become_server_queue_size=50;
         }
         become_server_queue=becomeServerQueue();
-        if(xmit_from_random_member && discard_delivered_msgs) {
-            discard_delivered_msgs=false;
-            log.debug("%s: xmit_from_random_member set to true: changed discard_delivered_msgs to false", local_addr);
-        }
-
         TP transport=getTransport();
         sends_can_block=transport instanceof TCP; // UDP and TCP_NIO2 won't block
         transport.registerProbeHandler(this);
@@ -842,7 +841,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
         AtomicInteger adders=win.getAdders();
         if(adders.getAndIncrement() != 0)
             return;
-        boolean remove_msgs=discard_delivered_msgs && !loopback;
+        boolean remove_msgs=!loopback;
         int cap=max_batch_size > 0 && max_batch_size < win.capacity()? max_batch_size : win.capacity();
         AsciiString cl=cluster != null? cluster : getTransport().getClusterNameAscii();
         MessageBatch b=null;
@@ -1269,13 +1268,6 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
 
     protected void retransmit(SeqnoList missing_msgs, final Address sender, boolean multicast_xmit_request) {
         Address dest=(multicast_xmit_request || this.use_mcast_xmit_req)? null : sender; // to whom do we send the XMIT request ?
-
-        if(xmit_from_random_member && !local_addr.equals(sender)) {
-            Address random_member=Util.pickRandomElement(members);
-            if(random_member != null && !local_addr.equals(random_member))
-                dest=random_member;
-        }
-
         Message retransmit_msg=new ObjectMessage(dest, missing_msgs).setFlag(OOB, NO_FC).setFlag(DONT_BLOCK)
           .putHeader(this.id, NakAckHeader.createXmitRequestHeader(sender));
 
