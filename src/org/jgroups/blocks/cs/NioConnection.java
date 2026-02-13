@@ -217,7 +217,7 @@ public class NioConnection extends Connection {
 
         if(peer_addr == null && (peer_addr=readPeerAddress()) != null) {
             peer_addr_recv_buf=null;
-            server.addConnection(peer_addr, this);
+            server.handleIncomingConnection(peer_addr, this);
             return true;
         }
         if((msg=message_reader.readMessage()) == null)

@@ -110,12 +110,6 @@ public abstract class NioBaseServer extends BaseServer {
         ;
     }
 
-    protected void acceptorDone() {
-
-    }
-
-
-
     protected class Acceptor implements Runnable {
 
         public void run() {
@@ -160,7 +154,6 @@ public abstract class NioBaseServer extends BaseServer {
                     }
                 }
             }
-            acceptorDone();
         }
 
 
