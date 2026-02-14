@@ -216,10 +216,18 @@ public abstract class BasicTCP extends TP implements Receiver, ConnectionListene
 
     @Override
     public void connectionClosed(Connection conn) {
-        if(!enable_suspect_events)
-            return;
         Address peer_ip=conn.peerAddress();
         Address peer=peer_ip != null? logical_addr_cache.getByValue((PhysicalAddress)peer_ip) : null;
+
+        if (conn.isCloseGracefuly() && peer != null && members.contains(peer) && connected) {
+            // we notify the situation so GMS can react in case the LEAVE message was not being sent
+            up_prot.up(new Event(Event.DISCONNECT, peer));
+            return;
+        }
+
+        if(!enable_suspect_events)
+            return;
+
         if(peer != null && members.contains(peer) && connected &&
           Optional.ofNullable(stack.<GMS>findProtocol(GMS.class)).filter(Predicate.not(GMS::isLeaving)).isPresent()) {
             if(log.isDebugEnabled())

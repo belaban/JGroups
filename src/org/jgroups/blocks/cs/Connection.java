@@ -18,6 +18,7 @@ public abstract class Connection implements Closeable {
     protected long             last_access;           // timestamp of the last access to this connection (read or write)
     protected final Lock       send_lock=new ReentrantLock(); // serialize send()
 
+    protected volatile boolean closeGracefuly = false;
     abstract public boolean    isConnected();
     abstract public boolean    isConnectionPending();
     abstract public boolean    isClosed();
@@ -41,5 +42,9 @@ public abstract class Connection implements Closeable {
 
     public boolean isExpired(long now) {
         return server.connExpireTime() > 0 && now - last_access >= server.connExpireTime();
+    }
+    
+    public boolean isCloseGracefuly() {
+        return closeGracefuly;
     }
 }

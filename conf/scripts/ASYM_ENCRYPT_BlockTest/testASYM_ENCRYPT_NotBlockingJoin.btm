@@ -10,7 +10,7 @@ BIND gms=$0;
      dest=$2;
 IF TRUE
      DO System.out.println("** sending unicast message to " + dest);
-        sendUnicast(gms, dest);
+        SendUnicast.sendUnicast(gms, dest);
 ENDRULE
 
 

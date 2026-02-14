@@ -766,6 +766,13 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     public Object up(Event evt) {
         switch(evt.getType()) {
+            case Event.DISCONNECT:
+                Address address = evt.getArg();
+                if (!local_addr.equals(address) && members.contains(address)) {
+                    log.warn("%s: forceful peer disconnection detected %s", local_addr, address);
+                    view_handler.add(new Request(Request.LEAVE, address));
+                }
+                return null;
             case Event.SUSPECT:
                 Object retval=up_prot.up(evt);
                 // todo: change this to only accept lists in 4.1

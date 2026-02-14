@@ -8,6 +8,7 @@ import org.jgroups.util.Responses;
 import org.jgroups.util.Tuple;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -80,27 +81,32 @@ public class LOCAL_PING extends Discovery {
         if(evt.type() == Event.VIEW_CHANGE && cluster_name != null) {
             Address old_coord=view != null? view.getCoord() : null;
             boolean was_coord=Objects.equals(local_addr, old_coord);
+            synchronized (discovery) {
+                List<PingData> list=discovery.getOrDefault(cluster_name, Collections.emptyList());
+                for(PingData d : list) {
+                    Address mbr=d.getAddress();
+                    if(down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, mbr)) == null)
+                        addAddressToLocalCache(mbr, d.getPhysicalAddr());
+                }
+            }
+
             Object retval=super.down(evt);
 
             // synchronize TP.logical_addr_cache with discovery cache
             synchronized(discovery) {
-                List<PingData> list=discovery.get(cluster_name);
-                if(list != null && !list.isEmpty()) {
-                    for(PingData d : list) {
-                        Address mbr=d.getAddress();
-                        if(down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, mbr)) == null)
-                            down_prot.down(new Event(Event.ADD_PHYSICAL_ADDRESS, new Tuple<>(mbr, d.getPhysicalAddr())));
+                List<PingData> list=discovery.getOrDefault(cluster_name, Collections.emptyList());
 
-                        // set the coordinator based on the new view (https://issues.redhat.com/browse/JGRP-2381)
-                        if(Objects.equals(local_addr, mbr)) {
-                            if(!was_coord && is_coord) { // this member became coordinator
-                                d.coord(true);
-                                log.trace("%s: became coordinator (view: %s)", local_addr, view);
-                            }
-                            if(was_coord && !is_coord) { // this member ceased to be coord, e.g. on a merge
-                                d.coord(false);
-                                log.trace("%s: ceased to be coordinator (view: %s)", local_addr, view);
-                            }
+                for(PingData d : list) {
+                    Address mbr=d.getAddress();
+                    // set the coordinator based on the new view (https://issues.redhat.com/browse/JGRP-2381)
+                    if(Objects.equals(local_addr, mbr)) {
+                        if(!was_coord && is_coord) { // this member became coordinator
+                            d.coord(true);
+                            log.trace("%s: became coordinator (view: %s)", local_addr, view);
+                        }
+                        if(was_coord && !is_coord) { // this member ceased to be coord, e.g. on a merge
+                            d.coord(false);
+                            log.trace("%s: ceased to be coordinator (view: %s)", local_addr, view);
                         }
                     }
                 }

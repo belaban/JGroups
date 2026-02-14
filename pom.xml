@@ -149,9 +149,9 @@
         <testResources>
             <testResource>
                 <directory>conf</directory>
-                <includes>
-                    <include>*.jks</include>
-                </includes>
+                <excludes>
+                    <exclude>JGROUPS_VERSION.properties</exclude>
+                </excludes>
             </testResource>
         </testResources>
         <plugins>
@@ -248,7 +248,7 @@
               <executions>
                  <execution>
                     <id>add-source</id>
-                    <phase>validate</phase>
+                    <phase>generate-sources</phase>
                     <goals>
                        <goal>add-source</goal>
                     </goals>
@@ -262,7 +262,7 @@
                  </execution>
                  <execution>
                     <id>add-test-source</id>
-                    <phase>validate</phase>
+                    <phase>generate-test-sources</phase>
                     <goals>
                        <goal>add-test-source</goal>
                     </goals>
@@ -389,6 +389,8 @@
                     <systemPropertyVariables>
                         <keystore.dir>${project.basedir}/keystore</keystore.dir>
                     </systemPropertyVariables>
+                    <argLine>-Djdk.attach.allowAttachSelf=true</argLine>
+                    <systemPropertiesFile>build.properties</systemPropertiesFile>
                 </configuration>
                 <executions>
                     <execution>
