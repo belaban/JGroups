@@ -16,6 +16,7 @@ import java.io.*;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -28,12 +29,13 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * @since  3.6.5
  */
 public class TcpConnection extends Connection {
+    private static final int TCP_CLOSE_LENGTH_FLAG = -1;
     protected final Socket        sock; // socket to/from peer (result of srv_sock.accept() or new Socket())
-    protected OutputStream        out;
+    protected DataOutputStream    out;
     protected DataInputStream     in;
     protected volatile Receiver   receiver;
     protected final AtomicInteger writers=new AtomicInteger(0); // to determine the last writer to flush
-    protected volatile boolean    connected;
+    protected AtomicBoolean       connected=new AtomicBoolean(false);
     protected final byte[]        length_buf=new byte[Integer.BYTES]; // used to write the length of the data
     protected boolean             use_lock_to_send=true; // e.g. a single sender doesn't need to acquire the send_lock
 
@@ -57,9 +59,9 @@ public class TcpConnection extends Connection {
         if(s == null)
             throw new IllegalArgumentException("Invalid parameter s=" + s);
         setSocketParameters(s);
-        this.out=createDataOutputStream(s.getOutputStream());
+        this.out=new DataOutputStream(createDataOutputStream(s.getOutputStream()));
         this.in=createDataInputStream(s.getInputStream());
-        this.connected=sock.isConnected();
+        this.connected.set(sock.isConnected());
         this.peer_addr=server.usePeerConnections()? readPeerAddress(s)
           : new IpAddress((InetSocketAddress)s.getRemoteSocketAddress());
         last_access=getTimestamp(); // last time a message was sent or received (ns)
@@ -98,17 +100,17 @@ public class TcpConnection extends Connection {
                 throw new IllegalStateException("socket's bind and connect address are the same: " + destAddr);
             if(sock instanceof SSLSocket)
                 ((SSLSocket) sock).startHandshake();
-            this.out=createDataOutputStream(sock.getOutputStream());
+            this.out=new DataOutputStream(createDataOutputStream(sock.getOutputStream()));
             this.in=createDataInputStream(sock.getInputStream());
             if(send_local_addr)
                 sendLocalAddress(server.localAddress());
             // needs to be at the end or else isConnected() will return this connection and threads can start sending
             // even though we haven't yet sent the local address and waited for the ack (if use_acks==true)
-            connected=sock.isConnected();
+            connected.set(sock.isConnected());
         }
         catch(Exception t) {
             Util.close(this.sock);
-            connected=false;
+            connected.set(false);
             throw t;
         }
     }
@@ -225,7 +227,7 @@ public class TcpConnection extends Connection {
         }
         catch(Exception ex) {
             server.socket_factory.close(this.sock);
-            connected=false;
+            connected.set(false);
             throw ex;
         }
     }
@@ -273,7 +275,6 @@ public class TcpConnection extends Connection {
             recv=f.newThread(this,"Connection.Receiver [" + getSockAddress() + "]");
         }
 
-
         public Receiver start() {
             receiving=true;
             recv.start();
@@ -292,30 +293,35 @@ public class TcpConnection extends Connection {
             try {
                 while(canRun()) {
                     int len=in.readInt(); // needed to read messages from TCP_NIO2
+                    if (len == TCP_CLOSE_LENGTH_FLAG) {
+                        // the other end is signaling that this should be close
+                        server.log.debug("%s: Connection has been signal to close gracefuly by the other end %s", server.local_addr, TcpConnection.this);
+                        TcpConnection.this.closeGracefuly=true;
+                        break;
+                    }
                     server.receive(peer_addr, in, len);
                     updateLastAccessed();
                 }
             }
-            catch(EOFException | SocketException ex) {
-                ; // regular use case when a peer closes its connection - we don't want to log this as exception
-            }
             catch(Exception e) {
-                if (e instanceof SSLException && e.getMessage().contains("Socket closed")) {
-                    ; // regular use case when a peer closes its connection - we don't want to log this as exception
-                }
-                else if (e instanceof SSLHandshakeException && e.getCause() instanceof EOFException) {
-                    ; // Ignore SSL handshakes closed early (usually liveness probes)
-                }
-                else {
-                    if(server.logDetails())
-                        server.log.warn("failed handling message", e);
-                    else
-                        server.log.warn("failed handling message: " + e);
-                }
+                handleException(e);
             }
             finally {
                 server.notifyConnectionClosed(TcpConnection.this);
             }
+        }
+
+        private void handleException (Exception e) {
+            if (!receiving) {
+                // close have been invoked so this is a graceful close
+                server.log.debug("%s: Connection has been close gracefuly by this channel %s ", server.local_addr, TcpConnection.this);
+                TcpConnection.this.closeGracefuly=true;
+                return;
+            }
+            if(server.logDetails())
+                server.log.warn("%s: failed handling message", server.local_addr, e);
+            else
+                server.log.warn("%s: failed handling message: %s ", server.local_addr, e.getMessage());
         }
     }
 
@@ -341,7 +347,7 @@ public class TcpConnection extends Connection {
     }
 
     @Override public boolean isConnected() {
-        return connected;
+        return connected.get();
     }
 
     @Override public boolean isConnectionPending() {
@@ -353,13 +359,22 @@ public class TcpConnection extends Connection {
     }
 
     @Override public void close() throws IOException {
-        Util.close(sock); // fix for https://issues.redhat.com/browse/JGRP-2350
+        if (!connected.compareAndSet(true, false)) {
+            return;
+        }                
+        server.log.info("%s: Connection %s is being closed", server.localAddress(), this);
+        // we signal we should stop processing
         Receiver r=receiver;
+        receiver=null;
         if(r != null) {
             r.stop();
-            receiver=null;
         }
-        Util.close(out,in);
-        connected=false;
+        // we orderly shutdown input/output
+        sock.shutdownInput();
+        out.writeInt(TCP_CLOSE_LENGTH_FLAG); // we send end close flag
+        flush();
+        sock.shutdownOutput(); // we close output
+        Util.close(out,in, sock); // fix for https://issues.redhat.com/browse/JGRP-2350
+        server.log.trace("%s: Connection %s closed", server.local_addr, this);
     }
 }
