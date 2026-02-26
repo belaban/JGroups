@@ -312,9 +312,9 @@ public class TcpConnection extends Connection {
                 }
                 else {
                     if(server.logDetails())
-                        server.log.warn("failed handling message", e);
+                        server.log.warn("%s: failed handling message", server.local_addr, e);
                     else
-                        server.log.warn("failed handling message: " + e);
+                        server.log.warn("%s: failed handling message: %s", server.local_addr, e.getMessage());
                 }
             }
             finally {
@@ -362,7 +362,9 @@ public class TcpConnection extends Connection {
 
     @Override
     public void close(boolean graceful) throws IOException {
-        if(graceful) {
+        if(graceful && !closed_gracefully) {
+            server.log.trace("%s: sending graceful close from %s", server.local_addr, peer_addr);
+            closed_gracefully=true;
             sock.shutdownInput();
             out.writeInt(Connection.GRACEFUL_CLOSE);
             out.flush();
