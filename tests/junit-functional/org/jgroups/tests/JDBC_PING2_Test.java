@@ -9,7 +9,7 @@ import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.Util;
 import org.testng.SkipException;
-import org.testng.annotations.BeforeTest;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.concurrent.CountDownLatch;
@@ -30,7 +30,7 @@ public class JDBC_PING2_Test {
     protected static final int NUM_NODES=8;
 
 
-    @BeforeTest
+    @BeforeMethod
     public void checkEnvironment() {
         try {
             Class.forName("org.postgresql.Driver");
