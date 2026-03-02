@@ -91,7 +91,7 @@ public class TCP extends BasicTCP {
     public boolean useLockToSend()             {return use_lock_to_send;}
     public TCP     useLockToSend(boolean u)    {this.use_lock_to_send=u; return this;}
 
-    @ManagedAttribute
+    @ManagedAttribute(description="The number of connections",type=AttributeType.SCALAR,gauge=true)
     public int getOpenConnections() {
         return srv.getNumConnections();
     }

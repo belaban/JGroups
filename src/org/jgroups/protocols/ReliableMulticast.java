@@ -160,7 +160,8 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
     protected final LongAdder xmit_rsps_sent=new LongAdder();
 
     /** The average number of messages in a received {@link MessageBatch} */
-    @ManagedAttribute(description="The average number of messages in a batch removed from the table and delivered to the application")
+    @ManagedAttribute(description="The average number of messages in a batch removed from the table and " +
+      "delivered to the application",gauge=true)
     protected final AverageMinMax avg_batch_size=new AverageMinMax(1024);
 
     @ManagedAttribute(description="Is the retransmit task running")
@@ -285,7 +286,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
         return retval;
     }
 
-    @ManagedAttribute(description="Actual size of the become_server_queue",type=SCALAR)
+    @ManagedAttribute(description="Actual size of the become_server_queue",type=SCALAR,gauge=true)
     public int getBecomeServerQueueSizeActual() {
         return becomeServerQueue().size();
     }
@@ -305,12 +306,12 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
     /** Only used for unit tests, don't use ! */
     public void setTimer(TimeScheduler timer) {this.timer=timer;}
 
-    @ManagedAttribute(description="Total number of undelivered messages in all retransmit buffers",type=SCALAR)
+    @ManagedAttribute(description="Total number of undelivered messages in all retransmit buffers",type=SCALAR,gauge=true)
     public int getXmitTableUndeliveredMsgs() {
         return xmit_table.values().stream().map(Entry::buf).map(Buffer::size).reduce(Integer::sum).orElse(0);
     }
 
-    @ManagedAttribute(description="Total number of missing messages in all retransmit buffers",type=SCALAR)
+    @ManagedAttribute(description="Total number of missing messages in all retransmit buffers",type=SCALAR,gauge=true)
     public int getXmitTableMissingMessages() {
         return xmit_table.values().stream().map(Entry::buf).map(Buffer::numMissing).reduce(Integer::sum).orElse(0);
     }
@@ -322,14 +323,14 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
     }
 
     @ManagedAttribute(description="Returns the number of bytes of all messages in all retransmit buffers. " +
-      "To compute the size, Message.length() is used",type=AttributeType.BYTES)
+      "To compute the size, Message.length() is used",type=AttributeType.BYTES,gauge=true)
     public long getSizeOfAllMessages() {
         return xmit_table.values().stream().map(Entry::buf).map(win -> sizeOfAllMessages(win, false))
           .reduce(0L, Long::sum);
     }
 
     @ManagedAttribute(description="Returns the number of bytes of all messages in all retransmit buffers. " +
-      "To compute the size, Message.size() is used",type=AttributeType.BYTES)
+      "To compute the size, Message.size() is used",type=AttributeType.BYTES,gauge=true)
     public long getSizeOfAllMessagesInclHeaders() {
         return xmit_table.values().stream().map(Entry::buf)
           .map(win -> sizeOfAllMessages(win, true)).reduce(0L, Long::sum);

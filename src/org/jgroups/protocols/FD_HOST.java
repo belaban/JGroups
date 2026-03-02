@@ -56,10 +56,10 @@ public class FD_HOST extends Protocol {
       "removed soon, don't use !")
     protected boolean                                    use_time_service=true;
 
-    @ManagedAttribute(description="Number of liveness checks")
+    @ManagedAttribute(description="Number of liveness checks",type=AttributeType.SCALAR)
     protected int                                        num_liveness_checks;
 
-    @ManagedAttribute(description="Number of suspected events received")
+    @ManagedAttribute(description="Number of suspected events received",type=AttributeType.SCALAR)
     protected int                                        num_suspect_events;
 
     protected final Set<Address>                         suspected_mbrs=new HashSet<>();

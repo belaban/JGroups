@@ -154,7 +154,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     public int getNumSuspectedMembers() {return suspected_mbrs.size();}
     @ManagedAttribute(description="Ping destination")
     public String getPingDest() {return ping_dest != null? ping_dest.toString() : "null";}
-    @ManagedAttribute(description="Number of suspect event generated")
+    @ManagedAttribute(description="Number of suspect event generated",type=AttributeType.SCALAR)
     public int getNumSuspectEventsGenerated() {return num_suspect_events;}
     @ManagedAttribute(description="Whether the node crash detection monitor is running")
     public boolean isNodeCrashMonitorRunning() {return isPingerThreadRunning(); }

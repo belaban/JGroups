@@ -16,8 +16,10 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.List;
 import java.util.*;
+import java.util.List;
+
+import static org.jgroups.conf.AttributeType.SCALAR;
 
 /**
  * Discards up or down messages based on a percentage; e.g., setting property 'up' to 0.1 causes 10%
@@ -35,10 +37,10 @@ public class DISCARD extends Protocol {
     @Property(description="If discard_all is true, still sends messages to self")
     protected boolean                   excludeItself=true;   // if true don't discard messages sent/received in this stack
 
-    @ManagedAttribute(description="Number of dropped down messages",name="dropped_down_messages")
+    @ManagedAttribute(description="Number of dropped down messages",name="dropped_down_messages",type=SCALAR)
     protected int                       num_down;
 
-    @ManagedAttribute(description="Number of dropped up messages",name="dropped_up_messages")
+    @ManagedAttribute(description="Number of dropped up messages",name="dropped_up_messages",type=SCALAR)
     protected int                       num_up;
 
     protected final Set<Address>        ignoredMembers = Collections.synchronizedSet(new HashSet<>());

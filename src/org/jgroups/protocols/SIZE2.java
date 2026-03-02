@@ -41,12 +41,12 @@ public class SIZE2 extends Protocol {
     @Property(description="Whether to throw an exception when a bucket is missing, or silently drop the samplle")
     protected boolean exception_on_missing_bucket;
 
-    @ManagedAttribute(description="Total number of down samples",type=AttributeType.SCALAR)
+    @ManagedAttribute(description="Total number of down samples",type=AttributeType.SCALAR,gauge=true)
     public long numDownSamples() {
         return down_sampler != null? down_sampler.total() : 0;
     }
 
-    @ManagedAttribute(description="Total number of up samples",type=AttributeType.SCALAR)
+    @ManagedAttribute(description="Total number of up samples",type=AttributeType.SCALAR,gauge=true)
     public long numUpSamples() {
         return up_sampler != null? up_sampler.total() : 0;
     }

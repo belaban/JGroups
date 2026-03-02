@@ -130,7 +130,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     @ManagedAttribute(description="Number of retransmit responses sent",type=SCALAR)
     protected final LongAdder  xmit_rsps_sent=new LongAdder();
 
-    @ManagedAttribute(description="Average batch size of messages delivered to the application")
+    @ManagedAttribute(description="Average batch size of messages delivered to the application",gauge=true)
     protected final AverageMinMax avg_delivery_batch_size=new AverageMinMax(1024);
 
     @ManagedAttribute(description="True if sending a message can block at the transport level. Probabably only needed " +
@@ -204,17 +204,18 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
 
     public long getNumLoopbacks() {return num_loopbacks.sum();}
 
-    @ManagedAttribute(description="Returns the number of outgoing (send) connections",type=SCALAR)
+    @ManagedAttribute(description="Returns the number of outgoing (send) connections",type=SCALAR,gauge=true)
     public int getNumSendConnections() {
         return send_table.size();
     }
 
-    @ManagedAttribute(description="Returns the number of incoming (receive) connections",type=SCALAR)
+    @ManagedAttribute(description="Returns the number of incoming (receive) connections",type=SCALAR,gauge=true)
     public int getNumReceiveConnections() {
         return recv_table.size();
     }
 
-    @ManagedAttribute(description="Returns the total number of outgoing (send) and incoming (receive) connections",type=SCALAR)
+    @ManagedAttribute(description="Returns the total number of outgoing (send) and incoming (receive) connections",
+      type=SCALAR,gauge=true)
     public int getNumConnections() {
         return getNumReceiveConnections() + getNumSendConnections();
     }
@@ -326,7 +327,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     @ManagedAttribute(description="Is the retransmit task running")
     public boolean isXmitTaskRunning() {return xmit_task != null && !xmit_task.isDone();}
 
-    @ManagedAttribute(type=SCALAR)
+    @ManagedAttribute(type=SCALAR,gauge=true)
     public int getAgeOutCacheSize() {
         return cache != null? cache.size() : 0;
     }
@@ -347,7 +348,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
     }
 
     /** The number of messages in all Entry.sent_msgs tables (haven't received an ACK yet) */
-    @ManagedAttribute(type= SCALAR)
+    @ManagedAttribute(type=SCALAR,gauge=true)
     public int getNumUnackedMessages() {
         return accumulate(Table::size, send_table.values());
     }
@@ -357,17 +358,17 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
         return entry != null ? entry.msgs.size() : 0;
     }
 
-    @ManagedAttribute(description="Total number of undelivered messages in all receive windows",type=SCALAR)
+    @ManagedAttribute(description="Total number of undelivered messages in all receive windows",type=SCALAR,gauge=true)
     public int getXmitTableUndeliveredMessages() {
         return accumulate(Table::size, recv_table.values());
     }
 
-    @ManagedAttribute(description="Total number of missing messages in all receive windows",type=SCALAR)
+    @ManagedAttribute(description="Total number of missing messages in all receive windows",type=SCALAR,gauge=true)
     public int getXmitTableMissingMessages() {
         return accumulate(Table::getNumMissing, recv_table.values());
     }
 
-    @ManagedAttribute(description="Total number of deliverable messages in all receive windows",type=SCALAR)
+    @ManagedAttribute(description="Total number of deliverable messages in all receive windows",type=SCALAR,gauge=true)
     public int getXmitTableDeliverableMessages() {
         return accumulate(Table::getNumDeliverable, recv_table.values());
     }

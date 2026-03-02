@@ -267,7 +267,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
     /* --------------------------------------------- JMX  ---------------------------------------------- */
     @Component(name="msg_stats")
-    protected final MsgStats msg_stats=new MsgStats();
+    protected MsgStats msg_stats=new MsgStats();
 
     /** The name of the group to which this member is connected. With a shared transport, the channel name is
      * in TP.ProtocolAdapter (cluster_name), and this field is not used */
@@ -429,10 +429,11 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     protected TP() {
     }
 
-    public MsgStats                getMessageStats()     {return msg_stats;}
-    public MessageProcessingPolicy msgProcessingPolicy() {return msg_processing_policy;}
+    public MsgStats                getMessageStats()            {return msg_stats;}
+    public <T extends TP> T        setMessageStats(MsgStats ms) {this.msg_stats=ms; return (T)this;}
+    public MessageProcessingPolicy msgProcessingPolicy()        {return msg_processing_policy;}
     public <T extends TP> T        msgProcessingPolicy(MessageProcessingPolicy p) {this.msg_processing_policy=p; return (T)this;}
-    public RTT                     getRTT()              {return rtt;}
+    public RTT                     getRTT()                     {return rtt;}
 
     @Override
     public void enableStats(boolean flag) {
@@ -641,7 +642,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
 
 
 
-    @ManagedAttribute(name="timer_tasks",description="Number of timer tasks queued up for execution",type=SCALAR)
+    @ManagedAttribute(name="timer_tasks",description="Number of timer tasks queued up for execution",type=SCALAR,gauge=true)
     public int getNumTimerTasks() {return timer.size();}
 
     @ManagedOperation public String dumpTimerTasks() {return timer.dumpTimerTasks();}
@@ -649,10 +650,10 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     @ManagedOperation(description="Purges cancelled tasks from the timer queue")
     public void removeCancelledTimerTasks() {timer.removeCancelledTasks();}
 
-    @ManagedAttribute(description="Number of threads currently in the pool",type=SCALAR)
+    @ManagedAttribute(description="Number of threads currently in the pool",type=SCALAR,gauge=true)
     public int getTimerThreads() {return timer.getCurrentThreads();}
 
-    @ManagedAttribute(description="Returns the number of live threads in the JVM",type=SCALAR)
+    @ManagedAttribute(description="Returns the number of live threads in the JVM",type=SCALAR,gauge=true)
     public static int getNumThreads() {return ManagementFactory.getThreadMXBean().getThreadCount();}
 
     public <T extends TP> T setLogDiscardMessages(boolean flag)     {log_discard_msgs=flag; return (T)this;}

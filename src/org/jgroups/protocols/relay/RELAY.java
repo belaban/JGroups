@@ -19,6 +19,7 @@ import java.util.function.Consumer;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static org.jgroups.conf.AttributeType.SCALAR;
 import static org.jgroups.conf.AttributeType.TIME;
 import static org.jgroups.protocols.relay.RelayHeader.SITES_DOWN;
 import static org.jgroups.protocols.relay.RelayHeader.SITES_UP;
@@ -117,39 +118,41 @@ public abstract class RELAY extends Protocol {
     protected SuppressLog<String>          suppress_log_no_route;
 
 
-    @ManagedAttribute(description="Number of messages forwarded to the local SiteMaster")
+    @ManagedAttribute(description="Number of messages forwarded to the local SiteMaster",type=SCALAR)
     public long getNumForwardedToSiteMaster() {return forward_to_site_master.sum();}
 
     @ManagedAttribute(description="The total time (in ms) spent forwarding messages to the local SiteMaster",type=TIME)
     public long getTimeForwardingToSM() {return MILLISECONDS.convert(forward_sm_time.sum(), NANOSECONDS);}
 
-    @ManagedAttribute(description="The average number of messages / s for forwarding messages to the local SiteMaster")
+    @ManagedAttribute(description="The average number of messages / s for forwarding messages to the local SiteMaster",gauge=true)
     public long getAvgMsgsForwardingToSM() {return getTimeForwardingToSM() > 0?
       (long)(getNumForwardedToSiteMaster() / (getTimeForwardingToSM()/1000.0)) : 0;}
 
-    @ManagedAttribute(description="Number of messages sent by this SiteMaster to a remote SiteMaster")
+    @ManagedAttribute(description="Number of messages sent by this SiteMaster to a remote SiteMaster",type=SCALAR)
     public long getNumRelayed() {return relayed.sum();}
 
     @ManagedAttribute(description="The total time (ms) spent relaying messages from this SiteMaster to remote SiteMasters"
       ,type=TIME)
     public long getTimeRelaying() {return MILLISECONDS.convert(relayed_time.sum(), NANOSECONDS);}
 
-    @ManagedAttribute(description="The average number of messages / s for relaying messages from this SiteMaster to remote SiteMasters")
+    @ManagedAttribute(description="The average number of messages / s for relaying messages from this SiteMaster to remote SiteMasters",
+    gauge=true)
     public long getAvgMsgsRelaying() {return getTimeRelaying() > 0? (long)(getNumRelayed() / (getTimeRelaying()/1000.0)) : 0;}
 
     @ManagedAttribute(description="Number of messages (received from a remote Sitemaster and) delivered " +
-      "by this SiteMaster to a local node")
+      "by this SiteMaster to a local node",type=SCALAR)
     public long getNumForwardedToLocalMbr() {return forward_to_local_mbr.sum();}
 
     @ManagedAttribute(description="The total time (in ms) spent forwarding messages to a member in the same site",
       type=TIME)
     public long getTimeForwardingToLocalMbr() {return MILLISECONDS.convert(forward_to_local_mbr_time.sum(), NANOSECONDS);}
 
-    @ManagedAttribute(description="The average number of messages / s for forwarding messages to a member in the same site")
+    @ManagedAttribute(description="The average number of messages / s for forwarding messages to a member in the same site",
+      gauge=true)
     public long getAvgMsgsForwardingToLocalMbr() {return getTimeForwardingToLocalMbr() > 0?
       (long)(getNumForwardedToLocalMbr() / (getTimeForwardingToLocalMbr()/1000.0)) : 0;}
 
-    @ManagedAttribute(description="Number of 'no route to site X' errors")
+    @ManagedAttribute(description="Number of 'no route to site X' errors",type=SCALAR)
     public int getNumberOfNoRouteErrors() {return suppress_log_no_route.getCache().size();}
 
     @ManagedOperation(description="Clears the 'no route to site X' cache")

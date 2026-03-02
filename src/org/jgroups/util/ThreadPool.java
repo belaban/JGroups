@@ -175,14 +175,14 @@ public class ThreadPool implements Lifecycle {
     @Deprecated public static int getNumberOfThreadDumps()            {return -1;}
     @Deprecated public void       resetThreadDumps()                  {}
 
-    @ManagedAttribute(description="Current number of threads in the thread pool",type=SCALAR)
+    @ManagedAttribute(description="Current number of threads in the thread pool",type=SCALAR,gauge=true)
     public int getThreadPoolSize() {
         if(thread_pool instanceof ThreadPoolExecutor)
             return ((ThreadPoolExecutor)thread_pool).getPoolSize();
         return 0;
     }
 
-    @ManagedAttribute(description="Current number of active threads in the thread pool",type=SCALAR)
+    @ManagedAttribute(description="Current number of active threads in the thread pool",type=SCALAR,gauge=true)
     public int getThreadPoolSizeActive() {
         if(thread_pool instanceof ThreadPoolExecutor)
             return ((ThreadPoolExecutor)thread_pool).getActiveCount();

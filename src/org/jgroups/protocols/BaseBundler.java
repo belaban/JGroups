@@ -88,13 +88,13 @@ public abstract class BaseBundler implements Bundler {
     @Property(description="Delay (in ms) after which queued messages to non-members are removed",unit=MILLISECONDS,type=AttributeType.TIME)
     protected long                                  remove_delay=5000;
 
-    @ManagedAttribute(description="Average fill size of the queue (in bytes) when messages are sent")
+    @ManagedAttribute(description="Average fill size of the queue (in bytes) when messages are sent",gauge=true)
     protected final AverageMinMax                   avg_fill_count=new AverageMinMax(512);
 
-    @ManagedAttribute(description="Average number of messages drained into the remove queue")
+    @ManagedAttribute(description="Average number of messages drained into the remove queue",gauge=true)
     protected final AverageMinMax                   avg_remove_queue_size=new AverageMinMax(512);
 
-    @ManagedAttribute(description="Time (us) to send the bundled messages")
+    @ManagedAttribute(description="Time (us) to send the bundled messages",gauge=true)
     protected final AverageMinMax                   avg_send_time=new AverageMinMax(1024).unit(NANOSECONDS);
 
     @ManagedAttribute(description="Total number of messages sent (single and batches)",type=AttributeType.SCALAR)
@@ -142,7 +142,7 @@ public abstract class BaseBundler implements Bundler {
     public long                  removeDelay()                    {return remove_delay;}
     public Bundler               removeDelay(long remove_delay)   {this.remove_delay=remove_delay; return this;}
 
-    @ManagedAttribute(description="Average number of messages in an BatchMessage")
+    @ManagedAttribute(description="Average number of messages in an BatchMessage",gauge=true)
     public double avgBatchSize() {
         long num_batches=num_batches_sent.sum(), total_msgs=total_msgs_sent.sum(), single_msgs=num_single_msgs_sent.sum();
         if(num_batches == 0 || total_msgs == 0) return 0.0;
@@ -176,7 +176,7 @@ public abstract class BaseBundler implements Bundler {
     }
 
     /** Returns the total number of messages in the hashmap */
-    @ManagedAttribute(description="The number of unsent messages in the bundler")
+    @ManagedAttribute(description="The number of unsent messages in the bundler",type=SCALAR,gauge=true)
     public int size() {
         lock.lock();
         try {
@@ -187,7 +187,7 @@ public abstract class BaseBundler implements Bundler {
         }
     }
 
-    @ManagedAttribute(description="Size of the queue (if available")
+    @ManagedAttribute(description="Size of the queue (if available",type=SCALAR,gauge=true)
     public int getQueueSize() {
         return -1;
     }

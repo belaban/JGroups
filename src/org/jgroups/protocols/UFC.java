@@ -78,7 +78,7 @@ public class UFC extends FlowControl {
     }
 
     @ManagedAttribute(description="Average time blocked (in ms) in flow control when trying to send a message",
-      type=AttributeType.TIME)
+      type=AttributeType.TIME,gauge=true)
     public double getAverageTimeBlocked() {
         return sent.values().stream().mapToDouble(c -> c.getAverageBlockTime() / 1_000_000).average().orElse(0.0);
     }

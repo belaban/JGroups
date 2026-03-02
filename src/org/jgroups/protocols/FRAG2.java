@@ -49,10 +49,10 @@ public class FRAG2 extends Fragmentation {
     protected final AverageMinMax avg_size_down=new AverageMinMax();
     protected final AverageMinMax avg_size_up=new AverageMinMax();
 
-    @ManagedAttribute(description="min/avg/max size (in bytes) for messages sent down that needed to be fragmented")
+    @ManagedAttribute(description="min/avg/max size (in bytes) for messages sent down that needed to be fragmented",gauge=true)
     public String getAvgSizeDown() {return avg_size_down.toString();}
 
-    @ManagedAttribute(description="min/avg/max size (in bytes) of messages re-assembled from fragments")
+    @ManagedAttribute(description="min/avg/max size (in bytes) of messages re-assembled from fragments",gauge=true)
     public String getAvgSizeUp()   {return avg_size_up.toString();}
 
     protected long getNextId() {

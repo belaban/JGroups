@@ -37,7 +37,7 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
     protected static final String           THREAD_NAME="pd-bundler";
     protected final Condition               not_empty=lock.newCondition();
 
-    @ManagedAttribute(description="Total number of messages in all queues")
+    @ManagedAttribute(description="Total number of messages in all queues",gauge=true)
     protected final AtomicInteger           msgs_available=new AtomicInteger();
 
     public boolean isRunning() {
@@ -48,7 +48,7 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
     @ManagedAttribute(description="Size of the queue (if available")
     public int getQueueSize() {return -1;}
 
-    @ManagedAttribute(description="The number of unsent messages in the bundler")
+    @ManagedAttribute(description="The number of unsent messages in the bundler",gauge=true)
     public int size() {
         return dests.values().stream().map(SendBuffer::size).reduce(0, Integer::sum);
     }

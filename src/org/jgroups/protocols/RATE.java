@@ -66,13 +66,13 @@ public class RATE extends Protocol {
     public RATE    interval(long i)                 {interval=i; return this;}
 
 
-    @ManagedAttribute(description="Current send rate")
+    @ManagedAttribute(description="Current send rate",gauge=true)
     public String currentSendRate() {return Util.printBytes(current_send_rate);}
 
     @ManagedAttribute(description="Highest send rate")
     public String highestSendRate() {return Util.printBytes(highest_send_rate);}
 
-    @ManagedAttribute(description="Current receive rate")
+    @ManagedAttribute(description="Current receive rate",gauge=true)
     public String currentReceiveRate() {return Util.printBytes(current_receive_rate);}
 
     @ManagedAttribute(description="Highest receive rate")

@@ -3,6 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.util.NameCache;
 import org.jgroups.util.Responses;
 import org.jgroups.util.Tuple;
@@ -50,7 +51,7 @@ public class LOCAL_PING extends Discovery {
         return sb.toString();
     }
 
-    @ManagedAttribute(description="Number of keys in the discovery cache")
+    @ManagedAttribute(description="Number of keys in the discovery cache",type=AttributeType.SCALAR,gauge=true)
     public static int getDiscoveryCacheSize() {
         synchronized(discovery) {
             return discovery.size();

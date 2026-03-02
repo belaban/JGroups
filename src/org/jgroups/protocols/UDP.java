@@ -199,7 +199,7 @@ public class UDP extends TP {
 
 
     @ManagedAttribute(description="Number of messages dropped when sending because of insufficient buffer space"
-      ,type=AttributeType.SCALAR)
+      ,type=AttributeType.SCALAR,gauge=true)
     public int getDroppedMessages() {
         return suppress_log_out_of_buffer_space != null? suppress_log_out_of_buffer_space.getCache().size() : 0;
     }

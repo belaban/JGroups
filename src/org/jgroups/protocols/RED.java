@@ -29,7 +29,7 @@ public class RED extends Protocol {
       "returns a queue size of -1")
     protected boolean         enabled=true;
 
-    @ManagedAttribute(description="The capacity of the queue (assumed to be constant)")
+    @ManagedAttribute(description="The capacity of the queue (assumed to be constant)",type=SCALAR)
     protected int             queue_capacity;
 
     @Property(description="The min threshold (percentage between 0 and 1.0) below which no message is dropped")
@@ -41,7 +41,7 @@ public class RED extends Protocol {
     protected long            max;
 
     @ManagedAttribute(description="The average number of elements in the bundler's queue. Computed as " +
-      "o * (1 - 2^-wf) + c * (2^-wf) where o is the old average, c the current queue size and wf the weight_factor")
+      "o * (1 - 2^-wf) + c * (2^-wf) where o is the old average, c the current queue size and wf the weight_factor",gauge=true)
     protected double          avg_queue_size;
 
     @Property(description="The weight used to compute the average queue size. The higher the value is, the less the " +
@@ -71,7 +71,7 @@ public class RED extends Protocol {
     /** Don't remove! https://issues.redhat.com/browse/JGRP-2814 */
     @ManagedAttribute(type=SCALAR) @Deprecated
     public long    getTotalMessages()    {return total_msgs.sum();}
-    @ManagedAttribute(description="Percentage of all messages that were dropped")
+    @ManagedAttribute(description="Percentage of all messages that were dropped",gauge=true)
     public double  getDropRate()         {return dropped_msgs.sum() / (double)total_msgs.sum();}
 
 

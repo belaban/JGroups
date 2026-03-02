@@ -89,13 +89,16 @@ public abstract class StreamingStateTransfer extends Protocol implements Process
     protected final ProcessingQueue<Address> state_requesters=new ProcessingQueue<Address>().setHandler(this);
 
 
-    @ManagedAttribute public long   getNumberOfStateRequests()    {return num_state_reqs.sum();}
+    @ManagedAttribute(type=AttributeType.SCALAR)
+    public long   getNumberOfStateRequests()    {return num_state_reqs.sum();}
     @ManagedAttribute(type=AttributeType.BYTES)
-                      public long   getNumberOfStateBytesSent()   {return num_bytes_sent.sum();}
-    @ManagedAttribute(type=AttributeType.BYTES)
-                      public double getAverageStateSize()         {return avg_state_size;}
-    @ManagedAttribute public int    getThreadPoolSize()           {return thread_pool.getPoolSize();}
-    @ManagedAttribute public long   getThreadPoolCompletedTasks() {return thread_pool.getCompletedTaskCount();}
+    public long   getNumberOfStateBytesSent()   {return num_bytes_sent.sum();}
+    @ManagedAttribute(type=AttributeType.BYTES,gauge=true)
+    public double getAverageStateSize()         {return avg_state_size;}
+    @ManagedAttribute(gauge=true)
+    public int    getThreadPoolSize()           {return thread_pool.getPoolSize();}
+    @ManagedAttribute(type=AttributeType.SCALAR)
+    public long   getThreadPoolCompletedTasks() {return thread_pool.getCompletedTaskCount();}
 
     public List<Integer> requiredDownServices() {
         List<Integer> retval=new ArrayList<>(2);

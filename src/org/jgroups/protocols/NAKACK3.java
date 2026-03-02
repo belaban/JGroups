@@ -4,6 +4,7 @@ import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.util.Buffer;
 import org.jgroups.util.DynamicBuffer;
 
@@ -29,31 +30,31 @@ public class NAKACK3 extends ReliableMulticast {
     }
 
     @ManagedAttribute(description="Prints the number of rows currently allocated in the matrix. This value will not " +
-      "be lower than xmit_table_now_rows")
+      "be lower than xmit_table_now_rows",gauge=true)
     public int getXmitTableNumCurrentRows() {
         DynamicBuffer<Message> win=getBuf(local_addr);
         return win != null? win.getNumRows() : 0;
     }
 
-    @ManagedAttribute(description="Number of retransmit table compactions")
+    @ManagedAttribute(description="Number of retransmit table compactions",type=AttributeType.SCALAR)
     public int getXmitTableNumCompactions() {
         DynamicBuffer<Message> win=getBuf(local_addr);
         return win != null? win.getNumCompactions() : 0;
     }
 
-    @ManagedAttribute(description="Number of retransmit table moves")
+    @ManagedAttribute(description="Number of retransmit table moves",type=AttributeType.SCALAR)
     public int getXmitTableNumMoves() {
         DynamicBuffer<Message> win=getBuf(local_addr);
         return win != null? win.getNumMoves() : 0;
     }
 
-    @ManagedAttribute(description="Number of retransmit table resizes")
+    @ManagedAttribute(description="Number of retransmit table resizes",type=AttributeType.SCALAR)
     public int getXmitTableNumResizes() {
         DynamicBuffer<Message> win=getBuf(local_addr);
         return win != null? win.getNumResizes(): 0;
     }
 
-    @ManagedAttribute(description="Number of retransmit table purges")
+    @ManagedAttribute(description="Number of retransmit table purges",type=AttributeType.SCALAR)
     public int getXmitTableNumPurges() {
         DynamicBuffer<Message> win=getBuf(local_addr);
         return win != null? win.getNumPurges(): 0;

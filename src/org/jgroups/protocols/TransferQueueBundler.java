@@ -2,6 +2,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.Message;
 import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.util.ConcurrentBlockingRingBuffer;
 import org.jgroups.util.ConcurrentLinkedBlockingQueue;
 import org.jgroups.util.FastArray;
@@ -24,10 +25,10 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
     public TransferQueueBundler() {
     }
 
-    @ManagedAttribute(description="Size of the queue")
+    @ManagedAttribute(description="Size of the queue",type=AttributeType.SCALAR,gauge=true)
     public int                   getQueueSize()        {return queue.size();}
 
-    @ManagedAttribute(description="Size of the remove-queue")
+    @ManagedAttribute(description="Size of the remove-queue",type=AttributeType.SCALAR,gauge=true)
     public int                   removeQueueSize()     {return remove_queue.size();}
 
     @ManagedAttribute(description="Capacity of the remove-queue")
@@ -85,7 +86,7 @@ public class TransferQueueBundler extends BaseBundler implements Runnable {
         transport.getThreadFactory().renameThread(THREAD_NAME, bundler_thread);
     }
 
-    @ManagedAttribute(description="The number of unsent messages in the bundler")
+    @ManagedAttribute(description="The number of unsent messages in the bundler",type=AttributeType.SCALAR,gauge=true)
     public int size() {
         return super.size() + removeQueueSize() + getQueueSize();
     }

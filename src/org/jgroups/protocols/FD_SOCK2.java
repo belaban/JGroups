@@ -106,7 +106,7 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
     }
 
 
-    @ManagedAttribute(description="The number of currently suspected members")
+    @ManagedAttribute(description="The number of currently suspected members",gauge=true)
     public int         getNumSuspectedMembers()          {return suspected_mbrs.size();}
 
     @ManagedAttribute(description="Ping destination")

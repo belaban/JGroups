@@ -3,6 +3,7 @@ package org.jgroups.blocks.cs;
 import org.jgroups.Address;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.conf.AttributeType;
 import org.jgroups.util.SocketFactory;
 import org.jgroups.util.ThreadFactory;
 
@@ -26,7 +27,7 @@ public abstract class NioBaseServer extends BaseServer {
     @ManagedAttribute(description="Max number of send buffers. Changing this value affects new buffers only",writable=true)
     protected int               max_send_buffers=12; // size of send buffer array, will be doubled
 
-    @ManagedAttribute(description="Number of times select() was called")
+    @ManagedAttribute(description="Number of times select() was called",type=AttributeType.SCALAR)
     protected int               num_selects;
 
     protected boolean           copy_on_partial_write=true;

@@ -57,7 +57,7 @@ public class STATE_TRANSFER extends Protocol implements ProcessingQueue.Handler<
     @ManagedAttribute(type=SCALAR) @Deprecated
     public long   getNumberOfStateBytesSent() {return num_bytes_sent.sum();}
     /** Don't remove! https://issues.redhat.com/browse/JGRP-2814 */
-    @ManagedAttribute(type=SCALAR) @Deprecated
+    @ManagedAttribute(type=SCALAR,gauge=true) @Deprecated
     public double getAverageStateSize()       {return avg_state_size;}
 
     public List<Integer> requiredDownServices() {

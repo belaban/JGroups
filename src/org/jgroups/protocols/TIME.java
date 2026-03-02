@@ -22,16 +22,16 @@ import static org.jgroups.conf.AttributeType.SCALAR;
  */
 @MBean(description="Measures message delivery times")
 public class TIME extends Protocol {
-    @ManagedAttribute(description="Average delivery time (in microseconds) for single messages")
+    @ManagedAttribute(description="Average delivery time (in microseconds) for single messages",gauge=true)
     protected final AverageMinMax up_delivery_msgs=new AverageMinMax().unit(TimeUnit.NANOSECONDS);
 
-    @ManagedAttribute(description="Average delivery time (in microseconds) for message batches")
+    @ManagedAttribute(description="Average delivery time (in microseconds) for message batches",gauge=true)
     protected final AverageMinMax up_delivery_batches=new AverageMinMax().unit(TimeUnit.NANOSECONDS);
 
-    @ManagedAttribute(description="Average size of received message batches")
+    @ManagedAttribute(description="Average size of received message batches",gauge=true)
     protected final AverageMinMax avg_up_batch_size=new AverageMinMax();
 
-    @ManagedAttribute(description="Average down delivery time (in microseconds)")
+    @ManagedAttribute(description="Average down delivery time (in microseconds)",gauge=true)
     protected final AverageMinMax down_delivery=new AverageMinMax().unit(TimeUnit.NANOSECONDS);
 
     @Property(description="Enables or disables measuring times of messages sent down")

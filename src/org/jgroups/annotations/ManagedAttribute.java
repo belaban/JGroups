@@ -33,4 +33,10 @@ public @interface ManagedAttribute {
 
     /** Only used if type is TIME */
     TimeUnit unit() default TimeUnit.MILLISECONDS;
+
+    /** Numeric values which don't relate to their predecessor values, e.g. thread pool / memory size. False when
+     * increasing, e.g. number of bytes received, number of blockings etc. gauge=true means values can go up or down */
+    @Experimental(comment="Will be replaced by AttributeType.GAUGE, see https://issues.redhat.com/browse/JGRP-2984 " +
+      "for details")
+    boolean gauge() default false; // https://issues.redhat.com/browse/JGRP-2984
 }

@@ -127,12 +127,12 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     public boolean          running()                               {return running.get();}
 
 
-    @ManagedAttribute(description="Number of connections")
+    @ManagedAttribute(description="Number of connections",type=AttributeType.SCALAR,gauge=true)
     public int getNumConnections() {
         return conns.size();
     }
 
-    @ManagedAttribute(description="Number of currently open connections")
+    @ManagedAttribute(description="Number of currently open connections",type=AttributeType.SCALAR,gauge=true)
     public int getNumOpenConnections() {
         int retval=0;
         for(Connection conn: conns.values())

@@ -27,9 +27,9 @@ public class SIZE extends Protocol {
     protected final Map<Long,LongAdder> up_map=new ConcurrentHashMap<>();
     protected final Map<Long,LongAdder> down_map=new ConcurrentHashMap<>();
 
-    @ManagedAttribute(description="Number of down samples",type=AttributeType.SCALAR)
+    @ManagedAttribute(description="Number of down samples",type=AttributeType.SCALAR,gauge=true)
     public long numDownSamples() {return count(down_map);}
-    @ManagedAttribute(description="Number of up samples",type=AttributeType.SCALAR)
+    @ManagedAttribute(description="Number of up samples",type=AttributeType.SCALAR,gauge=true)
     public long numUpSamples()   {return count(up_map);}
 
     public Map<Long,LongAdder> upMap()   {return up_map;}

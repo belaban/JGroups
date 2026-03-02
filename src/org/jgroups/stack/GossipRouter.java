@@ -173,12 +173,12 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
     @ManagedAttribute(description="operational status", name="running")
     public boolean running() {return running.get();}
 
-    @ManagedAttribute(description="The number of different clusters registered")
+    @ManagedAttribute(description="The number of different clusters registered",gauge=true)
     public int numRegisteredClusters() {
         return address_mappings.size();
     }
 
-    @ManagedAttribute(description="The number of registered client (all clusters)")
+    @ManagedAttribute(description="The number of registered client (all clusters)",gauge=true)
     public int numRegisteredClients() {
         return (int)address_mappings.values().stream().mapToLong(Map::size).sum();
     }

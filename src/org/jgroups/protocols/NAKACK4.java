@@ -57,7 +57,7 @@ public class NAKACK4 extends ReliableMulticast {
     public NAKACK4           ackThreshold(int t)       {ack_threshold=t; return this;}
     public boolean           dynamicBuffers()          {return dynamic_buffers;}
 
-    @ManagedAttribute(type = SCALAR)
+    @ManagedAttribute(type=SCALAR,gauge=true)
     public long getNumUnackedMessages() {
         long minAck=ack_table.min();
         return minAck > 0 ? seqno.get() - minAck : 0;
@@ -78,7 +78,7 @@ public class NAKACK4 extends ReliableMulticast {
         return retval;
     }
 
-    @ManagedAttribute(description="The number of received messages dropped due to full capacity of the buffer")
+    @ManagedAttribute(description="The number of received messages dropped due to full capacity of the buffer",type=SCALAR)
     public long getNumDroppedMessages() {
         long retval=0;
         for(Entry e: xmit_table.values()) {
@@ -88,7 +88,7 @@ public class NAKACK4 extends ReliableMulticast {
         return retval;
     }
 
-    @ManagedAttribute(description="Average time blocked")
+    @ManagedAttribute(description="Average time blocked",gauge=true)
     public AverageMinMax getAvgTimeBlocked() {
         AverageMinMax avg=new AverageMinMax(1024).unit(TimeUnit.NANOSECONDS);
         for(Entry e: xmit_table.values()) {

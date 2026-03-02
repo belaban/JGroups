@@ -30,10 +30,10 @@ public class PERF extends Protocol {
     @Property(description="Number of samples to maintain for rolling average")
     protected int     avg_size=1024;
 
-    @ManagedAttribute(description="Average latency in ns",type=AttributeType.TIME,unit=TimeUnit.NANOSECONDS)
+    @ManagedAttribute(description="Average latency in ns",type=AttributeType.TIME,unit=TimeUnit.NANOSECONDS,gauge=true)
     public double latencyInNs() {return avg.average();}
 
-    @ManagedAttribute(description="Average latency in ms",type=AttributeType.TIME,unit=TimeUnit.MILLISECONDS)
+    @ManagedAttribute(description="Average latency in ms",type=AttributeType.TIME,unit=TimeUnit.MILLISECONDS,gauge=true)
     public double latencyInMs() {return avg.average() / 1000000.0;}
 
     public void init() throws Exception {

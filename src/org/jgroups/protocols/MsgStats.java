@@ -45,7 +45,7 @@ public class MsgStats {
     protected final LongAdder     num_batches_received=new LongAdder();
 
     /** The average number of messages in a received {@link MessageBatch} */
-    @ManagedAttribute(description="Returns the average batch size of received batches")
+    @ManagedAttribute(description="Returns the average batch size of received batches",gauge=true)
     protected final AverageMinMax avg_batch_size=new AverageMinMax(1024);
 
     @ManagedAttribute(description="Number of multicast bytes sent",type=BYTES)

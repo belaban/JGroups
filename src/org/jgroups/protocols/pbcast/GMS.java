@@ -106,7 +106,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     @ManagedAttribute(description="The members of the current view")
     protected final Membership          members=new Membership();     // real membership
 
-    @ManagedAttribute(description="The number of view installed in this member")
+    @ManagedAttribute(description="The number of view installed in this member",type=AttributeType.SCALAR)
     protected int                       num_views;
     protected BoundedList<String>       prev_views;  // History of the last N views
     protected GmsImpl                   impl;
@@ -183,7 +183,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     }
 
     @ManagedAttribute
-    public String getView()                  {return view != null? view.toString() : "null";}
+    public String getView() {return view != null? view.toString() : "null";}
 
 
     @ManagedAttribute(description="impl")
@@ -237,20 +237,14 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         return prev_members == null? "" : prev_members.stream().map(Object::toString).collect(Collectors.joining(", "));
     }
 
-
-
-    @ManagedAttribute(type=AttributeType.SCALAR)
-    public int getViewHandlerSize() {return view_handler.size();}
+    @ManagedAttribute(type=AttributeType.SCALAR,gauge=true)
+    public int     getViewHandlerSize()     {return view_handler.size();}
     @ManagedAttribute
     public boolean isViewHandlerSuspended() {return view_handler.suspended();}
     @ManagedOperation
-    public String dumpViewHandlerQueue() {
-        return view_handler.dumpQueue();
-    }
+    public String  dumpViewHandlerQueue()   {return view_handler.dumpQueue();}
     @ManagedOperation
-    public String dumpViewHandlerHistory() {
-        return view_handler.dumpHistory();
-    }
+    public String  dumpViewHandlerHistory() {return view_handler.dumpHistory();}
 
     @ManagedOperation public void suspendViewHandler() {view_handler.suspend();}
     @ManagedOperation public void resumeViewHandler() {view_handler.resume();}

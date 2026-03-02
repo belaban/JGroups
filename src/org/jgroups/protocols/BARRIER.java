@@ -86,7 +86,7 @@ public class BARRIER extends Protocol {
         return in_flight_threads.size();
     }
 
-    @ManagedAttribute(description="Number of threads in flight",type=AttributeType.SCALAR)
+    @ManagedAttribute(description="Number of threads in flight",type=AttributeType.SCALAR,gauge=true)
     public int getInFlightThreadsCount() {
         return getNumberOfInFlightThreads();
     }

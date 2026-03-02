@@ -92,7 +92,8 @@ public abstract class BasicTCP extends TP implements Receiver, ConnectionListene
       "This is not recommended when connection reaping is enabled. https://issues.redhat.com/browse/JGRP-2869")
     protected boolean     enable_suspect_events;
 
-    @ManagedAttribute(description="Number of suspect events sent up the stack due to peers closing connections")
+    @ManagedAttribute(description="Number of suspect events sent up the stack due to peers closing connections",
+      type=AttributeType.SCALAR)
     protected final LongAdder num_suspect_events=new LongAdder();
 
     protected final Predicate<PhysicalAddress> is_member=pa -> {

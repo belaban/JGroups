@@ -57,7 +57,7 @@ public class TCP_NIO2 extends BasicTCP {
     public boolean  useDirectMemory()          {return use_direct_memory;}
     public TCP_NIO2 useDirectMemory(boolean b) {this.use_direct_memory=b; return this;}
 
-    @ManagedAttribute
+    @ManagedAttribute(description="The number of connections",type=AttributeType.SCALAR,gauge=true)
     public int getOpenConnections() {return server.getNumConnections();}
 
     @ManagedOperation
@@ -77,10 +77,11 @@ public class TCP_NIO2 extends BasicTCP {
     @ManagedAttribute(description="Is the acceptor thread (calling select()) running")
     public boolean isAcceptorRunning() {return server != null && server.acceptorRunning();}
 
-    @ManagedAttribute(description="Number of times select() was called")
+    @ManagedAttribute(description="Number of times select() was called",type=AttributeType.SCALAR)
     public int     numSelects() {return server != null? server.numSelects() : -1;}
 
-    @ManagedAttribute(description="Number of partial writes for all connections (not all bytes were written)")
+    @ManagedAttribute(description="Number of partial writes for all connections (not all bytes were written)",
+      type=AttributeType.SCALAR)
     public int     numPartialWrites() {return server.numPartialWrites();}
 
     @ManagedAttribute(description="Number of ms a reader thread on a given connection can be idle (not receiving any messages) " +

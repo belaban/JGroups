@@ -45,7 +45,7 @@ public class UNICAST4 extends ReliableUnicast {
         return total;
     }
 
-    @ManagedAttribute(description="Average time blocked")
+    @ManagedAttribute(description="Average time blocked",gauge=true)
     public AverageMinMax getAvgTimeBlocked() {
         AverageMinMax first=null;
         for(Entry e: send_table.values()) {

@@ -127,7 +127,7 @@ public class STABLE extends Protocol {
 
     // @ManagedAttribute(name="bytes_received")
     public long getBytes() {return num_bytes_received;}
-    @ManagedAttribute(description="The number of votes for the current digest",type=SCALAR)
+    @ManagedAttribute(description="The number of votes for the current digest",type=SCALAR,gauge=true)
     public int getNumVotes() {return votes != null? votes.cardinality() : 0;}
 
     @ManagedAttribute(type=SCALAR)

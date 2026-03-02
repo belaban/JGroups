@@ -177,7 +177,8 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     protected final LongAdder xmit_rsps_sent=new LongAdder();
 
     /** The average number of messages in a received {@link MessageBatch} */
-    @ManagedAttribute(description="The average number of messages in a batch removed from the table and delivered to the application")
+    @ManagedAttribute(description="The average number of messages in a batch removed from the table and delivered " +
+      "to the application",gauge=true)
     protected final AverageMinMax avg_batch_size=new AverageMinMax(1024);
 
     @ManagedAttribute(description="Is the retransmit task running")
@@ -321,7 +322,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         return retval;
     }
 
-    @ManagedAttribute(description="Actual size of the become_server_queue",type=AttributeType.SCALAR)
+    @ManagedAttribute(description="Actual size of the become_server_queue",type=AttributeType.SCALAR,gauge=true)
     public int getBecomeServerQueueSizeActual() {
         return become_server_queue.size();
     }
@@ -336,7 +337,8 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     public void setTimer(TimeScheduler timer) {this.timer=timer;}
     
 
-    @ManagedAttribute(description="Total number of undelivered messages in all retransmit buffers",type=AttributeType.SCALAR)
+    @ManagedAttribute(description="Total number of undelivered messages in all retransmit buffers",
+      type=AttributeType.SCALAR,gauge=true)
     public int getXmitTableUndeliveredMsgs() {
         int num=0;
         for(Table<Message> buf: xmit_table.values())
@@ -345,7 +347,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     }
 
     @ManagedAttribute(description="Total number of missing (= not received) messages in all retransmit buffers"
-      ,type=AttributeType.SCALAR)
+      ,type=AttributeType.SCALAR,gauge=true)
     public int getXmitTableMissingMessages() {
         int num=0;
         for(Table<Message> buf: xmit_table.values())
@@ -360,14 +362,14 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     }
 
     @ManagedAttribute(description="Prints the number of rows currently allocated in the matrix. This value will not " +
-      "be lower than xmit_table_now_rows")
+      "be lower than xmit_table_now_rows",gauge=true)
     public int getXmitTableNumCurrentRows() {
         Table<Message> table=local_addr != null? xmit_table.get(local_addr) : null;
         return table != null? table.getNumRows() : 0;
     }
 
     @ManagedAttribute(description="Returns the number of bytes of all messages in all retransmit buffers. " +
-      "To compute the size, Message.length() is used",type=AttributeType.BYTES)
+      "To compute the size, Message.length() is used",type=AttributeType.BYTES,gauge=true)
     public long getSizeOfAllMessages() {
         long retval=0;
         for(Table<Message> buf: xmit_table.values())
@@ -376,7 +378,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
     }
 
     @ManagedAttribute(description="Returns the number of bytes of all messages in all retransmit buffers. " +
-      "To compute the size, Message.size() is used",type=AttributeType.BYTES)
+      "To compute the size, Message.size() is used",type=AttributeType.BYTES,gauge=true)
     public long getSizeOfAllMessagesInclHeaders() {
         long retval=0;
         for(Table<Message> buf: xmit_table.values())
