@@ -1,0 +1,55 @@
+
+
+RULE JChannel_createRendezvous
+CLASS JChannel
+METHOD getVersion()
+AT ENTRY
+IF NOT flagged("created")
+DO
+    System.out.println("--> initialized byteman");
+    createRendezvous("interlock", 4);
+    flag("created")
+ENDRULE
+
+## we have produce a connection but still holds the the address lock
+RULE open_outgoing_A
+CLASS BaseServer
+METHOD handleOutgoingConnection
+AT EXIT
+IF flagged("created") AND $1.toString().equals("127.0.0.1:7801")
+DO
+    System.out.println("--> handleOutgoingConnection_A("+$1+")");
+    rendezvous("interlock");
+ENDRULE
+
+RULE open_incoming_A
+CLASS BaseServer
+METHOD handleIncomingConnection(Address, Connection)
+AT EXIT
+IF flagged("created") AND $1.toString().equals("127.0.0.1:7801")
+DO
+    System.out.println("--> handleIncomingConnection_A("+$1+")");
+    rendezvous("interlock");
+ENDRULE
+
+# the other endpoint
+RULE open_outgoing_B
+CLASS BaseServer
+METHOD handleOutgoingConnection
+AT EXIT
+IF flagged("created") && $1.toString().equals("127.0.0.1:7800")
+DO
+    System.out.println("--> handleOutgoingConnection_B("+$1+")");
+    rendezvous("interlock");
+ENDRULE
+
+
+RULE open_incoming_B
+CLASS BaseServer
+METHOD handleIncomingConnection(Address, Connection)
+AT EXIT
+IF flagged("created") AND $1.toString().equals("127.0.0.1:7800")
+DO
+    System.out.println("--> handleIncomingConnection_B("+$1+")");
+    rendezvous("interlock");
+ENDRULE
