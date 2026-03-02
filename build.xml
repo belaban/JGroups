@@ -497,7 +497,8 @@
 
     <target name="all-tests" depends="delete-reports" description="Runs all tests">
         <sequential>
-        	<antcall target="functional"/>
+            <antcall target="jdbc"/>
+            <antcall target="functional"/>
             <antcall target="encrypt"/>
             <antcall target="udp"/>
             <antcall target="udp-new"/>
@@ -530,6 +531,7 @@
                 <antcall target="byteman"/>
             </sequential>
             <antcall target="stack-independent"/>
+            <antcall target="jdbc"/>
         </parallel>
     </target>
 
@@ -574,7 +576,13 @@
         </runtest>
     </target>
 
-
+    <target name="jdbc" depends="postcompile,define-testng-task" description="Runs jdbc related tests">
+        <mkdir dir="${tmp.dir}/test-results/xml/jdbc"/>
+        <runtest suitename="jdbc"
+                 groups="jdbc"
+                 parallel="${parallel.classes}"
+                 threadcount="1" />
+    </target>
 
     <target name="stack-independent" depends="postcompile,define-testng-task" description="Runs stack-independent tests">
         <mkdir dir="${tmp.dir}/test-results/xml/stack-independent"/>

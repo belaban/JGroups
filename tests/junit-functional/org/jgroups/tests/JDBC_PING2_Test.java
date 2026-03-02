@@ -1,5 +1,10 @@
 package org.jgroups.tests;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.protocols.MERGE3;
@@ -9,13 +14,8 @@ import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.Util;
 import org.testng.SkipException;
-import org.testng.annotations.BeforeTest;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
-
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Misc tests for {@link org.jgroups.protocols.JDBC_PING2}. The postgrsql DB needs to be running and its driver JAR
@@ -30,7 +30,7 @@ public class JDBC_PING2_Test {
     protected static final int NUM_NODES=8;
 
 
-    @BeforeTest
+    @BeforeClass
     public void checkEnvironment() {
         try {
             Class.forName("org.postgresql.Driver");
