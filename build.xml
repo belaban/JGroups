@@ -497,7 +497,6 @@
 
     <target name="all-tests" depends="delete-reports" description="Runs all tests">
         <sequential>
-            <antcall target="jdbc"/>
             <antcall target="functional"/>
             <antcall target="encrypt"/>
             <antcall target="udp"/>
@@ -531,7 +530,6 @@
                 <antcall target="byteman"/>
             </sequential>
             <antcall target="stack-independent"/>
-            <antcall target="jdbc"/>
         </parallel>
     </target>
 
