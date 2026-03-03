@@ -34,7 +34,7 @@ public class AddressedDNSResolverTest {
       //given
       MockDirContext mockDirContext = MockDirContext.newDefault();
 
-      DefaultDNSResolver resolver = new DefaultDNSResolver(mockDirContext);
+      AddressedDNSResolver resolver = new AddressedDNSResolver(mockDirContext);
 
       //when
       List<Address> addresses = resolver.resolveIps("test", DNSResolver.DNSRecordType.A);
