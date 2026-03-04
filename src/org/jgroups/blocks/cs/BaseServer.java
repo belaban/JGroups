@@ -349,6 +349,7 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         try {
             log.trace("%s: connecting to %s", local_addr, dest);
             conn.connect(dest);
+            log.trace("%s: established connection to %s", local_addr, dest);
             notifyConnectionEstablished(conn);
             conn.start();
             replaceConnection(dest, conn);

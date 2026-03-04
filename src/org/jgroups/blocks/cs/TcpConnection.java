@@ -362,15 +362,23 @@ public class TcpConnection extends Connection {
 
     @Override
     public void close(boolean graceful) throws IOException {
-        if(graceful && !closed_gracefully) {
-            server.log.trace("%s: sending graceful close from %s", server.local_addr, peer_addr);
-            closed_gracefully=true;
+        if(graceful && !closed_gracefully)
+            closeGracefully();
+        doClose();
+    }
+
+    protected void closeGracefully() {
+        server.log.trace("%s: sending graceful close to %s", server.local_addr, peer_addr);
+        closed_gracefully=true;
+        try {
             sock.shutdownInput();
             out.writeInt(Connection.GRACEFUL_CLOSE);
             out.flush();
             sock.shutdownOutput();
         }
-        doClose();
+        catch(Throwable t) {
+            server.log.error("%s: failed sending graceful close to %s: %s", server.local_addr, peer_addr, t.getMessage());
+        }
     }
 
     protected void doClose() {

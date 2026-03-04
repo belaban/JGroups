@@ -147,7 +147,7 @@ public class CoordGmsImpl extends ServerGmsImpl {
             return;
         }
 
-        log.trace("%s: joiners=%s, suspected=%s, leaving=%s, new view: %s",
+        log.trace("%s: joiners=%s, suspected=%s, leavers=%s, new view: %s",
                   gms.getAddress(), new_mbrs, suspected_mbrs, leaving_mbrs, new_view);
              
         JoinRsp join_rsp=null;
