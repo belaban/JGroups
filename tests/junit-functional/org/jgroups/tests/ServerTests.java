@@ -7,7 +7,6 @@ import org.jgroups.blocks.cs.NioServer;
 import org.jgroups.blocks.cs.ReceiverAdapter;
 import org.jgroups.blocks.cs.TcpServer;
 import org.jgroups.util.Bits;
-import org.jgroups.util.ResourceManager;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.DataProvider;
@@ -16,11 +15,12 @@ import org.testng.annotations.Test;
 import java.io.DataInput;
 import java.net.InetAddress;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /**
  * @author Bela Ban
@@ -31,16 +31,13 @@ public class ServerTests {
     protected BaseServer               a, b;
     protected static final InetAddress loopback;
     protected MyReceiver               receiver_a, receiver_b;
-    protected static int               PORT_A, PORT_B, NUM_SENDERS=50;
-    public    static Address           A=null, B=null; // need to be static for the byteman rule scripts to access them
+    protected static int               NUM_SENDERS=50;
     protected static final String      STRING_A="a.req";
 
 
     static {
         try {
             loopback=Util.getLoopback();
-            PORT_A=ResourceManager.getNextTcpPort(loopback);
-            PORT_B=ResourceManager.getNextTcpPort(loopback);
         }
         catch(Exception ex) {
             throw new RuntimeException(ex);
@@ -51,8 +48,8 @@ public class ServerTests {
     @DataProvider
     protected Object[][] configProvider() {
         return new Object[][] {
-          {create(true, PORT_A), create(true, PORT_B)},
-          {create(false, PORT_A), create(false, PORT_B)}
+          {create(true), create(true)},
+          {create(false), create(false)}
         };
     }
 
@@ -63,9 +60,7 @@ public class ServerTests {
     protected void setup(BaseServer one, BaseServer two, boolean use_peer_conns) throws Exception {
         a=one.usePeerConnections(use_peer_conns);
         b=two.usePeerConnections(use_peer_conns);
-        A=a.localAddress();
-        B=b.localAddress();
-        assert A.compareTo(B) < 0;
+        assert a.localAddress().compareTo(b.localAddress()) < 0;
         a.receiver(receiver_a=new MyReceiver("A").verbose(false));
         a.start();
         b.receiver(receiver_b=new MyReceiver("B").verbose(false));
@@ -80,13 +75,13 @@ public class ServerTests {
 
     public void testStart(BaseServer a, BaseServer b) throws Exception {
         setup(a, b);
-        assert !a.hasConnection(B) && !b.hasConnection(A);
+        assert !a.hasConnection(b.localAddress()) && !b.hasConnection(a.localAddress());
         assert a.getNumConnections() == 0 && b.getNumConnections() == 0;
     }
 
     public void testSimpleSend(BaseServer a, BaseServer b) throws Exception {
         setup(a,b);
-        send(STRING_A, a, B);
+        send(STRING_A, a, b.localAddress());
         check(receiver_b.getList(), STRING_A);
     }
 
@@ -96,13 +91,13 @@ public class ServerTests {
      */
     public void testSimpleConnection(BaseServer first, BaseServer second) throws Exception {
         setup(first,second);
-        send("hello", a, B);
+        send("hello", a, b.localAddress());
         waitForOpenConns(1, a, b);
         assert a.getNumOpenConnections() == 1 : "number of connections for conn_a: " + a.getNumOpenConnections();
         assert b.getNumOpenConnections() == 1 : "number of connections for conn_b: " + b.getNumOpenConnections();
         check(receiver_b.getList(),"hello");
 
-        send("hello", b, A);
+        send("hello", b, a.localAddress());
         waitForOpenConns(1, a, b);
         assert a.getNumOpenConnections() == 1 : "number of connections for conn_a: " + a.getNumOpenConnections();
         assert b.getNumOpenConnections() == 1 : "number of connections for conn_b: " + b.getNumOpenConnections();
@@ -117,58 +112,42 @@ public class ServerTests {
      * the connection to the server and the other threads should be blocked until the connection has been created.<br/>
      * JIRA: https://issues.redhat.com/browse/JGRP-2271
      */
-    // @Test(invocationCount=50,dataProvider="configProvider")
     public void testConcurrentConnect(BaseServer first, BaseServer second) throws Exception {
         setup(first, second, false);
         final List<String> list=receiver_b.getList();
         final CountDownLatch latch=new CountDownLatch(1);
         Sender[] senders=new Sender[NUM_SENDERS];
         for(int i=0; i < senders.length; i++) {
-            senders[i]=new Sender(latch, first, B, receiver_b.getList(), i+1);
+            senders[i]=new Sender(latch, first, b.localAddress(), list, i+1);
             senders[i].start();
         }
         latch.countDown();
         for(Sender sender: senders)
             sender.join();
-        List<Integer> ids=Arrays.stream(senders).map(Sender::id).collect(Collectors.toList());
         Util.waitUntilTrue(3000, 100, () -> list.size() == NUM_SENDERS);
-        List<Integer> tmp_list=list.stream().map(Integer::valueOf).sorted(Integer::compareTo).collect(Collectors.toList());
-        System.out.printf("list (%d elements): %s\n", tmp_list.size(), tmp_list);
-        assert ids.equals(tmp_list) : String.format("expected:\n%s\nactual:\n%s\n", ids, tmp_list);
+        List<Integer> expected=IntStream.rangeClosed(1,50).boxed().toList();
+        List<Integer> actual=list.stream().map(Integer::valueOf).sorted(Integer::compareTo).collect(Collectors.toList());
+        assert actual.equals(expected) : String.format("expected:\n%s\nactual:\n%s\n", expected, actual);
+        System.out.printf("list (%d elements): %s\n", actual.size(), actual);
     }
 
 
     protected static void check(List<String> list, String expected_str) {
-        for(int i=0; i < 20; i++) {
-            if(list.isEmpty())
-                Util.sleep(500);
-            else
-                break;
-        }
+        Util.waitUntilTrue(10000, 100, () -> !list.isEmpty());
         assert !list.isEmpty() && list.get(0).equals(expected_str) : " list: " + list + ", expected " + expected_str;
     }
 
 
     protected static void waitForOpenConns(int expected, BaseServer... servers) {
-        for(int i=0; i < 10; i++) {
-            boolean all_ok=true;
-            for(BaseServer server: servers) {
-                if(server.getNumOpenConnections() != expected) {
-                    all_ok=false;
-                    break;
-                }
-            }
-            if(all_ok)
-                return;
-            Util.sleep(500);
-        }
+        Util.waitUntilTrue(5000, 100, () -> Stream.of(servers)
+          .map(BaseServer::getNumOpenConnections).allMatch(n -> n == expected));
     }
 
 
-    protected static BaseServer create(boolean nio, int port) {
+    protected static BaseServer create(boolean nio) {
         try {
-            return nio? new NioServer(loopback, port)
-              : new TcpServer(loopback, port);
+            return nio? new NioServer(loopback, 0)
+              : new TcpServer(loopback, 0);
         }
         catch(Exception ex) {
             return null;
