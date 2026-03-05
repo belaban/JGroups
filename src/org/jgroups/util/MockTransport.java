@@ -18,7 +18,6 @@ public class MockTransport extends TP {
     }
     public boolean            supportsMulticasting() {return true;}
     public void               sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {}
-    public String             getInfo()              {return null;}
     protected PhysicalAddress getPhysicalAddress()   {return null;}
     public MockTransport      cluster(AsciiString s) {this.cluster_name=s; return this;}
 

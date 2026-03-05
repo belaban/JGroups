@@ -62,10 +62,6 @@ public class SimpleTCP extends TP {
         // not needed, implemented in down()
     }
 
-    public String getInfo() {
-        return "SimpleTCP";
-    }
-
     public void init() throws Exception {
         super.init();
         srv_sock=Util.createServerSocket(new DefaultSocketFactory(), "srv-sock", bind_addr,

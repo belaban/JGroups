@@ -170,7 +170,7 @@ public abstract class FlowControl extends Protocol {
 
     public void start() throws Exception {
         super.start();
-        boolean is_udp_transport=getTransport().isMulticastCapable();
+        boolean is_udp_transport=getTransport().supportsMulticasting();
         if(is_udp_transport && frag_size <= 0)
             log.warn("No fragmentation protocol was found. When flow control is used, we recommend " +
                        "a fragmentation protocol, due to https://issues.redhat.com/browse/JGRP-590");

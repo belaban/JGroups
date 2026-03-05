@@ -183,10 +183,6 @@ public abstract class BasicTCP extends TP implements Receiver, ConnectionListene
         send(dest, data, offset, length);
     }
 
-    public String getInfo() {
-        return String.format("connections: %s\n", printConnections());
-    }
-
     public abstract String printConnections();
 
     @ManagedOperation(description="Clears all connections (they will get re-established). For testing only, don't use !")

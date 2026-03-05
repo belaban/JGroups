@@ -180,7 +180,6 @@ public class NAKACK_StressTest {
 
         @Override
         public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {}
-        @Override public String getInfo() {return "n/a";}
         @Override protected PhysicalAddress getPhysicalAddress() {return null;}
     }
 

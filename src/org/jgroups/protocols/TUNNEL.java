@@ -292,10 +292,6 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
         tunnel_policy.sendToSingleMember(group, dest, local_addr, data, offset, length);
     }
 
-    public String getInfo() {
-        return stubManager.printStubs();
-    }
-
     protected PhysicalAddress getPhysicalAddress() {
         return sock != null ? new IpAddress(bind_addr, sock.getLocalPort()) : null;
     }

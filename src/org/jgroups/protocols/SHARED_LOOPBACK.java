@@ -119,11 +119,6 @@ public class SHARED_LOOPBACK extends TP {
         return rsps;
     }
 
-    public String getInfo() {
-        return toString();
-    }
-
-
     protected PhysicalAddress getPhysicalAddress() {
         return physical_addr;
     }

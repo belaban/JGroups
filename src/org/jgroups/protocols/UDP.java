@@ -251,10 +251,6 @@ public class UDP extends TP {
         return multicast_receiver_threads;
     }
 
-    public String getInfo() {
-        return String.format("group_addr=%s:%d\n", mcast_group_addr.getHostName(), mcast_port);
-    }
-
     @Override
     public void sendToAll(byte[] data, int offset, int length) throws Exception {
         if(ip_mcast && mcast_addr != null) {

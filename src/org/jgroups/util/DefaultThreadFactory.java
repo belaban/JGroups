@@ -65,6 +65,7 @@ public class DefaultThreadFactory implements ThreadFactory {
     @Override
     public boolean                            useVirtualThreads()          {return use_vthreads;}
     public <T extends DefaultThreadFactory> T useVirtualThreads(boolean f) {this.use_vthreads=f; return (T)this;}
+    public <T extends DefaultThreadFactory> T useVThreads(boolean f)       {return useVirtualThreads(f);}
     public <T extends DefaultThreadFactory> T log(Log l)                   {this.log=l; return (T)this;}
 
     public Thread newThread(Runnable r, String name) {

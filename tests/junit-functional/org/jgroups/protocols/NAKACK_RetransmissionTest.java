@@ -153,7 +153,6 @@ public class NAKACK_RetransmissionTest {
         }
         public boolean            supportsMulticasting() {return true;}
         public void               sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {}
-        public String             getInfo() {return null;}
         protected PhysicalAddress getPhysicalAddress() {return null;}
 
 
