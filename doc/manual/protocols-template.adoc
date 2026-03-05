@@ -1197,14 +1197,19 @@ ${FailureDetection}
 
 
 ==== Failure detection in TCP and TCP_NIO2
-Both TCP and TCP_NIO2 connect to other members via TCP/IP. If a TCP/IP connection is closed, then we know that the peer
-might be dead, and a `SUSPECT` event can be sent up the stack. To enable this, set `enable_suspect_events` to `true`.
+Both `TCP` and `TCP_NIO2` connect to other members via TCP/IP. If a TCP/IP connection is closed by the peer, we don't know
+whether the peer left gracefully (ie., disconnected its channel) or crashed (and the operating system closed the socket).
 
-NOTE: A TCP/IP connection can also be closed by *connection reaping*: when `reaper_interval` and `conn_expire_time` are
-set to non-zero values, then idle connections will be closed. In this case, if suspect events are enabled,
-`VERIFY_SUSPECT2` will ping the 'crashed' member on reception of a `SUSPECT` event and thus re-establish the connection.
-It is therefore not recommended to enable both connection reaping and failure detection (`enable_suspect_events`)
-in `TCP` / `TCP_NIO2`.
+To differentiate between crash-leave and graceful leave, a `GRACEFUL_CLOSE (-5)` is sent to the peer when disconnecting
+a channel gracefully, just before closing the socket. Therefore, when a member receives a `-5` from peer P, it knows
+that P left gracefully when the connection is subsequently closed and doesn't emit a `SUSPECT(P)` event.
+
+All other closes assume that P crashed and therefore a `SUSPECT(P)` event is sent up the stack.
+
+NOTE: The `GRACEFUL_CLOSE (-5)` is sent as *length* (but without payload), so the network wire format is not changed
+and is therefore backwards compatible.
+
+To enable this feature, set `enable_suspect_events` to `true`.
 
 A stack that has failure detection in `TCP` / `TCP_NIO2` enabled does not necessarily need `FD_SOCK` / `FD_SOCK2`. The
 recommendation in this case is to remove `FD_SOCK` / `FD_SOCK2` and only leave `FD_ALL3` in the stack, as a second line

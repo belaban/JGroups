@@ -89,7 +89,7 @@ public abstract class BasicTCP extends TP implements Receiver, ConnectionListene
     protected boolean     log_details=true;
 
     @Property(description="When true, a SUSPECT(P) event is passed up when a connection is closed by the peer P. " +
-      "This is not recommended when connection reaping is enabled. https://issues.redhat.com/browse/JGRP-2869")
+      "https://issues.redhat.com/browse/JGRP-2869")
     protected boolean     enable_suspect_events;
 
     @ManagedAttribute(description="Number of suspect events sent up the stack due to peers closing connections",
