@@ -5,6 +5,8 @@ import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.conf.ProtocolConfiguration;
 import org.jgroups.conf.ProtocolStackConfigurator;
 import org.jgroups.protocols.BasicTCP;
+import org.jgroups.protocols.FD_SOCK;
+import org.jgroups.protocols.FD_SOCK2;
 import org.jgroups.protocols.VERIFY_SUSPECT2;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.ProtocolStack;
@@ -103,6 +105,7 @@ public class EnableSuspectEventsTest2 {
         }
         JChannel ch=new JChannel(conf).name(name);
         ProtocolStack stack=ch.stack();
+        stack.removeProtocols(FD_SOCK.class, FD_SOCK2.class);
         BasicTCP transport=(BasicTCP)stack.getTransport();
         transport.enableSuspectEvents(true);
         GMS gms=stack.findProtocol(GMS.class);
