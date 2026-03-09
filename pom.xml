@@ -304,10 +304,16 @@
                                         <pathelement path="${compile_classpath}" />
                                         <pathelement path="${plugin_classpath}" />
                                     </classpath>
-                                    <arg line="-Dlog4j2.disable.jmx=true -o ${project.build.directory}/schema" />
+                                    <jvmarg value="-Dlog4j2.disable.jmx=true" />
+                                    <arg line="-o ${project.build.directory}/schema" />
                                 </java>
                                 <copy todir="${project.build.directory}/schema">
                                     <fileset dir="conf">
+                                        <include name="*.xsd" />
+                                    </fileset>
+                                </copy>
+                                <copy todir="${project.build.outputDirectory}">
+                                    <fileset dir="${project.build.directory}/schema">
                                         <include name="*.xsd" />
                                     </fileset>
                                 </copy>
