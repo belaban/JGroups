@@ -186,9 +186,8 @@ public class VERIFY_SUSPECT2 extends Protocol implements Runnable {
 
 
     /**
-     * Adds suspected members to the suspect list. Returns true if a member is not present and the timer is not running.
+     * Adds suspected members to the suspect list.
      * @param list The list of suspected members
-     * @return true if the timer needs to be started, or false otherwise
      */
     protected synchronized void addSuspects(Collection<Address> list) {
         if(list == null || list.isEmpty())
