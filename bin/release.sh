@@ -53,7 +53,6 @@ case $answer in
         * ) echo "";;
 esac
 
-## uncomment
 mvn -B -q -f $POM -DskipTests deploy -Prelease
 
 echo "Was the upload successful? Shall I continue with pushing the tag and setting the new version?"
@@ -65,15 +64,12 @@ case $answer in
         * ) echo "";;
 esac
 
-## uncomment
-git commit -m 'Changed version from $CURRENT_VERSION to $RELEASE_VERSION' . ; git push
+git commit -m "Changed version from $CURRENT_VERSION to $RELEASE_VERSION" . ; git push
 
 echo ""
 echo "================================================================"
 echo "Tagging the repo with $TAG"
-## uncomment
 git tag $TAG
-## uncomment
 git push --tags
 
 echo ""
@@ -81,8 +77,6 @@ echo ""
 
 NEXT_VERSION="$NEW_VERSION-SNAPSHOT"
 echo "changing pom.xml to version $NEXT_VERSION:"
-#cat $POM | sed "s/$RELEASE_VERSION/$NEXT_VERSION/g" > $POM2
-#mv $POM2 $POM
 mvn -B -q -f $POM versions:set -DnewVersion="$NEXT_VERSION" -DgenerateBackupPoms=false
 
 ## uncomment
