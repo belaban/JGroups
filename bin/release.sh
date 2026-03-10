@@ -5,7 +5,6 @@
 CURRENT_DIR=`dirname $0`
 BASE_DIR="$CURRENT_DIR/../"
 POM=$BASE_DIR/pom.xml
-POM2=$BASE_DIR/pom2.xml
 CURRENT_VERSION=`grep version $POM | head -1 | sed "s/version//g" |  sed "s/[[<>/]*//g" | tr -d " "`
 RELEASE_VERSION=`echo $CURRENT_VERSION | sed "s/-SNAPSHOT//g"`
 NEW_VERSION=`$BASE_DIR/bin/jgroups.sh org.jgroups.Version -incr $CURRENT_VERSION`
@@ -30,8 +29,6 @@ fi
 
 echo ""
 echo "changing version in pom.xml from $CURRENT_VERSION to $RELEASE_VERSION:"
-#cat $POM | sed "s/$CURRENT_VERSION/$RELEASE_VERSION/g" > $POM2
-#mv $POM2 $POM
 mvn -B -q -f $POM versions:set -DnewVersion="$RELEASE_VERSION" -DgenerateBackupPoms=false
 
 echo ""
@@ -58,7 +55,6 @@ esac
 
 ## uncomment
 mvn -B -q -f $POM -DskipTests deploy -Prelease
-# echo "Please commit and push your changes"
 
 echo "Was the upload successful? Shall I continue with pushing the tag and setting the new version?"
 read -p "[<enter> to proceed | <ctrl-c> to cancel]" $answer
