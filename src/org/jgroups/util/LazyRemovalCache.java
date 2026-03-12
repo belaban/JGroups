@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 
 /**
  * Cache which doesn't remove elements on remove(), removeAll() or retainAll(), but only removes elements when a
- * configurable size limit has been exceeded. In that case, all elements marked as removable and older than a
+ * configurable size limit has been exceeded. In that case, all elements marked as removable *and* older than a
  * configurable time are evicted. Elements are marked as removable by remove(), removeAll() and retainAll(). When
  * an elements is marked as removable, but later reinserted, the mark is removed.
  * @param <K> K
@@ -41,6 +41,15 @@ public class LazyRemovalCache<K,V> {
     public LazyRemovalCache(int max_elements, long max_age) {
         this.max_elements=max_elements;
         this.max_age=TimeUnit.NANOSECONDS.convert(max_age, TimeUnit.MILLISECONDS);
+    }
+
+    public int maxElements() {
+        return max_elements;
+    }
+
+    /** Returns the max age in ms */
+    public long maxAge() {
+        return TimeUnit.MILLISECONDS.convert(max_age, TimeUnit.NANOSECONDS);
     }
 
     public boolean add(K key, V val) {

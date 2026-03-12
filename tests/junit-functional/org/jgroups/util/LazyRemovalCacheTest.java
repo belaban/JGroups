@@ -98,7 +98,7 @@ public class LazyRemovalCacheTest {
     }
 
 
-    public static void testRemovalOnExceedingMaxSize() {
+    public void testRemovalOnExceedingMaxSize() {
         LazyRemovalCache<UUID, String> cache=new LazyRemovalCache<>(2, 0);
         UUID u1=UUID.randomUUID(), u2=UUID.randomUUID(), u3=UUID.randomUUID(), u4=UUID.randomUUID();
         cache.add(u1, "u1"); cache.add(u2, "u2");
@@ -125,7 +125,7 @@ public class LazyRemovalCacheTest {
     }
 
 
-    public static void testRemovalOnExceedingMaxSizeAndMaxTime() {
+    public void testRemovalOnExceedingMaxSizeAndMaxTime() {
         LazyRemovalCache<Address, String> cache=new LazyRemovalCache<>(2, 1000);
         Address a=Util.createRandomAddress("A"), b=Util.createRandomAddress("B"),
           c=Util.createRandomAddress("C"), d=Util.createRandomAddress("D");
