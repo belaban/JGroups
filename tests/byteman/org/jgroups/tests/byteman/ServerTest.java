@@ -61,7 +61,6 @@ public class ServerTest extends BMNGRunner {
         b.usePeerConnections(use_peer_conns);
         A=a.localAddress();
         B=b.localAddress();
-        assert A.compareTo(B) < 0;
         a.receiver(receiver_a=new MyReceiver("A"));
         a.start();
         b.receiver(receiver_b=new MyReceiver("B"));

@@ -390,4 +390,43 @@ public class TcpConnection extends Connection {
         Util.close(out,in);
         connected=false;
     }
+
+    @Override
+    public void ack() throws Exception {
+        out.write(MSG_ACK);
+        flush();
+    }
+
+    @Override
+    public void nack() throws Exception {
+        out.write(MSG_NACK);
+        flush();
+    }
+
+    @Override
+    public void waitForAck() throws Exception {
+        byte [] waitForAck = new byte[MSG_LENGTH];
+        int totalRead = 0;
+        long timeout = System.currentTimeMillis() + 5000;
+        while(totalRead < MSG_LENGTH
+                && !Thread.currentThread().isInterrupted()
+                && System.currentTimeMillis() < timeout) {
+            if(!(sock instanceof SSLSocket) && in.available() > 0) {
+                int bytesToBeRead = Math.min(in.available(), MSG_LENGTH - totalRead);
+                int bytesRead = in.read(waitForAck, totalRead, bytesToBeRead);
+                totalRead += bytesRead;
+            }
+            else if (sock instanceof SSLSocket) {
+                // SSL is non blocking so it won't block at read
+                int bytesToBeRead = MSG_LENGTH - totalRead;
+                int bytesRead = in.read(waitForAck, totalRead, bytesToBeRead);
+                totalRead += bytesRead;
+            }
+
+        }
+        // we only close if we read the flag from it.
+        if (Arrays.equals(waitForAck, MSG_NACK) && totalRead == MSG_LENGTH) {
+            doClose();
+        }
+    }
 }

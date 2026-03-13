@@ -1,12 +1,13 @@
 package org.jgroups.blocks.cs;
 
-import org.jgroups.Address;
-import org.jgroups.stack.IpAddress;
-import org.jgroups.util.*;
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
+
+import org.jgroups.Address;
+import org.jgroups.stack.IpAddress;
+import org.jgroups.util.DefaultSocketFactory;
+import org.jgroups.util.DefaultThreadFactory;
 
 /**
  * Client for servers based on TCP
@@ -15,7 +16,7 @@ import java.nio.ByteBuffer;
  */
 public class TcpClient extends TcpBaseServer implements Client, ConnectionListener {
     protected Address       remote_addr; // the address of the server (needs to be set before connecting)
-    protected TcpConnection conn;        // connection to the server
+    protected Connection conn;        // connection to the server
 
 
      /**
@@ -114,14 +115,8 @@ public class TcpClient extends TcpBaseServer implements Client, ConnectionListen
 
     protected void doStart() throws Exception {
         super.start();
-        conn=createConnection(remote_addr).useLockToSend(use_lock_to_send);
+        conn=handleOutgoingConnection(remote_addr);
         addConnectionListener(this);
-        conn.connect(remote_addr, false);
-        local_addr=conn.localAddress();
-        if(use_peer_connections)
-            conn.sendLocalAddress(local_addr);
-        notifyConnectionEstablished(conn);
-        conn.start(); // starts the receiver thread
     }
 
     protected void doStop(boolean graceful) {

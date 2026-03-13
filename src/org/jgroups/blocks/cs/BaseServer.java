@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
@@ -75,8 +75,10 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     protected int                             linger=-1;
     protected TimeService                     time_service;
     // to access the connection map, 1 lock / destination
-    protected final Map<Address,Lock>         locks=new ConcurrentHashMap<>();
-
+    protected final Map<Address, AddressLock> 
+                                              locks=new ConcurrentHashMap<>();
+    protected final Map<Address, ReentrantLock>
+                                              connect=new ConcurrentHashMap<>();
 
     protected BaseServer(ThreadFactory f, SocketFactory sf, int recv_buf_size) {
         this.factory=f;
@@ -161,7 +163,8 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         for(Connection c: conns.values())
             Util.close(c);
         conns.clear();
-        locks.clear();
+        // this causes a race condition with the locks
+//        locks.clear();
         conn_listeners.clear();
     }
 
@@ -290,25 +293,7 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
 
     /** Creates a new connection to dest, or returns an existing one */
     public Connection getConnection(Address dest) throws Exception {
-        Connection conn;
-        // keep FAST path on the most common case
-        if(connected(conn=conns.get(dest)))
-            return conn;
-
-        // we acquire a separate lock for each destination, so that connection/send attempts to destination D2
-        // are not blocked by connection/send attempts to destination D1 (https://issues.redhat.com/browse/JGRP-2905)
-        Lock lock=getLock(dest);
-        lock.lock();
-        try {
-            if(connected(conn=conns.get(dest)))
-                return conn;
-            conn=createConnection(dest);
-            handleOutgoingConnection(dest, conn);
-        }
-        finally {
-            lock.unlock();
-        }
-        return conn;
+        return handleOutgoingConnection(dest);
     }
 
     @GuardedBy("this")
@@ -345,45 +330,100 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         return false;
     }
 
-    public void handleOutgoingConnection(Address dest, Connection conn) throws Exception {
+    public Connection handleOutgoingConnection(Address dest) throws Exception {
+        Connection conn = null;
+        // keep FAST path on the most common case
+        if(connected(conn=conns.get(dest)))
+            return conn;
+
+        AddressLock address_lock=getAddressLock(dest);
+        ReentrantLock connect_lock=getConnectLock(dest);
+
+        // we acquire a separate lock for each destination, so that connection/send attempts to destination D2
+        // are not blocked by connection/send attempts to destination D1 (https://issues.redhat.com/browse/JGRP-2905)
+        connect_lock.lock();
+        address_lock.lock();
         try {
+            conn=conns.get(dest);
+            if(connected(conn))
+                return conn;
+            conn=createConnection(dest);
             log.trace("%s: connecting to %s", local_addr, dest);
             conn.connect(dest);
-            log.trace("%s: established connection to %s", local_addr, dest);
-            notifyConnectionEstablished(conn);
-            conn.start();
-            replaceConnection(dest, conn);
+            connect_lock.unlock();
+            conn.waitForAck();
+            if (conn.isConnected()) {
+                log.trace("%s: connection was established to %s", local_addr, dest);
+                replaceConnection(dest, conn);
+                conn.start();
+                notifyConnectionEstablished(conn);
+            }
+            else {
+                log.trace("%s: connection was rejected by %s, waiting for a connection to be produced", local_addr, dest);
+                address_lock.waitForConnection();
+                conn = conns.get(dest);
+            }
         }
         catch(Exception connect_ex) {
+            log.debug("%s: connection exception %s %s", local_addr, dest, connect_ex.getMessage());
             removeConnectionIfPresent(dest, conn); // removes and closes the conn
             throw connect_ex;
         }
+        finally {
+            address_lock.unlock();
+            if (connect_lock.isHeldByCurrentThread()) {
+                connect_lock.unlock();
+            }
+        }
+
+        if (conn == null || conn.isClosed()) {
+            throw new IOException("Was not possible to get an outgoing connection to " + dest);
+        }
+        return conn;
     }
 
     public void handleIncomingConnection(Address peer_addr, Connection conn) throws Exception {
         boolean close_conn=false;
-        Lock lock=getLock(peer_addr);
-        lock.lock();
+        ReentrantLock connect_lock=getConnectLock(peer_addr);
+        AddressLock address_lock=getAddressLock(peer_addr);
+        log.trace("%s: processing incoming connection from %s", local_addr, peer_addr);
+        connect_lock.lock();
         try {
-            boolean conn_exists=hasConnection(peer_addr),
-              replace=conn_exists && local_addr.compareTo(peer_addr) < 0; // bigger conn wins
+            // we check if there is an outgoing connection creation
+            if (!address_lock.tryLock()) {
+                log.trace("%s: inter lock incoming connection from %s", local_addr, peer_addr);
+                boolean replace=local_addr.compareTo(peer_addr) < 0; // bigger conn wins
+                if (!replace) {
+                    log.trace("%s: inter lock rejected connection from %s %s", local_addr, peer_addr, explanation(replace));
+                    conn.nack();
+                    close_conn=true; // keep our existing conn, reject accept() and close client_sock
+                    return;
+                } else {
+                    log.trace("%s: inter lock accepted connection from %s %s", local_addr, peer_addr, explanation(replace));
+                    // if we need to replace or new creation we wait for the lock as it will happen.
+                    conn.ack();
+                    address_lock.lock();
+                }
+            } else {
+                log.trace("%s: acking connection to %s", local_addr, peer_addr);
+                conn.ack();
+            }
 
-            if(!conn_exists || replace) {
-                notifyConnectionEstablished(conn);
-                conn.start();
-                replaceConnection(peer_addr, conn); // closes old conn
-                log.trace("%s: accepted connection from %s", local_addr, peer_addr);
-            }
-            else {
-                log.trace("%s: rejected connection from %s %s", local_addr, peer_addr, explanation(conn_exists, replace));
-                close_conn=true; // keep our existing conn, reject accept() and close client_sock
-            }
+            log.trace("%s: accepted connection from %s", local_addr, peer_addr);
+            replaceConnection(peer_addr, conn); // closes old conn
+            conn.start();
+            notifyConnectionEstablished(conn);
         }
         finally {
-            lock.unlock();
+            address_lock.produceConnection();
+            //  this is required as lock might not be hold by this thread (rejected situation)
+            address_lock.unlock();
+
+            connect_lock.unlock();
+            // we clean up the connection if required.
+            if(close_conn)
+                Util.close(conn); // closing the connection outside the lock scope (might block if TLS)
         }
-        if(close_conn)
-            Util.close(conn); // closing the connection outside the lock scope (might block if TLS)
     }
 
     public BaseServer addConnectionListener(ConnectionListener cl) {
@@ -418,7 +458,7 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         if(address == null || conn == null)
             return;
         Connection tmp=null;
-        Lock lock=getLock(address);
+        AddressLock lock=getAddressLock(address);
         lock.lock();
         try {
             Connection existing=conns.get(address);
@@ -463,7 +503,6 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
             return;
         Map<Address,Connection> copy=new HashMap<>(conns);
         conns.keySet().retainAll(current_mbrs);
-        locks.keySet().retainAll(current_mbrs);
         copy.keySet().removeAll(current_mbrs);
         for(Map.Entry<Address,Connection> e: copy.entrySet()) {
             PhysicalAddress key=(PhysicalAddress)e.getKey();
@@ -538,9 +577,12 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         }
     }
 
-    protected Lock getLock(Address dest) {
-        Lock l=locks.get(dest);
-        return l != null? l : locks.computeIfAbsent(dest, __ -> new ReentrantLock());
+    protected AddressLock getAddressLock(Address dest) {
+        return locks.computeIfAbsent(dest, __ -> new AddressLock());
+    }
+
+    protected ReentrantLock getConnectLock(Address dest) {
+        return connect.computeIfAbsent(dest, __ -> new ReentrantLock());
     }
 
     protected static boolean connected(Connection c) {
@@ -568,17 +610,15 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
 
 
 
-    protected static String explanation(boolean connection_existed, boolean replace) {
+    protected static String explanation(boolean replace) {
         StringBuilder sb=new StringBuilder();
-        if(connection_existed) {
-            sb.append(" (connection existed");
-            if(replace)
-                sb.append(" but was replaced because my address is lower)");
-            else
-                sb.append(" and my address won as it's higher)");
-        }
+
+        sb.append(" (connection processed");
+        if(replace)
+            sb.append(" but was replaced because my address is lower)");
         else
-            sb.append(" (connection didn't exist)");
+            sb.append(" and my address won as it's higher)");
+
         return sb.toString();
     }
 
@@ -624,4 +664,34 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         }
     }
 
+}
+
+class AddressLock {
+    ReentrantLock lock = new ReentrantLock();
+    Condition waitingForConnection = lock.newCondition();
+
+    public void lock () {
+        lock.lock();
+    }
+
+    public boolean tryLock () throws InterruptedException {
+        return lock.tryLock();
+    }
+
+    public void unlock () {
+        if (lock.isHeldByCurrentThread()) {
+            lock.unlock();
+        }
+    }
+
+    public void waitForConnection() throws InterruptedException{
+        waitingForConnection.await(5, TimeUnit.SECONDS);
+    }
+
+    public void produceConnection() {
+        if (lock.isHeldByCurrentThread()) {
+            lock.hasWaiters(waitingForConnection);
+            waitingForConnection.signalAll();
+        }
+    }
 }

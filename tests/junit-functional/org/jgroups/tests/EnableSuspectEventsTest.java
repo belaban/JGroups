@@ -89,7 +89,7 @@ public class EnableSuspectEventsTest {
             // Check the views on the remaining nodes
             System.out.print("   Checking remaining nodes:\n");
             Util.waitUntil(5000, 100,
-                           () -> channels.stream().map(JChannel::view).allMatch(v -> v.size() == 2),
+                           () -> channels.stream().map(JChannel::view).allMatch(v -> v.size() == NUM_NODES - 1),
                            () -> String.format("all views must have 2 members: %s", print(channels)));
             System.out.printf("%s\n", print(channels));
 

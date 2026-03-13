@@ -16,7 +16,7 @@ import java.nio.channels.Selector;
  */
 public class NioClient extends NioBaseServer implements Client {
     protected Address       remote_addr; // the address of the server (needs to be set before connecting)
-    protected NioConnection conn;        // connection to the server
+    protected Connection conn;        // connection to the server
 
 
     /**
@@ -111,12 +111,7 @@ public class NioClient extends NioBaseServer implements Client {
     protected void doStart() throws Exception {
         super.start();
         selector=Selector.open();
-        conn=createConnection(remote_addr);
-        conn.connect(remote_addr, false);
-        local_addr=conn.localAddress();
-        if(use_peer_connections)
-            conn.sendLocalAddress(local_addr);
-        conn.start();
+        conn=handleOutgoingConnection(remote_addr);
         acceptor=factory.newThread(new Acceptor(), "NioClient.Acceptor [srv=" + remote_addr + "]");
         acceptor.setDaemon(true);
         acceptor.start();

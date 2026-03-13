@@ -13,6 +13,10 @@ import java.util.concurrent.locks.ReentrantLock;
  * Represents a connection to a peer
  */
 public abstract class Connection implements Closeable {
+    public static final byte[] MSG_ACK= { 'o', 'k' };
+    public static final byte[] MSG_NACK= { 'k', 'o'};
+    public static final int MSG_LENGTH=MSG_ACK.length;
+
     public static final byte[] cookie= { 'b', 'e', 'l', 'a' };
     public static final int    GRACEFUL_CLOSE=-5;
     protected BaseServer       server;
@@ -48,4 +52,8 @@ public abstract class Connection implements Closeable {
     public boolean isExpired(long now) {
         return server.connExpireTime() > 0 && now - last_access >= server.connExpireTime();
     }
+
+    abstract public void ack() throws Exception;
+    abstract public void nack() throws Exception;
+    abstract public void waitForAck() throws Exception;
 }

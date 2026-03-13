@@ -12,6 +12,7 @@ import org.jgroups.util.Util;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
@@ -381,6 +382,49 @@ public class NioConnection extends Connection {
         return length_buf;
     }
 
+    @Override
+    public void ack() {
+        try {
+            this.send(ByteBuffer.wrap(MSG_ACK), false);
+        } catch (Exception e) {
+            throw new UncheckedIOException("error during acking the tcp connection", new IOException(e));
+        }
+    }
 
+    @Override
+    public void nack() {
+        try {
+            this.send(ByteBuffer.wrap(MSG_NACK), false);
+        } catch(Exception e) {
+            throw new UncheckedIOException("error during nacking the tcp connection", new IOException(e));
+        }
+    }
+
+    @Override
+    public void waitForAck() throws Exception {
+        byte []waitForAck = new byte[2];
+        ByteBuffer buf = ByteBuffer.allocate(waitForAck.length);
+        int length = 0;
+        long timeout = System.currentTimeMillis() + 5000;
+        while(length < waitForAck.length 
+                && !Thread.currentThread().isInterrupted()
+                && System.currentTimeMillis() < timeout) {
+            int numberOfBytes = channel.read(buf);
+            if (numberOfBytes > 0){
+                length += numberOfBytes;
+            }
+        }
+
+        if (length < waitForAck.length) {
+            waitForAck = MSG_NACK;
+        } else {
+            buf.flip();
+            buf.get(waitForAck);
+        }
+
+        if (!Arrays.equals(MSG_ACK, waitForAck) && length == waitForAck.length) {
+            doClose();
+        }
+    }
 
 }

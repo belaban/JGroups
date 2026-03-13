@@ -60,7 +60,6 @@ public class ServerTests {
     protected void setup(BaseServer one, BaseServer two, boolean use_peer_conns) throws Exception {
         a=one.usePeerConnections(use_peer_conns);
         b=two.usePeerConnections(use_peer_conns);
-        assert a.localAddress().compareTo(b.localAddress()) < 0;
         a.receiver(receiver_a=new MyReceiver("A").verbose(false));
         a.start();
         b.receiver(receiver_b=new MyReceiver("B").verbose(false));
@@ -82,7 +81,7 @@ public class ServerTests {
     public void testSimpleSend(BaseServer a, BaseServer b) throws Exception {
         setup(a,b);
         send(STRING_A, a, b.localAddress());
-        check(receiver_b.getList(), STRING_A);
+        check(receiver_b, STRING_A);
     }
 
 
@@ -95,14 +94,14 @@ public class ServerTests {
         waitForOpenConns(1, a, b);
         assert a.getNumOpenConnections() == 1 : "number of connections for conn_a: " + a.getNumOpenConnections();
         assert b.getNumOpenConnections() == 1 : "number of connections for conn_b: " + b.getNumOpenConnections();
-        check(receiver_b.getList(),"hello");
+        check(receiver_b,"hello");
 
         send("hello", b, a.localAddress());
         waitForOpenConns(1, a, b);
         assert a.getNumOpenConnections() == 1 : "number of connections for conn_a: " + a.getNumOpenConnections();
         assert b.getNumOpenConnections() == 1 : "number of connections for conn_b: " + b.getNumOpenConnections();
-        check(receiver_b.getList(), "hello");
-        check(receiver_a.getList(), "hello");
+        check(receiver_b, "hello");
+        check(receiver_a, "hello");
     }
 
 
@@ -132,8 +131,9 @@ public class ServerTests {
     }
 
 
-    protected static void check(List<String> list, String expected_str) {
-        Util.waitUntilTrue(10000, 100, () -> !list.isEmpty());
+    protected static void check(MyReceiver receiver, String expected_str) {
+        Util.waitUntilTrue(10000, 100, () -> receiver.size() > 0);
+        List<String> list = receiver.getList();
         assert !list.isEmpty() && list.get(0).equals(expected_str) : " list: " + list + ", expected " + expected_str;
     }
 

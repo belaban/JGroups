@@ -96,8 +96,8 @@ public class TcpServer extends TcpBaseServer {
      *  putting it in conns. When the thread should stop, it is interrupted by the thread creator */
     protected class Acceptor implements Runnable {
         public void run() {
+            Socket client_sock=null;
             while(!srv_sock.isClosed() && !Thread.currentThread().isInterrupted()) {
-                Socket client_sock=null;
                 try {
                     client_sock=srv_sock.accept();
                     handleAccept(client_sock);
@@ -107,8 +107,11 @@ public class TcpServer extends TcpBaseServer {
                         break;
                     if(log_accept_error)
                         log.warn(Util.getMessage("AcceptError"), local_addr, client_sock, ex);
-                    Util.close(client_sock);
                 }
+            }
+            // we do the close outside the loop
+            if (client_sock != null && client_sock.isConnected()) {
+                Util.close(client_sock);
             }
         }
 
