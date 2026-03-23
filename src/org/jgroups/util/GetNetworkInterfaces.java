@@ -16,7 +16,10 @@ public class GetNetworkInterfaces {
         Enumeration<NetworkInterface> en=NetworkInterface.getNetworkInterfaces();
         while(en.hasMoreElements()) {
             NetworkInterface i=en.nextElement();
-            System.out.printf("%s (%s)\n", i.getName(), Util.isUp(i)? "up" : "down");
+            boolean up=Util.isUp(i);
+            if(!up)
+                continue;
+            System.out.printf("%s (%s)\n", i.getName(), up? "up" : "down");
             for(Enumeration<InetAddress> en2=i.getInetAddresses(); en2.hasMoreElements();) {
                 InetAddress addr=en2.nextElement();
                 System.out.println("  \t" + addr);

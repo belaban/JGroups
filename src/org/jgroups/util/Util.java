@@ -86,7 +86,6 @@ public class Util {
     private static final byte    TYPE_STREAMABLE   = 50;
     private static final byte    TYPE_SERIALIZABLE = 51;
 
-
     public static final int      MAX_PORT=65535; // highest port allocatable
 
     private static final Pattern METHOD_NAME_TO_ATTR_NAME_PATTERN=Pattern.compile("[A-Z]+");
@@ -97,7 +96,6 @@ public class Util {
     protected static float       CCHM_LOAD_FACTOR=0.75f;
     protected static int         CCHM_CONCURRENCY_LEVEL=16;
     public static final int      DEFAULT_HEADERS;
-
     public static final String   JAVA_VERSION;
 
     /**
@@ -105,7 +103,6 @@ public class Util {
      * reduces the amount of log data
      */
     public static int            MAX_LIST_PRINT_SIZE=20;
-
     private static final byte[]  TYPE_NULL_ARRAY={0};
     private static final byte[]  TYPE_BOOLEAN_TRUE={TYPE_BOOLEAN, 1};
     private static final byte[]  TYPE_BOOLEAN_FALSE={TYPE_BOOLEAN, 0};
@@ -121,6 +118,8 @@ public class Util {
     private static volatile List<NetworkInterface>  CACHED_INTERFACES=null;
     private static volatile Collection<InetAddress> CACHED_ADDRESSES=null;
     private static InetAddress                      LOCALHOST=null;
+    // https://redhat.atlassian.net/browse/JGRP-2994
+    private static final List<Pattern>              NIC_SKIP_LIST=new FastArray<>();
     public static final boolean                     can_bind_to_mcast_addr;
     protected static ResourceBundle                 resource_bundle;
     static DateTimeFormatter                        UTF_FORMAT=DateTimeFormatter.ofPattern("E MMM d H:m:s 'UTC' y");
@@ -219,6 +218,24 @@ public class Util {
         }
 
         JAVA_VERSION=System.getProperty("java.vm.version", "");
+
+        String skip_up_check_for=System.getProperty(Global.SKIP_UP_CHECK_FOR);
+        if(skip_up_check_for != null) {
+            List<String> interfaces=Util.parseCommaDelimitedStrings(skip_up_check_for.trim());
+            if(interfaces != null && !interfaces.isEmpty()) {
+                for(String intf: interfaces) {
+                    Pattern pattern=Pattern.compile(intf);
+                    NIC_SKIP_LIST.add(pattern);
+                }
+            }
+        }
+    }
+
+    public static boolean skipUpCheckFor(NetworkInterface nic) {
+        if(NIC_SKIP_LIST.isEmpty())
+            return false;
+        String name=nic.getName();
+        return NIC_SKIP_LIST.stream().anyMatch(p -> p.matcher(name).matches());
     }
 
     @Deprecated
@@ -4784,7 +4801,7 @@ public class Util {
      * https://github.com/oracle/graal/pull/1076 has been fixed */
     public static boolean isUp(NetworkInterface ni) throws SocketException {
         try {
-            return ni.isUp();
+            return ni.isUp() || Util.skipUpCheckFor(ni);
         }
         catch(SocketException sock_ex) {
             throw sock_ex;
