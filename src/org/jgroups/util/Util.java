@@ -84,7 +84,6 @@ public class Util {
      * reduces the amount of log data
      */
     public static int            MAX_LIST_PRINT_SIZE=20;
-
     private static final byte[]  TYPE_NULL_ARRAY={0};
     private static final byte[]  TYPE_BOOLEAN_TRUE={TYPE_BOOLEAN, 1};
     private static final byte[]  TYPE_BOOLEAN_FALSE={TYPE_BOOLEAN, 0};
@@ -95,6 +94,8 @@ public class Util {
 
     private static boolean          ipv4_stack_available=false, ipv6_stack_available=false;
     private static final StackType  ip_stack_type=_getIpStackType();
+    // https://redhat.atlassian.net/browse/JGRP-2994
+    private static final List<Pattern> NIC_SKIP_LIST=new ArrayList<>();
     public static final boolean     can_bind_to_mcast_addr;
     protected static ResourceBundle resource_bundle;
 
@@ -172,6 +173,23 @@ public class Util {
         catch(Exception ex) {
             // ex.printStackTrace(System.err);
         }
+        String skip_up_check_for=System.getProperty(Global.SKIP_UP_CHECK_FOR);
+        if(skip_up_check_for != null) {
+            List<String> interfaces=Util.parseCommaDelimitedStrings(skip_up_check_for.trim());
+            if(interfaces != null && !interfaces.isEmpty()) {
+                for(String intf: interfaces) {
+                    Pattern pattern=Pattern.compile(intf);
+                    NIC_SKIP_LIST.add(pattern);
+                }
+            }
+        }
+    }
+
+    public static boolean skipUpCheckFor(NetworkInterface nic) {
+        if(NIC_SKIP_LIST.isEmpty())
+            return false;
+        String name=nic.getName();
+        return NIC_SKIP_LIST.stream().anyMatch(p -> p.matcher(name).matches());
     }
 
     public static boolean fibersAvailable() {
@@ -4298,7 +4316,7 @@ public class Util {
      * https://github.com/oracle/graal/pull/1076 has been fixed */
     public static boolean isUp(NetworkInterface ni) throws SocketException {
         try {
-            return ni.isUp();
+            return ni.isUp() || Util.skipUpCheckFor(ni);
         }
         catch(SocketException sock_ex) {
             throw sock_ex;
