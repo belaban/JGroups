@@ -20,7 +20,7 @@ public class GetNetworkInterfaces {
             System.out.println("  \t" + i.getDisplayName());
             for(Enumeration<InetAddress> en2=i.getInetAddresses(); en2.hasMoreElements();) {
                 InetAddress addr=en2.nextElement();
-                System.out.println("  \t" + addr + " (" + addr.getHostName() + ')');
+                System.out.println("  \t" + addr);
             }
             System.out.println("---------------------");
         }
