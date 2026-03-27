@@ -19,6 +19,18 @@ public class AverageTest {
     // 20% between expected and actual averages in allowed
     protected static final double DEVIATION=0.2;
 
+    public void testAdd() {
+        Average avg=new AverageMinMax(10);
+        //while(avg.count() < 10) {
+        for(int j=0; j < 10; j++)
+            for(int i=1; i <= 10; i++)
+                avg.add(i);
+       // }
+        assert !avg.isEmpty();
+        assert avg.capacity() == 10;
+        assert avg.count() == 10;
+    }
+
     public void testAverage() {
         long[] numbers=new long[1000];
         long total=0;
@@ -29,13 +41,11 @@ public class AverageTest {
         }
 
         double expected_avg=total/1000.0;
-
         Average a=new Average(1000);
         for(long num: numbers)
             a.add(num);
 
         double avg=a.average();
-
         expected_avg=Math.floor(expected_avg);
         avg=Math.floor(avg);
         assert Util.withinRange(avg, expected_avg, DEVIATION);
@@ -50,7 +60,6 @@ public class AverageTest {
         assert Util.withinRange(actual_avg, expected_avg, 0.5) : String.format("actual: %.2f expected: %.2f\n", actual_avg, expected_avg);
     }
 
-
     public void testAverage3() {
         Average avg=new Average(16);
         IntStream.rangeClosed(1,10_000).forEach(avg::add); // values towards 10'000 will dominate
@@ -58,7 +67,6 @@ public class AverageTest {
         double actual_avg=avg.average();
         assert Util.withinRange(actual_avg, expected_avg, DEVIATION) : String.format("actual: %.2f expected: %.2f\n", actual_avg, expected_avg);
     }
-
 
     public void testOverflow() {
         long start=Long.MAX_VALUE/ 500;

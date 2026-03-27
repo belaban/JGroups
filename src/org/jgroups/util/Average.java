@@ -20,6 +20,7 @@ public class Average implements Streamable {
     protected long[]           samples;
     protected TimeUnit         unit;
     protected volatile boolean all_filled;
+    protected int              cap;
     protected static final int DEFAULT_CAPACITY=512;
 
     public Average() {
@@ -28,10 +29,11 @@ public class Average implements Streamable {
 
     public Average(final int capacity) {
         this.samples=new long[capacity];
+        this.cap=capacity;
         Arrays.fill(samples, -1);
     }
 
-    public int                   capacity()       {return samples.length;}
+    public int                   capacity()       {return cap;}
     public TimeUnit              unit()           {return unit;}
     public <T extends Average> T unit(TimeUnit u) {this.unit=u; return (T)this;}
     public double                getAverage()     {return average();}
@@ -39,7 +41,7 @@ public class Average implements Streamable {
     public <T extends Average> T add(long num) {
         if(num < 0)
             return (T)this;
-        int idx=Util.random(samples.length)-1;
+        int idx=Util.random(cap)-1;
         samples[idx]=num;
         return (T)this;
     }
@@ -48,7 +50,7 @@ public class Average implements Streamable {
     public <T extends Average> T merge(T other) {
         if(other == null)
             return (T)this;
-        for(int i=0; i < other.samples.length; i++)
+        for(int i=0; i < other.capacity(); i++)
             add(other.samples[i]);
         return (T)this;
     }
@@ -56,7 +58,7 @@ public class Average implements Streamable {
     /** Returns the total of all valid (>= 0) values */
     public long total() {
         long ret=0;
-        for(int i=0; i < samples.length; i++) {
+        for(int i=0; i < cap; i++) {
             long sample=samples[i];
             if(sample >= 0)
                 ret+=sample;
@@ -67,13 +69,13 @@ public class Average implements Streamable {
     /** Returns the number of valid samples (>= 0) */
     public int count() {
         if(all_filled)
-            return samples.length;
+            return cap;
         int ret=0;
-        for(int i=0; i < samples.length; i++) {
+        for(int i=0; i < cap; i++) {
             if(samples[i] >= 0)
                 ret++;
         }
-        if(ret >= samples.length)
+        if(ret >= cap)
             all_filled=true;
         return ret;
     }
@@ -82,7 +84,7 @@ public class Average implements Streamable {
     public boolean isEmpty() {
         if(all_filled)
             return false;
-        for(int i=0; i < samples.length; i++) {
+        for(int i=0; i < cap; i++) {
             if(samples[i] >= 0)
                 return false;
         }
@@ -93,7 +95,7 @@ public class Average implements Streamable {
     public double average() {
         int count=0;
         long total=0;
-        for(int i=0; i < samples.length; i++) {
+        for(int i=0; i < cap; i++) {
             long sample=samples[i];
             if(sample >= 0) {
                 count++;
@@ -122,16 +124,16 @@ public class Average implements Streamable {
 
     @Override
     public void writeTo(DataOutput out) throws IOException {
-        out.writeInt(samples.length);
-        for(int i=0; i < samples.length; i++)
+        out.writeInt(cap);
+        for(int i=0; i < cap; i++)
             Bits.writeLongCompressed(samples[i], out);
     }
 
     @Override
     public void readFrom(DataInput in) throws IOException {
-        int len=in.readInt();
-        samples=new long[len];
-        for(int i=0; i < samples.length; i++)
+        cap=in.readInt();
+        samples=new long[cap];
+        for(int i=0; i < cap; i++)
             samples[i]=Bits.readLongCompressed(in);
     }
 
