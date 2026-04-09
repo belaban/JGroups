@@ -33,6 +33,11 @@ of all protocols, org.jgroups.stack.Protocol.
                         
 |id | Gives the protocol a different ID if needed so we can have multiple instances of it in
       the same stack
+|after_creation_hook | Fully qualified name of a class implementing ProtocolHook, will be called after creation of
+      the protocol (before init())
+| preview_warning | If true, log a warning if a protocol annotated with @Preview is used
+| level | Sets the logging level. Valid values are "fatal", "error", "warn", "info", "debug", "trace"
+     (capitalization not relevant)
 |===============
 
 
@@ -1700,30 +1705,43 @@ NOTE: Non-blocking flow control protocols were removed in 5.5.0: https://issues.
 ==== FRAG and FRAG2
 
 FRAG and FRAG2 fragment large messages into smaller ones, send the smaller ones, and at the receiver
-                side, the smaller fragments will get assembled into larger messages again, and delivered to the
-                application. FRAG and FRAG2 work for both unicast and multicast messages.
-            
+side, the smaller fragments will get assembled into larger messages again, and delivered to the application.
 
-The difference between FRAG and FRAG2 is that FRAG2 does 1 less copy than FRAG, so it is the recommended
-                fragmentation protocol. FRAG serializes a message to know the exact size required (including headers),
-                whereas FRAG2 only fragments the payload (excluding the headers), so it is faster.
+FRAG and FRAG2 work for both unicast and multicast messages.
             
+The difference between FRAG and FRAG2 is that FRAG2 does one less copy than FRAG, so it is the recommended
+fragmentation protocol. FRAG serializes a message to know the exact size required (including headers),
+whereas FRAG2 only fragments the payload (excluding the headers), so it is faster.
 
 The properties of FRAG2 are:
-            
 
 ${FRAG2}
 
 Contrary to FRAG, FRAG2 does not need to serialize a message in order to break it into smaller
-                fragments: it looks only at the message's buffer, which is a byte array anyway. We assume that the
-                size addition for headers and src and dest addresses is minimal when the transport finally has to
-                serialize the message, so we add a constant (by default 200 bytes). Because of the efficiency gained by
-                not having to serialize the message just to determine its size, FRAG2 is generally recommended over FRAG.
-            
+fragments: it looks only at the message's buffer, which is a byte array anyway. We assume that the
+size addition for headers and src and dest addresses is minimal when the transport finally has to
+serialize the message, so we add a constant (by default 200 bytes). Because of the efficiency gained by
+not having to serialize the message just to determine its size, FRAG2 is generally recommended over FRAG.
+
+
+==== FRAG3
+
 ${FRAG3}
 
-FRAG3 needs only half the memory than FRAG2 to handle fragments and the final full message. See
-https://issues.redhat.com/browse/JGRP-2154 for details.
+FRAG3 needs only half the memory of FRAG2 to handle fragments and the final full message. When the first fragment is
+received, a message with the full buffer already allocated is created. When fragments are received, they're copied into
+the full message and immediately discarded. When complete, the full message is passed up.
+
+This reduces memory allocation caused by keeping fragments in memory until all of them have been received.
+
+For details see https://issues.redhat.com/browse/JGRP-2154 for details.
+
+
+==== FRAG4
+FRAG4 is able to handle ObjectMessages in addition to BytesMessages.
+
+${FRAG4}
+
 
 === Ordering
 

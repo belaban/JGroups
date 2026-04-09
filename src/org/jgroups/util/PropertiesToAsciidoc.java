@@ -137,17 +137,20 @@ public class PropertiesToAsciidoc {
         props.put(clazz.getSimpleName(), tmp);
     }
 
+
     protected static void getDescriptions(Class<?> clazz, final Map<String,String> m, String prefix, boolean print_class)
       throws IOException, ClassNotFoundException {
-        Field[] fields = clazz.getDeclaredFields();
+        Field[] fields = Util.getAllDeclaredFieldsWithAnnotations(clazz, Property.class, Component.class);
         for (Field field : fields) {
-            if (field.isAnnotationPresent(Property.class)) {
-                String property = field.getName();
-                Property annotation = field.getAnnotation(Property.class);
+            if(Protocol.class.equals(field.getDeclaringClass()))
+                continue;
+            if(field.isAnnotationPresent(Property.class)) {
+                String property=field.getName();
+                Property annotation=field.getAnnotation(Property.class);
                 String name=annotation.name();
                 if(name != null && !name.trim().isEmpty())
                     property=name.trim();
-                String desc = annotation.description();
+                String desc=annotation.description();
                 if(prefix != null && !prefix.isEmpty())
                     property=prefix + "." + property;
                 if(print_class)
