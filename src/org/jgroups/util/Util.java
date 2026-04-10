@@ -4051,13 +4051,12 @@ public class Util {
             int port=left_index != -1? Integer.parseInt(t.substring(left_index+1, right_index)) : default_port;
             try {
                 InetAddress[] resolvedAddresses=InetAddress.getAllByName(host);
-                for(int i=0; i < resolvedAddresses.length; i++) {
-                    for(int p=port; p <= port + port_range; p++) {
-                        InetAddress inet=resolvedAddresses[i];
-                        boolean add=(inet == null && stack_type==StackType.Dual)
-                          || (inet instanceof Inet6Address && stack_type == StackType.IPv6)
-                          || (inet instanceof Inet4Address && stack_type == StackType.IPv4);
-                        if(add) {
+                for(InetAddress inet: resolvedAddresses) {
+                    boolean add=(stack_type == StackType.Dual)
+                      || (inet instanceof Inet6Address && stack_type == StackType.IPv6)
+                      || (inet instanceof Inet4Address && stack_type == StackType.IPv4);
+                    if(add) {
+                        for(int p=port; p <= port + port_range; p++) {
                             IpAddress addr=new IpAddress(inet, p);
                             list.add(addr);
                         }
