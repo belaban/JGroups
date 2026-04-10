@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -29,7 +30,7 @@ public class RoundTrip implements RtReceiver {
     protected int                             num_msgs=50000;
     protected int                             num_senders=1; // number of sender threads
     protected boolean                         details;
-    protected boolean                         use_ms; // typically we use us, but if the flag is true, we use ms
+    protected boolean                         use_ms; // typically we use ns, but if the flag is true, we use ms
     protected static final byte               REQ=0, RSP=1, DONE=2;
     // | REQ or RSP | index (short) | time (long) |
     public static final int                   PAYLOAD=Global.BYTE_SIZE + Global.SHORT_SIZE + Global.LONG_SIZE;
@@ -48,6 +49,8 @@ public class RoundTrip implements RtReceiver {
 
     public RoundTrip(boolean use_ms) {
         this.use_ms=use_ms;
+        this.req_latency.unit(use_ms? TimeUnit.MILLISECONDS : TimeUnit.NANOSECONDS);
+        this.rsp_latency.unit(use_ms? TimeUnit.MILLISECONDS : TimeUnit.NANOSECONDS);
     }
 
     protected void start(String transport, String[] args) throws Exception {
@@ -78,21 +81,16 @@ public class RoundTrip implements RtReceiver {
                 catch(Exception e) {
                     e.printStackTrace();
                 }
-                synchronized(req_latency) {
-                    req_latency.add(time);
-                }
+                req_latency.add(time);
                 break;
             case RSP:
                 id=Bits.readShort(req_buf, 1);
                 time=time(use_ms) - Bits.readLong(req_buf, 3);
                 senders[id].promise.setResult(true); // notify the sender of the response
-                synchronized(rsp_latency) {
-                    rsp_latency.add(time);
-                }
+                rsp_latency.add(time);
                 break;
             case DONE:
-                System.out.printf(Util.bold("req-latency = min/avg/max: %d / %.2f / %d %s\n"),
-                                  req_latency.min(), req_latency.average(), req_latency.max(), unit());
+                System.out.printf(Util.bold("req-latency = %s\n"), req_latency);
                 req_latency.clear();
                 break;
             default:
@@ -104,9 +102,10 @@ public class RoundTrip implements RtReceiver {
     protected void loop() {
         boolean looping=true;
         while(looping) {
-            int c=Util.keyPress(String.format("[1] send [2] num_msgs (%d) [3] senders (%d)\n" +
-                                                "[d] details (%b) [x] exit\n",
-                                              num_msgs, num_senders, details));
+            int c=Util.keyPress(String.format("""
+                                                [1] send [2] num_msgs (%d) [3] senders (%d)
+                                                [d] details (%b) [x] exit
+                                                """, num_msgs, num_senders, details));
             try {
                 switch(c) {
                     case '1':
@@ -159,35 +158,29 @@ public class RoundTrip implements RtReceiver {
         done_buf[0]=DONE;
         tp.send(target, done_buf, 0, done_buf.length);
 
-        double divisor=use_ms? 1_000.0 : 1_000_000.0;
+        double divisor=use_ms? 1_000.0 : 1_000_000_000.0;
         double msgs_sec=num_msgs / (total_time / divisor);
 
         AverageMinMax avg=null;
         if(details)
-            System.out.println("");
+            System.out.println();
         for(Sender sender: senders) {
             if(details)
-                System.out.printf("%d: %s\n", sender.id, print(sender.rtt));
+                System.out.printf("%d: round-trip = %s\n", sender.id, sender.rtt);
             if(avg == null)
                 avg=sender.rtt;
             else
                 avg.merge(sender.rtt);
         }
 
-        System.out.printf(Util.bold("\n\nreqs/sec    = %.2f" +
-                                      "\nround-trip  = min/avg/max: %d / %.2f / %d %s" +
-                                      "\nrsp-latency = min/avg/max: %d / %.2f / %d %s\n\n"),
-                          msgs_sec, avg.min(), avg.average(), avg.max(), unit(),
-                          rsp_latency.min(), rsp_latency.average(), rsp_latency.max(), unit());
+        //noinspection TextBlockMigration
+        System.out.printf(Util.bold("\n\nreqs/sec    = %.2f\n" +
+                                      "round-trip  = %s\n" +
+                                      "rsp-latency = %s\n\n"),
+                          msgs_sec, avg, rsp_latency);
     }
 
-    protected String print(AverageMinMax avg) {
-        return String.format("round-trip min/avg/max = %d / %.2f / %d %s", avg.min(), avg.average(), avg.max(), unit());
-    }
-
-    protected static long time(boolean use_ms) {return use_ms? System.currentTimeMillis() : (long)(System.nanoTime() / 1000.0);}
-    protected String unit() {return use_ms? "ms" : "us";}
-
+    protected static long time(boolean use_ms) {return use_ms? System.currentTimeMillis() : System.nanoTime();}
 
 
     protected class Sender extends Thread {
@@ -205,6 +198,7 @@ public class RoundTrip implements RtReceiver {
             this.sent_msgs=sent_msgs;
             this.target=target;
             print=Math.max(1, num_msgs / 10);
+            rtt.unit(use_ms? TimeUnit.MILLISECONDS : TimeUnit.NANOSECONDS);
         }
 
         public void run() {
@@ -223,6 +217,11 @@ public class RoundTrip implements RtReceiver {
 
                 promise.reset(false);
                 byte[] req_buf=new byte[PAYLOAD];
+
+                // The request contains
+                // * the type of the message (byte): REQ or RSP (or DONE)
+                // * the ID (short) of the sender thread (for response correlation)
+                // * the time (ms or ns) (long)
                 req_buf[0]=REQ;
                 Bits.writeShort(id, req_buf, 1);
                 try {
@@ -245,17 +244,13 @@ public class RoundTrip implements RtReceiver {
         String tp="jg";
         boolean use_ms=false;
         for(int i=0; i < args.length; i++) {
-            if(args[i].equals("-tp")) {
-                tp=args[++i];
-                continue;
-            }
-            if(args[i].equals("-use-wall-clock")) {
-                use_ms=true;
-                continue;
-            }
-            if(args[i].equals("-h")) {
-                help(tp);
-                return;
+            switch(args[i]) {
+                case "-tp" -> tp=args[++i];
+                case "-use-wall-clock" -> use_ms=true;
+                case "-h" -> {
+                    help(tp);
+                    return;
+                }
             }
         }
         RtTransport transport=create(tp);
