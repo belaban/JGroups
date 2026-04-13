@@ -371,7 +371,8 @@ public class TPConfig extends Protocol {
     public <T extends TP> T setMessageProcessingPolicy(String policy) {
         if(policy == null)
             return (T)this;
-
+        msg_processing_policy=null;
+        message_processing_policy=null;
         if(policy.startsWith("submit"))
             msg_processing_policy=new SubmitToThreadPool();
         else if(policy.startsWith("max"))
@@ -386,12 +387,12 @@ public class TPConfig extends Protocol {
             if(msg_processing_policy == null) {
                 Class<MessageProcessingPolicy> clazz=(Class<MessageProcessingPolicy>)Util.loadClass(policy, getClass());
                 msg_processing_policy=clazz.getDeclaredConstructor().newInstance();
-                message_processing_policy=policy;
             }
             msg_processing_policy.init((TP)this);
         }
         catch(Exception e) {
-            log.error("failed setting message_processing_policy", e);
+            String f="message_processing_policy %s not found or cannot instatiate";
+            throw new IllegalArgumentException(String.format(f, policy));
         }
         if(msg_processing_policy != null)
             message_processing_policy=policy;

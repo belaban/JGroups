@@ -186,7 +186,8 @@ public abstract class TP extends TPConfig implements DiagnosticsHandler.ProbeHan
             logical_addr_cache_reaper=null;
         }
         thread_pool.destroy();
-        bundler.destroy();
+        if(bundler != null)
+            bundler.destroy();
     }
 
 
