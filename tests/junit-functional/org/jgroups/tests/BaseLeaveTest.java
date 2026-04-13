@@ -38,7 +38,7 @@ public abstract class BaseLeaveTest {
         for(int i = 0; i < channels.length; i++)
             channels[i] = create(String.valueOf(i + 1)).connect(cluster_name);
         Util.waitUntilAllChannelsHaveSameView(10000, 1000, channels);
-        System.out.printf("-- initial view fo r cluster %s:\n%s\n\n",
+        System.out.printf("-- initial view of cluster %s:\n%s\n\n",
                           cluster_name, Stream.of(channels).map(ch -> ch.getAddress() + ": " + ch.getView())
                             .collect(Collectors.joining("\n")));
     }
