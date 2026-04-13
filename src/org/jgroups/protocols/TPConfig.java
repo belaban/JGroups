@@ -391,7 +391,7 @@ public class TPConfig extends Protocol {
             msg_processing_policy.init((TP)this);
         }
         catch(Exception e) {
-            String f="message_processing_policy %s not found or cannot instatiate";
+            String f="message_processing_policy %s not found or cannot be created";
             throw new IllegalArgumentException(String.format(f, policy));
         }
         if(msg_processing_policy != null)
