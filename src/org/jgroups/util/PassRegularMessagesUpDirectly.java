@@ -19,6 +19,15 @@ public class PassRegularMessagesUpDirectly extends SubmitToThreadPool {
     }
 
     @Override
+    public boolean loopback(MessageBatch batch, boolean oob) {
+        if(oob)
+            return super.loopback(batch, oob);
+        BatchHandler bh=new BatchHandler(batch, true);
+        bh.run();
+        return true;
+    }
+
+    @Override
     public boolean process(Message msg, boolean oob) {
         if(oob)
             return super.process(msg, oob);
