@@ -47,14 +47,15 @@ public class RSVPTest {
                                      new RSVP().setTimeout(10000).throwExceptionOnTimeout(false).setResendInterval(500),
                                      new GMS().printLocalAddress(false).setJoinTimeout(100).setLeaveTimeout(100)
                                        .logViewWarnings( false).setViewAckCollectionTimeout(2000).logCollectMessages(false));
-            channels[i].setName(String.valueOf((i + 1)));
+            String name=String.valueOf((char)(i+ 'A'));
+            channels[i].setName(name);
             channels[i].getProtocolStack().getTransport().getDiagnosticsHandler().setEnabled(false);
             receivers[i]=new MyReceiver();
             channels[i].setReceiver(receivers[i]);
             channels[i].connect("RSVPTest");
-            System.out.print(i + 1 + " ");
+            System.out.print(name + " ");
         }
-        Util.waitUntilAllChannelsHaveSameView(30000, 1000, channels);
+        Util.waitUntilAllChannelsHaveSameView(5000, 500, channels);
         System.out.println();
     }
 
