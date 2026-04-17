@@ -271,12 +271,18 @@ public class ThreadPool implements Lifecycle {
                                                       String rejection_policy, BlockingQueue<Runnable> queue,
                                                       final ThreadFactory factory, Log log) {
         ExecutorService pool=null;
-        if(factory.useVirtualThreads())
+        if(factory.useVirtualThreads()) {
             pool=newVirtualThreadPool(factory);
+         //   RejectedExecutionHandler handler=Util.parseRejectionPolicy(rejection_policy);
+           // pool=new ThreadPoolExecutor(min_threads, max_threads, keep_alive_time,
+             //                           TimeUnit.MILLISECONDS, queue, factory, handler);
+            // pool.allowCoreThreadTimeOut(true);
+        }
         if(pool == null) {
             RejectedExecutionHandler handler=Util.parseRejectionPolicy(rejection_policy);
             pool=new ThreadPoolExecutor(min_threads, max_threads, keep_alive_time,
                                         TimeUnit.MILLISECONDS, queue, factory, handler);
+            ((ThreadPoolExecutor)pool).allowCoreThreadTimeOut(true);
             if(log != null)
                 log.debug("thread pool min/max/keep-alive (ms): %d/%d/%d", min_threads, max_threads, keep_alive_time);
         }
