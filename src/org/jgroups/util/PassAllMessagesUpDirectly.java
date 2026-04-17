@@ -38,6 +38,9 @@ public class PassAllMessagesUpDirectly extends SubmitToThreadPool {
 
     @Override
     public boolean process(MessageBatch batch, boolean oob) {
+        boolean removed=removeAndDispatchNonBundledMessages(batch, false);
+        if(removed && batch.isEmpty())
+            return true;
         BatchHandler bh=new BatchHandler(batch, false);
         bh.run();
         return true;
