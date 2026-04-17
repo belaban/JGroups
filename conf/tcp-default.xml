@@ -18,6 +18,7 @@
             bundler.capacity="${jgroups.bundler.capacity:16k}"
             bundler.use_single_sender_thread="${jgroups.bundler.use_single_sender_thread:true}"
             bundler.use_ringbuffer="${jgroups.bundler.use_ringbuffer:true}"
+            message_processing_policy="${mpp:max}"
 
             diag.enabled="true"
             diag.enable_tcp="true"
