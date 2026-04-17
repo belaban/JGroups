@@ -58,8 +58,6 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
     protected boolean removeAndDispatchNonBundledMessages(MessageBatch oob_batch, boolean loopback) {
         if(oob_batch == null)
             return false;
-        AsciiString tmp=oob_batch.clusterName();
-        byte[] cname=tmp != null? tmp.val() : null;
         boolean removed=false;
         for(Iterator<Message> it=oob_batch.iterator(); it.hasNext();) {
             Message msg=it.next();
