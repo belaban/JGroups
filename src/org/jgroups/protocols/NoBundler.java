@@ -18,8 +18,15 @@ public class NoBundler extends BaseBundler {
 
     @Override
     public void send(Message msg) throws Exception {
+        boolean stats_enabled=transport.statsEnabled();
+        long start=stats_enabled? System.nanoTime() : 0;
         ByteArrayDataOutputStream buffer=new ByteArrayDataOutputStream(msg.size());
+        buffer.position(0);
         sendSingle(msg.dest(), msg, buffer);
+        if(stats_enabled) {
+            long time=System.nanoTime() - start;
+            avg_send_time.add(time);
+        }
     }
 
 }

@@ -19,6 +19,42 @@ This includes
   processing etc
 
 
+Places where latency occurs in a round-trip RPC
+-----------------------------------------------
+Let's take the example where multiple threads are invoking synchronous unicast RPCs in a cluster,
+ie. in UPerf or IspnPerfTest. The 4 stages below outline where latency can occur.
+
+
+1. Sending a request
+--------------------
+The request is sent down to the transport where it is passed to the bundler. The bundler collects multiple messages
+and sends them as a MessageBatch. (A NoBundler doesn't collect, but sends each message directly).
+
+When no message is available, or bundler.max_size (bytes) has been reached, the collected messages are sent.
+
+Therefore, a small max_size sends message batches more quickly. E.g. if we send messages if 1KB, max_size=5KB means that
+a MessageBatch will have a max of 5 messages.
+
+The output stream (e.g. a TCP/IP's SocketOutputStream) can be buffered, e.g. TCP.buffered_outputstream_size
+(default: 64KB). A single-threaded bundler, e.g. PerDestinationBundler (default) or TransferQueueBundler sends a message
+lockless, ie. writes the length, then the payload, then flushes the buffered output stream. Making
+buffered_outputstream_size smaller than length+payload would cause 2 TCP/IP writes to occur, which is less efficient
+than a single write.
+
+The transport (e.g. TCP) needs to have buffers (e.g. TCP's send-window) that are spaced according to the max number of
+bytes we send/sec. Note that TCP/IP's send window increases and shrinks dynamically, but the max window size can be
+defined, e.g. wmem.max (via sysctl).
+
+
+2. Receiving a request and passing it up to the application
+-----------------------------------------------------------
+
+3. Sending a response
+---------------------
+
+4. Receiving the response and passing it up to the application
+--------------------------------------------------------------
+
 
 Components to look at
 ---------------------
