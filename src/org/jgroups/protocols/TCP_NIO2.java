@@ -145,7 +145,8 @@ public class TCP_NIO2 extends BasicTCP {
     
     public void stop() {
         log.debug("closing sockets and stopping threads");
-        server.stop(); // not needed, but just in case
+        if(server != null)
+            server.stop(); // not needed, but just in case
         super.stop();
     }
 
