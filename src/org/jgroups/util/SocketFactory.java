@@ -11,9 +11,11 @@ import java.net.SocketAddress;
 import java.net.SocketException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.nio.channels.spi.SelectorProvider;
 
 /**
- * Factory to create various types of sockets. For socket creation, a <em>service name</em> can be passed as argument:
+ * Factory to create various types of sockets and NIO selector provider and channels.<p>
+ * For socket creation, a <em>service name</em> can be passed as argument:
  * an implementation could look up a service description (e.g. port) and create the socket, ignoring the passed port and
  * possibly also the bind address.<p>
  * Ephemeral ports can be created by passing 0 as port, or (if the port is ignored), an implementation could pass in
@@ -33,6 +35,14 @@ public interface SocketFactory {
     ServerSocket createServerSocket(String service_name, int port) throws IOException;
     ServerSocket createServerSocket(String service_name, int port, int backlog) throws IOException;
     ServerSocket createServerSocket(String service_name, int port, int backlog, InetAddress bindAddr) throws IOException;
+
+    /**
+     * Returns the {@link SelectorProvider} used to create NIO selectors.
+     * Override to use a custom provider (e.g. io_uring) in JGroups without changing the JVM-wide default.
+     */
+    default SelectorProvider getSelectorProvider() {
+        return SelectorProvider.provider();
+    }
 
     default SocketChannel createSocketChannel(String service_name) throws IOException {
         return SocketChannel.open();

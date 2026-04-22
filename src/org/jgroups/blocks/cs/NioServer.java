@@ -6,7 +6,6 @@ import org.jgroups.util.*;
 
 import java.net.InetAddress;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
@@ -69,7 +68,7 @@ public class NioServer extends NioBaseServer {
         channel=Util.createServerSocketChannel(this.socket_factory, service_name, bind_addr,
                                                srv_port, end_port, recv_buf_size);
         channel.configureBlocking(false);
-        selector=Selector.open();
+        selector=this.socket_factory.getSelectorProvider().openSelector();
         acceptor=factory.newThread(new Acceptor(), "NioServer.Selector [" + channel.getLocalAddress() + "]");
         channel.register(selector, SelectionKey.OP_ACCEPT, null);
         local_addr=localAddress(bind_addr, channel.socket().getLocalPort(), external_addr, external_port);
