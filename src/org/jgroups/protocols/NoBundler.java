@@ -20,8 +20,7 @@ public class NoBundler extends BaseBundler {
     public void send(Message msg) throws Exception {
         boolean stats_enabled=transport.statsEnabled();
         long start=stats_enabled? System.nanoTime() : 0;
-        ByteArrayDataOutputStream buffer=new ByteArrayDataOutputStream(msg.size());
-        buffer.position(0);
+        ByteArrayDataOutputStream buffer=new ByteArrayDataOutputStream(msg.length() + 128).growExponentially(true);
         sendSingle(msg.dest(), msg, buffer);
         if(stats_enabled) {
             long time=System.nanoTime() - start;
