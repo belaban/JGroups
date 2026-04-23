@@ -72,6 +72,25 @@ public class GenerateProfilingScript {
          DO diagCreated(diag);
       ENDRULE
       
+      RULE ServerTransport is created
+      CLASS org.jgroups.tests.rt.transports.ServerTransport
+      HELPER org.jgroups.util.ProfilingHelper
+      METHOD start
+      AT ENTRY
+      IF TRUE
+         DO createDiag();
+      ENDRULE
+      
+      
+      RULE ServerTransport is destroyed
+      CLASS org.jgroups.tests.rt.transports.ServerTransport
+      HELPER org.jgroups.util.ProfilingHelper
+      METHOD stop
+      AT ENTRY
+      IF TRUE
+         DO destroyDiag();
+      ENDRULE
+      
       """;
 
 
