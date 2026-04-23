@@ -1,7 +1,4 @@
-
-
 # Byteman script to profile individual methods
-
 
 RULE DiagnosticHandler creation
 CLASS ^TP
@@ -13,185 +10,41 @@ IF TRUE
    DO diagCreated(diag);
 ENDRULE
 
+RULE ServerTransport is created
+CLASS org.jgroups.tests.rt.transports.ServerTransport
+HELPER org.jgroups.util.ProfilingHelper
+METHOD start
+AT ENTRY
+IF TRUE
+   DO createDiag();
+ENDRULE
 
-## Bundler.send
-RULE Bundler.send() start
-INTERFACE org.jgroups.protocols.Bundler
+
+RULE ServerTransport is destroyed
+CLASS org.jgroups.tests.rt.transports.ServerTransport
+HELPER org.jgroups.util.ProfilingHelper
+METHOD stop
+AT ENTRY
+IF TRUE
+   DO destroyDiag();
+ENDRULE
+
+RULE TcpConnection.flush start
+INTERFACE org.jgroups.tests.rt.RtTransport
 HELPER org.jgroups.util.ProfilingHelper
 METHOD send
+COMPILE
 AT ENTRY
 IF TRUE
-   DO start("bundler.send");
+   DO start("jg.send");
 ENDRULE
 
-RULE Bundler.send() stop
-INTERFACE org.jgroups.protocols.Bundler
+RULE TcpConnection.flush stop
+CLASS org.jgroups.protocols.TCP
 HELPER org.jgroups.util.ProfilingHelper
 METHOD send
-AT EXIT
-IF TRUE
-   DO stop("bundler.send");
-ENDRULE
-
-
-## BaseServer.send
-RULE BaseServer.send() start
-CLASS org.jgroups.blocks.cs.BaseServer
-HELPER org.jgroups.util.ProfilingHelper
-METHOD send
+COMPILE
 AT ENTRY
 IF TRUE
-   DO start("bs.send");
+   DO stop("jg.send");
 ENDRULE
-
-RULE BaseServer.send() stop
-CLASS org.jgroups.blocks.cs.BaseServer
-HELPER org.jgroups.util.ProfilingHelper
-METHOD send
-AT EXIT
-IF TRUE
-   DO stop("bs.send");
-ENDRULE
-
-
-
-## BaseServer.getConnection
-RULE BaseServer.getConnection() start
-CLASS org.jgroups.blocks.cs.BaseServer
-HELPER org.jgroups.util.ProfilingHelper
-METHOD getConnection
-AT ENTRY
-IF TRUE
-   DO start("bs.getConnection");
-ENDRULE
-
-RULE BaseServer.getConnection() stop
-CLASS org.jgroups.blocks.cs.BaseServer
-HELPER org.jgroups.util.ProfilingHelper
-METHOD getConnection
-AT EXIT
-IF TRUE
-   DO stop("bs.getConnection");
-ENDRULE
-
-## Connection.send()
-RULE Connection.send() start
-CLASS ^org.jgroups.blocks.cs.Connection
-HELPER org.jgroups.util.ProfilingHelper
-METHOD send
-AT ENTRY
-IF TRUE
-   DO start("conn.send");
-ENDRULE
-
-RULE Connection.send() stop
-CLASS ^org.jgroups.blocks.cs.Connection
-HELPER org.jgroups.util.ProfilingHelper
-METHOD send
-AT EXIT
-IF TRUE
-   DO stop("conn.send");
-ENDRULE
-
-
-### TcpConnection.updateLastAccessed
-RULE TcpConnection.updateLastAccessed() start
-CLASS ^org.jgroups.blocks.cs.TcpConnection
-HELPER org.jgroups.util.ProfilingHelper
-METHOD updateLastAccessed
-AT ENTRY
-IF TRUE
-   DO start("tcpconn.updateLastAccessed");
-ENDRULE
-
-RULE TcpConnection.updateLastAccessed() stop
-CLASS ^org.jgroups.blocks.cs.TcpConnection
-HELPER org.jgroups.util.ProfilingHelper
-METHOD updateLastAccessed
-AT EXIT
-IF TRUE
-   DO stop("tcpconn.updateLastAccessed");
-ENDRULE
-
-
-## TcpConnection.doSend()
-RULE TcpConnection.doSend() start
-CLASS ^org.jgroups.blocks.cs.TcpConnection
-HELPER org.jgroups.util.ProfilingHelper
-METHOD doSend
-AT ENTRY
-IF TRUE
-   DO start("tcpconn.doSend");
-ENDRULE
-
-RULE TcpConnection.doSend() stop
-CLASS ^org.jgroups.blocks.cs.TcpConnection
-HELPER org.jgroups.util.ProfilingHelper
-METHOD doSend
-AT EXIT
-IF TRUE
-   DO stop("tcpconn.doSend");
-ENDRULE
-
-
-
-## TcpConnection.flush()
-RULE TcpConnection.flush() start
-CLASS ^org.jgroups.blocks.cs.TcpConnection
-HELPER org.jgroups.util.ProfilingHelper
-METHOD flush
-AT ENTRY
-IF TRUE
-   DO start("tcpconn.flush");
-ENDRULE
-
-RULE TcpConnection.flush() stop
-CLASS ^org.jgroups.blocks.cs.TcpConnection
-HELPER org.jgroups.util.ProfilingHelper
-METHOD flush
-AT EXIT
-IF TRUE
-   DO stop("tcpconn.flush");
-ENDRULE
-
-
-## TcpConnection.doSend() - writeInt()
-RULE TcpConnection.writeInt() start
-CLASS ^org.jgroups.blocks.cs.TcpConnection
-HELPER org.jgroups.util.ProfilingHelper
-METHOD doSend
-AT INVOKE DataOutputStream.writeInt
-IF TRUE
-   DO start("tcpconn.writeInt");
-ENDRULE
-
-RULE TcpConnection.writeInt() stop
-CLASS ^org.jgroups.blocks.cs.TcpConnection
-HELPER org.jgroups.util.ProfilingHelper
-METHOD doSend
-AFTER INVOKE DataOutputStream.writeInt
-IF TRUE
-   DO stop("tcpconn.writeInt");
-ENDRULE
-
-
-
-## TcpConnection.doSend() - write(byte[])
-RULE TcpConnection.write(byte[]) start
-CLASS ^org.jgroups.blocks.cs.TcpConnection
-HELPER org.jgroups.util.ProfilingHelper
-METHOD doSend
-AT INVOKE DataOutputStream.write(byte[],int,int)
-IF TRUE
-   DO start("tcpconn.writeBytes");
-ENDRULE
-
-RULE TcpConnection.write(byte[]) stop
-CLASS ^org.jgroups.blocks.cs.TcpConnection
-HELPER org.jgroups.util.ProfilingHelper
-METHOD doSend
-AFTER INVOKE DataOutputStream.write(byte[],int,int)
-IF TRUE
-   DO stop("tcpconn.writeBytes");
-ENDRULE
-
