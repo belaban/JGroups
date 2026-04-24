@@ -48,12 +48,34 @@ defined, e.g. wmem.max (via sysctl).
 
 2. Receiving a request and passing it up to the application
 -----------------------------------------------------------
+The request is received on a DatagramSocket (UDP) or TCP socket (TcpConnection/NioConnection), deserialized and then
+passed to a MessageProcessingPolicy. There are several implementations:
+
+* SubmitToThreadPool:
+  * All requests (messages or message batches) are passed to the thread pool for further processing and the thread
+    returns immediately, therefore being able to read further messages from the socket.
+    If virtual threads are available and enabled (default), one virtual thread per request will be created.
+
+* MaxOneThreadPerSender (default):
+  * OOB requests are passed to the thread pool
+  * Regular messages are added to a queue (per sender) and only 1 thread at a time will de-queue and send. This means
+    we have a max of 1 thread per sender actively passing up requests
+
+* PassAllMessagesUpDirectly:
+  * The caller's thread will be used to pass requests up the stack. This mean that a new message can only be read off
+    the socket when processing returned. Note that if the application sends a response, this will also be done on the
+    same thread, adding to the processing time of a request and increasing latency.
+
 
 3. Sending a response
 ---------------------
+Same as sending a request (#1), but this is typically done in the thread which processes a request (see #2).
+
 
 4. Receiving the response and passing it up to the application
 --------------------------------------------------------------
+Same as receiving a request but without sending a response. Typically, this unblocks the caller, allowing it to send
+the next request.
 
 
 Components to look at
