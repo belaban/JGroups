@@ -37,6 +37,23 @@ public class ProfilingHelper extends Helper {
         }
     }
 
+    public DiagnosticsHandler createDiag() throws Exception {
+        DiagnosticsHandler diag=new DiagnosticsHandler();
+        link("diag", diag);
+        diag.start();
+        diagCreated(diag);
+        return diag;
+    }
+
+    public void destroyDiag() {
+        Object tmp=linked("diag");
+        if(tmp != null) {
+            DiagnosticsHandler d=(DiagnosticsHandler)tmp;
+            d.stop();
+            unlink("diag");
+        }
+    }
+
     @SuppressWarnings("MethodMayBeStatic")
     public void start(String profiler_name) {
         Profiler p=profilers.computeIfAbsent(profiler_name, n -> new Profiler());
