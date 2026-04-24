@@ -105,6 +105,13 @@ public class ProtocolStack extends Protocol {
                         }
                     }
                 }
+                if(key.startsWith("ra") || key.startsWith("remove-all")) { // remove all protocols but the transport
+                    List<Protocol> protocols=getProtocols();
+                    for(Protocol p: protocols) {
+                        if(!(p instanceof TP))
+                            removeProtocol(p);
+                    }
+                }
                 if(key.startsWith("insert-protocol")) {
                     key=key.substring("insert-protocol".length()+1);
                     int index=key.indexOf('=');
@@ -170,7 +177,7 @@ public class ProtocolStack extends Protocol {
 
         public String[] supportedKeys() {
             return new String[]{"props", max_list_print_size + "[=number]", "print-protocols", "\nremove-protocol=<name>",
-              "\ninsert-protocol=<name>=above | below=<name>"};
+              "remove-all", "\ninsert-protocol=<name>=above | below=<name>"};
         }
     };
 
