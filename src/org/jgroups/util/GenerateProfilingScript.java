@@ -20,6 +20,7 @@ public class GenerateProfilingScript {
         try(OutputStream out=new FileOutputStream(output_file); Stream<String> lines=Files.lines(Path.of(input_file))) {
             out.write(PREFIX.getBytes());
             lines.filter(l -> !l.trim().isEmpty())
+              .filter(l -> !l.startsWith("#") || l.startsWith("//"))
               .forEach(l -> generateRule(l, out));
         }
     }
