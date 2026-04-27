@@ -22,10 +22,10 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  */
 public class RoundTrip implements RtReceiver {
     protected RtTransport                     tp;
-    protected int                             num_msgs=50000;
+    protected int                             num_msgs=500_000;
     protected int                             num_senders=1; // number of sender threads
     protected boolean                         details;
-    protected static final byte               REQ=0, RSP=1, DONE=2;
+    protected static final byte               REQ=0, RSP=1, DONE=2, EXIT=3;
     // | REQ or RSP | index (short) |
     public static final int                   PAYLOAD=Global.BYTE_SIZE + Global.SHORT_SIZE;
     protected Sender[]                        senders;
@@ -92,6 +92,10 @@ public class RoundTrip implements RtReceiver {
                 rsp_send_time.clear();
                 req_delivery_time.clear();
                 break;
+            case EXIT:
+                System.out.printf("-- received EXIT from %s; terminating\n", sender);
+                System.exit(1);
+                break;
             default:
                 throw new IllegalArgumentException("first byte needs to be either REQ or RSP but not " + req_buf[0]);
         }
@@ -103,7 +107,7 @@ public class RoundTrip implements RtReceiver {
         while(looping) {
             int c=Util.keyPress(String.format("""
                                                 [1] send [2] num_msgs (%d) [3] senders (%d)
-                                                [d] details (%b) [x] exit
+                                                [d] details (%b) [x] exit [X] exit all
                                                 """, num_msgs, num_senders, details));
             try {
                 switch(c) {
@@ -122,6 +126,11 @@ public class RoundTrip implements RtReceiver {
                     case 'x':
                     case -1:
                         looping=false;
+                        break;
+                    case 'X':
+                        sendExit();
+                        looping=false;
+                        System.out.println("-- terminated");
                         break;
                 }
             }
@@ -179,6 +188,11 @@ public class RoundTrip implements RtReceiver {
                           msgs_sec, avg, req_send_time, rsp_delivery_time);
     }
 
+    protected void sendExit() throws Exception {
+        byte[] buf=new byte[PAYLOAD];
+        buf[0]=EXIT;
+        tp.send(null, buf, 0, buf.length);
+    }
 
     protected class Sender extends Thread {
         protected final short            id;
