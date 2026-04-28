@@ -86,6 +86,37 @@ public class AverageTest {
         assert avg.max() == 10;
     }
 
+    public void testMinMax2() {
+        AverageMinMax avg=new AverageMinMax();
+        avg.add(10);
+        System.out.println("avg = " + avg);
+        assert avg.min() == 10;
+        assert avg.max() == 10;
+        avg.add(5);
+        System.out.println("avg = " + avg);
+        assert avg.min() == 5;
+        assert avg.max() == 10;
+        avg.add(20);
+        System.out.println("avg = " + avg);
+        assert avg.min() == 5;
+        assert avg.max() == 20;
+
+        avg.add(18);
+        System.out.println("avg = " + avg);
+        assert avg.min() == 5;
+        assert avg.max() == 20;
+
+        avg.add(5);
+        System.out.println("avg = " + avg);
+        assert avg.min() == 5;
+        assert avg.max() == 20;
+
+        avg.add(3);
+        System.out.println("avg = " + avg);
+        assert avg.min() == 3;
+        assert avg.max() == 20;
+    }
+
     public void testIsEmpty() {
         Average avg=new Average(10);
         assert avg.isEmpty();

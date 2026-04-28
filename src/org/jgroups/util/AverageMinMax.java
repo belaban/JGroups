@@ -16,7 +16,7 @@ import static org.jgroups.util.Util.printTime;
  * @since  4.0, 3.6.10
  */
 public class AverageMinMax extends Average {
-    protected long             min=Long.MAX_VALUE, max=0;
+    protected long             min=0, max=0;
     protected List<Long>       values;
     protected volatile boolean sorted;
 
@@ -37,8 +37,19 @@ public class AverageMinMax extends Average {
         if(num < 0)
             return (T)this;
         super.add(num);
-        min=Math.min(min, num);
-        max=Math.max(max, num);
+        long tmp=max;
+        if(tmp == 0)
+            min=max=num;
+        else {
+            if(num > tmp)
+                max=num;
+            else if(num < min)
+                min=num;
+        }
+        /*if(num > max)
+            max=num;
+        if(num < min)
+            min=num;*/
         if(values != null) {
             values.add(num);
             sorted=false;
@@ -65,7 +76,7 @@ public class AverageMinMax extends Average {
         super.clear();
         if(values != null)
             values.clear();
-        min=Long.MAX_VALUE; max=0;
+        min=max=0;
     }
 
     public String percentiles() {
