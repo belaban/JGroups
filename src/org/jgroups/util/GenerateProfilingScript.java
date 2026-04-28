@@ -82,7 +82,6 @@ public class GenerateProfilingScript {
          DO createDiag();
       ENDRULE
       
-      
       RULE ServerTransport is destroyed
       CLASS org.jgroups.tests.rt.transports.ServerTransport
       HELPER org.jgroups.util.ProfilingHelper
