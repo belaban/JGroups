@@ -39,8 +39,10 @@ public class DistributionSampler {
             Bucket b=new Bucket(min, max);
             list.add(b);
             prev_value=max+1;
-            min_value=Math.min(min, min_value);
-            max_value=Math.max(max, max_value);
+            if(min < min_value)
+                min_value=min;
+            if(max > max_value)
+                max_value=max;
         }
         this.buckets=new Bucket[list.size()];
         for(int i=0; i < list.size(); i++)
