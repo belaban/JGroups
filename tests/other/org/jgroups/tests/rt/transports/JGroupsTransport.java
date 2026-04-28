@@ -82,7 +82,7 @@ public class JGroupsTransport implements Receiver, RtTransport {
             msg.setFlag(Message.Flag.OOB);
         if(dont_bundle)
             msg.setFlag(Message.Flag.DONT_BUNDLE);
-        ch.send(msg);
+        ch.down(msg);
     }
 
 
