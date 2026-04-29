@@ -30,13 +30,13 @@ public class RoundTrip implements RtReceiver {
     public static final int                   PAYLOAD=Global.BYTE_SIZE + Global.SHORT_SIZE;
     protected Sender[]                        senders;
     // time for sending a request, from RtTransport.send() until the req is sent (or queued) by the transport
-    protected final AverageMinMax             req_send_time=new AverageMinMax().unit(NANOSECONDS);
+    protected final AverageMinMax             req_send_time=new AverageMinMax(1024).unit(NANOSECONDS);
     // time for sending a response, from RtTransport.send() until the rsp is sent (or queued) by the transport
-    protected final AverageMinMax             rsp_send_time=new AverageMinMax().unit(NANOSECONDS);
+    protected final AverageMinMax             rsp_send_time=new AverageMinMax(1024).unit(NANOSECONDS);
     // time for delivery of a request (including sending of the response)
-    protected final AverageMinMax             req_delivery_time=new AverageMinMax().unit(NANOSECONDS);
+    protected final AverageMinMax             req_delivery_time=new AverageMinMax(1024).unit(NANOSECONDS);
     // time for delivery of a response
-    protected final AverageMinMax             rsp_delivery_time=new AverageMinMax().unit(NANOSECONDS);
+    protected final AverageMinMax             rsp_delivery_time=new AverageMinMax(1024).unit(NANOSECONDS);
     protected static final Map<String,String> TRANSPORTS=new HashMap<>(16);
 
     static {
