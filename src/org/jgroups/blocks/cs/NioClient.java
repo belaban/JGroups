@@ -7,7 +7,6 @@ import org.jgroups.util.*;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.Selector;
 
 /**
  * Client to access servers based on TCP_NIO2
@@ -110,7 +109,7 @@ public class NioClient extends NioBaseServer implements Client {
 
     protected void doStart() throws Exception {
         super.start();
-        selector=Selector.open();
+        selector=this.socket_factory.getSelectorProvider().openSelector();
         conn=createConnection(remote_addr);
         conn.connect(remote_addr, false);
         local_addr=conn.localAddress();
@@ -129,7 +128,7 @@ public class NioClient extends NioBaseServer implements Client {
             try {
                 conn.close(graceful);
             }
-            catch(IOException e) {
+            catch(IOException ignored) {
             }
         }
     }
