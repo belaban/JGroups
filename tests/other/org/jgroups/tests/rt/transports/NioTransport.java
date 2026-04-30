@@ -10,6 +10,7 @@ import org.jgroups.util.Util;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.List;
@@ -21,15 +22,16 @@ public class NioTransport implements RtTransport {
     protected RtReceiver          receiver;
     protected InetAddress         host;
     protected int                 port=7800;
-    protected boolean             server, direct_buffers; // direct buffers
+    protected boolean             server, tcp_nodelay, direct_buffers; // direct buffers
     protected final Log           log=LogFactory.getLog(NioTransport.class);
+    protected ByteBuffer          send_buf, recv_buf;
 
 
     public NioTransport() {
     }
 
     public String[] options() {
-        return new String[]{"-host <host>", "-port <port>", "-server", "-direct"};
+        return new String[]{"-host <host>", "-port <port>", "-server", "-direct <boolean>", "-tcp-nodelay <boolean>"};
     }
 
     public void options(String... options) throws Exception {
@@ -46,6 +48,10 @@ public class NioTransport implements RtTransport {
             }
             if(options[i].equals("-port")) {
                 port=Integer.parseInt(options[++i]);
+                continue;
+            }
+            if(options[i].equals("-tcp-nodelay")) {
+                tcp_nodelay=Boolean.parseBoolean(options[++i]);
                 continue;
             }
             if(options[i].equals("-direct")) {
@@ -68,20 +74,22 @@ public class NioTransport implements RtTransport {
 
     public void start(String ... options) throws Exception {
         options(options);
+        send_buf=direct_buffers? ByteBuffer.allocateDirect(RoundTrip.PAYLOAD) : ByteBuffer.allocate(RoundTrip.PAYLOAD);
+        recv_buf=direct_buffers? ByteBuffer.allocateDirect(RoundTrip.PAYLOAD) : ByteBuffer.allocate(RoundTrip.PAYLOAD);
         if(server) { // simple single threaded server, can only handle a single connection at a time
             srv_channel=ServerSocketChannel.open();
             srv_channel.bind(new InetSocketAddress(host, port), 50);
             System.out.println("server started (ctrl-c to kill)");
             for(;;) {
                 client_channel=srv_channel.accept();
-                // client_channel.socket().setTcpNoDelay(true); // we're concerned about latency
+                client_channel.socket().setTcpNoDelay(tcp_nodelay); // we're concerned about latency
                 receiver_thread=new Receiver();
                 receiver_thread.start();
             }
         }
         else {
             client_channel=SocketChannel.open();
-            //client_channel.socket().setTcpNoDelay(true);
+            client_channel.socket().setTcpNoDelay(tcp_nodelay);
             client_channel.connect(new InetSocketAddress(host, port));
             receiver_thread=new Receiver();
             receiver_thread.start();
@@ -121,6 +129,9 @@ public class NioTransport implements RtTransport {
                             receiver.receive(null, tmp, 0, len);
                         }
                     }
+                }
+                catch(ClosedChannelException cce) {
+                    break;
                 }
                 catch(Exception e) {
                     e.printStackTrace();
