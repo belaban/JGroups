@@ -9,8 +9,6 @@ import org.jgroups.annotations.Property;
 import org.jgroups.blocks.cs.NioServer;
 import org.jgroups.conf.AttributeType;
 
-import java.nio.channels.CancelledKeyException;
-import java.nio.channels.ClosedChannelException;
 import java.util.Collection;
 
 /**
@@ -91,16 +89,16 @@ public class TCP_NIO2 extends BasicTCP {
         server.readerIdleTime(t);
     }
 
+    @Override
     public void send(Address dest, byte[] data, int offset, int length) throws Exception {
-        if(server != null) {
-            try {
-                server.send(dest, data, offset, length);
-            }
-            catch(ClosedChannelException | CancelledKeyException ignored) {}
-            catch(Throwable ex) {
-                log.trace("%s: failed sending message to %s: %s", local_addr, dest, ex);
-            }
-        }
+        if(server != null)
+            server.send(dest, data, offset, length);
+    }
+
+    @Override
+    public void send(Collection<? extends Address> dests, byte[] data, int offset, int length) throws Exception {
+        if(server != null)
+            server.send(dests, data, offset, length);
     }
 
     public void retainAll(Collection<Address> members) {
@@ -118,7 +116,8 @@ public class TCP_NIO2 extends BasicTCP {
           .log(this.log).logDetails(log_details);
         server.maxSendBuffers(max_send_buffers).usePeerConnections(true);
         server.copyOnPartialWrite(this.copy_on_partial_write).readerIdleTime(this.reader_idle_time)
-          .addConnectionListener(this);
+          .addConnectionListener(this)
+          .useLockToSend(this.use_lock_to_send);
 
         if(send_buf_size > 0)
             server.sendBufferSize(send_buf_size);

@@ -7,7 +7,9 @@ import org.jgroups.conf.AttributeType;
 import org.jgroups.util.SocketFactory;
 import org.jgroups.util.ThreadFactory;
 
+import java.nio.ByteBuffer;
 import java.nio.channels.*;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.locks.Lock;
@@ -36,6 +38,8 @@ public abstract class NioBaseServer extends BaseServer {
 
     protected boolean           use_direct_memory=true;
 
+    protected final Lock        mcast_send_lock=new ReentrantLock();
+    protected ByteBuffer        mcast_send_buf=ByteBuffer.allocateDirect(1024);
 
 
     protected NioBaseServer(ThreadFactory f, SocketFactory sf, int recv_buf_size) {
@@ -87,6 +91,58 @@ public abstract class NioBaseServer extends BaseServer {
             }
         }
         return sb.toString();
+    }
+
+
+    @Override
+    public void send(Address dest, ByteBuffer data) throws Exception {
+        try {
+            super.send(dest, data);
+        } catch(ClosedChannelException | CancelledKeyException ignored) {}
+    }
+
+    @Override
+    public void send(Address dest, byte[] data, int offset, int length) throws Exception {
+        try {
+            super.send(dest, data, offset, length);
+        } catch(ClosedChannelException | CancelledKeyException ignored) {}
+    }
+
+    @Override
+    public void send(Collection<? extends Address> dests, byte[] data, int offset, int length) throws Exception {
+        send(dests, ByteBuffer.wrap(data, offset, length));
+    }
+
+    @Override
+    public void send(Collection<? extends Address> dests, ByteBuffer data) throws Exception {
+        if (data.isDirect()) {
+            super.send(dests, data);
+            return;
+        }
+        boolean use_lock = use_lock_to_send;
+        if (use_lock) {
+            mcast_send_lock.lock();
+        }
+        try {
+            copyToMcastSendBuf(data);
+            super.send(dests, mcast_send_buf);
+        } finally {
+            if (use_lock) {
+                mcast_send_lock.unlock();
+            }
+        }
+    }
+
+    private ByteBuffer copyToMcastSendBuf(ByteBuffer buffer) {
+        if (buffer.remaining() > mcast_send_buf.capacity()) {
+            int newCapacity = Math.max(buffer.remaining(), mcast_send_buf.capacity() * 2);
+            mcast_send_buf = ByteBuffer.allocateDirect(newCapacity);
+        } else {
+            mcast_send_buf.clear();
+        }
+        mcast_send_buf.put(buffer);
+        mcast_send_buf.flip();
+        return mcast_send_buf;
     }
 
 
