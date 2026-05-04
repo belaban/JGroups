@@ -47,7 +47,7 @@ public class PubServer implements Receiver {
     @Override
     public void receive(Address sender, ByteBuffer buf) {
         try {
-            server.send(null, buf);
+            server.send((Address)null, buf);
         }
         catch(Exception ex) {
             log.error("failed publishing message", ex);
@@ -57,7 +57,7 @@ public class PubServer implements Receiver {
     @Override
     public void receive(Address sender, byte[] buf, int offset, int length) {
         try {
-            server.send(null, buf, offset, length);
+            server.send((Address)null, buf, offset, length);
         }
         catch(Exception ex) {
             log.error("failed publishing message", ex);
@@ -67,7 +67,7 @@ public class PubServer implements Receiver {
     public void receive(Address sender, DataInput in, int length) throws Exception {
         byte[] buf=new byte[length];
         in.readFully(buf, 0, length);
-        server.send(null, buf, 0, buf.length);
+        server.send((Address)null, buf, 0, buf.length);
     }
 
     public static void main(String[] args) throws Exception {

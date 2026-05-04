@@ -11,8 +11,6 @@ import org.jgroups.util.*;
 
 import java.io.DataInput;
 import java.io.InterruptedIOException;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -664,17 +662,8 @@ public abstract class TP extends TPConfig implements DiagnosticsHandler.ProbeHan
     }
 
     protected void sendUnicasts(List<PhysicalAddress> dests, byte[] data, int offset, int length) throws Exception {
-        for(PhysicalAddress dest: dests) {
-            try {
-                sendUnicast(dest, data, offset, length);
-            }
-            catch(SocketException | SocketTimeoutException sock_ex) {
-                log.trace(Util.getMessage("FailureSendingToPhysAddr"), local_addr, dest, sock_ex);
-            }
-            catch(Throwable t) {
-                log.error(Util.getMessage("FailureSendingToPhysAddr"), local_addr, dest, t);
-            }
-        }
+        for(PhysicalAddress dest: dests)
+            sendUnicast(dest, data, offset, length);
     }
 
     protected void fetchPhysicalAddrs(List<Address> missing) {
