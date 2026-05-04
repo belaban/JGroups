@@ -1,5 +1,6 @@
 package org.jgroups.tests.rt;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 
 /**
@@ -63,4 +64,17 @@ public interface RtTransport {
      * @throws Exception
      */
     void send(Object dest, byte[] buf, int offset, int length) throws Exception;
+
+    default void send(Object dest, ByteBuffer buf) throws Exception {
+        if(buf == null)
+            return;
+        int offset=buf.hasArray()? buf.arrayOffset() + buf.position() : buf.position(), len=buf.remaining();
+        if(!buf.isDirect())
+            send(dest, buf.array(), offset, len);
+        else {
+            byte[] tmp=new byte[len];
+            buf.get(tmp, 0, tmp.length);
+            send(dest, tmp, 0, len);
+        }
+    }
 }

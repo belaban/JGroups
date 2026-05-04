@@ -6,6 +6,7 @@ import org.jgroups.tests.rt.RtTransport;
 import org.jgroups.tests.rt.transports.*;
 import org.jgroups.util.*;
 
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +23,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  */
 public class RoundTrip implements RtReceiver {
     protected RtTransport                     tp;
+    protected boolean                         direct_memory;
     protected int                             num_msgs=500_000;
     protected int                             num_senders=1; // number of sender threads
     protected boolean                         details;
@@ -29,6 +31,8 @@ public class RoundTrip implements RtReceiver {
     // | REQ or RSP | index (short) |
     public static final int                   PAYLOAD=Global.BYTE_SIZE + Global.SHORT_SIZE;
     protected Sender[]                        senders;
+    protected Thread[]                        sender_threads;
+    protected ThreadFactory                   thread_factory;
     // time for sending a request, from RtTransport.send() until the req is sent (or queued) by the transport
     protected final AverageMinMax             req_send_time=new AverageMinMax(1024).unit(NANOSECONDS);
     // time for sending a response, from RtTransport.send() until the rsp is sent (or queued) by the transport
@@ -47,9 +51,11 @@ public class RoundTrip implements RtReceiver {
         TRANSPORTS.put("udp",     UdpTransport.class.getName());
     }
 
-    protected void start(String transport, String[] args) throws Exception {
+    protected void start(String transport, boolean direct_memory, String[] args) throws Exception {
+        thread_factory=new DefaultThreadFactory("sender", false, true).useVirtualThreads(true);
         tp=create(transport);
         tp.receiver(this);
+        this.direct_memory=direct_memory;
         try {
             tp.start(args);
             loop();
@@ -65,12 +71,12 @@ public class RoundTrip implements RtReceiver {
         switch(req_buf[offset]) {
             case REQ:
                 short id=Bits.readShort(req_buf, 1+offset);
-                byte[] rsp_buf=new byte[PAYLOAD];
-                rsp_buf[0]=RSP;
-                Bits.writeShort(id, rsp_buf, 1);
+                byte[] tmp=new byte[PAYLOAD];
+                tmp[0]=RSP;
+                Bits.writeShort(id, tmp, 1);
                 try {
                     long start=System.nanoTime();
-                    tp.send(sender, rsp_buf, 0, rsp_buf.length);
+                    tp.send(sender, tmp, 0, tmp.length);
                     long time=System.nanoTime() - start;
                     rsp_send_time.add(time);
                 }
@@ -101,6 +107,46 @@ public class RoundTrip implements RtReceiver {
         }
     }
 
+    @Override
+    public void receive(Object sender, ByteBuffer buf) {
+        long msg_start=System.nanoTime();
+        byte b=buf.get();
+        switch(b) {
+            case REQ:
+                short id=buf.getShort();
+                buf.position(0).put(RSP).putShort(id).flip();
+                try {
+                    long start=System.nanoTime();
+                    tp.send(sender, buf);
+                    long time=System.nanoTime() - start;
+                    rsp_send_time.add(time);
+                }
+                catch(Exception e) {
+                    e.printStackTrace();
+                }
+                req_delivery_time.add(System.nanoTime() - msg_start);
+                break;
+            case RSP:
+                id=buf.getShort();
+                senders[id].promise.setResult(true); // notify the sender of the response
+                rsp_delivery_time.add(System.nanoTime() - msg_start);
+                break;
+            case DONE:
+                //noinspection TextBlockMigration
+                System.out.printf(Util.bold("req-delivery-time  = %s\n" +
+                                              "rsp-send-time      = %s\n\n"),
+                                  req_delivery_time, rsp_send_time);
+                rsp_send_time.clear();
+                req_delivery_time.clear();
+                break;
+            case EXIT:
+                System.out.printf("-- received EXIT from %s; terminating\n", sender);
+                System.exit(1);
+                break;
+            default:
+                throw new IllegalArgumentException("first byte needs to be either REQ or RSP but not " + b);
+        }
+    }
 
     protected void loop() {
         boolean looping=true;
@@ -152,15 +198,17 @@ public class RoundTrip implements RtReceiver {
         final CountDownLatch latch=new CountDownLatch(1);
         final AtomicInteger sent_msgs=new AtomicInteger(0);
         senders=new Sender[num_senders];
+        sender_threads=new Thread[num_senders];
         for(int i=0; i < num_senders; i++) {
             senders[i]=new Sender((short)i, latch, sent_msgs, target);
-            senders[i].start();
+            sender_threads[i]=thread_factory.newThread(senders[i], "sender=" + i);
+            sender_threads[i].start();
         }
         System.out.printf("-- sending %d messages to %s\n", num_msgs, target);
         long start=System.nanoTime();
         latch.countDown(); // start all sender threads
-        for(Sender sender: senders)
-            sender.join();
+        for(Thread t: sender_threads)
+            t.join();
         long total_time=System.nanoTime() - start;
 
         byte[] done_buf=new byte[PAYLOAD];
@@ -194,7 +242,7 @@ public class RoundTrip implements RtReceiver {
         tp.send(null, buf, 0, buf.length);
     }
 
-    protected class Sender extends Thread {
+    protected class Sender implements Runnable {
         protected final short            id;
         protected final CountDownLatch   latch;
         protected final AtomicInteger    sent_msgs; // current number of messages; senders stop if sent_msgs >= num_msgs
@@ -218,6 +266,8 @@ public class RoundTrip implements RtReceiver {
             catch(InterruptedException e) {
                 e.printStackTrace();
             }
+            ByteBuffer buf=direct_memory? ByteBuffer.allocateDirect(PAYLOAD): null;
+            // use buf.order(ByteOrder.nativeOrder() to measure perf between systems of the *same* native byte order
             for(;;) {
                 int num=sent_msgs.incrementAndGet();
                 if(num > num_msgs)
@@ -226,16 +276,27 @@ public class RoundTrip implements RtReceiver {
                     System.out.print(".");
 
                 promise.reset(false);
-                byte[] req_buf=new byte[PAYLOAD];
+                byte[] req_buf=null;
 
                 // The request contains
                 // * the type of the message (byte): REQ or RSP (or DONE)
                 // * the ID (short) of the sender thread (for response correlation)
-                req_buf[0]=REQ;
-                Bits.writeShort(id, req_buf, 1);
+                if(direct_memory)
+                    buf.put(REQ).putShort(id).flip();
+                else {
+                    req_buf=new byte[PAYLOAD];
+                    req_buf[0]=REQ;
+                    Bits.writeShort(id, req_buf, 1);
+                }
+
                 try {
                     long start=System.nanoTime();
-                    tp.send(target, req_buf, 0, req_buf.length);
+                    if(direct_memory) {
+                        tp.send(target, buf);
+                        buf.flip();
+                    }
+                    else
+                        tp.send(target, req_buf, 0, req_buf.length);
                     long send_time=System.nanoTime() - start;
                     promise.getResult(0);
                     long rtt_time=System.nanoTime() - start;
@@ -252,9 +313,11 @@ public class RoundTrip implements RtReceiver {
 
     public static void main(String[] args) throws Exception {
         String tp="jg";
+        boolean direct_memory=false;
         for(int i=0; i < args.length; i++) {
             switch(args[i]) {
                 case "-tp" -> tp=args[++i];
+                case "-direct-memory" -> direct_memory=Boolean.parseBoolean(args[++i]);
                 case "-h" -> {
                     help(tp);
                     return;
@@ -265,7 +328,8 @@ public class RoundTrip implements RtReceiver {
         String[] opts=transport.options();
         if(opts != null) {
             for(int i=0; i < args.length; i++) {
-                if(args[i].equals("-tp") || args[i].equals("-h") || !args[i].startsWith("-"))
+                if(args[i].equals("-tp") || args[i].equals("-h")
+                  || !args[i].startsWith("-") || args[i].startsWith("-direct-memory"))
                     continue;
                 String option=args[i];
                 boolean match=false;
@@ -281,7 +345,7 @@ public class RoundTrip implements RtReceiver {
                 }
             }
         }
-        new RoundTrip().start(tp, args);
+        new RoundTrip().start(tp, direct_memory, args);
     }
 
 
@@ -292,8 +356,12 @@ public class RoundTrip implements RtReceiver {
         }
         catch(Exception e) {
         }
-        System.out.printf("\n%s [-tp classname | (%s)]\n          %s\n\n",
-                          RoundTrip.class.getSimpleName(), availableTransports(), tp != null? printOptions(tp.options()) : "");
+        System.out.println();
+        System.out.printf("%s [-tp classname | (%s)]\n%s[-direct-memory <boolean> (%s uses direct memory to send)]\n%s%s\n\n",
+                          RoundTrip.class.getSimpleName(), availableTransports(),
+                          " ".repeat(10), RoundTrip.class.getSimpleName(),
+                          " ".repeat(10),
+                          tp != null? printOptions(tp.options()) : "");
     }
 
     protected static RtTransport create(String transport) throws Exception {

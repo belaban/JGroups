@@ -2,7 +2,6 @@ package org.jgroups.tests.rt.transports;
 
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.tests.RoundTrip;
 import org.jgroups.tests.rt.RtReceiver;
 import org.jgroups.tests.rt.RtTransport;
 import org.jgroups.util.Util;
@@ -15,6 +14,8 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.List;
 
+import static org.jgroups.tests.RoundTrip.PAYLOAD;
+
 public class NioTransport implements RtTransport {
     protected ServerSocketChannel srv_channel;
     protected SocketChannel       client_channel;
@@ -22,16 +23,17 @@ public class NioTransport implements RtTransport {
     protected RtReceiver          receiver;
     protected InetAddress         host;
     protected int                 port=7800;
-    protected boolean             server, tcp_nodelay, direct_buffers; // direct buffers
+    protected boolean             server, tcp_nodelay, direct_buffers=true; // use direct memory to receive msgs
     protected final Log           log=LogFactory.getLog(NioTransport.class);
-    protected ByteBuffer          send_buf, recv_buf;
 
 
     public NioTransport() {
     }
 
     public String[] options() {
-        return new String[]{"-host <host>", "-port <port>", "-server", "-direct <boolean>", "-tcp-nodelay <boolean>"};
+        return new String[]{"-host <host>", "-port <port>", "-server",
+          "-direct <boolean>",
+          "-tcp-nodelay <boolean>"};
     }
 
     public void options(String... options) throws Exception {
@@ -74,8 +76,6 @@ public class NioTransport implements RtTransport {
 
     public void start(String ... options) throws Exception {
         options(options);
-        send_buf=direct_buffers? ByteBuffer.allocateDirect(RoundTrip.PAYLOAD) : ByteBuffer.allocate(RoundTrip.PAYLOAD);
-        recv_buf=direct_buffers? ByteBuffer.allocateDirect(RoundTrip.PAYLOAD) : ByteBuffer.allocate(RoundTrip.PAYLOAD);
         if(server) { // simple single threaded server, can only handle a single connection at a time
             srv_channel=ServerSocketChannel.open();
             srv_channel.bind(new InetSocketAddress(host, port), 50);
@@ -105,29 +105,31 @@ public class NioTransport implements RtTransport {
         client_channel.write(sbuf);
     }
 
+    @Override
+    public void send(Object dest, ByteBuffer buf) throws Exception {
+        client_channel.write(buf);
+    }
 
     protected class Receiver extends Thread {
 
         public void run() {
-            ByteBuffer buf=direct_buffers? ByteBuffer.allocateDirect(RoundTrip.PAYLOAD) : ByteBuffer.allocate(RoundTrip.PAYLOAD);
+            ByteBuffer buf=direct_buffers? ByteBuffer.allocateDirect(PAYLOAD) : ByteBuffer.allocate(PAYLOAD);
+            // use buf.order(ByteOrder.nativeOrder() to measure perf between systems of the *same* native byte order
             for(;;) {
                 try {
                     buf.position(0);
                     int num=client_channel.read(buf);
                     if(num == -1)
                         break;
-                    if(num != RoundTrip.PAYLOAD)
-                        throw new IllegalStateException("expected " + RoundTrip.PAYLOAD + " bytes, but got only " + num);
+                    buf.flip();
+                    if(num != PAYLOAD)
+                        throw new IllegalStateException("expected " + PAYLOAD + " bytes, but got only " + num);
                     if(receiver != null) {
-                        buf.flip();
                         int offset=buf.hasArray()? buf.arrayOffset() + buf.position() : buf.position(), len=buf.remaining();
                         if(buf.hasArray())
                             receiver.receive(null, buf.array(), offset, len);
-                        else { // by default use a copy
-                            byte[] tmp=new byte[len];
-                            buf.get(tmp, 0, len);
-                            receiver.receive(null, tmp, 0, len);
-                        }
+                        else
+                            receiver.receive(null, buf);
                     }
                 }
                 catch(ClosedChannelException cce) {
