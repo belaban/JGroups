@@ -243,7 +243,7 @@ public class MPING extends PING implements Runnable {
                 if ((Util.getIpStackType() == StackType.IPv4 && addr instanceof Inet4Address)
                   || (Util.getIpStackType() == StackType.IPv6 && addr instanceof Inet6Address)) {
                     s.joinGroup(tmp_mcast_addr, i);
-                    log.trace("joined " + tmp_mcast_addr + " on " + i.getName() + " (" + addr + ")");
+                    log.trace("joined %s on %s (%s)", tmp_mcast_addr, i.getName(), addr);
                     break;
                 }
             }

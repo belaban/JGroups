@@ -250,9 +250,9 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
             boolean rc=host.isReachable(intf, 0, (int)timeout);
             stop=getCurrentTimeMillis();
             if(rc) // success
-                log.trace("successfully received response from " + host + " (after " + (stop-start) + "ms)");
+                log.trace("successfully received response from %s (after %dms)", host, (stop-start));
             else { // failure
-                log.debug("failed pinging " + suspected_mbr + " after " + (stop-start) + "ms; passing up SUSPECT event");
+                log.debug("failed pinging %s after %dms; passing up SUSPECT event", suspected_mbr, (stop-start));
                 removeSuspect(suspected_mbr);
                 up_prot.up(new Event(Event.SUSPECT, Collections.singletonList(suspected_mbr)));
             }
@@ -301,7 +301,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     public void unsuspect(Address mbr) {
         boolean removed=mbr != null && removeSuspect(mbr);
         if(removed) {
-            log.trace("member " + mbr + " was unsuspected");
+            log.trace("member %s was unsuspected", mbr);
             down_prot.down(new Event(Event.UNSUSPECT, mbr));
             up_prot.up(new Event(Event.UNSUSPECT, mbr));
         }

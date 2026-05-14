@@ -39,7 +39,7 @@ public class Relayer3 extends Relayer {
      */
     public CompletableFuture<Relayer> start(RelayConfig.SiteConfig site_cfg, String bridge_name, final String my_site_id) throws Throwable {
         if(done) {
-            log.trace(relay.getAddress() + ": will not start the Relayer as stop() has been called");
+            log.trace("%s: will not start the Relayer as stop() has been called", relay.getAddress());
             return CompletableFuture.completedFuture(this);
         }
         try {

@@ -149,7 +149,7 @@ public class X509Token extends AuthToken {
         this.cipher = Cipher.getInstance(this.cipher_type);
         this.certificate = (X509Certificate) store.getCertificate(this.cert_alias);
 
-        log.debug("certificate = " + this.certificate.toString());
+        log.debug("certificate = %s", this.certificate);
 
         this.cipher.init(Cipher.ENCRYPT_MODE, this.certificate);
         this.encryptedToken = this.cipher.doFinal(this.auth_value.getBytes());

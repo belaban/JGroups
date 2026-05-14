@@ -117,7 +117,7 @@ public class TCPGOSSIP extends Discovery implements RouterStub.MembersNotificati
             log.error(Util.getMessage("GroupaddrOrLocaladdrIsNullCannotRegisterWithGossipRouterS"));
         else {
             InetAddress bind_addr=getTransport().getBindAddress();
-            log.trace("registering " + local_addr + " under " + cluster_name + " with GossipRouter");
+            log.trace("registering %s under %s with GossipRouter", local_addr, cluster_name);
             stubManager.destroyStubs();
             PhysicalAddress physical_addr = (PhysicalAddress) down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr));
             stubManager=new RouterStubManager(log, timer, cluster_name, local_addr, NameCache.get(local_addr), physical_addr, reconnect_interval)
