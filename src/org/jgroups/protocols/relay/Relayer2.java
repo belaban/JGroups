@@ -37,7 +37,7 @@ public class Relayer2 extends Relayer {
     public void start(List<RelayConfig.BridgeConfig> bridge_configs, String bridge_name, final String my_site_id)
       throws Throwable {
         if(done) {
-            log.trace(relay.getAddress() + ": will not start the Relayer as stop() has been called");
+            log.trace("%s: will not start the Relayer as stop() has been called", relay.getAddress());
             return;
         }
         try {
@@ -63,7 +63,7 @@ public class Relayer2 extends Relayer {
         }
         finally {
             if(done) {
-                log.trace(relay.getAddress() + ": stop() was called while starting the relayer; stopping the relayer now");
+                log.trace("%s: stop() was called while starting the relayer; stopping the relayer now", relay.getAddress());
                 stop();
             }
         }
@@ -146,7 +146,7 @@ public class Relayer2 extends Relayer {
         /** The view contains a list of SiteUUIDs. Adjust the routing table based on the SiteUUIDs UUID and site */
         public void viewAccepted(View new_view) {
             this.view=new_view;
-            log.trace("[Relayer " + channel.getAddress() + "] view: " + new_view);
+            log.trace("[Relayer %s] view: %s", channel.getAddress(), new_view);
 
             Map<String,List<Address>> tmp=extract(new_view);
             Set<String>               down=new HashSet<>(routes.keySet());

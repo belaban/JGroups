@@ -49,7 +49,7 @@ public class AddressedDNSResolver extends DefaultDNSResolver {
                 }
             }
         } catch (NamingException ex) {
-            log.trace("no DNS records for query %s, ex: %a", dnsQuery, ex);
+            log.trace("no DNS records for query %s, ex: %s", dnsQuery, ex);
         }
         return addresses;
     }

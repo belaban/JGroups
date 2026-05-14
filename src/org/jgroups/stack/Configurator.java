@@ -537,7 +537,7 @@ public record Configurator(ProtocolStack stack) {
                         throw new Exception("default could not be assigned for field " + propertyName + " in "
                                               + obj + " with default value " + defaultValue, e);
                     }
-                    log.debug("set property " + obj + "." + propertyName + " to default value " + converted);
+                    log.debug("set property %s.%s to default value %s", obj, propertyName, converted);
                 }
             }
         }

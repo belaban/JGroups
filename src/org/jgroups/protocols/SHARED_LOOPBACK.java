@@ -62,7 +62,7 @@ public class SHARED_LOOPBACK extends TP {
         synchronized(routing_table) {
             Map<Address,SHARED_LOOPBACK> dests=routing_table.get(this.cluster_name);
             if(dests == null) {
-                log.trace("no destination found for " + this.cluster_name);
+                log.trace("no destination found for %s", this.cluster_name);
                 return;
             }
             targets=dests.entrySet().stream().filter(e -> !Objects.equals(local_addr, e.getKey()))
@@ -88,7 +88,7 @@ public class SHARED_LOOPBACK extends TP {
         synchronized(routing_table) {
             Map<Address,SHARED_LOOPBACK> dests=routing_table.get(cluster_name);
             if(dests == null) {
-                log.trace("no destination found for " + cluster_name);
+                log.trace("cluster %s not found", cluster_name);
                 return;
             }
             target=dests.get(dest);

@@ -595,7 +595,7 @@ public class ProtocolStack extends Protocol {
         Address local_address=getTransport() != null? getTransport().getAddress() : null;
         if(local_address != null)
             prot.setAddress(local_address);
-        log.debug("inserted " + prot + " at the top of the stack");
+        log.debug("inserted %s at the top of the stack", prot);
     }
 
 

@@ -65,7 +65,7 @@ public class Bridge implements Receiver {
             if(!rel.hasRouteTo(r))
                 up.add(r);
         }
-        log.trace("[Relayer " + channel.getAddress() + "] view: " + new_view);
+        log.trace("[Relayer %s] view: %s", channel.getAddress(), new_view);
         for(Map.Entry<String,List<Address>> entry: sites.entrySet()) {
             String        key=entry.getKey();
             List<Address> val=entry.getValue();

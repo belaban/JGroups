@@ -320,7 +320,7 @@ public abstract class RELAY extends Protocol {
         site_config=sites.get(site);
         if(site_config == null)
             throw new Exception("site configuration for \"" + site + "\" not found in " + config);
-        log.trace("site configuration:\n" + site_config);
+        log.trace("site configuration:\n%s", site_config);
         prots_above=getIdsAbove();
     }
 

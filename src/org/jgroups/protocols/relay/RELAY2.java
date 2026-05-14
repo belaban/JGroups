@@ -244,7 +244,7 @@ public class RELAY2 extends RELAY {
             if(cease_site_master) { // ceased being the site master: stop the relayer
                 is_site_master=false;
                 notifySiteMasterListener(false);
-                log.trace(local_addr + ": ceased to be site master; closing bridges");
+                log.trace("%s: ceased to be site master; closing bridges", local_addr);
                 if(relayer != null)
                     relayer.stop();
             }
@@ -469,7 +469,7 @@ public class RELAY2 extends RELAY {
 
     protected void startRelayer(Relayer2 rel, String bridge_name) {
         try {
-            log.trace(local_addr + ": became site master; starting bridges");
+            log.trace("%s: became site master; starting bridges", local_addr);
             rel.start(site_config.getBridges(), bridge_name, site);
         }
         catch(Throwable t) {

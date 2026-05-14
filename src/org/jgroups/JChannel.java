@@ -523,7 +523,7 @@ public class JChannel implements Closeable {
         if(target == null)
             target=determineCoordinator();
         if(Objects.equals(target, local_addr)) {
-            log.trace(local_addr + ": cannot get state from myself (" + target + "): probably the first member");
+            log.trace("%s: cannot get state from myself (%s): probably the first member", local_addr, target);
             return this;
         }
         state_promise.reset();
