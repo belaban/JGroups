@@ -162,7 +162,7 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
             return handleEncryptedMessage(msg);
         }
         catch(Exception e) {
-            log.warn("%s: exception occurred decrypting message", local_addr, e);
+            log.warn(local_addr + ": exception occurred decrypting message", e);
         }
         return null;
     }
@@ -203,7 +203,7 @@ public abstract class Encrypt<E extends KeyStore.Entry> extends Protocol {
             }
         }
         catch(InterruptedException e) {
-            log.error("%s: failed processing batch; discarding batch", local_addr, e);
+            log.error(local_addr + ": failed processing batch; discarding batch", e);
             // we need to drop the batch if we for example have a failure fetching a cipher, or else other messages
             // in the batch might make it up the stack, bypassing decryption! This is not an issue because encryption
             // is below NAKACK2 or UNICAST3, so messages will get retransmitted

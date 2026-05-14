@@ -312,7 +312,7 @@ public class TcpConnection extends Connection {
                 }
                 else {
                     if(server.logDetails())
-                        server.log.warn("%s: failed handling message", server.local_addr, e);
+                        server.log.warn(server.local_addr + ": failed handling message", e);
                     else
                         server.log.warn("%s: failed handling message: %s", server.local_addr, e.getMessage());
                 }

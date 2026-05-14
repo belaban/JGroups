@@ -205,7 +205,7 @@ public class FORK extends Protocol {
             }
         }
         catch(Throwable ex) {
-            log.error("%s: failed fetching state from main channel", local_addr, ex);
+            log.error(local_addr + ": failed fetching state from main channel", ex);
         }
     }
 
@@ -260,7 +260,7 @@ public class FORK extends Protocol {
         catch(EOFException ignored) {
         }
         catch(Throwable ex) {
-            log.error("%s: failed setting state in main channel", local_addr, ex);
+            log.error(local_addr + ": failed setting state in main channel", ex);
         }
     }
 
