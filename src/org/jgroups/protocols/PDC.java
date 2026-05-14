@@ -164,7 +164,8 @@ public class PDC extends Protocol {
             return mapping;
         }
         catch(Exception e) {
-            log.debug("failed to read file : "+file.getAbsolutePath(), e);
+            if(log.isDebugEnabled())
+                log.debug("failed to read file : " + file.getAbsolutePath(), e);
             return null;
         }
         finally {
