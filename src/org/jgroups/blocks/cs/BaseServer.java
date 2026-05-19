@@ -69,6 +69,7 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     @Deprecated(since="5.4.4",forRemoval=true)
     protected boolean                         use_acks;
     @ManagedAttribute(description="Log a stack trace when a connection is closed")
+    protected boolean                         use_lock_to_send=true; // e.g. a single sender doesn't need to acquire the send_lock
     protected boolean                         log_details=true;
     protected int                             sock_conn_timeout=1000;      // max time in millis to wait for Socket.connect() to return
     protected boolean                         tcp_nodelay=false;
@@ -105,6 +106,8 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     public BaseServer       usePeerConnections(boolean flag)        {this.use_peer_connections=flag; return this;}
     public static boolean   useAcks()                               {return false;}
     public BaseServer       useAcks(boolean ignored)                {return this;}
+    public boolean          useLockToSend()                         {return use_lock_to_send;}
+    public BaseServer       useLockToSend(boolean u)                {this.use_lock_to_send=u; return this;}
     public boolean          logDetails()                            {return log_details;}
     public BaseServer       logDetails(boolean l)                   {log_details=l; return this;}
     public int              socketConnectionTimeout()               {return sock_conn_timeout;}
@@ -200,6 +203,26 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
             this.receiver.receive(sender, buf);
     }
 
+    public void send(Collection<? extends Address> dests, byte[] data, int offset, int length) throws Exception {
+        for(Address dest: dests) {
+            try {
+                send(dest, data, offset, length);
+            } catch(Throwable t) {
+                log.error(Util.getMessage("FailureSendingToPhysAddr"), local_addr, dest, t);
+            }
+        }
+    }
+
+    public void send(Collection<? extends Address> dests, ByteBuffer data) throws Exception {
+        for(Address dest: dests) {
+            try {
+                send(dest, data.duplicate());
+            } catch(Throwable t) {
+                log.error(Util.getMessage("FailureSendingToPhysAddr"), local_addr, dest, t);
+            }
+        }
+    }
+
     public void receive(Address sender, DataInput in, int len) throws Exception {
         // https://issues.redhat.com/browse/JGRP-2523: check if max_length has been exceeded
         if(max_length > 0 && len > max_length)
@@ -220,7 +243,7 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
             return;
 
         if(dest == null) {
-            sendToAll(data, offset, length);
+            send(conns.keySet(), data, offset, length);
             return;
         }
 
@@ -246,7 +269,7 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
             return;
 
         if(dest == null) {
-            sendToAll(data);
+            send(conns.keySet(), data);
             return;
         }
 
@@ -510,6 +533,7 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         return s;
     }
 
+    @Deprecated(since="5.5.6",forRemoval=true)
     public void sendToAll(byte[] data, int offset, int length) {
         for(Map.Entry<Address,Connection> entry: conns.entrySet()) {
             Connection conn=entry.getValue();
@@ -524,6 +548,7 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         }
     }
 
+    @Deprecated(since="5.5.6",forRemoval=true)
     public void sendToAll(ByteBuffer data) {
         for(Map.Entry<Address,Connection> entry: conns.entrySet()) {
             Connection conn=entry.getValue();

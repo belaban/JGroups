@@ -96,6 +96,10 @@ public abstract class BasicTCP extends TP implements Receiver, ConnectionListene
       type=AttributeType.SCALAR)
     protected final LongAdder num_suspect_events=new LongAdder();
 
+    @Property(description="Acquire a lock, or not, when sending a message. A single sender thread such as in " +
+      "TransferQueueBundler or PerDestinationBundler can set this to false")
+    protected boolean   use_lock_to_send=true;
+
     protected final Predicate<PhysicalAddress> is_member=pa -> {
         Address addr=logical_addr_cache.getByValue(pa);
         return addr != null && members.contains(addr);
@@ -157,6 +161,8 @@ public abstract class BasicTCP extends TP implements Receiver, ConnectionListene
 
     public long        numSuspectEvents()               {return num_suspect_events.sum();}
 
+    public boolean     useLockToSend()                  {return use_lock_to_send;}
+    public BasicTCP    useLockToSend(boolean u)         {this.use_lock_to_send=u; return this;}
 
 
     public void init() throws Exception {
@@ -179,8 +185,14 @@ public abstract class BasicTCP extends TP implements Receiver, ConnectionListene
         }
     }
 
+    @Override
     public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {
         send(dest, data, offset, length);
+    }
+
+    @Override
+    protected void sendUnicasts(List<PhysicalAddress> dests, byte[] data, int offset, int length) throws Exception {
+        send(dests, data, offset, length);
     }
 
     public abstract String printConnections();
@@ -189,6 +201,8 @@ public abstract class BasicTCP extends TP implements Receiver, ConnectionListene
     public abstract BasicTCP clearConnections(boolean graceful);
 
     public abstract void send(Address dest, byte[] data, int offset, int length) throws Exception;
+
+    public abstract void send(Collection<? extends Address> dest, byte[] data, int offset, int length) throws Exception;
 
     public abstract void retainAll(Collection<Address> members);
 

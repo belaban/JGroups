@@ -17,6 +17,7 @@ import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
+import java.nio.channels.CancelledKeyException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -164,9 +165,8 @@ public class NioConnection extends Connection {
                     send_buf.copy(); // copy data on partial write as further writes might corrupt data (https://issues.redhat.com/browse/JGRP-1991)
                 partial_writes++;
             }
-        }
-        catch(Exception ex) {
-            if(!(ex instanceof SocketException || ex instanceof EOFException || ex instanceof ClosedChannelException))
+        } catch(Exception ex) {
+            if(!(ex instanceof SocketException || ex instanceof EOFException || ex instanceof ClosedChannelException || ex instanceof CancelledKeyException))
                 server.log.error("%s: failed sending message to %s: %s", server.localAddress(), peerAddress(), ex);
             throw ex;
         }
