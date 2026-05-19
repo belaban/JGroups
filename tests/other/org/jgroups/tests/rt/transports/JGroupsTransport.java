@@ -10,7 +10,7 @@ import org.jgroups.util.Util;
 
 import java.util.List;
 
-public class JGroupsTransport implements Receiver, RtTransport {
+public class JGroupsTransport extends RtTransport implements Receiver {
     protected JChannel     ch;
     protected RtReceiver   receiver;
     protected View         view;
@@ -26,9 +26,9 @@ public class JGroupsTransport implements Receiver, RtTransport {
           "bypass_flowcontrol"};
     }
 
-    public void options(String... options) throws Exception {
+    public JGroupsTransport options(String... options) throws Exception {
         if(options == null)
-            return;
+            return this;
         for(int i=0; i < options.length; i++) {
             if(options[i].startsWith("-oob")) {
                 oob=Boolean.parseBoolean(options[++i]);
@@ -41,10 +41,12 @@ public class JGroupsTransport implements Receiver, RtTransport {
             if(options[i].startsWith("bypass_flowcontrol"))
                 bypass_flowcontrol=Boolean.parseBoolean(options[++i]);
         }
+        return this;
     }
 
-    public void receiver(RtReceiver receiver) {
+    public JGroupsTransport receiver(RtReceiver receiver) {
         this.receiver=receiver;
+        return this;
     }
 
     public Address localAddress() {

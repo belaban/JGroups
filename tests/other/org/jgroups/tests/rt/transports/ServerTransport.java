@@ -4,7 +4,6 @@ import org.jgroups.Address;
 import org.jgroups.blocks.cs.*;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.tests.RoundTrip;
 import org.jgroups.tests.rt.RtReceiver;
 import org.jgroups.tests.rt.RtTransport;
 import org.jgroups.util.Util;
@@ -13,7 +12,7 @@ import java.io.DataInput;
 import java.net.InetAddress;
 import java.util.List;
 
-public class ServerTransport extends ReceiverAdapter implements RtTransport {
+public class ServerTransport extends RtTransport implements Receiver {
     protected BaseServer   srv;
     protected RtReceiver   receiver;
     protected InetAddress  host;
@@ -31,45 +30,29 @@ public class ServerTransport extends ReceiverAdapter implements RtTransport {
           "-outbuf <size>", "-inbuf <size>"};
     }
 
-    public void options(String... options) throws Exception {
+    public ServerTransport options(String... options) throws Exception {
         if(options == null)
-            return;
+            return this;
         for(int i=0; i < options.length; i++) {
-            if(options[i].equals("-server")) {
-                server=true;
-                continue;
-            }
-            if(options[i].equals("-host")) {
-                host=InetAddress.getByName(options[++i]);
-                continue;
-            }
-            if(options[i].equals("-port")) {
-                port=Integer.parseInt(options[++i]);
-                continue;
-            }
-            if(options[i].equals("-nio")) {
-                nio=true;
-                continue;
-            }
-            if(options[i].equals("-tcp-nodelay")) {
-                tcp_nodelay=Boolean.parseBoolean(options[++i]);
-                continue;
-            }
-            if(options[i].equals("-outbuf")) {
-                out_buf_size=Integer.parseInt(options[++i]);
-                continue;
-            }
-            if(options[i].equals("-inbuf")) {
-                in_buf_size=Integer.parseInt(options[++i]);
+            switch(options[i]) {
+                case "-server" ->      server=true;
+                case "-host" ->        host=InetAddress.getByName(options[++i]);
+                case "-port" ->        port=Integer.parseInt(options[++i]);
+                case "-nio" ->         nio=true;
+                case "-tcp-nodelay" -> tcp_nodelay=Boolean.parseBoolean(options[++i]);
+                case "-outbuf" ->      out_buf_size=Integer.parseInt(options[++i]);
+                case "-inbuf" ->       in_buf_size=Integer.parseInt(options[++i]);
             }
         }
         if(host == null)
             host=InetAddress.getLocalHost();
+        return this;
     }
 
 
-    public void receiver(RtReceiver receiver) {
+    public ServerTransport receiver(RtReceiver receiver) {
         this.receiver=receiver;
+        return this;
     }
 
     public Object localAddress() {
@@ -83,19 +66,16 @@ public class ServerTransport extends ReceiverAdapter implements RtTransport {
     public void start(String ... options) throws Exception {
         options(options);
         if(server) {
-            srv=nio? new NioServer(host, port) : new TcpServer(host, port)
-              .connExpireTimeout(0)
-              .tcpNodelay(tcp_nodelay)
-              .receiver(this);
+            srv=nio? new NioServer(host, port) : new TcpServer(host, port);
+            srv.connExpireTimeout(0).tcpNodelay(tcp_nodelay).receiver(this);
             if(srv instanceof TcpBaseServer)
                 ((TcpBaseServer)srv).setBufferedOutputStreamSize(out_buf_size).setBufferedInputStreamSize(in_buf_size);
             srv.start();
             System.out.printf("server started on %s (ctrl-c to terminate)\n", srv.localAddress());
         }
         else {
-            srv=nio? new NioClient(null, 0, host, port) : new TcpClient(null, 0, host, port)
-              .tcpNodelay(false)
-              .receiver(this);
+            srv=nio? new NioClient(null, 0, host, port) : new TcpClient(null, 0, host, port);
+            srv.tcpNodelay(false).receiver(this);
             if(srv instanceof TcpBaseServer)
                 ((TcpBaseServer)srv).setBufferedOutputStreamSize(out_buf_size).setBufferedInputStreamSize(in_buf_size);
             srv.start();
@@ -107,7 +87,7 @@ public class ServerTransport extends ReceiverAdapter implements RtTransport {
     }
 
     public void send(Object dest, byte[] buf, int offset, int length) throws Exception {
-        srv.send((Address)dest, buf, offset, buf.length);
+        srv.send((Address)dest, buf, offset, length);
     }
 
     public void receive(Address sender, byte[] buf, int offset, int length) {
@@ -119,8 +99,8 @@ public class ServerTransport extends ReceiverAdapter implements RtTransport {
     public void receive(Address sender, DataInput in, int length) throws Exception {
         if(receiver == null)
             return;
-        byte[] buf=new byte[RoundTrip.PAYLOAD];
+        byte[] buf=new byte[length];
         in.readFully(buf);
-        receiver.receive(sender, buf, 0, buf.length);
+        receiver.receive(sender, buf, 0, length);
     }
 }

@@ -13,10 +13,11 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.List;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
-import static org.jgroups.tests.RoundTrip.PAYLOAD;
 
-public class NioTransport implements RtTransport {
+public class NioTransport extends RtTransport {
     protected ServerSocketChannel srv_channel;
     protected SocketChannel       client_channel;
     protected Receiver            receiver_thread;
@@ -25,6 +26,8 @@ public class NioTransport implements RtTransport {
     protected int                 port=7800;
     protected boolean             server, tcp_nodelay, direct_buffers=true; // use direct memory to receive msgs
     protected final Log           log=LogFactory.getLog(NioTransport.class);
+    protected ByteBuffer          send_length_buf;
+    protected final Lock          lock=new ReentrantLock();
 
 
     public NioTransport() {
@@ -36,9 +39,9 @@ public class NioTransport implements RtTransport {
           "-tcp-nodelay <boolean>"};
     }
 
-    public void options(String... options) throws Exception {
+    public NioTransport options(String... options) throws Exception {
         if(options == null)
-            return;
+            return this;
         for(int i=0; i < options.length; i++) {
             if(options[i].equals("-server")) {
                 server=true;
@@ -62,10 +65,12 @@ public class NioTransport implements RtTransport {
         }
         if(host == null)
             host=InetAddress.getLocalHost();
+        return this;
     }
 
-    public void receiver(RtReceiver receiver) {
+    public NioTransport receiver(RtReceiver receiver) {
         this.receiver=receiver;
+        return this;
     }
 
     public Object localAddress() {return null;}
@@ -76,6 +81,7 @@ public class NioTransport implements RtTransport {
 
     public void start(String ... options) throws Exception {
         options(options);
+        send_length_buf=direct_buffers? ByteBuffer.allocateDirect(4) : ByteBuffer.allocate(4);
         if(server) { // simple single threaded server, can only handle a single connection at a time
             srv_channel=ServerSocketChannel.open();
             srv_channel.bind(new InetSocketAddress(host, port), 50);
@@ -102,32 +108,49 @@ public class NioTransport implements RtTransport {
 
     public void send(Object dest, byte[] buf, int offset, int length) throws Exception {
         ByteBuffer sbuf=ByteBuffer.wrap(buf, offset, length);
-        client_channel.write(sbuf);
+        send(null, sbuf);
     }
 
     @Override
     public void send(Object dest, ByteBuffer buf) throws Exception {
-        client_channel.write(buf);
+        lock.lock();
+        try {
+            send_length_buf.putInt(0, buf.remaining()).clear();
+            client_channel.write(send_length_buf);
+            client_channel.write(buf);
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
     protected class Receiver extends Thread {
 
         public void run() {
-            ByteBuffer buf=direct_buffers? ByteBuffer.allocateDirect(PAYLOAD) : ByteBuffer.allocate(PAYLOAD);
-            // use buf.order(ByteOrder.nativeOrder() to measure perf between systems of the *same* native byte order
+            ByteBuffer buf=createBuffer(round_trip.size());
+            ByteBuffer length_buf=createBuffer(Integer.BYTES);
             for(;;) {
                 try {
-                    buf.position(0);
-                    int num=client_channel.read(buf);
+                    length_buf.clear();
+                    int num=client_channel.read(length_buf);
+                    if(num == -1)
+                        break;
+                    if(num != 4)
+                        throw new IllegalStateException("expected length (4 bytes), but received " + num);
+                    int length=length_buf.getInt(0);
+                    if(length > buf.capacity())
+                        buf=createBuffer(length);
+                    buf.position(0).limit(length);
+                    num=client_channel.read(buf);
                     if(num == -1)
                         break;
                     buf.flip();
-                    if(num != PAYLOAD)
-                        throw new IllegalStateException("expected " + PAYLOAD + " bytes, but got only " + num);
+                    if(num != length)
+                        throw new IllegalStateException("expected " + length + " bytes, but got only " + num);
                     if(receiver != null) {
                         int offset=buf.hasArray()? buf.arrayOffset() + buf.position() : buf.position(), len=buf.remaining();
                         if(buf.hasArray())
-                            receiver.receive(null, buf.array(), offset, len);
+                            receiver.receive(null, buf.array(), offset, length);
                         else
                             receiver.receive(null, buf);
                     }
@@ -141,6 +164,10 @@ public class NioTransport implements RtTransport {
             }
             Util.close(client_channel);
         }
+    }
+
+    protected ByteBuffer createBuffer(int size) {
+        return direct_buffers? ByteBuffer.allocateDirect(size) : ByteBuffer.allocate(size);
     }
 
 

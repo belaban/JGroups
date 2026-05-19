@@ -1,5 +1,7 @@
 package org.jgroups.tests.rt;
 
+import org.jgroups.tests.RoundTrip;
+
 import java.nio.ByteBuffer;
 import java.util.List;
 
@@ -8,13 +10,19 @@ import java.util.List;
  * @author Bela Ban
  * @since  4.0
  */
-public interface RtTransport {
+public abstract class RtTransport {
+    protected RoundTrip round_trip;
+
+    public RtTransport roundTrip(RoundTrip rt) {
+        this.round_trip=rt;
+        return this;
+    }
 
     /**
      * Prints the accepted options, e.g. [-host host] [-port port] [-server host]
      * @return
      */
-    String[] options();
+    public abstract String[] options();
 
     /**
      * Sets options on this transport. Usually done after creation and before {@link #start(String...)} is called,
@@ -22,38 +30,38 @@ public interface RtTransport {
      * @param options The options
      * @throws Exception
      */
-    void options(String ... options) throws Exception;
+    public abstract RtTransport options(String ... options) throws Exception;
 
     /**
      * Sets the receiver whose {@link RtReceiver#receive(Object,byte[],int,int)} callback will be invoked whenever a
      * message is received
      * @param receiver
      */
-    void receiver(RtReceiver receiver);
+    public abstract RtTransport receiver(RtReceiver receiver);
 
     /**
      * Returns the local addres of this member.
      * @return The local address. Implementations without cluster membership may return null
      */
-    Object localAddress();
+    public abstract Object localAddress();
 
     /**
      * Returns the addresses of all cluster members. May return null if not implemented
      * @return The list of all members in the cluster
      */
-    List<? extends Object> clusterMembers();
+    public abstract List<? extends Object> clusterMembers();
 
     /**
      * Starts the transport, e.g. connecting to a server socket
      * @param options Options passed to the transport at startup time. May be null
      * @throws Exception
      */
-    void start(String... options) throws Exception;
+    public abstract void start(String... options) throws Exception;
 
     /**
      * Stops the transport, e.g. stopping the accept() loop in a TCP-based server
      */
-    void stop();
+    public abstract void stop();
 
     /**
      * Sends a message
@@ -63,9 +71,9 @@ public interface RtTransport {
      * @param length The length (in bytes) of the data to send
      * @throws Exception
      */
-    void send(Object dest, byte[] buf, int offset, int length) throws Exception;
+    public abstract void send(Object dest, byte[] buf, int offset, int length) throws Exception;
 
-    default void send(Object dest, ByteBuffer buf) throws Exception {
+    public void send(Object dest, ByteBuffer buf) throws Exception {
         if(buf == null)
             return;
         int offset=buf.hasArray()? buf.arrayOffset() + buf.position() : buf.position(), len=buf.remaining();

@@ -2,7 +2,6 @@ package org.jgroups.tests.rt.transports;
 
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.tests.RoundTrip;
 import org.jgroups.tests.rt.RtReceiver;
 import org.jgroups.tests.rt.RtTransport;
 import org.jgroups.util.Util;
@@ -12,65 +11,57 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static java.lang.System.out;
 
-public class TcpTransport implements RtTransport {
-    protected ServerSocket srv_sock;
-    protected Socket       sock;
-    protected OutputStream output;
-    protected InputStream  input;
-    protected Receiver     receiver_thread;
-    protected RtReceiver   receiver;
-    protected InetAddress  host=null;
-    protected int          port=7800;
-    protected int          out_buf_size=8192, in_buf_size=8192;
-    protected boolean      server, tcp_nodelay;
-    protected final Log    log=LogFactory.getLog(TcpTransport.class);
+public class TcpTransport extends RtTransport {
+    protected ServerSocket      srv_sock;
+    protected Socket            sock;
+    protected DataOutputStream  output;
+    protected DataInputStream   input;
+    protected Receiver          receiver_thread;
+    protected RtReceiver        receiver;
+    protected InetAddress       host;
+    protected int               port=7800;
+    protected int               out_buf_size=8192, in_buf_size=8192;
+    protected boolean           server, tcp_nodelay;
+    protected final Log         log=LogFactory.getLog(TcpTransport.class);
+    protected final Lock        lock=new ReentrantLock();
 
 
     public TcpTransport() {
     }
 
     public String[] options() {
-        return new String[]{"-host <host>", "-port <port>", "-server", "-tcp-nodelay <boolean>", "-outbuf <size>", "-inbuf <size>"};
+        return new String[]
+          {"-host <host>", "-port <port>", "-server", "-tcp-nodelay <boolean>", "-outbuf <size>", "-inbuf <size>"};
     }
 
-    public void options(String... options) throws Exception {
+    public TcpTransport options(String... options) throws Exception {
         if(options == null)
-            return;
+            return this;
         for(int i=0; i < options.length; i++) {
-            if(options[i].equals("-server")) {
-                server=true;
-                continue;
-            }
-            if(options[i].equals("-host")) {
-                host=InetAddress.getByName(options[++i]);
-                continue;
-            }
-            if(options[i].equals("-port")) {
-                port=Integer.parseInt(options[++i]);
-                continue;
-            }
-            if(options[i].equals("-tcp-nodelay")) {
-                tcp_nodelay=Boolean.parseBoolean(options[++i]);
-                continue;
-            }
-            if(options[i].equals("-outbuf")) {
-                out_buf_size=Integer.parseInt(options[++i]);
-                continue;
-            }
-            if(options[i].equals("-inbuf")) {
-                in_buf_size=Integer.parseInt(options[++i]);
+            switch(options[i]) {
+                case "-server" ->      server=true;
+                case "-host" ->        host=InetAddress.getByName(options[++i]);
+                case "-port" ->        port=Integer.parseInt(options[++i]);
+                case "-tcp-nodelay" -> tcp_nodelay=Boolean.parseBoolean(options[++i]);
+                case "-outbuf" ->      out_buf_size=Integer.parseInt(options[++i]);
+                case "-inbuf" ->       in_buf_size=Integer.parseInt(options[++i]);
             }
         }
         if(host == null)
             host=InetAddress.getLocalHost();
+        return this;
     }
 
-    public void receiver(RtReceiver receiver) {
+    public TcpTransport receiver(RtReceiver receiver) {
         this.receiver=receiver;
+        return this;
     }
 
     public Object localAddress() {return null;}
@@ -87,8 +78,8 @@ public class TcpTransport implements RtTransport {
             for(;;) {
                 Socket s=srv_sock.accept();
                 s.setTcpNoDelay(tcp_nodelay); // we're concerned about latency
-                input=in_buf_size > 0? new BufferedInputStream(s.getInputStream(), in_buf_size) : s.getInputStream();
-                output=out_buf_size > 0? new BufferedOutputStream(s.getOutputStream(), out_buf_size) : s.getOutputStream();
+                input=createInput(s, in_buf_size);
+                output=createOutput(s, out_buf_size);
                 receiver_thread=new Receiver(input);
                 receiver_thread.start();
             }
@@ -97,8 +88,8 @@ public class TcpTransport implements RtTransport {
             sock=new Socket();
             sock.setTcpNoDelay(tcp_nodelay);
             sock.connect(new InetSocketAddress(host, port));
-            input=in_buf_size > 0? new BufferedInputStream(sock.getInputStream(), in_buf_size) : sock.getInputStream();
-            output=out_buf_size > 0? new BufferedOutputStream(sock.getOutputStream(), out_buf_size) : sock.getOutputStream();
+            input=createInput(sock, in_buf_size);
+            output=createOutput(sock, out_buf_size);
             receiver_thread=new Receiver(input);
             receiver_thread.start();
         }
@@ -109,39 +100,44 @@ public class TcpTransport implements RtTransport {
     }
 
     public void send(Object dest, byte[] buf, int offset, int length) throws Exception {
-        doSend(buf, offset, length);
-        flush();
+        lock.lock(); // to prevent multiple senders from corrupting each other's data
+        try {
+            output.writeInt(length);
+            output.write(buf, offset, length);
+            output.flush();
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
-    public void doSend(byte[] buf, int offset, int length) throws Exception {
-        output.write(buf, offset, length);
+    protected static DataOutputStream createOutput(Socket s, int size) throws IOException {
+        return new DataOutputStream(size > 0? new BufferedOutputStream(s.getOutputStream(), size) : s.getOutputStream());
     }
 
-    public void flush() throws IOException {
-        output.flush();
+    protected static DataInputStream createInput(Socket s, int size) throws IOException {
+        return new DataInputStream(size > 0? new BufferedInputStream(s.getInputStream(), size) : s.getInputStream());
     }
-
-
-
 
     protected class Receiver extends Thread {
-        protected final InputStream in;
+        protected final DataInputStream in;
 
-        public Receiver(InputStream in) {
+        public Receiver(DataInputStream in) {
             this.in=in;
         }
 
         public void run() {
-            byte[] buf=new byte[RoundTrip.PAYLOAD];
+            byte[] buf=new byte[round_trip.size()];
             for(;;) {
                 try {
-                    int num=in.read(buf, 0, buf.length);
+                    int length=in.readInt();
+                    if(length > buf.length)
+                        buf=Arrays.copyOf(buf, length);
+                    int num=in.read(buf, 0, length);
                     if(num == -1)
                         return;
-                    if(num != buf.length)
-                        throw new IllegalStateException("expected " + buf.length + " bytes, but got only " + num);
                     if(receiver != null)
-                        receiver.receive(null, buf, 0, buf.length);
+                        receiver.receive(null, buf, 0, num);
                 }
                 catch(IOException ioe) {
                     break;

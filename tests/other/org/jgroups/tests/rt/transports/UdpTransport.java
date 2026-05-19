@@ -1,8 +1,8 @@
 package org.jgroups.tests.rt.transports;
 
+import org.jgroups.Global;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
-import org.jgroups.tests.RoundTrip;
 import org.jgroups.tests.rt.RtReceiver;
 import org.jgroups.tests.rt.RtTransport;
 import org.jgroups.util.Util;
@@ -14,11 +14,11 @@ import java.util.List;
 
 /**
  * Transport based on UDP datagrams. Note that this transport is not reliable: if a packet is dropped, the sender will
- * wait for the response forever and this block.
+ * wait for the response forever and block.
  * @author Bela Ban
  * @since  4.0
  */
-public class UdpTransport implements RtTransport {
+public class UdpTransport extends RtTransport {
     protected DatagramSocket      sock;
     protected Receiver            receiver_thread;
     protected RtReceiver          receiver;
@@ -35,9 +35,9 @@ public class UdpTransport implements RtTransport {
         return new String[]{"-host <host>", "-port <port>", "-server"};
     }
 
-    public void options(String... options) throws Exception {
+    public UdpTransport options(String... options) throws Exception {
         if(options == null)
-            return;
+            return this;
         for(int i=0; i < options.length; i++) {
             if(options[i].equals("-server")) {
                 server=true;
@@ -53,10 +53,12 @@ public class UdpTransport implements RtTransport {
         }
         if(host == null)
             host=InetAddress.getLocalHost();
+        return this;
     }
 
-    public void receiver(RtReceiver receiver) {
+    public UdpTransport receiver(RtReceiver receiver) {
         this.receiver=receiver;
+        return this;
     }
 
     public Object localAddress() {return members != null? members.get(0) : null;}
@@ -93,13 +95,11 @@ public class UdpTransport implements RtTransport {
 
     protected class Receiver extends Thread {
         public void run() {
-            byte[] buf=new byte[RoundTrip.PAYLOAD];
+            byte[] buf=new byte[Global.MAX_DATAGRAM_PACKET_SIZE];
             DatagramPacket packet=new DatagramPacket(buf, 0, buf.length);
             for(;;) {
                 try {
                     sock.receive(packet);
-                    if(packet.getLength() != RoundTrip.PAYLOAD)
-                        throw new IllegalStateException("expected " + RoundTrip.PAYLOAD + " bytes, but got only " + packet.getLength());
                     if(receiver != null)
                         receiver.receive(packet.getSocketAddress(), buf, packet.getOffset(), packet.getLength());
                 }
