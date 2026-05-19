@@ -11,7 +11,6 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -132,7 +131,7 @@ public class TcpTransport extends RtTransport {
                 try {
                     int length=in.readInt();
                     if(length > buf.length)
-                        buf=Arrays.copyOf(buf, length);
+                        buf=new byte[length];
                     int num=in.read(buf, 0, length);
                     if(num == -1)
                         return;
