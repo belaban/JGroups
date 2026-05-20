@@ -61,7 +61,7 @@ public class RoundTrip implements RtReceiver {
         TRANSPORTS.put("server",  ServerTransport.class.getName());
         TRANSPORTS.put("udp",     UdpTransport.class.getName());
         DONE_BUF=ByteBuffer.allocate(1).put(0, DONE);
-        EXIT_BUF=ByteBuffer.allocate(1).put(0, EXIT);
+        EXIT_BUF=java.nio.ByteBuffer.allocate(1).put(0, EXIT);
     }
 
     public int size() {
@@ -83,7 +83,8 @@ public class RoundTrip implements RtReceiver {
 
     /** On the server: receive a request, send a response. On the client: send a request, wait for the response */
     public void receive(Object sender, byte[] req_buf, int offset, int length) {
-        long msg_start=System.nanoTime();
+        receive(sender, ByteBuffer.wrap(req_buf, offset, length));
+       /* long msg_start=System.nanoTime();
         switch(req_buf[offset]) {
             case REQ:
                 short id=Bits.readShort(req_buf, 1+offset);
@@ -124,7 +125,7 @@ public class RoundTrip implements RtReceiver {
                 break;
             default:
                 throw new IllegalArgumentException("invalid request " + req_buf[0]);
-        }
+        }*/
     }
 
     @Override
@@ -241,8 +242,7 @@ public class RoundTrip implements RtReceiver {
             t.join();
         long total_time=System.nanoTime() - start;
 
-        DONE_BUF.clear();
-        tp.send(target, DONE_BUF);
+        tp.send(target, DONE_BUF.clear());
         double msgs_sec=num_msgs / (total_time / 1_000_000_000.0);
         AverageMinMax avg=null;
         if(details)
@@ -289,7 +289,7 @@ public class RoundTrip implements RtReceiver {
             catch(InterruptedException e) {
                 e.printStackTrace();
             }
-            ByteBuffer buf=direct_memory? ByteBuffer.allocateDirect(size()): ByteBuffer.allocate(size());
+            ByteBuffer buf=direct_memory? ByteBuffer.allocateDirect(size()): java.nio.ByteBuffer.allocate(size());
             if(size > 0) {
                 // initialize buffer
                 for(int i=0; i < size; i++)
