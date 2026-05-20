@@ -8,6 +8,7 @@ import org.jgroups.util.Util;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ServerSocketChannel;
@@ -43,24 +44,12 @@ public class NioTransport extends RtTransport {
         if(options == null)
             return this;
         for(int i=0; i < options.length; i++) {
-            if(options[i].equals("-server")) {
-                server=true;
-                continue;
-            }
-            if(options[i].equals("-host")) {
-                host=InetAddress.getByName(options[++i]);
-                continue;
-            }
-            if(options[i].equals("-port")) {
-                port=Integer.parseInt(options[++i]);
-                continue;
-            }
-            if(options[i].equals("-tcp-nodelay")) {
-                tcp_nodelay=Boolean.parseBoolean(options[++i]);
-                continue;
-            }
-            if(options[i].equals("-direct")) {
-                direct_buffers=Boolean.parseBoolean(options[++i]);
+            switch(options[i]) {
+                case "-server" ->      server=true;
+                case "-host" ->        host=InetAddress.getByName(options[++i]);
+                case "-port" ->        port=Integer.parseInt(options[++i]);
+                case "-tcp-nodelay" -> tcp_nodelay=Boolean.parseBoolean(options[++i]);
+                case "-direct" ->      direct_buffers=Boolean.parseBoolean(options[++i]);
             }
         }
         if(host == null)
@@ -88,14 +77,14 @@ public class NioTransport extends RtTransport {
             System.out.println("server started (ctrl-c to kill)");
             for(;;) {
                 client_channel=srv_channel.accept();
-                client_channel.socket().setTcpNoDelay(tcp_nodelay); // we're concerned about latency
+                client_channel.setOption(StandardSocketOptions.TCP_NODELAY, tcp_nodelay);
                 receiver_thread=new Receiver();
                 receiver_thread.start();
             }
         }
         else {
             client_channel=SocketChannel.open();
-            client_channel.socket().setTcpNoDelay(tcp_nodelay);
+            client_channel.setOption(StandardSocketOptions.TCP_NODELAY, tcp_nodelay);
             client_channel.connect(new InetSocketAddress(host, port));
             receiver_thread=new Receiver();
             receiver_thread.start();
