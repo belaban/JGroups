@@ -107,7 +107,7 @@ public class RoundTrip implements RtReceiver {
         switch(b) {
             case REQ:
                 short id=buf.getShort(1);
-                ByteBuffer rsp_buf=this.rsp_buffer != null? this.rsp_buffer : ByteBuffer.allocate(METADATA_SIZE);
+                ByteBuffer rsp_buf=this.rsp_buffer != null? this.rsp_buffer.clear() : ByteBuffer.allocate(METADATA_SIZE);
                 rsp_buf.put(0, RSP).putShort(1, id);
                 try {
                     long start=System.nanoTime();
