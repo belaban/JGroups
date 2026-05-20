@@ -115,11 +115,13 @@ public class NioTransport extends RtTransport {
     public void send(Object dest, ByteBuffer buf) throws Exception {
         lock.lock();
         try {
-            send_length_buf.putInt(0, buf.remaining()).clear();
+            int length=buf.remaining();
+            send_length_buf.putInt(0, length);
             client_channel.write(send_length_buf);
             client_channel.write(buf);
         }
         finally {
+            send_length_buf.clear();
             lock.unlock();
         }
     }
@@ -150,7 +152,7 @@ public class NioTransport extends RtTransport {
                     if(receiver != null) {
                         int offset=buf.hasArray()? buf.arrayOffset() + buf.position() : buf.position(), len=buf.remaining();
                         if(buf.hasArray())
-                            receiver.receive(null, buf.array(), offset, length);
+                            receiver.receive(null, buf.array(), offset, len);
                         else
                             receiver.receive(null, buf);
                     }
