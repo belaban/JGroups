@@ -135,6 +135,9 @@ public class TcpTransport extends RtTransport {
                     int num=in.read(buf, 0, length);
                     if(num == -1)
                         return;
+                    if(num != length) {
+                        System.err.printf("-- expected to read %d bytes but read only %d\n", length, num);
+                    }
                     if(receiver != null)
                         receiver.receive(null, buf, 0, num);
                 }
