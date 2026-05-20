@@ -132,11 +132,9 @@ public class TcpTransport extends RtTransport {
                     int length=in.readInt();
                     if(length > buf.length)
                         buf=new byte[length];
-                    int num=in.read(buf, 0, length);
-                    if(num == -1)
-                        return;
+                    in.readFully(buf, 0, length);
                     if(receiver != null)
-                        receiver.receive(null, buf, 0, num);
+                        receiver.receive(null, buf, 0, length);
                 }
                 catch(IOException ioe) {
                     break;
