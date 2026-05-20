@@ -1,5 +1,6 @@
 package org.jgroups.tests;
 
+import org.jgroups.protocols.NoBundler;
 import org.jgroups.tests.rt.RtReceiver;
 import org.jgroups.tests.rt.RtTransport;
 import org.jgroups.tests.rt.transports.*;
@@ -44,6 +45,7 @@ public class RoundTrip implements RtReceiver {
     protected Sender[]                        senders;
     protected Thread[]                        sender_threads;
     protected ThreadFactory                   thread_factory;
+    protected ByteBuffer                      rsp_buffer;
     // time for sending a request, from RtTransport.send() until the req is sent (or queued) by the transport
     protected final AverageMinMax             req_send_time=new AverageMinMax(1024).unit(NANOSECONDS);
     // time for sending a response, from RtTransport.send() until the rsp is sent (or queued) by the transport
@@ -72,6 +74,11 @@ public class RoundTrip implements RtReceiver {
         thread_factory=new DefaultThreadFactory("sender", false, true).useVirtualThreads(true);
         tp=create(transport).roundTrip(this).receiver(this);
         this.direct_memory=direct_memory;
+
+        boolean create_rsp_buffer=!(tp instanceof JGroupsTransport)
+          || ((JGroupsTransport)tp).channel().stack().getTransport().getBundler() instanceof NoBundler;
+        if(create_rsp_buffer)
+            rsp_buffer=createBuffer(METADATA_SIZE, direct_memory);
         try {
             tp.start(args);
             loop();
@@ -81,51 +88,16 @@ public class RoundTrip implements RtReceiver {
         }
     }
 
-    /** On the server: receive a request, send a response. On the client: send a request, wait for the response */
+    /**
+     * On the server: receive a request, send a response. On the client: receive a response. This method is never called
+     * concurrently: all transports except {@link JGroupsTransport} have only a single receiver thread;
+     * and {@link JGroupsTransport} delivers all messages from the same sender (the client) sequentially.
+     * <br/>
+     * This means we can have a single response buffer if desired, *except* for {@link JGroupsTransport} which can
+     * queue responses (in the bundler).
+     */
     public void receive(Object sender, byte[] req_buf, int offset, int length) {
         receive(sender, ByteBuffer.wrap(req_buf, offset, length));
-       /* long msg_start=System.nanoTime();
-        switch(req_buf[offset]) {
-            case REQ:
-                short id=Bits.readShort(req_buf, 1+offset);
-                byte[] tmp=new byte[length];
-                tmp[0]=RSP;
-                Bits.writeShort(id, tmp, 1);
-                if(length > METADATA_SIZE) {
-                    // initialize response buffer
-                    for(int i=0; i < length - METADATA_SIZE; i++)
-                        tmp[i+METADATA_SIZE]=RSP;
-                }
-                try {
-                    long start=System.nanoTime();
-                    tp.send(sender, tmp, 0, tmp.length);
-                    long time=System.nanoTime() - start;
-                    rsp_send_time.add(time);
-                }
-                catch(Exception e) {
-                    e.printStackTrace();
-                }
-                req_delivery_time.add(System.nanoTime() - msg_start);
-                break;
-            case RSP:
-                id=Bits.readShort(req_buf, 1+offset);
-                senders[id].promise.setResult(true, false); // notify all senders of the response
-                rsp_delivery_time.add(System.nanoTime() - msg_start);
-                break;
-            case DONE:
-                //noinspection TextBlockMigration
-                System.out.printf(Util.bold("req-delivery-time  = %s\n" +
-                                              "rsp-send-time      = %s\n\n"), req_delivery_time, rsp_send_time);
-                rsp_send_time.clear();
-                req_delivery_time.clear();
-                break;
-            case EXIT:
-                System.out.printf("-- received EXIT from %s; terminating\n", sender);
-                System.exit(1);
-                break;
-            default:
-                throw new IllegalArgumentException("invalid request " + req_buf[0]);
-        }*/
     }
 
     @Override
@@ -135,16 +107,11 @@ public class RoundTrip implements RtReceiver {
         switch(b) {
             case REQ:
                 short id=buf.getShort(1);
-                buf.put(0, RSP).putShort(1, id);
-                if(buf.capacity() > METADATA_SIZE) {
-                    // initialize buffer
-                    for(int i=0; i < buf.capacity() - METADATA_SIZE; i++)
-                        buf.put(i+METADATA_SIZE, RSP);
-                }
-                buf.clear();
+                ByteBuffer rsp_buf=this.rsp_buffer != null? this.rsp_buffer : ByteBuffer.allocate(METADATA_SIZE);
+                rsp_buf.put(0, RSP).putShort(1, id);
                 try {
                     long start=System.nanoTime();
-                    tp.send(sender, buf);
+                    tp.send(sender, rsp_buf);
                     long time=System.nanoTime() - start;
                     rsp_send_time.add(time);
                 }
@@ -289,7 +256,10 @@ public class RoundTrip implements RtReceiver {
             catch(InterruptedException e) {
                 e.printStackTrace();
             }
-            ByteBuffer buf=direct_memory? ByteBuffer.allocateDirect(size()): java.nio.ByteBuffer.allocate(size());
+            // Reusing the request buffer is OK even if transports such as JGroupsTransport queue messages before
+            // sending them as a batch, because the sender won't send a new request until it has recceived a response.
+            // Reusing the request buffer would *not* be OK if asynchronous sending was in place.
+            ByteBuffer buf=createBuffer(size(), direct_memory);
             if(size > 0) {
                 // initialize buffer
                 for(int i=0; i < size; i++)
@@ -395,6 +365,10 @@ public class RoundTrip implements RtReceiver {
         for(String opt: opts)
             sb.append("[").append(opt).append("] ");
         return sb.toString();
+    }
+
+    protected static ByteBuffer createBuffer(int size, boolean direct) {
+        return direct? ByteBuffer.allocateDirect(size) : ByteBuffer.allocate(size);
     }
 
 }

@@ -21,6 +21,8 @@ public class JGroupsTransport extends RtTransport implements Receiver {
     public JGroupsTransport() {
     }
 
+    public JChannel channel() {return ch;}
+
     public String[] options() {
         return new String[]{"-props <props>", "-name <name>", "-oob true|false", "-dont_bundle true|false",
           "bypass_flowcontrol"};
