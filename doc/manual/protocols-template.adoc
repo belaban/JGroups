@@ -804,22 +804,17 @@ This objects are stored under a container called 'jgroups', and each node will w
 ${RACKSPACE_PING}
 
 
-
-
 ==== AWS_PING
 
 This is a protocol written by Meltmedia, which uses the AWS API. It is not part of JGroups, but can be
 downloaded at link:$$https://github.com/meltmedia/jgroups-aws$$[].
 
-==== Native S3 PING
 
-This implementation by Zalando uses the AWS SDK. It is not part of JGroups, but can be found at
-https://github.com/zalando/jgroups-native-s3-ping. This protocols works with JGroups versions 3.x.
+==== S3_PING
 
-There's a refactored version of AWS_PING that was ported (in 2017) to run on JGroups 4.x at
-https://github.com/jgroups-extras/native-s3-ping.
-
-
+https://github.com/jgroups-extras/jgroups-aws[S3_PING] uses the AWS SDK to store discovery information
+in an Amazon S3 bucket. It is the recommended discovery protocol for AWS environments and the project
+is hosted at https://github.com/jgroups-extras/jgroups-aws.
 
 
 [[GOOGLE_PING2]]
