@@ -44,6 +44,7 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
         return single_thread_runner != null && single_thread_runner.isRunning();
     }
 
+    public int messageAvailable() {return msgs_available.get();}
 
     @ManagedAttribute(description="Size of the queue (if available")
     public int getQueueSize() {return -1;}
@@ -91,23 +92,34 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
         local_addr=Objects.requireNonNull(transport.getAddress());
         if(transport instanceof TCP tcp)
             tcp.useLockToSend(!use_single_sender_thread); // https://issues.redhat.com/browse/JGRP-2901
-        if(use_single_sender_thread) {
-            if(single_thread_runner == null)
-                single_thread_runner=new Runner(transport.getThreadFactory(), THREAD_NAME, this, null).joinTimeout(0);
-            single_thread_runner.start();
-        }
+        if(use_single_sender_thread)
+            startSingleThreadRunner();
     }
 
     public void stop() {
         super.stop();
         dests.values().forEach(SendBuffer::stop);
         dests.clear();
+        stopSingleThreadRunner();
+    }
+
+    public void startSingleThreadRunner() {
+        if(single_thread_runner == null)
+            single_thread_runner=new Runner(transport.getThreadFactory(), THREAD_NAME, this, null).joinTimeout(0);
+        single_thread_runner.start();
+    }
+
+    public void stopSingleThreadRunner() {
         Util.close(single_thread_runner);
     }
 
     public void send(Message msg) throws Exception {
         if(single_thread_runner != null && !single_thread_runner.isRunning())
             return;
+        doSend(msg);
+    }
+
+    public void doSend(Message msg) throws Exception {
         if(msg.getSrc() == null)
             msg.setSrc(local_addr);
         Address dest=msg.dest() == null ? NULL : msg.dest();
