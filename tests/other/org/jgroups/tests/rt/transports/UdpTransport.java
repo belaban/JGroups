@@ -5,6 +5,8 @@ import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.tests.rt.RtReceiver;
 import org.jgroups.tests.rt.RtTransport;
+import org.jgroups.util.DefaultThreadFactory;
+import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.Util;
 
 import java.io.IOException;
@@ -20,13 +22,13 @@ import java.util.List;
  */
 public class UdpTransport extends RtTransport {
     protected DatagramSocket      sock;
-    protected Receiver            receiver_thread;
     protected RtReceiver          receiver;
     protected InetAddress         host;
     protected int                 port=7800;
     protected boolean             server;
     protected final Log           log=LogFactory.getLog(UdpTransport.class);
     protected List<SocketAddress> members=new ArrayList<>();
+    protected final ThreadFactory factory=new DefaultThreadFactory("receiver", false, true).useVirtualThreads(true);
 
     public UdpTransport() {
     }
@@ -78,7 +80,7 @@ public class UdpTransport extends RtTransport {
             members.add(sock.getLocalSocketAddress());
             members.add(new InetSocketAddress(host, port));
         }
-        receiver_thread=new Receiver();
+        Thread receiver_thread=factory.newThread(new Receiver(), "receiver");
         receiver_thread.start();
     }
 
@@ -93,7 +95,7 @@ public class UdpTransport extends RtTransport {
     }
 
 
-    protected class Receiver extends Thread {
+    protected class Receiver implements Runnable {
         public void run() {
             byte[] buf=new byte[Global.MAX_DATAGRAM_PACKET_SIZE];
             DatagramPacket packet=new DatagramPacket(buf, 0, buf.length);
