@@ -61,11 +61,10 @@ public class PerDestinationBundlerTest {
         pd.startSingleThreadRunner();
 
         // Now wait for msgs_available to become 0
-        Util.waitUntil(5000, 100, () -> pd.messageAvailable() == 0,
-                       () -> String.format("msgs_available=%d (expected 0)", pd.messageAvailable()));
+        Util.waitUntil(5000, 100, () -> pd.messagesAvailable() == 0,
+                       () -> String.format("msgs_available=%d (expected 0)", pd.messagesAvailable()));
 
     }
-
 
     protected static JChannel create(String name) throws Exception {
         Protocol[] stack=Util.getTestStack();
