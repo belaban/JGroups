@@ -4,6 +4,8 @@ import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.tests.rt.RtReceiver;
 import org.jgroups.tests.rt.RtTransport;
+import org.jgroups.util.DefaultThreadFactory;
+import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.Util;
 
 import java.io.EOFException;
@@ -22,7 +24,6 @@ import java.util.concurrent.locks.ReentrantLock;
 public class NioTransport extends RtTransport {
     protected ServerSocketChannel srv_channel;
     protected SocketChannel       client_channel;
-    protected Receiver            receiver_thread;
     protected RtReceiver          receiver;
     protected InetAddress         host;
     protected int                 port=7800;
@@ -30,6 +31,7 @@ public class NioTransport extends RtTransport {
     protected final Log           log=LogFactory.getLog(NioTransport.class);
     protected ByteBuffer          send_length_buf;
     protected final Lock          lock=new ReentrantLock();
+    protected final ThreadFactory factory=new DefaultThreadFactory("receiver", false, true).useVirtualThreads(true);
 
 
     public NioTransport() {
@@ -79,7 +81,7 @@ public class NioTransport extends RtTransport {
             for(;;) {
                 client_channel=srv_channel.accept();
                 client_channel.setOption(StandardSocketOptions.TCP_NODELAY, tcp_nodelay);
-                receiver_thread=new Receiver();
+                Thread receiver_thread=factory.newThread(new Receiver(), "receiver");
                 receiver_thread.start();
             }
         }
@@ -87,7 +89,7 @@ public class NioTransport extends RtTransport {
             client_channel=SocketChannel.open();
             client_channel.setOption(StandardSocketOptions.TCP_NODELAY, tcp_nodelay);
             client_channel.connect(new InetSocketAddress(host, port));
-            receiver_thread=new Receiver();
+            Thread receiver_thread=factory.newThread(new Receiver(), "receiver");
             receiver_thread.start();
         }
     }
@@ -116,7 +118,7 @@ public class NioTransport extends RtTransport {
         }
     }
 
-    protected class Receiver extends Thread {
+    protected class Receiver implements Runnable {
 
         public void run() {
             ByteBuffer buf=createBuffer(round_trip.size());

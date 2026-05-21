@@ -4,6 +4,8 @@ import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.tests.rt.RtReceiver;
 import org.jgroups.tests.rt.RtTransport;
+import org.jgroups.util.DefaultThreadFactory;
+import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.Util;
 
 import java.io.*;
@@ -18,18 +20,18 @@ import java.util.concurrent.locks.ReentrantLock;
 import static java.lang.System.out;
 
 public class TcpTransport extends RtTransport {
-    protected ServerSocket      srv_sock;
-    protected Socket            sock;
-    protected DataOutputStream  output;
-    protected DataInputStream   input;
-    protected Receiver          receiver_thread;
-    protected RtReceiver        receiver;
-    protected InetAddress       host;
-    protected int               port=7800;
-    protected int               out_buf_size=8192, in_buf_size=8192;
-    protected boolean           server, tcp_nodelay;
-    protected final Log         log=LogFactory.getLog(TcpTransport.class);
-    protected final Lock        lock=new ReentrantLock();
+    protected ServerSocket        srv_sock;
+    protected Socket              sock;
+    protected DataOutputStream    output;
+    protected DataInputStream     input;
+    protected RtReceiver          receiver;
+    protected InetAddress         host;
+    protected int                 port=7800;
+    protected int                 out_buf_size=8192, in_buf_size=8192;
+    protected boolean             server, tcp_nodelay;
+    protected final Log           log=LogFactory.getLog(TcpTransport.class);
+    protected final Lock          lock=new ReentrantLock();
+    protected final ThreadFactory factory=new DefaultThreadFactory("receiver", true, true).useVirtualThreads(true);
 
 
     public TcpTransport() {
@@ -79,7 +81,7 @@ public class TcpTransport extends RtTransport {
                 s.setTcpNoDelay(tcp_nodelay); // we're concerned about latency
                 input=createInput(s, in_buf_size);
                 output=createOutput(s, out_buf_size);
-                receiver_thread=new Receiver(input);
+                Thread receiver_thread=factory.newThread(new Receiver(this.input), "receiver");
                 receiver_thread.start();
             }
         }
@@ -89,7 +91,7 @@ public class TcpTransport extends RtTransport {
             sock.connect(new InetSocketAddress(host, port));
             input=createInput(sock, in_buf_size);
             output=createOutput(sock, out_buf_size);
-            receiver_thread=new Receiver(input);
+            Thread receiver_thread=factory.newThread(new Receiver(this.input), "receiver");
             receiver_thread.start();
         }
     }
@@ -118,7 +120,7 @@ public class TcpTransport extends RtTransport {
         return new DataInputStream(size > 0? new BufferedInputStream(s.getInputStream(), size) : s.getInputStream());
     }
 
-    protected class Receiver extends Thread {
+    protected class Receiver implements Runnable {
         protected final DataInputStream in;
 
         public Receiver(DataInputStream in) {
