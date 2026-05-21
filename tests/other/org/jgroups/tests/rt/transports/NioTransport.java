@@ -6,11 +6,12 @@ import org.jgroups.tests.rt.RtReceiver;
 import org.jgroups.tests.rt.RtTransport;
 import org.jgroups.util.Util;
 
+import java.io.EOFException;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.List;
@@ -123,21 +124,13 @@ public class NioTransport extends RtTransport {
             for(;;) {
                 try {
                     length_buf.clear();
-                    int num=client_channel.read(length_buf);
-                    if(num == -1)
-                        break;
-                    if(num != 4)
-                        throw new IllegalStateException("expected length (4 bytes), but received " + num);
+                    readFully(client_channel, 4, length_buf);
                     int length=length_buf.getInt(0);
                     if(length > buf.capacity())
                         buf=createBuffer(length);
                     buf.position(0).limit(length);
-                    num=client_channel.read(buf);
-                    if(num == -1)
-                        break;
+                    readFully(client_channel, length, buf);
                     buf.flip();
-                    if(num != length)
-                        throw new IllegalStateException("expected " + length + " bytes, but got only " + num);
                     if(receiver != null) {
                         int offset=buf.hasArray()? buf.arrayOffset() + buf.position() : buf.position(), len=buf.remaining();
                         if(buf.hasArray())
@@ -146,7 +139,7 @@ public class NioTransport extends RtTransport {
                             receiver.receive(null, buf);
                     }
                 }
-                catch(ClosedChannelException cce) {
+                catch(IOException cce) {
                     break;
                 }
                 catch(Exception e) {
@@ -155,6 +148,18 @@ public class NioTransport extends RtTransport {
             }
             Util.close(client_channel);
         }
+    }
+
+    protected static int readFully(SocketChannel ch, int expected, ByteBuffer buf) throws IOException {
+        int read=0;
+        do {
+            int tmp=ch.read(buf);
+            if(tmp == -1)
+                throw new EOFException();
+            read+=tmp;
+        }
+        while(read < expected);
+        return read;
     }
 
     protected ByteBuffer createBuffer(int size) {
