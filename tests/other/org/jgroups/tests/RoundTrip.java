@@ -75,12 +75,13 @@ public class RoundTrip implements RtReceiver {
         tp=create(transport).roundTrip(this).receiver(this);
         this.direct_memory=direct_memory;
 
-        boolean create_rsp_buffer=!(tp instanceof JGroupsTransport)
-          || ((JGroupsTransport)tp).channel().stack().getTransport().getBundler() instanceof NoBundler;
-        if(create_rsp_buffer)
-            rsp_buffer=createBuffer(METADATA_SIZE, direct_memory);
+
         try {
             tp.start(args);
+            boolean create_rsp_buffer=!(tp instanceof JGroupsTransport)
+              || ((JGroupsTransport)tp).channel().stack().getTransport().getBundler() instanceof NoBundler;
+            if(create_rsp_buffer)
+                rsp_buffer=createBuffer(METADATA_SIZE, direct_memory);
             loop();
         }
         finally {
