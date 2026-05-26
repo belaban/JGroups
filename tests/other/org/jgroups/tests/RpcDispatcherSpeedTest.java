@@ -1,19 +1,21 @@
 package org.jgroups.tests;
 
 
-import org.jgroups.*;
+import org.jgroups.JChannel;
+import org.jgroups.Message;
+import org.jgroups.Receiver;
+import org.jgroups.View;
 import org.jgroups.blocks.MethodCall;
 import org.jgroups.blocks.RequestOptions;
 import org.jgroups.blocks.ResponseMode;
 import org.jgroups.blocks.RpcDispatcher;
-import org.jgroups.jmx.JmxConfigurator;
-import org.jgroups.util.Average;
+import org.jgroups.util.AverageMinMax;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
 
-import javax.management.MBeanServer;
 import java.lang.reflect.Method;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -24,7 +26,6 @@ public class RpcDispatcherSpeedTest implements Receiver {
     protected JChannel              channel;
     protected RpcDispatcher         disp;
     protected String                props;
-    protected boolean               jmx;
     protected int                   num=5000;
     protected static final Method[] METHODS=new Method[1];
     protected boolean               oob, dont_bundle;
@@ -45,17 +46,9 @@ public class RpcDispatcherSpeedTest implements Receiver {
     }
 
 
-    public void start(String props, boolean jmx, String name) throws Exception {
+    public void start(String props, String name) throws Exception {
         channel=new JChannel(props).name(name);
-        disp=new RpcDispatcher(channel, this) // no concurrent processing on incoming method calls
-          .setReceiver(this).setMethodLookup(id -> METHODS[0]);
-
-        if(jmx) {
-            MBeanServer srv=Util.getMBeanServer();
-            if(srv == null)
-                throw new Exception("No MBeanServers found");
-            JmxConfigurator.registerChannel(channel, srv, "jgroups", channel.getClusterName(), true);
-        }
+        disp=new RpcDispatcher(channel, this).setReceiver(this).setMethodLookup(id -> METHODS[0]);
         channel.connect("rpc-speed-test");
         View view=channel.getView();
         if(view.size() > 2)
@@ -96,8 +89,7 @@ public class RpcDispatcherSpeedTest implements Receiver {
     }
 
     protected void invokeRpcs() throws Exception {
-        Average avg=new Average();
-        long min=Long.MAX_VALUE, max=0;
+        AverageMinMax avg=new AverageMinMax(1024).unit(TimeUnit.NANOSECONDS);
         RequestOptions opts=new RequestOptions(ResponseMode.GET_FIRST, 0).transientFlags(Message.TransientFlag.DONT_LOOPBACK);
         MethodCall call=new MethodCall((short)0);
         int print=num/10;
@@ -116,18 +108,15 @@ public class RpcDispatcherSpeedTest implements Receiver {
         for(int i=0; i < num; i++) {
             long start=System.nanoTime();
             RspList<Void> rsps=disp.callRemoteMethods(null, call, opts);
-            long time_ns=System.nanoTime() - start;
+            long time=System.nanoTime() - start;
             if(i > 0 && i % print == 0)
                 System.out.print(".");
             boolean all_received=rsps.values().stream().allMatch(Rsp::wasReceived);
             if(!all_received)
                 System.err.printf("didn't receive all responses: %s\n", rsps);
-            avg.add(time_ns);
-            min=Math.min(min, time_ns);
-            max=Math.max(max, time_ns);
+            avg.add(time);
         }
-        System.out.println("");
-        System.out.printf("\nround-trip = min/avg/max: %.2f / %.2f / %.2f us\n\n", min/1000.0, avg.average() / 1000.0, max/1000.0);
+        System.out.printf("\\nnround-trip = %s\n\n", avg);
     }
 
 
@@ -141,15 +130,10 @@ public class RpcDispatcherSpeedTest implements Receiver {
 
     public static void main(String[] args) throws Exception {
         String                 props=null, name=null;
-        boolean                jmx=false;
 
         for(int i=0; i < args.length; i++) {
             if("-props".equals(args[i])) {
                 props=args[++i];
-                continue;
-            }
-            if("-jmx".equals(args[i])) {
-                jmx=true;
                 continue;
             }
             if("-name".equals(args[i])) {
@@ -161,10 +145,10 @@ public class RpcDispatcherSpeedTest implements Receiver {
         }
 
         RpcDispatcherSpeedTest test=new RpcDispatcherSpeedTest();
-        test.start(props, jmx, name);
+        test.start(props, name);
     }
 
     static void help() {
-        System.out.println("RpcDispatcherSpeedTest [-help] [-props <props>] [-name name] [-jmx]");
+        System.out.println("RpcDispatcherSpeedTest [-help] [-props <props>] [-name name]");
     }
 }
