@@ -17,7 +17,7 @@ public class ServerTransport extends RtTransport implements Receiver {
     protected RtReceiver   receiver;
     protected InetAddress  host;
     protected int          port=7800;
-    protected boolean      server, nio, tcp_nodelay;
+    protected boolean      server, nio, tcp_nodelay=true;
     protected int          out_buf_size=8192, in_buf_size=8192;
     protected final Log    log=LogFactory.getLog(ServerTransport.class);
 

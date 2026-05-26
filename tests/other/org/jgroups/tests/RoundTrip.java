@@ -75,12 +75,13 @@ public class RoundTrip implements RtReceiver {
         tp=create(transport).roundTrip(this).receiver(this);
         this.direct_memory=direct_memory;
 
-        boolean create_rsp_buffer=!(tp instanceof JGroupsTransport)
-          || ((JGroupsTransport)tp).channel().stack().getTransport().getBundler() instanceof NoBundler;
-        if(create_rsp_buffer)
-            rsp_buffer=createBuffer(METADATA_SIZE, direct_memory);
+
         try {
             tp.start(args);
+            boolean create_rsp_buffer=!(tp instanceof JGroupsTransport)
+              || ((JGroupsTransport)tp).channel().stack().getTransport().getBundler() instanceof NoBundler;
+            if(create_rsp_buffer)
+                rsp_buffer=createBuffer(METADATA_SIZE, direct_memory);
             loop();
         }
         finally {
@@ -202,7 +203,7 @@ public class RoundTrip implements RtReceiver {
             sender_threads[i]=thread_factory.newThread(senders[i], "sender=" + i);
             sender_threads[i].start();
         }
-        System.out.printf("-- sending %d messages to %s\n", num_msgs, target);
+        System.out.printf("-- sending %,d messages to %s\n", num_msgs, target);
         long start=System.nanoTime();
         latch.countDown(); // start all sender threads
         for(Thread t: sender_threads)
