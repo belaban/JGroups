@@ -10,6 +10,7 @@ import org.jgroups.util.Util;
 
 import java.lang.reflect.Method;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
@@ -63,6 +64,7 @@ public class RoundTripRpc implements Receiver {
     protected void loop() {
         boolean looping=true;
         while(looping) {
+            @SuppressWarnings("TextBlockMigration")
             int c=Util.keyPress(String.format("[1] send [2] num_msgs (%d) [3] senders (%d)\n" +
                                                 "[o] oob (%b) [b] dont_bundle (%b) [d] details (%b) [x] exit\n",
                                               num_msgs, num_senders, oob, dont_bundle, details));
@@ -123,24 +125,18 @@ public class RoundTripRpc implements Receiver {
 
         AverageMinMax avg=null;
         if(details)
-            System.out.println("");
+            System.out.println();
         for(Invoker invoker : invokers) {
             if(details)
-                System.out.printf("%d: %s\n", invoker.id, print(invoker.avg));
+                System.out.printf("RTT %d: %s\n", invoker.id, invoker.avg);
             if(avg == null)
                 avg=invoker.avg;
             else
                 avg.merge(invoker.avg);
         }
 
-        System.out.printf(Util.bold("\n\nreqs/sec = %.2f, " +
-                                      "round-trip = min/avg/max: %.2f / %.2f / %.2f us\n\n"),
-                          msgs_sec, avg.min()/1000.0, avg.average() / 1000.0, avg.max()/1000.0);
-    }
-
-    protected static String print(AverageMinMax avg) {
-        return String.format("round-trip min/avg/max = %.2f / %.2f / %.2f us",
-                             avg.min() / 1000.0, avg.average() / 1000.0, avg.max() / 1000.0);
+        //noinspection TextBlockMigration
+        System.out.printf(Util.bold("\n\nreqs/sec = %.2f, round-trip = %s\n\n"), msgs_sec, avg);
     }
 
 
@@ -150,7 +146,7 @@ public class RoundTripRpc implements Receiver {
         protected final AtomicInteger    sent_msgs; // current number of messages; senders stop if sent_msgs >= num_msgs
         protected final int              print;
         protected final Address          target;
-        protected final AverageMinMax    avg=new AverageMinMax(); // in ns
+        protected final AverageMinMax    avg=new AverageMinMax(1024).unit(TimeUnit.NANOSECONDS);
 
         public Invoker(short id, CountDownLatch latch, AtomicInteger sent_msgs, Address target) {
             this.id=id;
