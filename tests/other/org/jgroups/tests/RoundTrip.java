@@ -203,7 +203,7 @@ public class RoundTrip implements RtReceiver {
             sender_threads[i]=thread_factory.newThread(senders[i], "sender=" + i);
             sender_threads[i].start();
         }
-        System.out.printf("-- sending %d messages to %s\n", num_msgs, target);
+        System.out.printf("-- sending %,d messages to %s\n", num_msgs, target);
         long start=System.nanoTime();
         latch.countDown(); // start all sender threads
         for(Thread t: sender_threads)
