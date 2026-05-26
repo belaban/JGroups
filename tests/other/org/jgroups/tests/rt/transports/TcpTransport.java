@@ -28,7 +28,7 @@ public class TcpTransport extends RtTransport {
     protected InetAddress         host;
     protected int                 port=7800;
     protected int                 out_buf_size=8192, in_buf_size=8192;
-    protected boolean             server, tcp_nodelay;
+    protected boolean             server, tcp_nodelay=true;
     protected final Log           log=LogFactory.getLog(TcpTransport.class);
     protected final Lock          lock=new ReentrantLock();
     protected final ThreadFactory factory=new DefaultThreadFactory("receiver", true, true).useVirtualThreads(true);

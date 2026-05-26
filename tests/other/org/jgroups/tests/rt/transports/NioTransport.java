@@ -27,7 +27,7 @@ public class NioTransport extends RtTransport {
     protected RtReceiver          receiver;
     protected InetAddress         host;
     protected int                 port=7800;
-    protected boolean             server, tcp_nodelay, direct_buffers=true; // use direct memory to receive msgs
+    protected boolean             server, tcp_nodelay=true, direct_buffers=true; // use direct memory to receive msgs
     protected final Log           log=LogFactory.getLog(NioTransport.class);
     protected ByteBuffer          send_length_buf;
     protected final Lock          lock=new ReentrantLock();

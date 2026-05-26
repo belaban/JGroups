@@ -147,7 +147,7 @@ public class RoundTrip implements RtReceiver {
         boolean looping=true;
         while(looping) {
             int c=Util.keyPress(String.format("""
-                                                [1] send [2] num_msgs (%d) [3] senders (%d) [4] size (%s)
+                                                [1] send [2] num_msgs (%,d) [3] senders (%d) [4] size (%s)
                                                 [d] details (%b) [x] exit [X] exit all
                                                 """, num_msgs, num_senders, Util.printBytes(size), details));
             try {
