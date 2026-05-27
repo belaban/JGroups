@@ -28,11 +28,12 @@ public class NioTransport extends RtTransport {
     protected InetAddress         host;
     protected int                 port=7800;
     protected boolean             server, tcp_nodelay=true, direct_buffers=true; // use direct memory to receive msgs
+    protected boolean             vthreads=true;
     protected final Log           log=LogFactory.getLog(NioTransport.class);
     protected ByteBuffer          send_length_buf;
     protected ByteBuffer[]        buffers;
     protected final Lock          lock=new ReentrantLock();
-    protected final ThreadFactory factory=new DefaultThreadFactory("receiver", false, true).useVirtualThreads(true);
+    protected ThreadFactory       factory;
 
 
     public NioTransport() {
@@ -40,8 +41,7 @@ public class NioTransport extends RtTransport {
 
     public String[] options() {
         return new String[]{"-host <host>", "-port <port>", "-server",
-          "-direct <boolean>",
-          "-tcp-nodelay <boolean>"};
+          "-direct <boolean>", "-tcp-nodelay <boolean>", "-vthreads <boolean>"};
     }
 
     public NioTransport options(String... options) throws Exception {
@@ -54,6 +54,7 @@ public class NioTransport extends RtTransport {
                 case "-port" ->        port=Integer.parseInt(options[++i]);
                 case "-tcp-nodelay" -> tcp_nodelay=Boolean.parseBoolean(options[++i]);
                 case "-direct" ->      direct_buffers=Boolean.parseBoolean(options[++i]);
+                case "-vthreads" ->    vthreads=Boolean.parseBoolean(options[++i]);
             }
         }
         if(host == null)
@@ -74,6 +75,7 @@ public class NioTransport extends RtTransport {
 
     public void start(String ... options) throws Exception {
         options(options);
+        factory=new DefaultThreadFactory("receiver", false, true).useVirtualThreads(vthreads);
         send_length_buf=direct_buffers? ByteBuffer.allocateDirect(4) : ByteBuffer.allocate(4);
         buffers=new ByteBuffer[]{send_length_buf, null};
         if(server) { // simple single threaded server, can only handle a single connection at a time

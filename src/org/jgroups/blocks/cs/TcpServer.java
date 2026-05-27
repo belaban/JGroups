@@ -31,11 +31,13 @@ public class TcpServer extends TcpBaseServer {
      * @throws Exception Thrown if the creation failed
      */
     public TcpServer(InetAddress bind_addr, int port) throws Exception {
-        this(new DefaultThreadFactory("tcp", false),
-             new DefaultSocketFactory(), bind_addr, port, port+50, null, 0, 0);
+        this(bind_addr, port, true);
     }
 
-
+    public TcpServer(InetAddress bind_addr, int port, boolean vthreads) throws Exception {
+        this(new DefaultThreadFactory("tcp", false).useVirtualThreads(vthreads),
+             new DefaultSocketFactory(), bind_addr, port, port+50, null, 0, 0);
+    }
 
     public TcpServer(ThreadFactory thread_factory, SocketFactory socket_factory,
                      InetAddress bind_addr, int srv_port, int end_port,

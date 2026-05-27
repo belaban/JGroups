@@ -45,7 +45,11 @@ public class NioClient extends NioBaseServer implements Client {
      * @param server_port The port of the server to connect to.
     */
     public NioClient(InetAddress bind_addr, int bind_port, InetAddress server_addr, int server_port) {
-        super(new DefaultThreadFactory("nio", false), new DefaultSocketFactory(), 0);
+        this(bind_addr, bind_port, server_addr, server_port, true);
+    }
+
+    public NioClient(InetAddress bind_addr, int bind_port, InetAddress server_addr, int server_port, boolean vthreads) {
+        super(new DefaultThreadFactory("nio", false).useVirtualThreads(vthreads), new DefaultSocketFactory(), 0);
         clientBindAddress(bind_addr).clientBindPort(bind_port);
         this.remote_addr=new IpAddress(server_addr, server_port);
     }

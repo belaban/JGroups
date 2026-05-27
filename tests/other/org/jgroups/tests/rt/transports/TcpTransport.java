@@ -28,10 +28,10 @@ public class TcpTransport extends RtTransport {
     protected InetAddress         host;
     protected int                 port=7800;
     protected int                 out_buf_size=8192, in_buf_size=8192;
-    protected boolean             server, tcp_nodelay=true;
+    protected boolean             server, tcp_nodelay=true, vthreads=true;
     protected final Log           log=LogFactory.getLog(TcpTransport.class);
     protected final Lock          lock=new ReentrantLock();
-    protected final ThreadFactory factory=new DefaultThreadFactory("receiver", true, true).useVirtualThreads(true);
+    protected ThreadFactory       factory;
 
 
     public TcpTransport() {
@@ -39,7 +39,8 @@ public class TcpTransport extends RtTransport {
 
     public String[] options() {
         return new String[]
-          {"-host <host>", "-port <port>", "-server", "-tcp-nodelay <boolean>", "-outbuf <size>", "-inbuf <size>"};
+          {"-host <host>", "-port <port>", "-server", "-tcp-nodelay <boolean>",
+            "-outbuf <size>", "-inbuf <size>", "-vthreads <boolean>"};
     }
 
     public TcpTransport options(String... options) throws Exception {
@@ -53,6 +54,7 @@ public class TcpTransport extends RtTransport {
                 case "-tcp-nodelay" -> tcp_nodelay=Boolean.parseBoolean(options[++i]);
                 case "-outbuf" ->      out_buf_size=Integer.parseInt(options[++i]);
                 case "-inbuf" ->       in_buf_size=Integer.parseInt(options[++i]);
+                case "-vthreads" ->    vthreads=Boolean.parseBoolean(options[++i]);
             }
         }
         if(host == null)
@@ -73,6 +75,7 @@ public class TcpTransport extends RtTransport {
 
     public void start(String ... options) throws Exception {
         options(options);
+        factory=new DefaultThreadFactory("receiver", true, true).useVirtualThreads(vthreads);
         if(server) { // simple single threaded server, can only handle a single connection at a time
             srv_sock=new ServerSocket(port, 50, host);
             out.println("server started (ctrl-c to kill)");

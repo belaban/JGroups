@@ -35,11 +35,13 @@ public class NioServer extends NioBaseServer {
      * @throws Exception Thrown if the creation failed
      */
     public NioServer(InetAddress bind_addr, int port) throws Exception {
-        this(new DefaultThreadFactory("nio", false), new DefaultSocketFactory(),
-             bind_addr, port, port+50, null, 0, 0);
+        this(bind_addr, port, true);
     }
 
-
+    public NioServer(InetAddress bind_addr, int port, boolean vthreads) throws Exception {
+        this(new DefaultThreadFactory("nio", false).useVirtualThreads(vthreads), new DefaultSocketFactory(),
+             bind_addr, port, port+50, null, 0, 0);
+    }
 
     public NioServer(ThreadFactory thread_factory, SocketFactory socket_factory, InetAddress bind_addr, int srv_port, int end_port,
                      InetAddress external_addr, int external_port, int recv_buf_size) throws Exception {
