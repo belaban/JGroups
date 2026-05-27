@@ -30,6 +30,7 @@ public class NioTransport extends RtTransport {
     protected boolean             server, tcp_nodelay=true, direct_buffers=true; // use direct memory to receive msgs
     protected final Log           log=LogFactory.getLog(NioTransport.class);
     protected ByteBuffer          send_length_buf;
+    protected ByteBuffer[]        buffers;
     protected final Lock          lock=new ReentrantLock();
     protected final ThreadFactory factory=new DefaultThreadFactory("receiver", false, true).useVirtualThreads(true);
 
@@ -74,6 +75,7 @@ public class NioTransport extends RtTransport {
     public void start(String ... options) throws Exception {
         options(options);
         send_length_buf=direct_buffers? ByteBuffer.allocateDirect(4) : ByteBuffer.allocate(4);
+        buffers=new ByteBuffer[]{send_length_buf, null};
         if(server) { // simple single threaded server, can only handle a single connection at a time
             srv_channel=ServerSocketChannel.open();
             srv_channel.bind(new InetSocketAddress(host, port), 50);
@@ -109,8 +111,8 @@ public class NioTransport extends RtTransport {
         try {
             int length=buf.remaining();
             send_length_buf.putInt(0, length);
-            client_channel.write(send_length_buf);
-            client_channel.write(buf);
+            buffers[1]=buf;
+            client_channel.write(buffers);
         }
         finally {
             send_length_buf.clear();
