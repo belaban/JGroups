@@ -75,7 +75,7 @@ public class ServerTransport extends RtTransport implements Receiver {
         }
         else {
             srv=nio? new NioClient(null, 0, host, port) : new TcpClient(null, 0, host, port);
-            srv.tcpNodelay(false).receiver(this);
+            srv.tcpNodelay(tcp_nodelay).receiver(this);
             if(srv instanceof TcpBaseServer)
                 ((TcpBaseServer)srv).setBufferedOutputStreamSize(out_buf_size).setBufferedInputStreamSize(in_buf_size);
             srv.start();
