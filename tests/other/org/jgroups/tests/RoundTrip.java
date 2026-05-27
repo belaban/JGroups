@@ -70,8 +70,8 @@ public class RoundTrip implements RtReceiver {
         return Byte.BYTES + Short.BYTES + size;
     }
 
-    protected void start(String transport, boolean direct_memory, String[] args) throws Exception {
-        thread_factory=new DefaultThreadFactory("sender", false, true).useVirtualThreads(true);
+    protected void start(String transport, boolean direct_memory, boolean use_vthreads, String[] args) throws Exception {
+        thread_factory=new DefaultThreadFactory("sender", false, true).useVirtualThreads(use_vthreads);
         tp=create(transport).roundTrip(this).receiver(this);
         this.direct_memory=direct_memory;
 
@@ -299,11 +299,12 @@ public class RoundTrip implements RtReceiver {
 
     public static void main(String[] args) throws Exception {
         String tp="jg";
-        boolean direct_memory=false;
+        boolean direct_memory=false, use_vthreads=true;
         for(int i=0; i < args.length; i++) {
             switch(args[i]) {
                 case "-tp" -> tp=args[++i];
                 case "-direct-memory" -> direct_memory=Boolean.parseBoolean(args[++i]);
+                case "-use-vthreads" -> use_vthreads=Boolean.parseBoolean(args[++i]);
                 case "-h" -> {
                     help(tp);
                     return;
@@ -315,7 +316,7 @@ public class RoundTrip implements RtReceiver {
         if(opts != null) {
             for(int i=0; i < args.length; i++) {
                 if(args[i].equals("-tp") || args[i].equals("-h")
-                  || !args[i].startsWith("-") || args[i].startsWith("-direct-memory"))
+                  || !args[i].startsWith("-") || args[i].startsWith("-direct-memory") || args[i].startsWith("-use-vthreads"))
                     continue;
                 String option=args[i];
                 boolean match=false;
@@ -331,7 +332,7 @@ public class RoundTrip implements RtReceiver {
                 }
             }
         }
-        new RoundTrip().start(tp, direct_memory, args);
+        new RoundTrip().start(tp, direct_memory, use_vthreads, args);
     }
 
 
@@ -343,9 +344,11 @@ public class RoundTrip implements RtReceiver {
         catch(Exception e) {
         }
         System.out.println();
-        System.out.printf("%s [-tp classname | (%s)]\n%s[-direct-memory <boolean> (%s uses direct memory to send)]\n%s%s\n\n",
+        System.out.printf("%s [-tp classname | (%s)]\n%s[-direct-memory <boolean> (%s uses direct memory to send)]" +
+                            "\n%s[-use-vthreads <boolean>] (for RT sender threads)\n%s%s\n\n",
                           RoundTrip.class.getSimpleName(), availableTransports(),
                           " ".repeat(10), RoundTrip.class.getSimpleName(),
+                          " ".repeat(10),
                           " ".repeat(10),
                           tp != null? printOptions(tp.options()) : "");
     }
