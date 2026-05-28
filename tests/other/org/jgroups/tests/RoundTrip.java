@@ -343,8 +343,8 @@ public class RoundTrip implements RtReceiver {
         }
         catch(Exception e) {
         }
-        System.out.println();
-        System.out.printf("%s [-tp classname | (%s)]\n%s[-direct-memory <boolean> (%s uses direct memory to send)]" +
+        //noinspection TextBlockMigration
+        System.out.printf("\n%s [-tp classname | (%s)]\n%s[-direct-memory <boolean> (%s uses direct memory to send)]" +
                             "\n%s[-use-vthreads <boolean>] (for RT sender threads)\n%s%s\n\n",
                           RoundTrip.class.getSimpleName(), availableTransports(),
                           " ".repeat(10), RoundTrip.class.getSimpleName(),
