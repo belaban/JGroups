@@ -12,7 +12,7 @@ import static org.jgroups.util.Util.printTime;
  * @since  5.2.13
  */
 public class Profiler {
-    protected final AverageMinMax    avg=new AverageMinMax(1024).unit(NANOSECONDS);
+    protected final AverageMinMax    avg=new AverageMinMax(2048).unit(NANOSECONDS);
     protected final Map<Thread,Long> threads=new ConcurrentHashMap<>();
     protected boolean                print_details=true;
     protected boolean                enabled=true;
@@ -53,8 +53,7 @@ public class Profiler {
     public String toString() {
         if(avg.count() == 0)
             return "n/a";
-        return print_details? String.format("min/avg/max=%s/%s/%s", printTime(avg.min(), NANOSECONDS),
-                                            printTime(avg.average(), NANOSECONDS), printTime(avg.max(), NANOSECONDS))
+        return print_details? String.format("%s", avg)
           : String.format("avg=%s", printTime(avg.average(), NANOSECONDS));
     }
 }
