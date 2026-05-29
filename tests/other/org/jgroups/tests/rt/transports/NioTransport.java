@@ -76,7 +76,7 @@ public class NioTransport extends RtTransport {
     public void start(String ... options) throws Exception {
         options(options);
         factory=new DefaultThreadFactory("receiver", false, true).useVirtualThreads(vthreads);
-        send_length_buf=direct_buffers? ByteBuffer.allocateDirect(4) : ByteBuffer.allocate(4);
+        send_length_buf=createBuffer(4);
         buffers=new ByteBuffer[]{send_length_buf, null};
         if(server) { // simple single threaded server, can only handle a single connection at a time
             srv_channel=ServerSocketChannel.open();
