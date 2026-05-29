@@ -53,7 +53,7 @@ FLAGS="-server -Xmx1G -Xms500m -XX:+HeapDumpOnOutOfMemoryError -Djava.net.prefer
 #DEBUG="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5000"
 
 # SSL_FLAGS="-Djavax.net.debug=ssl:handshake"
-#Z1="-XX:+UseZGC -XX:+ZGenerational"
+#Z1="-XX:+UseZGC"
 
 # Dump with jcmd <pid> Thread.dump_to_file <filename>
 # DUMP_VTHREADS=-Djdk.trackAllThreads=true
