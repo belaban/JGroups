@@ -18,10 +18,10 @@ fi
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 LIB=`dirname $SCRIPT_DIR`/lib
-BM_OPTS="-Dorg.jboss.byteman.compile.to.bytecode=true"
+BM_OPTS="-Dorg.jboss.byteman.compile.to.bytecode=true -Dorg.jboss.byteman.transform.all"
 
 shift
 shift
 
 
-jgroups.sh -javaagent:$LIB/byteman.jar=script:$SCRIPT $BM_OPTS $PGM $*
+jgroups.sh -javaagent:$LIB/byteman.jar=script:$SCRIPT,boot:$LIB/byteman.jar $BM_OPTS $PGM $*
