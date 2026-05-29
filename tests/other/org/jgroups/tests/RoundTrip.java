@@ -39,8 +39,7 @@ public class RoundTrip implements RtReceiver {
     // | DONE |
     // | EXIT |
     protected static final byte               REQ=1, RSP=2, DONE=3, EXIT=4;
-    protected static final ByteBuffer         DONE_BUF;
-    protected static final ByteBuffer         EXIT_BUF;
+    protected ByteBuffer                      done_buf, exit_buf;
     protected static final int                METADATA_SIZE=Byte.BYTES + Short.BYTES;
     protected Sender[]                        senders;
     protected Thread[]                        sender_threads;
@@ -62,8 +61,6 @@ public class RoundTrip implements RtReceiver {
         TRANSPORTS.put("nio",     NioTransport.class.getName());
         TRANSPORTS.put("server",  ServerTransport.class.getName());
         TRANSPORTS.put("udp",     UdpTransport.class.getName());
-        DONE_BUF=ByteBuffer.allocate(1).put(0, DONE);
-        EXIT_BUF=java.nio.ByteBuffer.allocate(1).put(0, EXIT);
     }
 
     public int size() {
@@ -82,6 +79,8 @@ public class RoundTrip implements RtReceiver {
               || ((JGroupsTransport)tp).channel().stack().getTransport().getBundler() instanceof NoBundler;
             if(create_rsp_buffer)
                 rsp_buffer=createBuffer(METADATA_SIZE, direct_memory);
+            done_buf=createBuffer(1, direct_memory).put(0, DONE);
+            exit_buf=createBuffer(1, direct_memory).put(0, EXIT);
             loop();
         }
         finally {
@@ -172,8 +171,8 @@ public class RoundTrip implements RtReceiver {
                         looping=false;
                         break;
                     case 'X':
-                        tp.send(null, EXIT_BUF);
-                        EXIT_BUF.clear(); // not really needed...
+                        tp.send(null, exit_buf);
+                        exit_buf.clear(); // not really needed...
                         looping=false;
                         System.out.println("-- terminated");
                         break;
@@ -210,7 +209,7 @@ public class RoundTrip implements RtReceiver {
             t.join();
         long total_time=System.nanoTime() - start;
 
-        tp.send(target, DONE_BUF.clear());
+        tp.send(target, done_buf.clear());
         double msgs_sec=num_msgs / (total_time / 1_000_000_000.0);
         AverageMinMax avg=null;
         if(details)

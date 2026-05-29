@@ -117,5 +117,6 @@ public class GenerateProfilingScript {
       IF TRUE
          DO stop("%s");
       ENDRULE
+      
       """;
 }
