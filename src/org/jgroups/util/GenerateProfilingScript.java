@@ -74,7 +74,7 @@ public class GenerateProfilingScript {
       ENDRULE
       
       RULE ServerTransport is created
-      CLASS org.jgroups.tests.rt.transports.ServerTransport
+      CLASS ^org.jgroups.tests.rt.RtTransport
       HELPER org.jgroups.util.ProfilingHelper
       METHOD start
       AT ENTRY
@@ -83,7 +83,7 @@ public class GenerateProfilingScript {
       ENDRULE
       
       RULE ServerTransport is destroyed
-      CLASS org.jgroups.tests.rt.transports.ServerTransport
+      CLASS ^org.jgroups.tests.rt.RtTransport
       HELPER org.jgroups.util.ProfilingHelper
       METHOD stop
       AT ENTRY

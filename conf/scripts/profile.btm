@@ -11,7 +11,7 @@ IF TRUE
 ENDRULE
 
 RULE ServerTransport is created
-CLASS org.jgroups.tests.rt.transports.ServerTransport
+CLASS ^org.jgroups.tests.rt.RtTransport
 HELPER org.jgroups.util.ProfilingHelper
 METHOD start
 AT ENTRY
@@ -19,9 +19,8 @@ IF TRUE
    DO createDiag();
 ENDRULE
 
-
 RULE ServerTransport is destroyed
-CLASS org.jgroups.tests.rt.transports.ServerTransport
+CLASS ^org.jgroups.tests.rt.RtTransport
 HELPER org.jgroups.util.ProfilingHelper
 METHOD stop
 AT ENTRY
@@ -29,22 +28,22 @@ IF TRUE
    DO destroyDiag();
 ENDRULE
 
-RULE TcpConnection.flush start
-INTERFACE org.jgroups.tests.rt.RtTransport
+RULE RtTransport.send start
+CLASS org.jgroups.tests.rt.RtTransport
 HELPER org.jgroups.util.ProfilingHelper
 METHOD send
 COMPILE
 AT ENTRY
 IF TRUE
-   DO start("jg.send");
+   DO start("RtTransport.send");
 ENDRULE
 
-RULE TcpConnection.flush stop
-CLASS org.jgroups.protocols.TCP
+RULE RtTransport.send stop
+CLASS org.jgroups.tests.rt.RtTransport
 HELPER org.jgroups.util.ProfilingHelper
 METHOD send
 COMPILE
-AT ENTRY
+AT EXIT
 IF TRUE
-   DO stop("jg.send");
+   DO stop("RtTransport.send");
 ENDRULE
