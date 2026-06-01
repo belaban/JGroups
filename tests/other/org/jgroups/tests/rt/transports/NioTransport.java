@@ -5,6 +5,7 @@ import org.jgroups.logging.LogFactory;
 import org.jgroups.tests.rt.RtReceiver;
 import org.jgroups.tests.rt.RtTransport;
 import org.jgroups.util.DefaultThreadFactory;
+import org.jgroups.util.Runner;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.Util;
 
@@ -34,6 +35,7 @@ public class NioTransport extends RtTransport {
     protected ByteBuffer[]        buffers;
     protected final Lock          lock=new ReentrantLock();
     protected ThreadFactory       factory;
+    protected Runner              acceptor;
 
 
     public NioTransport() {
@@ -82,12 +84,15 @@ public class NioTransport extends RtTransport {
             srv_channel=ServerSocketChannel.open();
             srv_channel.bind(new InetSocketAddress(host, port), 50);
             System.out.println("server started (ctrl-c to kill)");
-            for(;;) {
-                client_channel=srv_channel.accept();
-                client_channel.setOption(StandardSocketOptions.TCP_NODELAY, tcp_nodelay);
-                Thread receiver_thread=factory.newThread(new Receiver(), "receiver");
-                receiver_thread.start();
-            }
+            acceptor=new Runner(factory, "tcp-acceptor", () -> {
+                try {
+                    accept();
+                }
+                catch(IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }, () -> Util.close(srv_channel));
+            acceptor.start();
         }
         else {
             client_channel=SocketChannel.open();
@@ -99,7 +104,7 @@ public class NioTransport extends RtTransport {
     }
 
     public void stop() {
-        Util.close(srv_channel, client_channel);
+        Util.close(srv_channel, client_channel, acceptor);
     }
 
     public void send(Object dest, byte[] buf, int offset, int length) throws Exception {
@@ -120,6 +125,13 @@ public class NioTransport extends RtTransport {
             send_length_buf.clear();
             lock.unlock();
         }
+    }
+
+    protected void accept() throws IOException {
+        client_channel=srv_channel.accept();
+        client_channel.setOption(StandardSocketOptions.TCP_NODELAY, tcp_nodelay);
+        Thread receiver_thread=factory.newThread(new Receiver(), "receiver");
+        receiver_thread.start();
     }
 
     protected class Receiver implements Runnable {

@@ -5,6 +5,7 @@ import org.jgroups.logging.LogFactory;
 import org.jgroups.tests.rt.RtReceiver;
 import org.jgroups.tests.rt.RtTransport;
 import org.jgroups.util.DefaultThreadFactory;
+import org.jgroups.util.Runner;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.Util;
 
@@ -32,6 +33,7 @@ public class TcpTransport extends RtTransport {
     protected final Log           log=LogFactory.getLog(TcpTransport.class);
     protected final Lock          lock=new ReentrantLock();
     protected ThreadFactory       factory;
+    protected Runner              acceptor;
 
 
     public TcpTransport() {
@@ -79,14 +81,15 @@ public class TcpTransport extends RtTransport {
         if(server) { // simple single threaded server, can only handle a single connection at a time
             srv_sock=new ServerSocket(port, 50, host);
             out.println("server started (ctrl-c to kill)");
-            for(;;) {
-                Socket s=srv_sock.accept();
-                s.setTcpNoDelay(tcp_nodelay); // we're concerned about latency
-                input=createInput(s, in_buf_size);
-                output=createOutput(s, out_buf_size);
-                Thread receiver_thread=factory.newThread(new Receiver(this.input), "receiver");
-                receiver_thread.start();
-            }
+            acceptor=new Runner(factory, "tcp-acceptor", () -> {
+                try {
+                    accept();
+                }
+                catch(IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }, () -> Util.close(srv_sock));
+            acceptor.start();
         }
         else {
             sock=new Socket();
@@ -100,7 +103,7 @@ public class TcpTransport extends RtTransport {
     }
 
     public void stop() {
-        Util.close(sock, srv_sock, input, output);
+        Util.close(sock, srv_sock, input, output, acceptor);
     }
 
     public void send(Object dest, byte[] buf, int offset, int length) throws Exception {
@@ -113,6 +116,15 @@ public class TcpTransport extends RtTransport {
         finally {
             lock.unlock();
         }
+    }
+
+    protected void accept() throws IOException {
+        Socket s=srv_sock.accept();
+        s.setTcpNoDelay(tcp_nodelay); // we're concerned about latency
+        input=createInput(s, in_buf_size);
+        output=createOutput(s, out_buf_size);
+        Thread receiver_thread=factory.newThread(new Receiver(this.input), "receiver");
+        receiver_thread.start();
     }
 
     protected static DataOutputStream createOutput(Socket s, int size) throws IOException {

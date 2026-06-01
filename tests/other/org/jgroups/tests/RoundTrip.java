@@ -71,8 +71,6 @@ public class RoundTrip implements RtReceiver {
         thread_factory=new DefaultThreadFactory("sender", false, true).useVirtualThreads(use_vthreads);
         tp=create(transport).roundTrip(this).receiver(this);
         this.direct_memory=direct_memory;
-
-
         try {
             tp.start(args);
             boolean create_rsp_buffer=!(tp instanceof JGroupsTransport)
