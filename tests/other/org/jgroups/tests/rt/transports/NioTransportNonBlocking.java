@@ -22,7 +22,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 
-public class NioTransport extends RtTransport {
+public class NioTransportNonBlocking extends RtTransport {
     protected ServerSocketChannel srv_channel;
     protected SocketChannel       client_channel;
     protected RtReceiver          receiver;
@@ -30,7 +30,7 @@ public class NioTransport extends RtTransport {
     protected int                 port=7800;
     protected boolean             server, tcp_nodelay=true, direct_buffers=true; // use direct memory to receive msgs
     protected boolean             vthreads=true;
-    protected final Log           log=LogFactory.getLog(NioTransport.class);
+    protected final Log           log=LogFactory.getLog(NioTransportNonBlocking.class);
     protected ByteBuffer          send_length_buf;
     protected ByteBuffer[]        buffers;
     protected final Lock          lock=new ReentrantLock();
@@ -38,7 +38,7 @@ public class NioTransport extends RtTransport {
     protected Runner              acceptor;
 
 
-    public NioTransport() {
+    public NioTransportNonBlocking() {
     }
 
     public String[] options() {
@@ -46,7 +46,7 @@ public class NioTransport extends RtTransport {
           "-direct <boolean>", "-tcp-nodelay <boolean>", "-vthreads <boolean>"};
     }
 
-    public NioTransport options(String... options) throws Exception {
+    public NioTransportNonBlocking options(String... options) throws Exception {
         if(options == null)
             return this;
         for(int i=0; i < options.length; i++) {
@@ -64,7 +64,7 @@ public class NioTransport extends RtTransport {
         return this;
     }
 
-    public NioTransport receiver(RtReceiver receiver) {
+    public NioTransportNonBlocking receiver(RtReceiver receiver) {
         this.receiver=receiver;
         return this;
     }
@@ -84,7 +84,7 @@ public class NioTransport extends RtTransport {
             srv_channel=ServerSocketChannel.open();
             srv_channel.bind(new InetSocketAddress(host, port), 50);
             System.out.println("server started (ctrl-c to kill)");
-            acceptor=new Runner(factory, "nio-acceptor", () -> {
+            acceptor=new Runner(factory, "tcp-acceptor", () -> {
                 try {
                     accept();
                 }
@@ -96,9 +96,10 @@ public class NioTransport extends RtTransport {
         }
         else {
             client_channel=SocketChannel.open();
+            client_channel.configureBlocking(false);
             client_channel.setOption(StandardSocketOptions.TCP_NODELAY, tcp_nodelay);
             client_channel.connect(new InetSocketAddress(host, port));
-            Thread receiver_thread=factory.newThread(new Receiver(client_channel), "receiver");
+            Thread receiver_thread=factory.newThread(new Receiver(), "receiver");
             receiver_thread.start();
         }
     }
@@ -128,18 +129,13 @@ public class NioTransport extends RtTransport {
     }
 
     protected void accept() throws IOException {
-        SocketChannel ch=srv_channel.accept();
-        ch.setOption(StandardSocketOptions.TCP_NODELAY, tcp_nodelay);
-        Thread receiver_thread=factory.newThread(new Receiver(ch), "receiver");
+        client_channel=srv_channel.accept();
+        client_channel.setOption(StandardSocketOptions.TCP_NODELAY, tcp_nodelay);
+        Thread receiver_thread=factory.newThread(new Receiver(), "receiver");
         receiver_thread.start();
     }
 
     protected class Receiver implements Runnable {
-        protected final SocketChannel ch;
-
-        protected Receiver(SocketChannel ch) {
-            this.ch=ch;
-        }
 
         public void run() {
             ByteBuffer buf=createBuffer(round_trip.size());
@@ -147,12 +143,12 @@ public class NioTransport extends RtTransport {
             for(;;) {
                 try {
                     length_buf.clear();
-                    readFully(ch, 4, length_buf);
+                    readFully(client_channel, 4, length_buf);
                     int length=length_buf.getInt(0);
                     if(length > buf.capacity())
                         buf=createBuffer(length);
                     buf.position(0).limit(length);
-                    readFully(ch, length, buf);
+                    readFully(client_channel, length, buf);
                     buf.flip();
                     if(receiver != null) {
                         int offset=buf.hasArray()? buf.arrayOffset() + buf.position() : buf.position(), len=buf.remaining();
@@ -169,7 +165,7 @@ public class NioTransport extends RtTransport {
                     e.printStackTrace();
                 }
             }
-            Util.close(ch);
+            Util.close(client_channel);
         }
     }
 

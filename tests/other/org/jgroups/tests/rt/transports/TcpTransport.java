@@ -97,7 +97,7 @@ public class TcpTransport extends RtTransport {
             sock.connect(new InetSocketAddress(host, port));
             input=createInput(sock, in_buf_size);
             output=createOutput(sock, out_buf_size);
-            Thread receiver_thread=factory.newThread(new Receiver(this.input), "receiver");
+            Thread receiver_thread=factory.newThread(new Receiver(sock, this.input), "receiver");
             receiver_thread.start();
         }
     }
@@ -123,7 +123,7 @@ public class TcpTransport extends RtTransport {
         s.setTcpNoDelay(tcp_nodelay); // we're concerned about latency
         input=createInput(s, in_buf_size);
         output=createOutput(s, out_buf_size);
-        Thread receiver_thread=factory.newThread(new Receiver(this.input), "receiver");
+        Thread receiver_thread=factory.newThread(new Receiver(s, this.input), "receiver");
         receiver_thread.start();
     }
 
@@ -136,9 +136,11 @@ public class TcpTransport extends RtTransport {
     }
 
     protected class Receiver implements Runnable {
+        protected final Socket          s;
         protected final DataInputStream in;
 
-        public Receiver(DataInputStream in) {
+        public Receiver(Socket s, DataInputStream in) {
+            this.s=s;
             this.in=in;
         }
 
@@ -160,6 +162,7 @@ public class TcpTransport extends RtTransport {
                     e.printStackTrace();
                 }
             }
+            Util.close(s);
         }
     }
 

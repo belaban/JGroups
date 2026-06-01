@@ -59,6 +59,7 @@ public class RoundTrip implements RtReceiver {
         TRANSPORTS.put("jg",      JGroupsTransport.class.getName());
         TRANSPORTS.put("tcp",     TcpTransport.class.getName());
         TRANSPORTS.put("nio",     NioTransport.class.getName());
+        TRANSPORTS.put("nio-nb", NioTransportNonBlocking.class.getName());
         TRANSPORTS.put("server",  ServerTransport.class.getName());
         TRANSPORTS.put("udp",     UdpTransport.class.getName());
     }
