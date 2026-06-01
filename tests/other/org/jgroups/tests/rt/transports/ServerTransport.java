@@ -10,6 +10,7 @@ import org.jgroups.util.Util;
 
 import java.io.DataInput;
 import java.net.InetAddress;
+import java.nio.ByteBuffer;
 import java.util.List;
 
 public class ServerTransport extends RtTransport implements Receiver {
@@ -89,6 +90,14 @@ public class ServerTransport extends RtTransport implements Receiver {
 
     public void send(Object dest, byte[] buf, int offset, int length) throws Exception {
         srv.send((Address)dest, buf, offset, length);
+    }
+
+    @Override
+    public void send(Object dest, ByteBuffer buf) throws Exception {
+        if(nio)
+            srv.send((Address)dest, buf);
+        else
+            super.send(dest, buf);
     }
 
     public void receive(Address sender, byte[] buf, int offset, int length) {
