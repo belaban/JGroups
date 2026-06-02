@@ -9,17 +9,21 @@ import org.jgroups.util.Runner;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.Util;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import static java.nio.channels.SelectionKey.OP_READ;
 
 
 public class NioTransportNonBlocking extends RtTransport {
@@ -31,11 +35,13 @@ public class NioTransportNonBlocking extends RtTransport {
     protected boolean             server, tcp_nodelay=true, direct_buffers=true; // use direct memory to receive msgs
     protected boolean             vthreads=true;
     protected final Log           log=LogFactory.getLog(NioTransportNonBlocking.class);
-    protected ByteBuffer          send_length_buf;
+    protected ByteBuffer          recv_length, recv_buf;
+    protected ByteBuffer          send_length, send_buf;
     protected ByteBuffer[]        buffers;
     protected final Lock          lock=new ReentrantLock();
     protected ThreadFactory       factory;
-    protected Runner              acceptor;
+    protected Runner              selector_handler;
+    protected Selector            selector;
 
 
     public NioTransportNonBlocking() {
@@ -78,34 +84,39 @@ public class NioTransportNonBlocking extends RtTransport {
     public void start(String ... options) throws Exception {
         options(options);
         factory=new DefaultThreadFactory("receiver", false, true).useVirtualThreads(vthreads);
-        send_length_buf=createBuffer(4);
-        buffers=new ByteBuffer[]{send_length_buf, null};
+        selector=Selector.open();
+        send_length=createBuffer(4);
+        recv_length=createBuffer(4);
+        recv_buf=createBuffer(round_trip.size());
+        send_buf=createBuffer(round_trip.size());
+        buffers=new ByteBuffer[]{send_length, null};
         if(server) { // simple single threaded server, can only handle a single connection at a time
             srv_channel=ServerSocketChannel.open();
             srv_channel.bind(new InetSocketAddress(host, port), 50);
+            srv_channel.configureBlocking(false);
             System.out.println("server started (ctrl-c to kill)");
-            acceptor=new Runner(factory, "tcp-acceptor", () -> {
-                try {
-                    accept();
-                }
-                catch(IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }, () -> Util.close(srv_channel));
-            acceptor.start();
+            srv_channel.register(selector, SelectionKey.OP_ACCEPT);
         }
         else {
             client_channel=SocketChannel.open();
-            client_channel.configureBlocking(false);
             client_channel.setOption(StandardSocketOptions.TCP_NODELAY, tcp_nodelay);
             client_channel.connect(new InetSocketAddress(host, port));
-            Thread receiver_thread=factory.newThread(new Receiver(), "receiver");
-            receiver_thread.start();
+            client_channel.configureBlocking(false);
+            client_channel.register(selector, OP_READ);
         }
+        selector_handler=new Runner(factory, "selector-handler", () -> {
+            try {
+                handleSelector();
+            }
+            catch(IOException e) {
+                throw new RuntimeException(e);
+            }
+        }, () -> Util.close(srv_channel));
+        selector_handler.start();
     }
 
     public void stop() {
-        Util.close(srv_channel, client_channel, acceptor);
+        Util.close(srv_channel, client_channel, selector_handler);
     }
 
     public void send(Object dest, byte[] buf, int offset, int length) throws Exception {
@@ -115,74 +126,100 @@ public class NioTransportNonBlocking extends RtTransport {
 
     @Override
     public void send(Object dest, ByteBuffer buf) throws Exception {
+        write(client_channel, buf);
+    }
+
+    protected void handleSelector() throws IOException {
+        Iterator<SelectionKey> it=null;
+        while(selector.select() >= 0) {
+            try {
+                it=selector.selectedKeys().iterator();
+            }
+            catch(Throwable ex) {
+                continue;
+            }
+
+            while(it.hasNext()) {
+                SelectionKey k=it.next();
+                try {
+                    if(!k.isValid())
+                        continue;
+                    if(k.isAcceptable()) // srv_channel
+                        handleAccept(k);
+                    else {
+                        if(k.isReadable())
+                            read(client_channel, recv_buf);
+                        if(k.isWritable())
+                            write(client_channel, send_buf);
+                    }
+                }
+                catch(Throwable ex) {
+                    ex.printStackTrace();
+                }
+                finally {
+                    if(k.isValid())
+                        it.remove();
+                }
+            }
+        }
+    }
+
+    protected void handleAccept(SelectionKey ignored) throws IOException {
+        client_channel=srv_channel.accept();
+        if(client_channel == null) return; // can happen if no connection is available to accept
+        client_channel.setOption(StandardSocketOptions.TCP_NODELAY, tcp_nodelay);
+        client_channel.configureBlocking(false);
+        client_channel.register(selector, OP_READ);
+    }
+
+    protected boolean read(SocketChannel ch, ByteBuffer buf) throws IOException {
+        int len=0;
+        if(recv_length.remaining() > 0) {
+            ch.read(recv_length);
+            if(recv_length.remaining() > 0)
+                return false;
+            len=recv_length.getInt(0);
+            if(len > buf.capacity())
+                buf=createBuffer(len);
+            buf.position(0).limit(len);
+        }
+        if(buf.remaining() > 0) {
+            ch.read(buf);
+            if(buf.remaining() == 0) {
+                recv_length.clear();
+                if(receiver != null)
+                    receiver.receive(null, buf.flip());
+                return true;
+            }
+        }
+        return false;
+    }
+
+    protected void write(SocketChannel ch, ByteBuffer buf) {
+        int len=buf.remaining();
+        if(len == 0)
+            return;
         lock.lock();
         try {
             int length=buf.remaining();
-            send_length_buf.putInt(0, length);
+            send_length.putInt(0, length);
             buffers[1]=buf;
-            client_channel.write(buffers);
+            long written=ch.write(buffers);
+            if(written != length + send_length.capacity()) {
+                System.err.printf("-- expected to write %d bytes, but wrote %d\n", length + send_length.capacity(), written);
+            }
+        }
+        catch(IOException e) {
+            throw new RuntimeException(e);
         }
         finally {
-            send_length_buf.clear();
+            send_length.clear();
             lock.unlock();
         }
     }
 
-    protected void accept() throws IOException {
-        client_channel=srv_channel.accept();
-        client_channel.setOption(StandardSocketOptions.TCP_NODELAY, tcp_nodelay);
-        Thread receiver_thread=factory.newThread(new Receiver(), "receiver");
-        receiver_thread.start();
-    }
-
-    protected class Receiver implements Runnable {
-
-        public void run() {
-            ByteBuffer buf=createBuffer(round_trip.size());
-            ByteBuffer length_buf=createBuffer(Integer.BYTES);
-            for(;;) {
-                try {
-                    length_buf.clear();
-                    readFully(client_channel, 4, length_buf);
-                    int length=length_buf.getInt(0);
-                    if(length > buf.capacity())
-                        buf=createBuffer(length);
-                    buf.position(0).limit(length);
-                    readFully(client_channel, length, buf);
-                    buf.flip();
-                    if(receiver != null) {
-                        int offset=buf.hasArray()? buf.arrayOffset() + buf.position() : buf.position(), len=buf.remaining();
-                        if(buf.hasArray())
-                            receiver.receive(null, buf.array(), offset, len);
-                        else
-                            receiver.receive(null, buf);
-                    }
-                }
-                catch(IOException cce) {
-                    break;
-                }
-                catch(Exception e) {
-                    e.printStackTrace();
-                }
-            }
-            Util.close(client_channel);
-        }
-    }
-
-    protected static int readFully(SocketChannel ch, int expected, ByteBuffer buf) throws IOException {
-        int read=0;
-        do {
-            int tmp=ch.read(buf);
-            if(tmp == -1)
-                throw new EOFException();
-            read+=tmp;
-        }
-        while(read < expected);
-        return read;
-    }
-
     protected ByteBuffer createBuffer(int size) {
-        return direct_buffers? ByteBuffer.allocateDirect(size) : ByteBuffer.allocate(size);
+        return direct_buffers? ByteBuffer.allocateDirect(size) : java.nio.ByteBuffer.allocate(size);
     }
 
 
