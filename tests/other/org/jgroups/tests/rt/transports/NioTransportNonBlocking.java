@@ -148,7 +148,7 @@ public class NioTransportNonBlocking extends RtTransport {
                     else {
                         if(k.isReadable())
                             read(client_channel, recv_buf);
-                        if(k.isWritable())
+                        if(k.isValid() && k.isWritable())
                             write(client_channel, send_buf);
                     }
                 }
@@ -171,27 +171,31 @@ public class NioTransportNonBlocking extends RtTransport {
         client_channel.register(selector, OP_READ);
     }
 
-    protected boolean read(SocketChannel ch, ByteBuffer buf) throws IOException {
+    protected void read(SocketChannel ch, ByteBuffer buf) throws IOException {
         int len=0;
         if(recv_length.remaining() > 0) {
-            ch.read(recv_length);
-            if(recv_length.remaining() > 0)
-                return false;
+            int read=ch.read(recv_length);
+            if(read == -1 || recv_length.remaining() > 0) {
+                Util.close(ch);
+                return;
+            }
             len=recv_length.getInt(0);
             if(len > buf.capacity())
                 buf=createBuffer(len);
             buf.position(0).limit(len);
         }
         if(buf.remaining() > 0) {
-            ch.read(buf);
+            int read=ch.read(buf);
+            if(read == -1) {
+                Util.close(ch);
+                return;
+            }
             if(buf.remaining() == 0) {
                 recv_length.clear();
                 if(receiver != null)
                     receiver.receive(null, buf.flip());
-                return true;
             }
         }
-        return false;
     }
 
     protected void write(SocketChannel ch, ByteBuffer buf) {
@@ -204,6 +208,9 @@ public class NioTransportNonBlocking extends RtTransport {
             send_length.putInt(0, length);
             buffers[1]=buf;
             long written=ch.write(buffers);
+
+            // todo: queue send buffer(s) and register OP_WRITE with the selector
+
             if(written != length + send_length.capacity()) {
                 System.err.printf("-- expected to write %d bytes, but wrote %d\n", length + send_length.capacity(), written);
             }
