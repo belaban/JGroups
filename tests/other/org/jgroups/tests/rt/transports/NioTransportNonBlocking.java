@@ -116,7 +116,7 @@ public class NioTransportNonBlocking extends RtTransport {
     }
 
     public void stop() {
-        Util.close(srv_channel, client_channel, selector_handler);
+        Util.close(srv_channel, client_channel, selector, selector_handler);
     }
 
     public void send(Object dest, byte[] buf, int offset, int length) throws Exception {
