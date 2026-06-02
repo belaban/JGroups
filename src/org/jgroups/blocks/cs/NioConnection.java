@@ -97,7 +97,7 @@ public class NioConnection extends Connection {
 
     public synchronized void registerSelectionKey(int interest_ops) {
         if(key != null && key.isValid())
-            key.interestOps(key.interestOps() | interest_ops);
+            key.interestOpsOr(interest_ops);
     }
 
     public synchronized void clearSelectionKey(int interest_ops) {
