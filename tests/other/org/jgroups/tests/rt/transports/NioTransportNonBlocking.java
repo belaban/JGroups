@@ -138,7 +138,6 @@ public class NioTransportNonBlocking extends RtTransport {
             catch(Throwable ex) {
                 continue;
             }
-
             while(it.hasNext()) {
                 SelectionKey k=it.next();
                 try {
