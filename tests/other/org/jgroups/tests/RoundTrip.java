@@ -301,8 +301,10 @@ public class RoundTrip implements RtReceiver {
         for(int i=0; i < args.length; i++) {
             switch(args[i]) {
                 case "-tp" -> tp=args[++i];
-                case "-direct" -> direct_memory=Boolean.parseBoolean(args[++i]);
-                case "-vthreads" -> vthreads=Boolean.parseBoolean(args[++i]);
+                case "-direct"   -> direct_memory=false;
+                case "+direct"   -> direct_memory=true;
+                case "-vthreads" -> vthreads=false;
+                case "+vthreads" -> vthreads=true;
                 case "-h" -> {
                     help(tp);
                     return;
@@ -314,7 +316,8 @@ public class RoundTrip implements RtReceiver {
         if(opts != null) {
             for(int i=0; i < args.length; i++) {
                 if(args[i].equals("-tp") || args[i].equals("-h")
-                  || !args[i].startsWith("-") || args[i].startsWith("-direct") || args[i].startsWith("-vthreads"))
+                  || !args[i].startsWith("-") || args[i].startsWith("-direct") || args[i].startsWith("+direct")
+                  || args[i].startsWith("-vthreads") || args[i].startsWith("+vthreads"))
                     continue;
                 String option=args[i];
                 boolean match=false;
@@ -342,8 +345,8 @@ public class RoundTrip implements RtReceiver {
         catch(Exception e) {
         }
         //noinspection TextBlockMigration
-        System.out.printf("\n%s [-tp classname | (%s)]\n%s[-direct <boolean> (use direct memory to send/receive)]" +
-                            "\n%s[-vthreads <boolean>]\n%s%s\n\n",
+        System.out.printf("\n%s [-tp classname | (%s)]\n%s[+direct (use direct memory to send/receive)] [-direct]" +
+                            "\n%s[+vthreads] [-vthreads]\n%s%s\n\n",
                           RoundTrip.class.getSimpleName(), availableTransports(),
                           " ".repeat(10),
                           " ".repeat(10),

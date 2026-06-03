@@ -25,7 +25,10 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import static java.nio.channels.SelectionKey.OP_READ;
 
-
+/**
+ * Transport implementation using non-blocking NIO channels. Important: this is only for *one* server and *one*
+ * client; multiple clients would hit non-reentrant code in the server! Reason: used for perftesting only.
+ */
 public class NioTransportNonBlocking extends RtTransport {
     protected ServerSocketChannel srv_channel;
     protected SocketChannel       client_channel;
