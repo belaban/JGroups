@@ -147,7 +147,7 @@ public class NioTransportNonBlocking extends RtTransport {
                         handleAccept(k);
                     else {
                         if(k.isReadable())
-                            read(client_channel, recv_buf);
+                            read(client_channel);
                         if(k.isValid() && k.isWritable())
                             write(client_channel, send_buf);
                     }
@@ -171,7 +171,7 @@ public class NioTransportNonBlocking extends RtTransport {
         client_channel.register(selector, OP_READ);
     }
 
-    protected void read(SocketChannel ch, ByteBuffer buf) {
+    protected void read(SocketChannel ch) {
         int len=0;
         try {
             if(recv_length.remaining() > 0) {
@@ -183,20 +183,20 @@ public class NioTransportNonBlocking extends RtTransport {
                 if(recv_length.remaining() > 0)
                     return;
                 len=recv_length.getInt(0);
-                if(len > buf.capacity())
-                    buf=createBuffer(len);
-                buf.position(0).limit(len);
+                if(len > recv_buf.capacity())
+                    recv_buf=createBuffer(len);
+                recv_buf.position(0).limit(len);
             }
-            if(buf.remaining() > 0) {
-                int read=ch.read(buf);
+            if(recv_buf.remaining() > 0) {
+                int read=ch.read(recv_buf);
                 if(read == -1) {
                     Util.close(ch);
                     return;
                 }
-                if(buf.remaining() == 0) {
+                if(recv_buf.remaining() == 0) {
                     recv_length.clear();
                     if(receiver != null)
-                        receiver.receive(null, buf.flip());
+                        receiver.receive(null, recv_buf.flip());
                 }
             }
         }
