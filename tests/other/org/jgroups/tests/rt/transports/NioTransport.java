@@ -128,9 +128,9 @@ public class NioTransport extends RtTransport {
     }
 
     protected void accept() throws IOException {
-        SocketChannel ch=srv_channel.accept();
-        ch.setOption(StandardSocketOptions.TCP_NODELAY, tcp_nodelay);
-        Thread receiver_thread=factory.newThread(new Receiver(ch), "receiver");
+        client_channel=srv_channel.accept();
+        client_channel.setOption(StandardSocketOptions.TCP_NODELAY, tcp_nodelay);
+        Thread receiver_thread=factory.newThread(new Receiver(client_channel), "receiver");
         receiver_thread.start();
     }
 
