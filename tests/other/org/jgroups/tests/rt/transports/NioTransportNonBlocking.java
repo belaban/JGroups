@@ -216,8 +216,7 @@ public class NioTransportNonBlocking extends RtTransport {
             buffers[1]=buf;
             long written=ch.write(buffers);
 
-            // todo: queue send buffer(s) and register OP_WRITE with the selector
-
+            // todo: queue send buffer(s) and register OP_WRITE with the selector; replace the polling code below
             if(written != length + send_length.capacity()) {
                 System.err.printf("-- expected to write %d bytes, but wrote %d\n", length + send_length.capacity(), written);
                 do {

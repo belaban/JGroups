@@ -300,6 +300,9 @@ public class Buffers implements Iterable<ByteBuffer> {
     /** Copies a ByteBuffer by copying and wrapping the underlying array of a heap-based buffer. Direct buffers
         are converted to heap-based buffers */
     public static ByteBuffer copyBuffer(final ByteBuffer buf) {
+
+        // todo: could be replaced by ByteBuffer.compact()?
+
         ByteBuffer copy = ByteBuffer.allocate(buf.remaining());
         copy.put(buf.duplicate());
         copy.flip();
