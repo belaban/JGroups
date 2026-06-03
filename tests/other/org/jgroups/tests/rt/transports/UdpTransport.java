@@ -41,16 +41,11 @@ public class UdpTransport extends RtTransport {
         if(options == null)
             return this;
         for(int i=0; i < options.length; i++) {
-            if(options[i].equals("-server")) {
-                server=true;
-                continue;
-            }
-            if(options[i].equals("-host")) {
-                host=InetAddress.getByName(options[++i]);
-                continue;
-            }
-            if(options[i].equals("-port")) {
-                port=Integer.parseInt(options[++i]);
+            switch(options[i]) {
+                case "-server" -> server=true;
+                case "-host"   -> host=InetAddress.getByName(options[++i]);
+                case "-port"   -> port=Integer.parseInt(options[++i]);
+                default        -> throw new IllegalArgumentException(String.format("option '%s' not valid", options[i]));
             }
         }
         if(host == null)

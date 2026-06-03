@@ -15,6 +15,7 @@ public class JGroupsTransport extends RtTransport implements Receiver {
     protected RtReceiver   receiver;
     protected View         view;
     protected boolean      oob, dont_bundle, bypass_flowcontrol=true;
+    protected String       props="udp.xml", name;
     protected final Log    log=LogFactory.getLog(JGroupsTransport.class);
 
 
@@ -33,9 +34,12 @@ public class JGroupsTransport extends RtTransport implements Receiver {
             return this;
         for(int i=0; i < options.length; i++) {
             switch(options[i]) {
-                case "-oob" -> oob=Boolean.parseBoolean(options[++i]);
-                case "-dont_bundle" -> dont_bundle=Boolean.parseBoolean(options[++i]);
+                case "-props"              -> props=options[++i];
+                case "-name"                -> name=options[++i];
+                case "-oob"                -> oob=Boolean.parseBoolean(options[++i]);
+                case "-dont_bundle"        -> dont_bundle=Boolean.parseBoolean(options[++i]);
                 case "-bypass_flowcontrol" -> bypass_flowcontrol=Boolean.parseBoolean(options[++i]);
+                default -> throw new IllegalArgumentException(String.format("option '%s' not valid", options[i]));
             }
         }
         return this;
@@ -55,19 +59,7 @@ public class JGroupsTransport extends RtTransport implements Receiver {
     }
 
     public void start(String ... options) throws Exception {
-        String props="udp.xml", name=null;
         options(options);
-        if(options !=null) {
-            for(int i=0; i < options.length; i++) {
-                if(options[i].startsWith("-props")) {
-                    props=options[++i];
-                    continue;
-                }
-                if(options[i].startsWith("-name")) {
-                    name=options[++i];
-                }
-            }
-        }
         ch=new JChannel(props).name(name).receiver(this);
         ch.connect("rt");
         View v=ch.getView();
