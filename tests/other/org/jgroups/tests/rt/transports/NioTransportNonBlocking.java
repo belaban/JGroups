@@ -220,6 +220,14 @@ public class NioTransportNonBlocking extends RtTransport {
 
             if(written != length + send_length.capacity()) {
                 System.err.printf("-- expected to write %d bytes, but wrote %d\n", length + send_length.capacity(), written);
+                do {
+                    long tmp=ch.write(buffers);
+                    if(tmp == -1)
+                        break;
+                    written+=tmp;
+                    Thread.yield();
+                }
+                while(written != length + send_length.capacity());
             }
         }
         catch(IOException e) {
