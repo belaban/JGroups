@@ -176,10 +176,12 @@ public class NioTransportNonBlocking extends RtTransport {
         try {
             if(recv_length.remaining() > 0) {
                 int read=ch.read(recv_length);
-                if(read == -1 || recv_length.remaining() > 0) {
+                if(read == -1) {
                     Util.close(ch);
                     return;
                 }
+                if(recv_length.remaining() > 0)
+                    return;
                 len=recv_length.getInt(0);
                 if(len > buf.capacity())
                     buf=createBuffer(len);
