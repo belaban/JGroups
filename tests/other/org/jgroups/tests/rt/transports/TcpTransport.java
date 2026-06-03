@@ -57,6 +57,7 @@ public class TcpTransport extends RtTransport {
                 case "-tcp-nodelay" -> tcp_nodelay=Boolean.parseBoolean(options[++i]);
                 case "-outbuf" ->      out_buf_size=Integer.parseInt(options[++i]);
                 case "-inbuf" ->       in_buf_size=Integer.parseInt(options[++i]);
+                default -> throw new IllegalArgumentException(String.format("option '%s' not valid", options[i]));
             }
         }
         if(host == null)

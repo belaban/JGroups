@@ -25,23 +25,18 @@ public class JGroupsTransport extends RtTransport implements Receiver {
 
     public String[] options() {
         return new String[]{"-props <props>", "-name <name>", "-oob true|false", "-dont_bundle true|false",
-          "bypass_flowcontrol"};
+          "-bypass_flowcontrol"};
     }
 
     public JGroupsTransport options(String... options) throws Exception {
         if(options == null)
             return this;
         for(int i=0; i < options.length; i++) {
-            if(options[i].startsWith("-oob")) {
-                oob=Boolean.parseBoolean(options[++i]);
-                continue;
+            switch(options[i]) {
+                case "-oob" -> oob=Boolean.parseBoolean(options[++i]);
+                case "-dont_bundle" -> dont_bundle=Boolean.parseBoolean(options[++i]);
+                case "-bypass_flowcontrol" -> bypass_flowcontrol=Boolean.parseBoolean(options[++i]);
             }
-            if(options[i].startsWith("-dont_bundle")) {
-                dont_bundle=Boolean.parseBoolean(options[++i]);
-                continue;
-            }
-            if(options[i].startsWith("bypass_flowcontrol"))
-                bypass_flowcontrol=Boolean.parseBoolean(options[++i]);
         }
         return this;
     }

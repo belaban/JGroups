@@ -298,6 +298,8 @@ public class RoundTrip implements RtReceiver {
     public static void main(String[] args) throws Exception {
         String tp="jg";
         boolean direct_memory=false, vthreads=true;
+
+        List<String> transport_options=new FastArray<>(args.length);
         for(int i=0; i < args.length; i++) {
             switch(args[i]) {
                 case "-tp" -> tp=args[++i];
@@ -307,30 +309,11 @@ public class RoundTrip implements RtReceiver {
                     help(tp);
                     return;
                 }
+                default -> transport_options.add(args[i]);
             }
         }
-        RtTransport transport=create(tp);
-        String[] opts=transport.options();
-        if(opts != null) {
-            for(int i=0; i < args.length; i++) {
-                if(args[i].equals("-tp") || args[i].equals("-h")
-                  || !args[i].startsWith("-") || args[i].startsWith("-direct") || args[i].startsWith("-vthreads"))
-                    continue;
-                String option=args[i];
-                boolean match=false;
-                for(String opt: opts) {
-                    if(opt.startsWith(option)) {
-                        match=true;
-                        break;
-                    }
-                }
-                if(!match) {
-                    help(tp);
-                    return;
-                }
-            }
-        }
-        new RoundTrip().start(tp, direct_memory, vthreads, args);
+        String[] options=transport_options.toArray(new String[]{});
+        new RoundTrip().start(tp, direct_memory, vthreads, options);
     }
 
 

@@ -62,6 +62,7 @@ public class NioTransportNonBlocking extends RtTransport {
                 case "-host" ->        host=InetAddress.getByName(options[++i]);
                 case "-port" ->        port=Integer.parseInt(options[++i]);
                 case "-tcp-nodelay" -> tcp_nodelay=Boolean.parseBoolean(options[++i]);
+                default -> throw new IllegalArgumentException(String.format("option '%s' not valid", options[i]));
             }
         }
         if(host == null)
