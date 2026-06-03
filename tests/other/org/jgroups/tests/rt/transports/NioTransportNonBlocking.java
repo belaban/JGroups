@@ -100,7 +100,7 @@ public class NioTransportNonBlocking extends RtTransport {
             client_channel.configureBlocking(false);
             client_channel.register(selector, OP_READ);
         }
-        selector_handler=new Runner(factory, "selector-handler", () -> {
+        selector_handler=new Runner(factory, "Selector", () -> {
             try {
                 handleSelector();
             }
@@ -167,30 +167,35 @@ public class NioTransportNonBlocking extends RtTransport {
         client_channel.register(selector, OP_READ);
     }
 
-    protected void read(SocketChannel ch, ByteBuffer buf) throws IOException {
+    protected void read(SocketChannel ch, ByteBuffer buf) {
         int len=0;
-        if(recv_length.remaining() > 0) {
-            int read=ch.read(recv_length);
-            if(read == -1 || recv_length.remaining() > 0) {
-                Util.close(ch);
-                return;
+        try {
+            if(recv_length.remaining() > 0) {
+                int read=ch.read(recv_length);
+                if(read == -1 || recv_length.remaining() > 0) {
+                    Util.close(ch);
+                    return;
+                }
+                len=recv_length.getInt(0);
+                if(len > buf.capacity())
+                    buf=createBuffer(len);
+                buf.position(0).limit(len);
             }
-            len=recv_length.getInt(0);
-            if(len > buf.capacity())
-                buf=createBuffer(len);
-            buf.position(0).limit(len);
+            if(buf.remaining() > 0) {
+                int read=ch.read(buf);
+                if(read == -1) {
+                    Util.close(ch);
+                    return;
+                }
+                if(buf.remaining() == 0) {
+                    recv_length.clear();
+                    if(receiver != null)
+                        receiver.receive(null, buf.flip());
+                }
+            }
         }
-        if(buf.remaining() > 0) {
-            int read=ch.read(buf);
-            if(read == -1) {
-                Util.close(ch);
-                return;
-            }
-            if(buf.remaining() == 0) {
-                recv_length.clear();
-                if(receiver != null)
-                    receiver.receive(null, buf.flip());
-            }
+        catch(IOException ioex) {
+            Util.close(ch);
         }
     }
 
