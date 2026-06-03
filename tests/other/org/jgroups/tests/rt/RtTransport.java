@@ -12,9 +12,23 @@ import java.util.List;
  */
 public abstract class RtTransport {
     protected RoundTrip round_trip;
+    protected boolean   vthreads=true;
+    protected boolean   direct_memory=true; // use direct memory for ByteBuffers where supported
 
     public RtTransport roundTrip(RoundTrip rt) {
         this.round_trip=rt;
+        return this;
+    }
+
+    public boolean     vthreads() {return vthreads;}
+    public RtTransport vthreads(boolean b) {
+        this.vthreads=b;
+        return this;
+    }
+
+    public boolean     directMemory() {return direct_memory;}
+    public RtTransport directMemory(boolean b) {
+        direct_memory=b;
         return this;
     }
 

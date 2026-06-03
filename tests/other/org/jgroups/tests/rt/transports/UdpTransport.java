@@ -28,7 +28,7 @@ public class UdpTransport extends RtTransport {
     protected boolean             server;
     protected final Log           log=LogFactory.getLog(UdpTransport.class);
     protected List<SocketAddress> members=new ArrayList<>();
-    protected final ThreadFactory factory=new DefaultThreadFactory("receiver", false, true).useVirtualThreads(true);
+    protected ThreadFactory       factory;
 
     public UdpTransport() {
     }
@@ -71,6 +71,7 @@ public class UdpTransport extends RtTransport {
 
     public void start(String ... options) throws Exception {
         options(options);
+        factory=new DefaultThreadFactory("receiver", false, true).useVirtualThreads(vthreads);
         if(server) { // simple single threaded server, can only handle a single connection at a time
             sock=new DatagramSocket(port, host);
             System.out.println("server started (ctrl-c to kill)");

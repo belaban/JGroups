@@ -18,7 +18,7 @@ public class ServerTransport extends RtTransport implements Receiver {
     protected RtReceiver   receiver;
     protected InetAddress  host;
     protected int          port=7800;
-    protected boolean      server, nio, tcp_nodelay=true, vthreads=true;
+    protected boolean      server, nio, tcp_nodelay=true;
     protected int          out_buf_size=8192, in_buf_size=8192;
     protected final Log    log=LogFactory.getLog(ServerTransport.class);
 
@@ -28,7 +28,7 @@ public class ServerTransport extends RtTransport implements Receiver {
 
     public String[] options() {
         return new String[]{"-host <host>", "-port <port>", "-server", "-nio", "-tcp-nodelay <boolean>",
-          "-outbuf <size>", "-inbuf <size>", "-vthreads <boolean>"};
+          "-outbuf <size>", "-inbuf <size>"};
     }
 
     public ServerTransport options(String... options) throws Exception {
@@ -43,7 +43,6 @@ public class ServerTransport extends RtTransport implements Receiver {
                 case "-tcp-nodelay" -> tcp_nodelay=Boolean.parseBoolean(options[++i]);
                 case "-outbuf" ->      out_buf_size=Integer.parseInt(options[++i]);
                 case "-inbuf" ->       in_buf_size=Integer.parseInt(options[++i]);
-                case "-vthreads" ->    vthreads=Boolean.parseBoolean(options[++i]);
             }
         }
         if(host == null)

@@ -32,8 +32,7 @@ public class NioTransportNonBlocking extends RtTransport {
     protected RtReceiver          receiver;
     protected InetAddress         host;
     protected int                 port=7800;
-    protected boolean             server, tcp_nodelay=true, direct_buffers=true; // use direct memory to receive msgs
-    protected boolean             vthreads=true;
+    protected boolean             server, tcp_nodelay=true;
     protected final Log           log=LogFactory.getLog(NioTransportNonBlocking.class);
     protected ByteBuffer          recv_length, recv_buf;
     protected ByteBuffer          send_length, send_buf;
@@ -48,8 +47,7 @@ public class NioTransportNonBlocking extends RtTransport {
     }
 
     public String[] options() {
-        return new String[]{"-host <host>", "-port <port>", "-server",
-          "-direct <boolean>", "-tcp-nodelay <boolean>", "-vthreads <boolean>"};
+        return new String[]{"-host <host>", "-port <port>", "-server", "-tcp-nodelay <boolean>"};
     }
 
     public NioTransportNonBlocking options(String... options) throws Exception {
@@ -61,8 +59,6 @@ public class NioTransportNonBlocking extends RtTransport {
                 case "-host" ->        host=InetAddress.getByName(options[++i]);
                 case "-port" ->        port=Integer.parseInt(options[++i]);
                 case "-tcp-nodelay" -> tcp_nodelay=Boolean.parseBoolean(options[++i]);
-                case "-direct" ->      direct_buffers=Boolean.parseBoolean(options[++i]);
-                case "-vthreads" ->    vthreads=Boolean.parseBoolean(options[++i]);
             }
         }
         if(host == null)
@@ -225,7 +221,7 @@ public class NioTransportNonBlocking extends RtTransport {
     }
 
     protected ByteBuffer createBuffer(int size) {
-        return direct_buffers? ByteBuffer.allocateDirect(size) : java.nio.ByteBuffer.allocate(size);
+        return direct_memory? ByteBuffer.allocateDirect(size) : java.nio.ByteBuffer.allocate(size);
     }
 
 

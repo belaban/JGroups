@@ -28,8 +28,7 @@ public class NioTransport extends RtTransport {
     protected RtReceiver          receiver;
     protected InetAddress         host;
     protected int                 port=7800;
-    protected boolean             server, tcp_nodelay=true, direct_buffers=true; // use direct memory to receive msgs
-    protected boolean             vthreads=true;
+    protected boolean             server, tcp_nodelay=true;
     protected final Log           log=LogFactory.getLog(NioTransport.class);
     protected ByteBuffer          send_length_buf;
     protected ByteBuffer[]        buffers;
@@ -42,8 +41,7 @@ public class NioTransport extends RtTransport {
     }
 
     public String[] options() {
-        return new String[]{"-host <host>", "-port <port>", "-server",
-          "-direct <boolean>", "-tcp-nodelay <boolean>", "-vthreads <boolean>"};
+        return new String[]{"-host <host>", "-port <port>", "-server", "-tcp-nodelay <boolean>"};
     }
 
     public NioTransport options(String... options) throws Exception {
@@ -55,8 +53,6 @@ public class NioTransport extends RtTransport {
                 case "-host" ->        host=InetAddress.getByName(options[++i]);
                 case "-port" ->        port=Integer.parseInt(options[++i]);
                 case "-tcp-nodelay" -> tcp_nodelay=Boolean.parseBoolean(options[++i]);
-                case "-direct" ->      direct_buffers=Boolean.parseBoolean(options[++i]);
-                case "-vthreads" ->    vthreads=Boolean.parseBoolean(options[++i]);
             }
         }
         if(host == null)
@@ -186,7 +182,7 @@ public class NioTransport extends RtTransport {
     }
 
     protected ByteBuffer createBuffer(int size) {
-        return direct_buffers? ByteBuffer.allocateDirect(size) : ByteBuffer.allocate(size);
+        return direct_memory? java.nio.ByteBuffer.allocateDirect(size) : java.nio.ByteBuffer.allocate(size);
     }
 
 
