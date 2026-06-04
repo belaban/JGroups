@@ -5,12 +5,12 @@ Virtual threads, blocking sockets and latency
 Author: Bela Ban
 Date: June 2026
 
-This document describes the behavior of virtual threads with respect to reads and writes from and to a blocking
-socket. Since virtual threads were introduced in Java 21, prior JDKs don't have this behavir.
+This document describes the behavior of virtual threads with respect to writes to and reads from a blocking socket.
+Since virtual threads were introduced in Java 21, prior JDKs don't have this behavior.
 
 Blocking sockets are
-* Socket
-* SocketChannel in blocking mode: channel.configureBlocking(true)
+* java.net.Socket
+* java.nio.channels.SocketChannel in blocking mode: channel.configureBlocking(true)
 
 Non-blocking sockets are
 * SocketChannel in non-blocking mode: channel.configureBlocking(false)
@@ -19,23 +19,26 @@ I observed that round trip times (measured with RoundTrip) were slightly higher 
 compared to platform (regular) threads. E.g. 518us with platform threads compared to 687us with virtual threads, tested
 with 100'000 messages exchanged between two different hosts (not on GCP though, this will be tested soon).
 
-Switching to non-blocking sockets made this difference almost disappear: 513us with platform threads and 549us with
-virtual threads.
+RoundTrip has each sender send a request to the receiver, wait for the response and add the timing to an average.
+
+Switching to non-blocking sockets made this difference much smaller: 513us with platform threads and 528us with
+virtual threads. I attribute the small difference to the overhead of virtual thread management: a single virtual thread
+is continually mapped to the same carrier thread, so using the platform thread directly has a performance advantage.
 
 Also note that the above behavior is seen with *1* sender thread. As we increase the number of sender threads, the
-difference disappears and with 10+ sender threads, virtual threads always show lower round trip times than platform
-threads. I attribute this to the fact that - once that the number of platform threads is higher than the number of
-cores - context switching has an increasingly negative impact on latency.
+difference disappears and with 20 or more sender threads, virtual threads always show lower round trip times than
+platform threads. I attribute this to the fact that, once that the number of platform threads is higher than the number
+of cores, context switching has an increasingly negative impact on latency.
 
 This was tested on JDKs 21.0.2-open and 25.0.2-open, and the same behavior was seen. JDKs prior to 21 didn't show this
 behavior, but this is due to the fact that virtual threads are not available.
 
 The slowdown is caused by the JDK's intent to avoid potentially blocking a virtual thread (and thus its carrier thread)
 on a read (or write, or connect) from a blocking socket. Because we usually run a lot more virtual threads than carrier
-threads, a virtual thread blocked on a read could quickly lead to all carrier threads of the ForkJoinPoool getting
+threads, a virtual thread blocked on a read could quickly lead to all carrier threads of the ForkJoinPool getting
 blocked, preventing progress.
 
-Let's take a look at a socket read only (write and connect use similar code). The code is SocketChannelImpl.implRead().
+Let's take a look at a socket read only (write and connect use similar code). The code is in SocketChannelImpl.implRead().
 (Note that I'll only look at a blocking SocketChannel, but the code for java.net.Socket is similar).
 
 Upon reading from a socket, the JDK calls SocketChannelImpl.configureSocketNonBlockingIfVirtualThread():
@@ -76,7 +79,7 @@ poller to park and be woken up when data is available. This is done in implRead(
                 n = IOUtil.read(fd, buf, -1, nd);  // first read
                 if (blocking) {  // true if blocking socket
                     while (IOStatus.okayToRetry(n) && isOpen()) {
-                        park(Net.POLLIN);
+                        park(Net.POLLIN); // registers with KQueue poller
                         n = IOUtil.read(fd, buf, -1, nd); // second read
                     }
                 }
@@ -107,9 +110,16 @@ It looks as if the reason for the slowdown with 1 sender thread is that RoundTri
 until a response has been received. On the receiver side, the code blocks (on a read) until a request has been received,
 sends a response and blocks again.
 
-The blocking code adds some overhead as shown above.
+The blocking code adds some overhead as shown above. This is probably the reason why with non-blocking sockets, the
+difference between platform threads and virtual threads becomes much smaller.
 
 The more senders we have, the less we block on a read, as more requests and also more responses are received. In other
-words, more senders means fewer calls of park() and the associated slowdown.
+words, more senders means fewer executions of the while-loop and the associated slowdown.
 
 Therefore, more sender (= more traffic) and thus less slowdown of virtual threads.
+
+This observation is in line with the message virtual threads convey, namely that they should be used when we have many
+threads blocking on I/O.
+
+Admittedly, using a single virtual thread is probably not a very common use case to say the least, but it gave me
+interesting insights into how virtual threads implement blocking socket reads and writes.
