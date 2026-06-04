@@ -1,0 +1,54 @@
+
+Virtual threads, blocking sockets and latency
+=============================================
+
+Author: Bela Ban
+Date: June 2026
+
+This document describes the behavior of virtual threads with respect to reads and writes from and to a blocking
+socket. Since virtual threads were introduced in Java 21, prior JDKs don't have this behavir.
+
+Blocking sockets are
+* Socket
+* SocketChannel in blocking mode: channel.configureBlocking(true)
+
+Non-blocking sockets are
+* SocketChannel in non-blocking mode: channel.configureBlocking(false)
+
+I observed that round trip times (measured with RoundTrip) were slightly higher on blocking sockets with virtual threads
+compared to platform (regular) threads. E.g. 518us with platform threads compared to 687us with virtual threads, tested
+with 100'000 messages exchanged between two different hosts (not on GCP though, this will be tested soon).
+
+Switching to non-blocking sockets made this difference almost disappear: 513us with platform threads and 549us with
+virtual threads.
+
+Also note that the above behavior is seen with *1* sender thread. As we increase the number of sender threads, the
+difference disappears and with 10+ sender threads, virtual threads always show lower round trip times than platform
+threads. I attribute this to the fact that - once that the number of platform threads is higher than the number of
+cores - context switching has an increasingly negative impact on latency.
+
+This was tested on JDKs 21.0.2-open and 25.0.2-open, and the same behavior was seen. JDKs prior to 21 didn't show this
+behavior, but this is due to the fact that virtual threads are not available.
+
+The slowdown is caused by the JDK's intent to avoid potentially blocking a virtual thread (and thus its carrier thread)
+on a read (or write, or connect) from a blocking socket. Because we usually run a lot more virtual threads than carrier
+threads, a virtual thread blocked on a read could quickly lead to all carrier threads of the ForkJoinPoool getting
+blocked.
+
+Let's take a look at a socket read only (write and connect use similar
+code). The code is SocketChannelImpl.implRead().
+
+Upon reading from a socket, the JDK calls SocketChannelImpl.configureSocketNonBlockingIfVirtualThread():
+
+    private void configureSocketNonBlockingIfVirtualThread() throws IOException {
+        if (!forcedNonBlocking && Thread.currentThread().isVirtual()) {
+            synchronized (stateLock) {
+                ensureOpen();
+                IOUtil.configureBlocking(fd, false);
+                forcedNonBlocking = true;
+            }
+        }
+    }
+
+If the thread is virtual and forcedNonBlocking has not yet been set to true, it will be set and the underlying socket's
+file descriptor changed to non-blocking. This is only done once for any socket.
