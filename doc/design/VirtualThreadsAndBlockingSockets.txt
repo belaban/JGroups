@@ -33,10 +33,10 @@ behavior, but this is due to the fact that virtual threads are not available.
 The slowdown is caused by the JDK's intent to avoid potentially blocking a virtual thread (and thus its carrier thread)
 on a read (or write, or connect) from a blocking socket. Because we usually run a lot more virtual threads than carrier
 threads, a virtual thread blocked on a read could quickly lead to all carrier threads of the ForkJoinPoool getting
-blocked.
+blocked, preventing progress.
 
-Let's take a look at a socket read only (write and connect use similar
-code). The code is SocketChannelImpl.implRead().
+Let's take a look at a socket read only (write and connect use similar code). The code is SocketChannelImpl.implRead().
+(Note that I'll only look at a blocking SocketChannel, but the code for java.net.Socket is similar).
 
 Upon reading from a socket, the JDK calls SocketChannelImpl.configureSocketNonBlockingIfVirtualThread():
 
@@ -50,5 +50,66 @@ Upon reading from a socket, the JDK calls SocketChannelImpl.configureSocketNonBl
         }
     }
 
+
 If the thread is virtual and forcedNonBlocking has not yet been set to true, it will be set and the underlying socket's
-file descriptor changed to non-blocking. This is only done once for any socket.
+file descriptor changed to non-blocking. This is only done once for any socket. The definition of forcedNonBlocking is:
+
+    // True if the channel's socket has been forced into non-blocking mode
+    // by a virtual thread. It cannot be reset. When the channel is in
+    // blocking mode and the channel's socket is in non-blocking mode then
+    // operations that don't complete immediately will poll the socket and
+    // preserve the semantics of blocking operations.
+    private volatile boolean forcedNonBlocking;
+
+
+Because the (blocking) socket is now non-blocking under the hood, a virtual thread needs to register with a JVM wide
+poller to park and be woken up when data is available. This is done in implRead() (code edited for brevity):
+
+    private int implRead(ByteBuffer buf) throws IOException {
+        readLock.lock();
+        try {
+            boolean blocking = isBlocking();
+            int n = 0;
+            try {
+                beginRead(blocking);
+                configureSocketNonBlockingIfVirtualThread();
+                n = IOUtil.read(fd, buf, -1, nd);  // first read
+                if (blocking) {  // true if blocking socket
+                    while (IOStatus.okayToRetry(n) && isOpen()) {
+                        park(Net.POLLIN);
+                        n = IOUtil.read(fd, buf, -1, nd); // second read
+                    }
+                }
+            } finally {
+                endRead(blocking, n > 0);
+            }
+            return IOStatus.normalize(n);
+        } finally {
+            readLock.unlock();
+        }
+    }
+
+A platform thread blocks on the first IOUtil.read() until data is available, or the socket has been closed, so 'n' is
+always > 0 when the call returns. Therefore IOStatus.okayToRetry() is always false, and the while loop is skipped.
+
+In contrast, a virtual thread can get a -2 (no data available) value on return of IOUtil.read(). When this is the case,
+the while-loop registers the thread with a JVM wide (read) poller which wakes up the thread when data is available and
+then the while loop continues to call IOUtil.read().
+
+This way, virtual threads mimic blocking and implRead() therefore only returns when either data is available or the
+socket has been closed.
+
+Registration with the JVM wide read poller in park() is quite involved, e.g. addition of the current thread to a
+hashmap, registering with the KQueue selector (on MacOS), parking, then (when woken up) de-registering with the KQueue
+selector, and removing the thread from the hashmap.
+
+It looks as if the reason for the slowdown with 1 sender thread is that RoundTrip sends 1 request and blocks on a read
+until a response has been received. On the receiver side, the code blocks (on a read) until a request has been received,
+sends a response and blocks again.
+
+The blocking code adds some overhead as shown above.
+
+The more senders we have, the less we block on a read, as more requests and also more responses are received. In other
+words, more senders means fewer calls of park() and the associated slowdown.
+
+Therefore, more sender (= more traffic) and thus less slowdown of virtual threads.
