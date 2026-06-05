@@ -203,7 +203,7 @@ public class TcpConnection extends Connection {
 
         client_sock.setKeepAlive(true);
         client_sock.setTcpNoDelay(server.tcp_nodelay);
-        if(server.linger > 0)
+        if(server.linger >= 0)
             client_sock.setSoLinger(true, server.linger);
     }
 
