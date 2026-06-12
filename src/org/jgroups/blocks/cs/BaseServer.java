@@ -302,6 +302,10 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         try {
             if(connected(conn=conns.get(dest)))
                 return conn;
+            if(conn != null) {
+                conns.remove(dest);
+                Util.close(conn);
+            }
             conn=createConnection(dest);
             handleOutgoingConnection(dest, conn);
         }
@@ -365,8 +369,14 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         Lock lock=getLock(peer_addr);
         lock.lock();
         try {
-            boolean conn_exists=hasConnection(peer_addr),
+            Connection existing=conns.get(peer_addr);
+            boolean conn_exists=connected(existing),
               replace=conn_exists && local_addr.compareTo(peer_addr) < 0; // bigger conn wins
+
+            if(!replace && conn_exists && isStale(existing)) {
+                replace=true;
+                log.trace("%s: existing connection to %s is stale, replacing", local_addr, peer_addr);
+            }
 
             if(!conn_exists || replace) {
                 notifyConnectionEstablished(conn);
@@ -384,6 +394,14 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         }
         if(close_conn)
             Util.close(conn); // closing the connection outside the lock scope (might block if TLS)
+    }
+
+    public boolean isStale(Connection conn) {
+        if(conn == null)
+            return false;
+        long now=conn.getTimestamp();
+        long threshold=TimeUnit.NANOSECONDS.convert(sock_conn_timeout, TimeUnit.MILLISECONDS);
+        return now - conn.last_access > threshold;
     }
 
     public BaseServer addConnectionListener(ConnectionListener cl) {
