@@ -69,7 +69,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
       writable=true,type=AttributeType.TIME)
     protected long                 reaper_interval;
 
-    @ManagedAttribute(description="Time (in ms) for setting SO_LINGER on sockets returned from accept(). 0 means do not set SO_LINGER"
+    @ManagedAttribute(description="SO_LINGER in seconds. Default of -1 disables it"
       ,type=AttributeType.TIME)
     protected int                  linger_timeout=-1;
 
