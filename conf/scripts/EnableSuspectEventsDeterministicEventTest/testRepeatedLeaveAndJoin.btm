@@ -1,0 +1,59 @@
+
+## Trace + delay: log the critical points and delay the rejoining node's
+## replaceConnection to widen the race window for the concurrent connect.
+
+RULE T1_getConnection
+CLASS BaseServer
+METHOD getConnection
+AT ENTRY
+IF TRUE
+DO
+    System.out.println("--> " + Thread.currentThread().getName().substring(Thread.currentThread().getName().lastIndexOf(",") + 1) + " [T1] getConnection(" + $1 + ") node=" + $0.localAddress() + " thread=" + Thread.currentThread().getName())
+ENDRULE
+
+RULE T4_handleOutgoing
+CLASS BaseServer
+METHOD handleOutgoingConnection
+AT ENTRY
+IF TRUE
+DO
+    System.out.println("--> " + Thread.currentThread().getName().substring(Thread.currentThread().getName().lastIndexOf(",") + 1) + " [T4] handleOutgoingConnection(" + $1 + ") node=" + $0.localAddress() + " thread=" + Thread.currentThread().getName())
+ENDRULE
+
+RULE T4_handleIncoming
+CLASS BaseServer
+METHOD handleIncomingConnection
+AT ENTRY
+IF TRUE
+DO
+    System.out.println("--> " + Thread.currentThread().getName().substring(Thread.currentThread().getName().lastIndexOf(",") + 1) + " [T4] handleIncomingConnection(" + $1 + ") node=" + $0.localAddress() + " thread=" + Thread.currentThread().getName())
+ENDRULE
+
+RULE T5_notifyConnectionClosed
+CLASS BaseServer
+METHOD notifyConnectionClosed
+AT ENTRY
+IF TRUE
+DO
+    System.out.println("--> " + Thread.currentThread().getName().substring(Thread.currentThread().getName().lastIndexOf(",") + 1) + " [T5] notifyConnectionClosed(" + $1 + ") node=" + $0.localAddress() + " thread=" + Thread.currentThread().getName())
+ENDRULE
+
+RULE T6_removeConnectionIfPresent
+CLASS BaseServer
+METHOD removeConnectionIfPresent
+AT ENTRY
+IF TRUE
+DO
+    System.out.println("--> " + Thread.currentThread().getName().substring(Thread.currentThread().getName().lastIndexOf(",") + 1) + " [T6] removeConnectionIfPresent(" + $1 + ") node=" + $0.localAddress() + " thread=" + Thread.currentThread().getName())
+ENDRULE
+
+RULE T7_replaceConnection
+CLASS BaseServer
+METHOD replaceConnection
+AT ENTRY
+IF TRUE
+DO
+    System.out.println("--> " + Thread.currentThread().getName().substring(Thread.currentThread().getName().lastIndexOf(",") + 1) + " [T7] replaceConnection(" + $1 + ", closed=" + $2.isClosed() + ") node=" + $0.localAddress() + " thread=" + Thread.currentThread().getName());
+    org.jgroups.tests.helpers.EnableSuspectEventsTestHelper.maybePause($0.localAddress(), $1, $2, Thread.currentThread().getName())
+ENDRULE
+
