@@ -71,6 +71,7 @@ public class JChannel implements Closeable {
     protected final DiagnosticsHandler.ProbeHandler probe_handler=new JChannelProbeHandler(this);
 
     @ManagedAttribute(description="Collect channel statistics",writable=true)
+    @Deprecated(forRemoval=true)
     protected boolean                               stats=true;
 
     @ManagedAttribute(description="Whether or not to discard messages sent by this channel",writable=true)
@@ -193,9 +194,13 @@ public class JChannel implements Closeable {
     public ProtocolStack stack()                             {return prot_stack;}
     public UpHandler     getUpHandler()                      {return up_handler;}
     public JChannel      setUpHandler(UpHandler h)           {this.up_handler=h; return this;}
+    @Deprecated(forRemoval=true)
     public boolean       getStats()                          {return stats;}
+    @Deprecated(forRemoval=true)
     public boolean       stats()                             {return stats;}
+    @Deprecated(forRemoval=true)
     public JChannel      setStats(boolean stats)             {this.stats=stats; return this;}
+    @Deprecated(forRemoval=true)
     public JChannel      stats(boolean stats)                {this.stats=stats; return this;}
     public boolean       getDiscardOwnMessages()             {return discard_own_messages;}
     public JChannel      setDiscardOwnMessages(boolean flag) {discard_own_messages=flag; return this;}
