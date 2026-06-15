@@ -105,7 +105,7 @@ public class ProtocolStack extends Protocol {
                         }
                     }
                 }
-                if(key.startsWith("ra") || key.startsWith("remove-all")) { // remove all protocols but the transport
+                if(key.equalsIgnoreCase("ra") || key.startsWith("remove-all")) { // remove all protocols but the transport
                     List<Protocol> protocols=getProtocols();
                     for(Protocol p: protocols) {
                         if(!(p instanceof TP))
