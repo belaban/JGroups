@@ -370,10 +370,10 @@ public class TcpConnection extends Connection {
     protected void closeGracefully() {
         server.log.trace("%s: sending graceful close to %s", server.local_addr, peer_addr);
         try {
-            sock.shutdownInput();
+            //sock.shutdownInput();
             out.writeInt(Connection.GRACEFUL_CLOSE);
             out.flush();
-            sock.shutdownOutput();
+            //sock.shutdownOutput();
         }
         catch(Throwable t) {
             server.log.error("%s: failed sending graceful close to %s: %s", server.local_addr, peer_addr, t.getMessage());
