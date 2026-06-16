@@ -1,0 +1,27 @@
+controller:
+  vars:
+    ansible_user: bela
+  hosts:
+    vm1:
+      ansible_host: $0
+
+instances:
+  vars:
+    ansible_user: bela
+  hosts:
+     vm1:
+       ansible_host: $0
+     vm2:
+       ansible_host: $1
+     vm3:
+       ansible_host: $2
+     vm4:
+       ansible_host: $3
+     vm5:
+       ansible_host: $4
+     vm6:
+       ansible_host: $5
+     vm7:
+       ansible_host: $6
+     vm8:
+       ansible_host: $7

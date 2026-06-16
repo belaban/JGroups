@@ -1,0 +1,121 @@
+- name: Setup JGroups cluster environment
+  hosts: instances
+  vars:
+    jdk_version: "25.0.2-open"
+    bin_folder: "../bin"
+    target_folder: "../target"
+    remote_folder: "/home/{{ ansible_user }}"
+    sdkman_folder: "/home/{{ ansible_user }}/.sdkman"
+    deps_marker: "/tmp/jgroups_deps_installed"
+    asprof_arch: "{{ 'arm64' if ansible_facts.architecture == 'aarch64' else 'x64' }}"
+
+  tasks:
+    - name: Check if dependencies already installed
+      ansible.builtin.stat:
+        path: "{{ deps_marker }}"
+      register: deps_installed
+
+    - name: Install dependencies
+      when: not deps_installed.stat.exists
+      block:
+        - name: Install packages
+          ansible.builtin.package:
+            name: "{{ item }}"
+            state: present
+          become: true
+          loop:
+            - git
+            - zip
+            - unzip
+            - net-tools
+            - rsync
+
+        - name: Install SDKMAN!
+          ansible.builtin.shell: "curl -s 'https://get.sdkman.io' | bash"
+          args:
+            creates: "{{ sdkman_folder }}/etc/config"
+
+        - name: Configure SDKMAN!
+          ansible.builtin.shell: |
+            sed -i 's/sdkman_auto_answer=false/sdkman_auto_answer=true/g' "{{ sdkman_folder }}/etc/config"
+
+        - name: Install JDK {{ jdk_version }}
+          ansible.builtin.shell: |
+            source {{ sdkman_folder }}/bin/sdkman-init.sh
+            sdk install java {{ jdk_version }}
+          args:
+            executable: /bin/bash
+          register: jdk_install_output
+          until: jdk_install_output.rc == 0
+          retries: 5
+          delay: 10
+
+        - name: Clean SDKMAN! cache
+          ansible.builtin.shell: |
+            source {{ sdkman_folder }}/bin/sdkman-init.sh
+            sdk flush
+          args:
+            executable: /bin/bash
+
+        - name: Install async-profiler
+          block:
+            - name: Download async-profiler ({{ asprof_arch }})
+              ansible.builtin.get_url:
+                url: "https://github.com/async-profiler/async-profiler/releases/download/v4.1/async-profiler-4.1-linux-{{ asprof_arch }}.tar.gz"
+                dest: "{{ remote_folder }}/asprof.tar.gz"
+              register: asprof_download
+              ignore_errors: true
+
+            - name: Unarchive async-profiler
+              ansible.builtin.unarchive:
+                src: "{{ remote_folder }}/asprof.tar.gz"
+                dest: "{{ remote_folder }}"
+                remote_src: true
+              when: asprof_download is succeeded
+
+        - name: Mark dependencies as installed
+          ansible.builtin.file:
+            path: "{{ deps_marker }}"
+            state: touch
+
+    - name: Destroy previous artifacts
+      ansible.builtin.file:
+        state: absent
+        path: "{{ item }}"
+      loop:
+        - "{{ remote_folder }}/bin"
+        - "{{ remote_folder }}/target"
+
+    - name: Upload bin folder
+      ansible.posix.synchronize:
+        src: "{{ bin_folder }}"
+        dest: "{{ remote_folder }}"
+
+    - name: Check if target folder exists locally
+      ansible.builtin.stat:
+        path: "{{ target_folder }}"
+      delegate_to: localhost
+      register: target_exists
+
+    - name: Upload target and generate hosts.txt
+      when: target_exists.stat.exists
+      block:
+        - name: Upload target folder
+          ansible.posix.synchronize:
+            src: "{{ target_folder }}"
+            dest: "{{ remote_folder }}"
+
+        - name: Ensure target/classes directory exists
+          ansible.builtin.file:
+            path: "{{ remote_folder }}/target/classes"
+            state: directory
+
+        - name: Collect private IPs for cluster discovery
+          ansible.builtin.set_fact:
+            cluster_hosts: "{{ cluster_hosts | default([]) + [hostvars[item].ansible_facts.all_ipv4_addresses[0]] }}"
+          loop: "{{ groups['instances'] }}"
+
+        - name: Create hosts.txt
+          ansible.builtin.copy:
+            content: "{{ cluster_hosts | join('\n') }}\n"
+            dest: "{{ remote_folder }}/target/classes/hosts.txt"
