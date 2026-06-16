@@ -79,12 +79,30 @@ public class ServerTests {
         assert a.getNumConnections() == 0 && b.getNumConnections() == 0;
     }
 
+    /*public void testConnectionRejection(BaseServer a, BaseServer b) throws Exception {
+        setup(a, b, true);
+        assert !a.hasConnection(b.localAddress()) && !b.hasConnection(a.localAddress());
+        assert a.getNumConnections() == 0 && b.getNumConnections() == 0;
+
+        System.out.printf("A: %s, B: %s\n", a.localAddress(), b.localAddress());
+
+        System.out.printf("** sending PING from %s to %s\n", b.localAddress(), a.localAddress());
+        send("ping", b, a.localAddress());
+        Util.waitUntil(2000, 100, () -> ((MyReceiver)a.receiver()).size() > 0);
+
+        System.out.println("** removing all connections in A");
+        // a.clear();
+        a.clearConnections(false);
+        System.out.printf("** sending PONG from %s to %s\n", a.localAddress(), b.localAddress());
+        send("pong", a, b.localAddress());
+        Util.waitUntil(2000, 100, () -> ((MyReceiver)b.receiver()).size() > 0);
+     }*/
+
     public void testSimpleSend(BaseServer a, BaseServer b) throws Exception {
         setup(a,b);
         send(STRING_A, a, b.localAddress());
         check(receiver_b.getList(), STRING_A);
     }
-
 
     /**
      * Tests A connecting to B, and then B connecting to A; no concurrent connections
@@ -104,8 +122,6 @@ public class ServerTests {
         check(receiver_b.getList(), "hello");
         check(receiver_a.getList(), "hello");
     }
-
-
 
     /**
      * Tests multiple threads sending a message to the same (unconnected) server; the first thread should establish
