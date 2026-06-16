@@ -224,7 +224,7 @@ public class TcpConnection extends Connection {
             out.flush(); // needed ?
         }
         catch(Exception ex) {
-            server.socket_factory.close(this.sock);
+            Util.close(this.sock);
             connected=false;
             throw ex;
         }
