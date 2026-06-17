@@ -30,6 +30,8 @@ import java.util.NoSuchElementException;
  * 'length' bytes.
  * <br/>
  * This class is not synchronized.
+ * <br/>
+ * Note that JGroups uses this class only for writing; for reading {@link MessageReader} is used.
  * @author Bela Ban
  * @since  3.6.5
  */
@@ -129,7 +131,8 @@ public class Buffers implements Iterable<ByteBuffer> {
 
 
     /**
-     * Reads length and then length bytes into the data buffer, which is grown if needed.
+     * Reads length and then length bytes into the data buffer, which is grown if needed. Note that this method is not
+     * used anymore; instead {@link MessageReader} is used.
      * @param ch The channel to read data from
      * @return The data buffer (position is 0 and limit is length), or null if not all data could be read.
      */
@@ -300,9 +303,6 @@ public class Buffers implements Iterable<ByteBuffer> {
     /** Copies a ByteBuffer by copying and wrapping the underlying array of a heap-based buffer. Direct buffers
         are converted to heap-based buffers */
     public static ByteBuffer copyBuffer(final ByteBuffer buf) {
-
-        // todo: could be replaced by ByteBuffer.compact()?
-
         ByteBuffer copy = ByteBuffer.allocate(buf.remaining());
         copy.put(buf.duplicate());
         copy.flip();
@@ -338,7 +338,7 @@ public class Buffers implements Iterable<ByteBuffer> {
         }
 
         @Override
-        public void remove() { // todo: remove when baselining on Java 8
+        public void remove() {
             ;
         }
     }

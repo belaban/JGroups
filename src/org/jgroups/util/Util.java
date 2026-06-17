@@ -1402,6 +1402,10 @@ public class Util {
         return b;
     }
 
+    public static ByteBuffer createBuffer(int size, boolean direct) {
+        return direct? ByteBuffer.allocateDirect(size) : ByteBuffer.allocate(size);
+    }
+
     public static byte[] collectionToByteBuffer(Collection<Address> c) throws IOException {
         final ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(Util.size(c));
         Util.writeAddresses(c,out);
