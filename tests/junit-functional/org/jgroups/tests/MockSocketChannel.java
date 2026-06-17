@@ -48,6 +48,28 @@ public class MockSocketChannel extends SocketChannel {
         return this;
     }
 
+    /**
+     * Adds new data to the existing read buffer or creates a new one if null
+     * @param additional_data
+     * @return
+     */
+    public MockSocketChannel addBytesToRead(ByteBuffer additional_data) {
+        if(bytes_to_read == null) {
+            bytes_to_read=additional_data;
+            return this;
+        }
+        if(bytes_to_read.capacity() - bytes_to_read.position() <= additional_data.limit()) {
+            ByteBuffer tmp=ByteBuffer.allocate(bytes_to_read.remaining() + additional_data.limit());
+            tmp.put(bytes_to_read).put(additional_data).flip();
+            bytes_to_read=tmp;
+        }
+        return this;
+    }
+
+    public MockSocketChannel addBytesToRead(byte[] additional_data) {
+        return addBytesToRead(ByteBuffer.wrap(additional_data));
+    }
+
     public ByteBuffer bytesToRead() {return bytes_to_read;}
 
     public MockSocketChannel recorder(ByteBuffer buf) {this.recorder=buf; return this;}
