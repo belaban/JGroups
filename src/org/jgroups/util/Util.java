@@ -4389,7 +4389,6 @@ public class Util {
         ServerSocketChannel ch=null;
         while(true) {
             try {
-                Util.close(ch);
                 ch=factory.createServerSocketChannel(service_name);
                 if(recv_buf_size > 0)
                     ch.setOption(StandardSocketOptions.SO_RCVBUF, recv_buf_size);
@@ -4397,6 +4396,7 @@ public class Util {
                 return ch;
             }
             catch(SocketException bind_ex) {
+                Util.close(ch); // the channel was created but failed to bind: don't leak its file descriptor
                 if(start_port == end_port)
                     throw new BindException("No available port to bind to in range [" + original_start_port + " .. " + end_port + "]");
                 if(bind_addr != null && !bind_addr.isLoopbackAddress()) {
