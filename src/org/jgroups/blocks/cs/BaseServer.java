@@ -239,6 +239,13 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
             removeConnectionIfPresent(dest, conn);
             throw ex;
         }
+        finally {
+            // Remove connection that may have been created after stop() already cleared conns (JGRP-3015)
+            if(!running()) {
+                log.trace("%s: removing dangling connection to %s created during shutdown", local_addr, dest);
+                removeConnectionIfPresent(dest, conn);
+            }
+        }
     }
 
     public void send(Address dest, ByteBuffer data) throws Exception {
@@ -264,6 +271,13 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         catch(Exception ex) {
             removeConnectionIfPresent(dest, conn);
             throw ex;
+        }
+        finally {
+            // Remove connection that may have been created after stop() already cleared conns (JGRP-3015)
+            if(!running()) {
+                log.trace("%s: removing dangling connection to %s created during shutdown", local_addr, dest);
+                removeConnectionIfPresent(dest, conn);
+            }
         }
     }
 
@@ -559,7 +573,7 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
             return false;
         }
 
-        if(!running.get()) {
+        if(!running()) {
             log.trace("%s: server is not running, discarding message to %s", local_addr, dest);
             return false;
         }
