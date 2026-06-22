@@ -39,7 +39,7 @@ public class TCP_NIO2 extends BasicTCP {
       "until it terminates. New messages will start a new reader",type=AttributeType.TIME)
     protected long    reader_idle_time=5000;
 
-    @Property(description="When true, direct bytebuffers are used for reading messages, otherwise heap-based ones")
+    @Property(description="When true, direct byte buffers are used for reading messages, otherwise heap-based ones")
     protected boolean use_direct_memory=true;
 
 
@@ -116,7 +116,7 @@ public class TCP_NIO2 extends BasicTCP {
           .tcpNodelay(tcp_nodelay).linger(linger)
           .clientBindAddress(client_bind_addr).clientBindPort(client_bind_port).deferClientBinding(defer_client_bind_addr)
           .log(this.log).logDetails(log_details);
-        server.maxSendBuffers(max_send_buffers).usePeerConnections(true);
+        server.maxSendBuffers(max_send_buffers).useDirectMemory(this.use_direct_memory).usePeerConnections(true);
         server.copyOnPartialWrite(this.copy_on_partial_write).readerIdleTime(this.reader_idle_time)
           .addConnectionListener(this);
 

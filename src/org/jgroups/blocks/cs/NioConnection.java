@@ -6,8 +6,8 @@ import org.jgroups.Version;
 import org.jgroups.nio.Buffers;
 import org.jgroups.nio.MessageReader;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.util.ByteArrayDataInputStream;
 import org.jgroups.util.ByteArrayDataOutputStream;
+import org.jgroups.util.ByteBufferInputStream;
 import org.jgroups.util.Util;
 
 import java.io.EOFException;
@@ -31,15 +31,16 @@ import static java.nio.channels.SelectionKey.*;
  * @since  3.6.5
  */
 public class NioConnection extends Connection {
-    protected final SocketChannel     channel;      // the channel to the peer
+    protected final SocketChannel     channel;        // the channel to the peer
     protected SelectionKey            key;
-    protected final Buffers           send_buf;     // send messages via gathering writes
+    protected final Buffers           send_buf;       // send messages via gathering writes
     protected final MessageReader     message_reader;
-    protected final ByteBuffer        length_buf=ByteBuffer.allocate(Integer.BYTES); // reused: send the length of the next buf
     protected boolean                 copy_on_partial_write=true;
     protected int                     partial_writes; // number of partial writes (write which did not write all bytes)
-    protected Buffers                 peer_addr_recv_buf;
-    protected static final ByteBuffer GRACEFUL_CLOSE_BUF=ByteBuffer.allocate(Integer.BYTES).putInt(GRACEFUL_CLOSE).flip();
+    protected final PeerAddressReader peer_addr_reader;
+    protected ByteBuffer              length_buf;     // reused: send the length of the next buf
+    protected ByteBuffer              graceful_close_buf;
+    protected ByteBuffer              cookie_buffer;  // for reception of the cookie (never called concurrently)
 
 
      /** Creates a connection stub and binds it, use {@link #connect(Address)} to connect */
@@ -54,6 +55,8 @@ public class NioConnection extends Connection {
         setSocketParameters(channel.socket());
         last_access=getTimestamp(); // last time a message was sent or received (ns)
         message_reader=new MessageReader(this, channel, 1024, server.useDirectMemory()).maxLength(server.getMaxLength());
+        peer_addr_reader=new PeerAddressReader(server.useDirectMemory());
+        createBuffers();
     }
 
     public NioConnection(SocketChannel channel, NioBaseServer server) throws Exception {
@@ -62,13 +65,12 @@ public class NioConnection extends Connection {
         setSocketParameters(this.channel.socket());
         channel.configureBlocking(false);
         send_buf=new Buffers(server.maxSendBuffers() *2); // space for actual bufs and length bufs!
-        if (server.usePeerConnections()) {
-            peer_addr_recv_buf=new Buffers(4).add(ByteBuffer.allocate(cookie.length));
-        } else {
+        if(!server.usePeerConnections())
             peer_addr=new IpAddress((InetSocketAddress)channel.getRemoteAddress());
-        }
+        peer_addr_reader=new PeerAddressReader(server.useDirectMemory());
         message_reader=new MessageReader(this, channel, 1024, server.useDirectMemory()).maxLength(server.getMaxLength());
         last_access=getTimestamp(); // last time a message was sent or received (ns)
+        createBuffers();
     }
 
     @Override
@@ -153,8 +155,11 @@ public class NioConnection extends Connection {
         send_lock.lock();
         try {
             // makeLengthBuffer() reuses the same pre-allocated buffer and copies it only if the write didn't complete
-            if(send_length)
-                send_buf.add(makeLengthBuffer(buf.remaining()), buf);
+            if(send_length) {
+                int length=buf.remaining();
+                length_buf.clear().putInt(0, length);
+                send_buf.add(length_buf, buf);
+            }
             else
                 send_buf.add(buf);
             boolean success=send_buf.write(channel);
@@ -223,8 +228,9 @@ public class NioConnection extends Connection {
         ByteBuffer msg;
         Receiver   receiver=server.receiver();
 
-        if(peer_addr == null && (peer_addr=readPeerAddress()) != null) {
-            peer_addr_recv_buf=null;
+        if(peer_addr == null) {
+            if((peer_addr=peer_addr_reader.readPeerAddress(channel)) == null)
+                return false;
             server.handleIncomingConnection(peer_addr, this);
             return true;
         }
@@ -245,7 +251,7 @@ public class NioConnection extends Connection {
         if(isClosed())
             return;
         if(graceful && !closed_gracefully)
-            send_buf.add(GRACEFUL_CLOSE_BUF);
+            send_buf.add(graceful_close_buf);
         doClose(); // flushes send_buf
     }
 
@@ -283,9 +289,8 @@ public class NioConnection extends Connection {
 
     protected void doClose() {
         flush();
-        server.socketFactory().close(channel);
+        Util.close(channel);
     }
-
 
     protected void setSocketParameters(Socket client_sock) throws SocketException {
         try {
@@ -329,58 +334,108 @@ public class NioConnection extends Connection {
         }
     }
 
-    protected Address readPeerAddress() throws Exception {
-        while(peer_addr_recv_buf.read(channel)) {
-            int current_position=peer_addr_recv_buf.position()-1;
-            ByteBuffer buf=peer_addr_recv_buf.get(current_position);
-            if(buf == null)
-                return null;
-            buf.flip();
-            switch(current_position) {
-                case 0:      // cookie
-                    byte[] cookie_buf=getBuffer(buf);
-                    if(!Arrays.equals(cookie, cookie_buf))
-                        throw new IOException(String.format("%s: readPeerAddress(): cookie %s sent by %s does not match own cookie; terminating connection",
-                                                            server.localAddress(), Util.byteArrayToHexString(cookie_buf), channel.getRemoteAddress()));
-                    peer_addr_recv_buf.add(ByteBuffer.allocate(Global.SHORT_SIZE));
-                    break;
-                case 1:      // version
-                    short version=buf.getShort();
-                    if(!Version.isBinaryCompatible(version))
-                        throw new IOException(String.format("%s: readPeerAddress(): packet from %s has different version (%s) from ours (%s); discarding it",
-                                                            server.localAddress(), channel.getRemoteAddress(), Version.print(version), Version.printVersion()));
-                    peer_addr_recv_buf.add(ByteBuffer.allocate(Global.SHORT_SIZE));
-                    break;
-                case 2:      // length of address
-                    short addr_len=buf.getShort();
-                    peer_addr_recv_buf.add(ByteBuffer.allocate(addr_len));
-                    break;
-                case 3:      // address
-                    byte[] addr_buf=getBuffer(buf);
-                    ByteArrayDataInputStream in=new ByteArrayDataInputStream(addr_buf);
-                    IpAddress addr=new IpAddress();
-                    addr.readFrom(in);
-                    return addr;
-                default:
-                    throw new IllegalStateException(String.format("position %d is invalid", peer_addr_recv_buf.position()));
-            }
+    protected void createBuffers() {
+        length_buf=createBuffer(Integer.BYTES); // reused: send the length of the next buf
+        graceful_close_buf=createBuffer(Integer.BYTES).putInt(GRACEFUL_CLOSE).flip();
+        cookie_buffer=createBuffer(Integer.BYTES);
+    }
+
+    protected ByteBuffer createBuffer(int size) {
+        return ((NioBaseServer)server).useDirectMemory()? ByteBuffer.allocateDirect(size) : ByteBuffer.allocate(size);
+    }
+
+    /**
+     * Reads a peer address from a SocketChannel. Note that method {@link #readPeerAddress(SocketChannel)} is not reentrant
+     */
+    public static class PeerAddressReader {
+        protected enum State {initial, reading_metadata, metadata_read}
+        protected static final int METADATA_SIZE=9, IPV4_SIZE=15, IPv6_SIZE=31;
+        protected final ByteBuffer buffer;
+        // 0: initial state, 1: metadata read
+        protected State            state=State.initial;
+        protected final byte[]     cookie_buf=new byte[4];
+
+        public PeerAddressReader() {
+            this(true);
         }
-        return null;
+
+        public PeerAddressReader(boolean use_direct_memory) {
+            buffer=Util.createBuffer(IPv6_SIZE, use_direct_memory); // 15 for an IPv4 address; 31 for an IPv6 address
+        }
+
+        // Reads the peer address. If not enough bytes can be read -> return null
+        // Format: [cookie (4)] [version (2)] [addr-size (2)] [addr-len (1)], followed by
+        //   IPv4: [addr (4)]  [port (2)]: total=15 bytes
+        //   IPv6: [addr (20)] [port (2)]: total=31 bytes
+        // We read 15 bytes and check addr-len: if 4, we can parse the address right away (IPv4). If 16, we need to
+        // read another 16 bytes, and then parse the address (IPv6).
+        // This method might have to be called multiple times until a non-null address is returned
+        public Address readPeerAddress(SocketChannel ch) throws IOException {
+            while(ch.isOpen()) {
+                switch(state) {
+                    case initial:
+                        buffer.clear().limit(IPV4_SIZE);
+                        state=State.reading_metadata;
+                        break;
+                    case reading_metadata:
+                        int num=ch.read(buffer);
+                        if(num == -1)
+                            throw new EOFException();
+                        if(buffer.position() < METADATA_SIZE)
+                            return null; // metadata hasn't been fully read yet
+                        state=State.metadata_read;
+                        // otherwise parse the metadata and get the length of the address (4: IPv4, 20: IPv6)
+                        int len=parseMetadata(ch.getLocalAddress(), ch.getRemoteAddress());
+                        if(len != 4 && len != 16)
+                            throw new IllegalArgumentException(String.format("length (%d) has to be 4 or 20", len));
+                        if(len == 16) { // IPv6 (default is IPv4)
+                            if(buffer.limit() < IPv6_SIZE)
+                                buffer.limit(IPv6_SIZE);
+                        }
+                        break;
+                    case metadata_read: // metadata read, read address
+                        if(buffer.hasRemaining()) {
+                            num=ch.read(buffer);
+                            if(num == -1)
+                                throw new EOFException();
+                            if(buffer.hasRemaining())
+                                return null;
+                        }
+                        IpAddress addr=new IpAddress();
+                        int addr_start=METADATA_SIZE-1, remaining=buffer.limit()-addr_start;
+                        ByteBuffer addr_buf=buffer.slice(addr_start, remaining);
+                        addr.readFrom(new ByteBufferInputStream(addr_buf));
+                        reset();
+                        return addr;
+                }
+            }
+            return null;
+        }
+
+        public PeerAddressReader reset() {
+            state=State.initial;
+            buffer.clear().limit(IPV4_SIZE);
+            return this;
+        }
+
+        protected int parseMetadata(SocketAddress local, SocketAddress remote) throws IOException {
+            buffer.get(0, cookie_buf, 0, 4);
+            if(!Arrays.equals(cookie, cookie_buf)) {
+                String fmt=String.format("%s: readPeerAddress(): cookie %s sent by %s does not match own cookie",
+                                         local, Util.byteArrayToHexString(cookie_buf), remote);
+                throw new IOException(fmt);
+            }
+            short version=buffer.getShort(cookie_buf.length);
+            if(!Version.isBinaryCompatible(version)) {
+                String fmt=String.format("%s: readPeerAddress(): packet from %s has different version (%s) from ours (%s)",
+                                         local, remote, Version.print(version), Version.printVersion());
+                throw new IOException(fmt);
+            }
+            return buffer.get(METADATA_SIZE-1);
+        }
+
+
     }
-
-    protected static byte[] getBuffer(final ByteBuffer buf) {
-        byte[] retval=new byte[buf.limit()];
-        buf.get(retval, buf.position(), buf.limit());
-        return retval;
-    }
-
-
-    protected ByteBuffer makeLengthBuffer(int length) {
-        length_buf.clear(); // buf was used before to write, so reset it again
-        length_buf.putInt(0, length); // absolute put; doesn't move position or limit
-        return length_buf;
-    }
-
 
 
 }
