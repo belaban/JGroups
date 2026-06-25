@@ -4326,6 +4326,7 @@ public class Util {
         ServerSocket ret=null;
         try {
             ret=factory.createServerSocket(service_name);
+            ret.setReuseAddress(true);
             if(recv_buf_size > 0)
                 ret.setReceiveBufferSize(recv_buf_size); // https://issues.redhat.com/browse/JGRP-2504
             Util.bind(ret, bind_addr, start_port, end_port);
@@ -4394,6 +4395,7 @@ public class Util {
         while(true) {
             try {
                 ch=factory.createServerSocketChannel(service_name);
+                ch.setOption(StandardSocketOptions.SO_REUSEADDR, true);
                 if(recv_buf_size > 0)
                     ch.setOption(StandardSocketOptions.SO_RCVBUF, recv_buf_size);
                 ch.bind(new InetSocketAddress(bind_addr, start_port), 50);
