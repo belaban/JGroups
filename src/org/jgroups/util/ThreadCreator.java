@@ -13,15 +13,10 @@ import java.lang.invoke.MethodType;
  */
 public class ThreadCreator {
     private static final Log                  LOG=LogFactory.getLog(ThreadCreator.class);
-    private static final MethodHandles.Lookup LOOKUP=MethodHandles.publicLookup();
     private static final String               OF_VIRTUAL_NAME="java.lang.Thread$Builder$OfVirtual";
-    private static final Class<?>             OF_VIRTUAL_CLASS;
-    private static final MethodHandle         OF_VIRTUAL;
     private static final MethodHandle         CREATE_VTHREAD;
 
     static {
-        OF_VIRTUAL_CLASS=getOfVirtualClass();
-        OF_VIRTUAL=getOfVirtualHandle();
         CREATE_VTHREAD=getCreateVThreadHandle();
     }
 
@@ -43,10 +38,8 @@ public class ThreadCreator {
 
     protected static Thread newVirtualThread(Runnable r) {
         if(CREATE_VTHREAD != null) {
-            // Thread.ofVirtual().unstarted()
             try {
-                Object of=OF_VIRTUAL.invoke();
-                return (Thread)CREATE_VTHREAD.invokeWithArguments(of, r);
+                return (Thread)CREATE_VTHREAD.invokeExact(r);
             }
             catch(Throwable t) {
             }
@@ -55,11 +48,17 @@ public class ThreadCreator {
     }
 
     protected static MethodHandle getCreateVThreadHandle() {
-        MethodType type=MethodType.methodType(Thread.class, Runnable.class);
         try {
-            return LOOKUP.findVirtual(OF_VIRTUAL_CLASS, "unstarted", type);
+            Class<?> ofVirtualClass=getOfVirtualClass();
+            if(ofVirtualClass == null)
+                return null;
+            MethodHandle ofVirtual=MethodHandles.publicLookup().findStatic(Thread.class, "ofVirtual",
+                                                                              MethodType.methodType(ofVirtualClass));
+            return MethodHandles.publicLookup().findVirtual(ofVirtualClass, "unstarted",
+                                                            MethodType.methodType(Thread.class, Runnable.class))
+              .bindTo(ofVirtual.invoke());
         }
-        catch(Exception ex) {
+        catch(Throwable ex) {
             LOG.debug("%s.unstarted() not found, falling back to regular threads", OF_VIRTUAL_NAME);
         }
         return null;
@@ -75,13 +74,4 @@ public class ThreadCreator {
         }
     }
 
-    protected static MethodHandle getOfVirtualHandle() {
-        try {
-            return OF_VIRTUAL_CLASS != null?
-              LOOKUP.findStatic(Thread.class, "ofVirtual", MethodType.methodType(OF_VIRTUAL_CLASS)) : null;
-        }
-        catch(Exception e) {
-            return null;
-        }
-    }
 }

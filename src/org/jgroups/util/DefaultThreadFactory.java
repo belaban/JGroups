@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class DefaultThreadFactory implements ThreadFactory {
     protected final String        baseName;
     protected final boolean       createDaemons;
-    protected final boolean       use_numbering;
+    protected boolean             use_numbering;
     protected final AtomicInteger counter=new AtomicInteger(); // if numbering is enabled
     protected boolean             includeClusterName;
     protected String              clusterName;
@@ -46,9 +46,11 @@ public class DefaultThreadFactory implements ThreadFactory {
         }
     }
 
+    public void setUseNumbering(boolean f) {this.use_numbering=f;}
     public void setIncludeClusterName(boolean includeClusterName) {
         this.includeClusterName=includeClusterName;
     }
+    public void setIncludeLocalAddress(boolean f) {includeLocalAddress=f;}
 
     public void setClusterName(String channelName) {
         clusterName=channelName;
@@ -109,21 +111,19 @@ public class DefaultThreadFactory implements ThreadFactory {
             addr=this.address;
 
         String name=base_name != null? base_name : "thread";
-        int estimated_size=name.length() + 10; // additional space for numbering
-        if(cluster_name != null)
-            estimated_size+=cluster_name.length();
-        if(addr != null)
-            estimated_size+=addr.length();
 
-        StringBuilder sb=new StringBuilder(estimated_size).append(name);
         if(use_numbering) {
             int id=counter.incrementAndGet();
-            sb.append("-").append(id);
+            if(includeClusterName)
+                return includeLocalAddress? name + '-' + id + ',' + cluster_name + ',' + addr
+                  : name + '-' + id + ',' + cluster_name;
+            return includeLocalAddress? name + '-' + id + ',' + addr
+              : name + '-' + id;
         }
+
         if(includeClusterName)
-            sb.append(',').append(cluster_name);
-        if(includeLocalAddress)
-            sb.append(',').append(addr);
-        return sb.toString();
+            return includeLocalAddress? name + ',' + cluster_name + ',' + addr
+              : name + ',' + cluster_name;
+        return includeLocalAddress? name + ',' + addr : name;
     }
 }
