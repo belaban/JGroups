@@ -16,7 +16,10 @@ public class ByteBufferInputStream extends InputStream implements DataInput {
         this.buf=buf;
     }
 
-    public ByteBuffer buf() {return buf;}
+    public ByteBuffer buf()      {return buf;}
+    public int        position() {return buf.position();}
+    public int        limit()    {return buf.limit();}
+    public int        capacity() {return buf.capacity();}
 
     @Override
     public void readFully(byte[] b) throws IOException {
@@ -219,6 +222,8 @@ public class ByteBufferInputStream extends InputStream implements DataInput {
     @Override
     public String readUTF() throws IOException {
         int utflen = readUnsignedShort();
+        if(((short)utflen) == -1)
+            return null;
         byte[] bytearr = new byte[utflen];
         char[] chararr = new char[utflen];
 

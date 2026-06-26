@@ -4,19 +4,48 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.io.UTFDataFormatException;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
 /**
- * Class using {@link ByteBuffer} and implementing {@link DataOutput}. Note that all instances need to pass the
- * exact size of the marshalled object as a ByteBuffer cannot be expanded.
- * @param buf The buffer
+ * Class using {@link ByteBuffer} and implementing {@link DataOutput}. The underlying ByteBuffer will be grown when
+ * the capacity is too small.
  * @author Bela Ban
  * @since  3.5
  */
-public record ByteBufferOutputStream(ByteBuffer buf) implements DataOutput {
-    public void                   reset() {buf.clear();}
-    public ByteBufferOutputStream flip()  {buf.flip(); return this;}
+public class ByteBufferOutputStream implements DataOutput {
+    protected ByteBuffer buf;
+    protected boolean    grow_exponentially; // if true, the buffer will double up to a certain size
+    protected boolean    use_direct_memory;  // direct or heap memory
+
+    public ByteBufferOutputStream(ByteBuffer buf) {
+        this.buf=Objects.requireNonNull(buf);
+        this.use_direct_memory=buf.isDirect();
+    }
+
+    public ByteBufferOutputStream() {
+        this(32, false, false);
+    }
+
+    public ByteBufferOutputStream(int capacity) {
+        this(capacity, false, false);
+    }
+
+    public ByteBufferOutputStream(int capacity, boolean grow_exponentially, boolean use_direct_memory) {
+        this.grow_exponentially=grow_exponentially;
+        this.use_direct_memory=use_direct_memory;
+        this.buf=use_direct_memory? ByteBuffer.allocateDirect(capacity) : ByteBuffer.allocate(capacity);
+    }
+
+    public ByteBuffer             buf()                        {return buf;}
+    public int                    position()                   {return buf.position();}
+    public int                    limit()                      {return buf.limit();}
+    public int                    capacity()                   {return buf.capacity();}
+    public boolean                growExponentially()          {return grow_exponentially;}
+    public ByteBufferOutputStream growExponentially(boolean b) {grow_exponentially=b; return this;}
+    public boolean                useDirectMemory()            {return use_direct_memory;}
 
     public void write(int b) throws IOException {
+        ensureCapacity(1);
         buf.put((byte)b);
     }
 
@@ -25,10 +54,12 @@ public record ByteBufferOutputStream(ByteBuffer buf) implements DataOutput {
     }
 
     public void write(byte[] b, int off, int len) throws IOException {
+        ensureCapacity(len);
         buf.put(b, off, len);
     }
 
     public void writeBoolean(boolean v) throws IOException {
+        ensureCapacity(1);
         write(v? 1 : 0);
     }
 
@@ -37,48 +68,68 @@ public record ByteBufferOutputStream(ByteBuffer buf) implements DataOutput {
     }
 
     public void writeShort(int v) throws IOException {
+        ensureCapacity(2);
         buf.putShort((short)v);
     }
 
     public void writeChar(int v) throws IOException {
+        ensureCapacity(2);
         buf.putChar((char)v);
     }
 
     public void writeInt(int v) throws IOException {
+        ensureCapacity(Integer.BYTES);
         buf.putInt(v);
     }
 
     public void writeLong(long v) throws IOException {
+        ensureCapacity(Long.BYTES);
         buf.putLong(v);
     }
 
     public void writeFloat(float v) throws IOException {
+        ensureCapacity(Integer.BYTES);
         buf.putFloat(v);
     }
 
     public void writeDouble(double v) throws IOException {
+        ensureCapacity(Long.BYTES);
         buf.putDouble(v);
     }
 
     public void writeBytes(String s) throws IOException {
-        int len=s.length();
-        for(int i = 0 ; i < len ; i++)
-            write((byte)s.charAt(i));
+        int len=s != null? s.length() : 0;
+        if(len > 0) {
+            ensureCapacity(len);
+            for(int i=0; i < len; i++)
+                write((byte)s.charAt(i));
+        }
     }
 
     public void writeChars(String s) throws IOException {
-        int len=s.length();
-        for (int i = 0 ; i < len ; i++) {
-            int v = s.charAt(i);
-            write((v >>> 8) & 0xFF);
-            write((v >>> 0) & 0xFF);
+        int len=s != null? s.length() : 0;
+        if(len > 0) {
+            ensureCapacity(len*2); // 2 bytes per char is possible
+            for(int i=0; i < len; i++) {
+                int v=s.charAt(i);
+                write((v >>> 8) & 0xFF);
+                write((v >>> 0) & 0xFF);
+            }
         }
     }
 
     public void writeUTF(String str) throws IOException {
-        int strlen = str.length();
-        int utflen = 0;
-        int c, count = 0;
+        if(str == null) {
+            writeShort(-1);
+            return;
+        }
+
+        int strlen=str != null? str.length() : 0;
+
+        if(strlen > 0)
+            ensureCapacity(strlen);
+
+        int utflen=0, c=0, count = 0;
 
         /* use charAt instead of copying String to char array */
         for (int i = 0; i < strlen; i++) {
@@ -125,5 +176,24 @@ public record ByteBufferOutputStream(ByteBuffer buf) implements DataOutput {
 
     public String toString() {
         return buf.toString();
+    }
+
+    /** Grows the buffer; whether linearly or exponentially depends on grow_exponentially */
+    protected void ensureCapacity(int bytes) {
+        int minCapacity=buf.position()+bytes;
+        if(minCapacity - buf.capacity() > 0) {
+            int newCapacity=this.grow_exponentially? buf.capacity() << 1 : buf.position() + bytes + 32;
+            if(newCapacity - minCapacity < 0)
+                newCapacity=minCapacity;
+            if(newCapacity < 0) {
+                if(minCapacity < 0) // overflow
+                    throw new OutOfMemoryError();
+                newCapacity=Integer.MAX_VALUE;
+            }
+            ByteBuffer tmp=use_direct_memory? ByteBuffer.allocateDirect(newCapacity) : ByteBuffer.allocate(newCapacity);
+            buf.flip();
+            tmp.put(buf);
+            buf=tmp;
+        }
     }
 }
