@@ -13,7 +13,6 @@ import java.util.Arrays;
  */
 public class ByteArrayDataOutputStream extends BaseDataOutputStream {
     protected byte[]  buf;
-    protected boolean grow_exponentially; // if true, the buffer will double every time
 
     public ByteArrayDataOutputStream() {
         this(32, false);
@@ -32,8 +31,6 @@ public class ByteArrayDataOutputStream extends BaseDataOutputStream {
     public ByteArray                 getBuffer()                  {return new ByteArray(buf, 0, pos);}
     public ByteBuffer                byteBuffer()                 {return ByteBuffer.wrap(buf, 0, pos);}
     public int                       capacity()                   {return buf.length;}
-    public boolean                   growExponentially()          {return grow_exponentially;}
-    public ByteArrayDataOutputStream growExponentially(boolean b) {grow_exponentially=b; return this;}
 
     @Override
     public void writeChar(int v) {
@@ -95,7 +92,6 @@ public class ByteArrayDataOutputStream extends BaseDataOutputStream {
     /** Grows the buffer; whether it grow linearly or exponentially depends on grow_exponentially */
     public void ensureCapacity(int bytes) {
         int minCapacity=pos+bytes;
-
         if(minCapacity - buf.length > 0) {
             int newCapacity=this.grow_exponentially? buf.length << 1 : pos + bytes + 32;
             if(newCapacity - minCapacity < 0)

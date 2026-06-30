@@ -13,6 +13,7 @@ import org.jgroups.stack.GossipData;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.RouterStub;
 import org.jgroups.stack.RouterStubManager;
+import org.jgroups.util.ByteArray;
 import org.jgroups.util.SocketFactory;
 import org.jgroups.util.TLS;
 import org.jgroups.util.Util;
@@ -20,6 +21,7 @@ import org.jgroups.util.Util;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -269,27 +271,24 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
         }
     }
 
+    @Override
+    public void sendToAll(ByteBuffer data) throws Exception {
+        String group=cluster_name != null? cluster_name.toString() : null;
+        ByteArray ba=Util.bufferToByteArray(data);
+        tunnel_policy.sendToAllMembers(group, local_addr, ba.array(), ba.offset(), ba.length());
+    }
+
+    public void sendUnicast(PhysicalAddress dest, ByteBuffer data) throws Exception {
+        throw new IllegalArgumentException(String.format("physical addr (%s) not supported by TUNNEL", dest));
+    }
 
     @Override
-    public void sendToAll(byte[] data, int offset, int length) throws Exception {
-        String group=cluster_name != null? cluster_name.toString() : null;
-        tunnel_policy.sendToAllMembers(group, local_addr, data, offset, length);
-    }
-
-    public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {
-        String group=cluster_name != null? cluster_name.toString() : null;
-        tunnel_policy.sendToSingleMember(group, dest, local_addr, data, offset, length);
-    }
-
-    protected void sendTo(final Address dest, byte[] buf, int offset, int length) throws Exception {
+    protected void sendTo(final Address dest, ByteBuffer buf) throws Exception {
         if(dest instanceof PhysicalAddress)
             throw new IllegalArgumentException(String.format("destination %s cannot be a physical address", dest));
-        sendUnicast(dest, buf, offset, length);
-    }
-
-    protected void sendUnicast(Address dest, byte[] data, int offset, int length) throws Exception {
         String group=cluster_name != null? cluster_name.toString() : null;
-        tunnel_policy.sendToSingleMember(group, dest, local_addr, data, offset, length);
+        ByteArray ba=Util.bufferToByteArray(buf);
+        tunnel_policy.sendToSingleMember(group, dest, local_addr, ba.array(), ba.offset(), ba.length());
     }
 
     protected PhysicalAddress getPhysicalAddress() {

@@ -19,12 +19,10 @@ import java.nio.channels.SocketChannel;
  * @since 5.5.3
  */
 public class MessageReader {
-
-    private final SocketChannel channel;
-    private ByteBuffer buffer;
-    private int readerIndex;
-    protected int max_length; // max number of bytes to read (JGRP-2523)
-    protected boolean use_direct_buffers;
+    private final SocketChannel   channel;
+    private ByteBuffer            buffer;
+    private int                   readerIndex;
+    protected int                 max_length; // max number of bytes to read (JGRP-2523)
     protected final NioConnection conn;
 
 
@@ -39,7 +37,6 @@ public class MessageReader {
     public MessageReader(NioConnection c, SocketChannel channel, int initial_buf_size, boolean use_direct_buffers) {
         this.conn=c;
         this.channel = channel;
-        this.use_direct_buffers = use_direct_buffers;
         buffer = use_direct_buffers? ByteBuffer.allocateDirect(initial_buf_size) : ByteBuffer.allocate(initial_buf_size);
     }
 
@@ -85,7 +82,6 @@ public class MessageReader {
         }
 
         // Not enough data or buffer too small
-
         if (readerIndex + 4 + length > buffer.capacity()) {
             // Ensure buffer fits entire message
             makeSpace(4 + length);
@@ -150,7 +146,7 @@ public class MessageReader {
             buffer.compact();
         } else {
             int newCapacity = Math.max(totalSpace, buffer.capacity() * 2);
-            ByteBuffer newBuffer = use_direct_buffers? ByteBuffer.allocateDirect(newCapacity) : ByteBuffer.allocate(newCapacity);
+            ByteBuffer newBuffer = buffer.isDirect()? ByteBuffer.allocateDirect(newCapacity) : ByteBuffer.allocate(newCapacity);
             newBuffer.put(buffer);
             buffer = newBuffer;
         }
@@ -163,7 +159,7 @@ public class MessageReader {
 
     @Override
     public String toString() {
-        return String.format("[readerIndex=%d writerIndex=%d capacity=%d remaining=%d]", readerIndex, buffer.position(), buffer.capacity(),
-                buffer.position() - readerIndex);
+        return String.format("[readerIndex=%d writerIndex=%d capacity=%d remaining=%d]",
+                             readerIndex, buffer.position(), buffer.capacity(), buffer.position() - readerIndex);
     }
 }

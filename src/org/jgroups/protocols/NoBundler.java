@@ -1,7 +1,6 @@
 package org.jgroups.protocols;
 
 import org.jgroups.Message;
-import org.jgroups.util.ByteArrayDataOutputStream;
 
 /**
  * Bundler which doesn't bundle :-) Can be used to measure the diff between bundling and non-bundling (e.g. at runtime).
@@ -20,8 +19,14 @@ public class NoBundler extends BaseBundler {
     public void send(Message msg) throws Exception {
         boolean stats_enabled=transport.statsEnabled();
         long start=stats_enabled? System.nanoTime() : 0;
-        ByteArrayDataOutputStream buffer=new ByteArrayDataOutputStream(msg.length() + 128).growExponentially(true);
-        sendSingle(msg.dest(), msg, buffer);
+        lock.lock();
+        try {
+            output.reset();
+            sendSingle(msg.dest(), msg, output); // reuing output buffer from the superclass
+        }
+        finally {
+            lock.unlock();
+        }
         if(stats_enabled) {
             long time=System.nanoTime() - start;
             avg_send_time.add(time);

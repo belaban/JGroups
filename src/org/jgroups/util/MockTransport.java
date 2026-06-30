@@ -5,6 +5,8 @@ import org.jgroups.PhysicalAddress;
 import org.jgroups.protocols.NoBundler;
 import org.jgroups.protocols.TP;
 
+import java.nio.ByteBuffer;
+
 /**
  * A dummy implementation of {@link TP}
  * @author Bela Ban
@@ -17,7 +19,7 @@ public class MockTransport extends TP {
         setBundler(new NoBundler());
     }
     public boolean            supportsMulticasting() {return true;}
-    public void               sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {}
+    public void               sendUnicast(PhysicalAddress dest, ByteBuffer data) throws Exception {}
     protected PhysicalAddress getPhysicalAddress()   {return null;}
     public MockTransport      cluster(AsciiString s) {this.cluster_name=s; return this;}
 

@@ -1,6 +1,7 @@
 package org.jgroups.util;
 
 import java.io.DataOutput;
+import java.io.IOException;
 import java.io.OutputStream;
 
 /**
@@ -12,37 +13,38 @@ import java.io.OutputStream;
  */
 public abstract class BaseDataOutputStream extends OutputStream implements DataOutput {
     protected int     pos;
+    protected boolean grow_exponentially; // if true, the buffer will double up to a certain size
 
-    public BaseDataOutputStream  position(int pos) {this.pos=checkBounds(pos); return this;}
-    public int                   position()        {return pos;}
+    public BaseDataOutputStream reset()                      {return position(0);}
+    public BaseDataOutputStream position(int pos)            {this.pos=checkBounds(pos); return this;}
+    public int                  position()                   {return pos;}
+    public boolean              growExponentially()          {return grow_exponentially;}
+    public BaseDataOutputStream growExponentially(boolean b) {grow_exponentially=b; return this;}
 
-    public abstract void  write(int b);
-    public void           write(byte[] b) {write(b, 0, b.length);}
-    public abstract void  write(byte[] b, int off, int len);
 
-    public void writeBoolean(boolean v) {
+    public void writeBoolean(boolean v) throws IOException {
         ensureCapacity(1);
         write(v ? 1 : 0);
     }
 
-    public void writeByte(int v) {
+    public void writeByte(int v) throws IOException {
         ensureCapacity(1);
         write(v);
     }
 
-    public void writeShort(int v) {
+    public void writeShort(int v) throws IOException {
         ensureCapacity(2);
         write((v >>> 8) & 0xFF);
         write((v >>> 0) & 0xFF);
     }
 
-    public void writeChar(int v) {
+    public void writeChar(int v) throws IOException {
         ensureCapacity(2);
         write((v >>> 8) & 0xFF);
         write((v >>> 0) & 0xFF);
     }
 
-    public void writeInt(int v) {
+    public void writeInt(int v) throws IOException {
         ensureCapacity(4);
         write((v >>> 24) & 0xFF);
         write((v >>> 16) & 0xFF);
@@ -50,7 +52,7 @@ public abstract class BaseDataOutputStream extends OutputStream implements DataO
         write((v >>>  0) & 0xFF);
     }
 
-    public void writeLong(long v) {
+    public void writeLong(long v) throws IOException {
         ensureCapacity(8);
         write((byte)(v >>> 56));
         write((byte)(v >>> 48));
@@ -62,15 +64,15 @@ public abstract class BaseDataOutputStream extends OutputStream implements DataO
         write((byte)(v >>>  0));
     }
 
-    public void writeFloat(float v) {
+    public void writeFloat(float v) throws IOException {
         writeInt(Float.floatToIntBits(v));
     }
 
-    public void writeDouble(double v) {
+    public void writeDouble(double v) throws IOException {
         writeLong(Double.doubleToLongBits(v));
     }
 
-    public void writeBytes(String s) {
+    public void writeBytes(String s) throws IOException {
         int len=s != null? s.length() : 0;
         if(len > 0) {
             ensureCapacity(len);
@@ -79,7 +81,7 @@ public abstract class BaseDataOutputStream extends OutputStream implements DataO
         }
     }
 
-    public void writeChars(String s) {
+    public void writeChars(String s) throws IOException {
         int len=s != null? s.length() : 0;
         if(len > 0) {
             ensureCapacity(len * 2); // 2 bytes per char
@@ -90,7 +92,7 @@ public abstract class BaseDataOutputStream extends OutputStream implements DataO
         }
     }
 
-    public void writeUTF(String str) {
+    public void writeUTF(String str) throws IOException {
         int strlen=str != null? str.length() : 0;
         if(strlen > 0)
             ensureCapacity(strlen);

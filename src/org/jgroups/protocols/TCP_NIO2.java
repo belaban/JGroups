@@ -9,6 +9,7 @@ import org.jgroups.annotations.Property;
 import org.jgroups.blocks.cs.NioServer;
 import org.jgroups.conf.AttributeType;
 
+import java.nio.ByteBuffer;
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.ClosedChannelException;
 import java.util.Collection;
@@ -39,8 +40,6 @@ public class TCP_NIO2 extends BasicTCP {
       "until it terminates. New messages will start a new reader",type=AttributeType.TIME)
     protected long    reader_idle_time=5000;
 
-    @Property(description="When true, direct byte buffers are used for reading messages, otherwise heap-based ones")
-    protected boolean use_direct_memory=true;
 
 
     public TCP_NIO2() {}
@@ -53,9 +52,6 @@ public class TCP_NIO2 extends BasicTCP {
 
     public long     getReaderIdleTime() {return reader_idle_time;}
     public TCP_NIO2 setReaderIdleTime(long r) {this.reader_idle_time=r; return this;}
-
-    public boolean  useDirectMemory()          {return use_direct_memory;}
-    public TCP_NIO2 useDirectMemory(boolean b) {this.use_direct_memory=b; return this;}
 
     @ManagedAttribute(description="The number of connections",type=AttributeType.SCALAR,gauge=true)
     public int getOpenConnections() {return server.getNumConnections();}
@@ -91,10 +87,11 @@ public class TCP_NIO2 extends BasicTCP {
         server.readerIdleTime(t);
     }
 
-    public void send(Address dest, byte[] data, int offset, int length) throws Exception {
+    @Override
+    public void sendUnicast(PhysicalAddress dest, ByteBuffer data) throws Exception {
         if(server != null) {
             try {
-                server.send(dest, data, offset, length);
+                server.send(dest, data);
             }
             catch(ClosedChannelException | CancelledKeyException ignored) {}
             catch(Throwable ex) {

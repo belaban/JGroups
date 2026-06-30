@@ -8,11 +8,14 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.AsciiString;
+import org.jgroups.util.ByteBufferInputStream;
 import org.jgroups.util.NameCache;
 import org.jgroups.util.Util;
 
 import java.net.InetAddress;
+import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 
@@ -57,7 +60,7 @@ public class SHARED_LOOPBACK extends TP {
     }
 
     @Override
-    public void sendToAll(byte[] data, int offset, int length) throws Exception {
+    public void sendToAll(ByteBuffer data) throws Exception {
         List<SHARED_LOOPBACK> targets;
         synchronized(routing_table) {
             Map<Address,SHARED_LOOPBACK> dests=routing_table.get(this.cluster_name);
@@ -68,22 +71,23 @@ public class SHARED_LOOPBACK extends TP {
             targets=dests.entrySet().stream().filter(e -> !Objects.equals(local_addr, e.getKey()))
               .map(Map.Entry::getValue).toList();
         }
-
-        targets.forEach(target -> {
+        BiConsumer<SHARED_LOOPBACK,ByteBuffer> c=(target,b) -> {
             try {
-                target.receive(local_addr, data, offset, length);
+                target.receive(local_addr, new ByteBufferInputStream(data), b.remaining());
             }
             catch(Throwable t) {
                 log.error(Util.getMessage("FailedSendingMessageTo") + target.getAddress(), t);
             }
-        });
+        };
+
+        Util.doWithByteBuffer(data, c, targets);
     }
 
-    public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {
-        sendTo(dest, data, offset, length);
+    public void sendUnicast(PhysicalAddress dest, ByteBuffer data) throws Exception {
+        sendTo(dest, data);
     }
 
-    protected void sendTo(Address dest, byte[] buf, int offset, int length) throws Exception {
+    protected void sendTo(Address dest, ByteBuffer buf) throws Exception {
         SHARED_LOOPBACK target;
         synchronized(routing_table) {
             Map<Address,SHARED_LOOPBACK> dests=routing_table.get(cluster_name);
@@ -97,7 +101,7 @@ public class SHARED_LOOPBACK extends TP {
                 return;
             }
         }
-        target.receive(local_addr, buf, offset, length);
+        target.receive(local_addr, new ByteBufferInputStream(buf), buf.remaining());
     }
 
 

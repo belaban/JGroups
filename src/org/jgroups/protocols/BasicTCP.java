@@ -15,11 +15,7 @@ import org.jgroups.conf.AttributeType;
 import org.jgroups.protocols.pbcast.GMS;
 
 import java.net.InetAddress;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Predicate;
 
@@ -179,16 +175,10 @@ public abstract class BasicTCP extends TP implements Receiver, ConnectionListene
         }
     }
 
-    public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {
-        send(dest, data, offset, length);
-    }
-
     public abstract String printConnections();
 
     @ManagedOperation(description="Clears all connections (they will get re-established). For testing only, don't use !")
     public abstract BasicTCP clearConnections(boolean graceful);
-
-    public abstract void send(Address dest, byte[] data, int offset, int length) throws Exception;
 
     public abstract void retainAll(Collection<Address> members);
 

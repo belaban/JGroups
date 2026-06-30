@@ -22,13 +22,15 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
  * Abstract class for a server handling sending, receiving and connection management.
@@ -110,7 +112,7 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     public int              socketConnectionTimeout()               {return sock_conn_timeout;}
     public BaseServer       socketConnectionTimeout(int timeout)    {this.sock_conn_timeout = timeout; return this;}
     public long             connExpireTime()                        {return conn_expire_time;}
-    public BaseServer       connExpireTimeout(long t)               {conn_expire_time=TimeUnit.NANOSECONDS.convert(t, TimeUnit.MILLISECONDS); return this;}
+    public BaseServer       connExpireTimeout(long t)               {conn_expire_time=NANOSECONDS.convert(t, MILLISECONDS); return this;}
     public TimeService      timeService()                           {return time_service;}
     public BaseServer       timeService(TimeService ts)             {this.time_service=ts; return this;}
     public int              receiveBufferSize()                     {return recv_buf_size;}
@@ -141,9 +143,6 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         return retval;
     }
 
-    /**
-     * Starts accepting connections. Typically, socket handler or selectors thread are started here.
-     */
     public void start() throws Exception {
         if(reaperInterval > 0 && (reaper == null || !reaper.isAlive())) {
             reaper=new Reaper();
@@ -539,10 +538,17 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     }
 
     public void sendToAll(ByteBuffer data) {
+        int pos=data.position(), limit=data.limit();
+        boolean first=true;
         for(Map.Entry<Address,Connection> entry: conns.entrySet()) {
             Connection conn=entry.getValue();
             try {
-                conn.send(data.duplicate());
+                if(!first)
+                    data.position(pos).limit(limit);
+                else
+                    first=false;
+                conn.send(data);
+                first=false;
             }
             catch(Throwable ex) {
                 Address dest=entry.getKey();

@@ -13,6 +13,7 @@ import java.io.DataInput;
 import java.io.InterruptedIOException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -28,7 +29,7 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  * A subclass has to override
  * <ul>
- * <li>{@link #sendUnicast(org.jgroups.PhysicalAddress, byte[], int, int)}
+ * <li>{@link #sendUnicast(PhysicalAddress, ByteBuffer)}
  * <li>{@link #init()}
  * <li>{@link #start()}: subclasses <em>must</em> call super.start() <em>after</em> they initialize themselves
  * (e.g., created their sockets).
@@ -63,9 +64,9 @@ public abstract class TP extends TPConfig implements DiagnosticsHandler.ProbeHan
     /**
      * Send a unicast message to a member. Note that the destination address is a *physical*, not a logical address
      * @param dest Must be a non-null physical unicast address (e.g. {@link org.jgroups.stack.IpAddress})
-     * @param data The data to be sent. This is not a copy, so don't modify it
+     * @param buf The data to be sent. This is not a copy, so don't modify it
      */
-    public abstract void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception;
+    public abstract void sendUnicast(PhysicalAddress dest, ByteBuffer buf) throws Exception;
 
     public String toString() {
         return local_addr != null? getName() + "(local address: " + local_addr + ')' : getName();
@@ -508,11 +509,11 @@ public abstract class TP extends TPConfig implements DiagnosticsHandler.ProbeHan
             handleSingleMessage(in, multicast);
     }
 
-    public void doSend(byte[] buf, int offset, int length, Address dest) throws Exception {
+    public void doSend(ByteBuffer buf, Address dest) throws Exception {
         if(dest != null)
-            sendTo(dest, buf, offset, length);
+            sendTo(dest, buf);
         else
-            sendToAll(buf, offset, length);
+            sendToAll(buf);
     }
 
     public boolean unicastDestMismatch(Address dest) {
@@ -585,10 +586,10 @@ public abstract class TP extends TPConfig implements DiagnosticsHandler.ProbeHan
         return match;
     }
 
-    protected void sendTo(final Address dest, byte[] buf, int offset, int length) throws Exception {
+    protected void sendTo(final Address dest, ByteBuffer buf) throws Exception {
         if(local_transport != null && local_transport.isLocalMember(dest)) {
             try {
-                local_transport.sendTo(dest, buf, offset, length);
+                local_transport.sendTo(dest, buf);
                 return;
             }
             catch(Exception ex) {
@@ -599,7 +600,7 @@ public abstract class TP extends TPConfig implements DiagnosticsHandler.ProbeHan
 
         PhysicalAddress physical_dest=dest instanceof PhysicalAddress? (PhysicalAddress)dest : getPhysicalAddressFromCache(dest);
         if(physical_dest != null) {
-            sendUnicast(physical_dest,buf,offset,length);
+            sendUnicast(physical_dest, buf);
             return;
         }
         if(who_has_cache.addIfAbsentOrExpired(dest)) { // true if address was added
@@ -609,7 +610,7 @@ public abstract class TP extends TPConfig implements DiagnosticsHandler.ProbeHan
                 for(PingData data: responses) {
                     if(data.getAddress() != null && data.getAddress().equals(dest)) {
                         if((physical_dest=data.getPhysicalAddr()) != null) {
-                            sendUnicast(physical_dest, buf, offset, length);
+                            sendUnicast(physical_dest, buf);
                             return;
                         }
                     }
@@ -624,7 +625,7 @@ public abstract class TP extends TPConfig implements DiagnosticsHandler.ProbeHan
 
     /** Fetches the physical addrs for all mbrs and sends the msg to each physical address. Asks discovery for missing
      * members' physical addresses if needed */
-    protected void sendToAll(byte[] buf, int offset, int length) throws Exception {
+    protected void sendToAll(ByteBuffer buf) throws Exception {
         List<Address> missing=null;
         Set<Address>  mbrs=members;
         boolean       local_send_successful=true;
@@ -634,7 +635,7 @@ public abstract class TP extends TPConfig implements DiagnosticsHandler.ProbeHan
 
         if(local_transport != null) {
             try {
-                local_transport.sendToAll(buf, offset, length);
+                local_transport.sendToAll(buf);
             }
             catch(Exception ex) {
                 log.warn("failed sending group message via local transport, sending it via regular transport", ex);
@@ -658,15 +659,22 @@ public abstract class TP extends TPConfig implements DiagnosticsHandler.ProbeHan
                 dests.add(target);
         }
         if(!dests.isEmpty())
-            sendUnicasts(dests, buf, offset, length);
+            sendUnicasts(dests, buf);
         if(missing != null)
             fetchPhysicalAddrs(missing);
     }
 
-    protected void sendUnicasts(List<PhysicalAddress> dests, byte[] data, int offset, int length) throws Exception {
+    protected void sendUnicasts(List<PhysicalAddress> dests, ByteBuffer data) throws Exception {
+        int pos=data.position(), limit=data.limit();
+        boolean first=true;
         for(PhysicalAddress dest: dests) {
             try {
-                sendUnicast(dest, data, offset, length);
+                if(!first)
+                    data.position(pos).limit(limit);
+                else
+                    first=false;
+                sendUnicast(dest, data);
+                first=false;
             }
             catch(SocketException | SocketTimeoutException sock_ex) {
                 log.trace(Util.getMessage("FailureSendingToPhysAddr"), local_addr, dest, sock_ex);

@@ -158,7 +158,7 @@ public class ByteArrayDataInputOutputStreamTest {
         assert out.position() == 120;
     }
 
-    public void testExpanding2() {
+    public void testExpanding2() throws IOException {
         ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(1);
         out.write(new byte[]{'b', 'e', 'l', 'a'});
 
@@ -403,7 +403,7 @@ public class ByteArrayDataInputOutputStreamTest {
     }
 
 
-    public void testWriteBytes() {
+    public void testWriteBytes() throws IOException {
         String name="Bela";
         ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(2);
         out.writeBytes(name);

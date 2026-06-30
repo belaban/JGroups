@@ -6,6 +6,7 @@ import org.jgroups.ObjectMessage;
 import org.jgroups.util.*;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 /**
@@ -17,7 +18,7 @@ import java.util.Arrays;
 public class PartialOutputStreamTest {
     protected static final byte[] array={0,1,2,3,4,5,6,7,8,9,10};
 
-    public void testRemaining() {
+    public void testRemaining() throws IOException {
         ByteArrayDataOutputStream out=new ByteArrayDataOutputStream();
         PartialOutputStream pos=new PartialOutputStream(out, 0, 1);
         assert pos.remaining() == 1;
@@ -73,7 +74,7 @@ public class PartialOutputStreamTest {
     }
 
 
-    public void testWriteByteArrayInRange() {
+    public void testWriteByteArrayInRange() throws IOException {
         ByteArrayDataOutputStream out=new ByteArrayDataOutputStream();
         PartialOutputStream pos=new PartialOutputStream(out, 0, 16);
         pos.write(array);
@@ -83,7 +84,7 @@ public class PartialOutputStreamTest {
     }
 
 
-    public void testWriteByteArrayBeyondRange() {
+    public void testWriteByteArrayBeyondRange() throws IOException {
         ByteArrayDataOutputStream out=new ByteArrayDataOutputStream();
         PartialOutputStream pos=new PartialOutputStream(out, 0, 8);
         pos.write(array);

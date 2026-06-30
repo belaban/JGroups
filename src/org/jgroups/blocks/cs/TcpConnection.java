@@ -4,10 +4,7 @@ import org.jgroups.Address;
 import org.jgroups.Version;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.util.Bits;
-import org.jgroups.util.ByteArrayDataOutputStream;
-import org.jgroups.util.ThreadFactory;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLHandshakeException;
@@ -138,24 +135,17 @@ public class TcpConnection extends Connection {
         }
     }
 
+    public void send(ByteBuffer buf) throws Exception {
+        if(buf == null)
+            return;
+        ByteArray ba=Util.bufferToByteArray(buf);
+        send(ba.array(), ba.offset(), ba.length());
+    }
+
     public void locklessSend(byte[] data, int offset, int length) throws Exception {
         if(out == null)
             return;
         doSend(data, offset, length, true);
-    }
-
-    public void send(ByteBuffer buf) throws Exception {
-        if(buf == null)
-            return;
-        int offset=buf.hasArray()? buf.arrayOffset() + buf.position() : buf.position(),
-          len=buf.remaining();
-        if(buf.hasArray())
-            send(buf.array(), offset, len);
-        else {
-            byte[] tmp=new byte[len];
-            buf.get(tmp, 0, len);
-            send(tmp, 0, len); // will get copied again if send-queues are enabled
-        }
     }
 
     @GuardedBy("send_lock")

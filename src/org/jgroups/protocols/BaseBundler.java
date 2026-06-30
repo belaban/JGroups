@@ -45,7 +45,7 @@ public abstract class BaseBundler implements Bundler {
     protected MessageProcessingPolicy               msg_processing_policy;
     protected final ReentrantLock                   lock=new ReentrantLock();
     protected @GuardedBy("lock") long               count;    // current number of bytes accumulated
-    protected ByteArrayDataOutputStream             output;
+    protected ByteBufferOutputStream                output;
     protected MsgStats                              msg_stats;
     protected Log                                   log;
     protected SuppressLog<Address>                  suppress_log;
@@ -156,7 +156,7 @@ public abstract class BaseBundler implements Bundler {
         msg_stats=transport.getMessageStats();
         log=transport.getLog();
         suppress_log=new SuppressLog<>(log);
-        output=new ByteArrayDataOutputStream(max_size + MSG_OVERHEAD);
+        output=new ByteBufferOutputStream(max_size + MSG_OVERHEAD, false, transport.useDirectMemory());
     }
 
     public void resetStats() {
@@ -204,7 +204,7 @@ public abstract class BaseBundler implements Bundler {
             if(list.isEmpty())
                 continue;
             Address dst=entry.getKey();
-            output.position(0);
+            output.reset();
             try {
                 if(list.size() == 1)
                     sendSingle(dst, list.get(0), output);
@@ -227,7 +227,7 @@ public abstract class BaseBundler implements Bundler {
         }
     }
 
-    protected void sendSingle(Address dst, Message msg, ByteArrayDataOutputStream out) throws Exception {
+    protected void sendSingle(Address dst, Message msg, ByteBufferOutputStream out) throws Exception {
         if(dst == null) { // multicast
             sendSingleMessage(dst, msg, out);
             loopbackUnlessDontLoopbackIsSet(msg);
@@ -242,7 +242,7 @@ public abstract class BaseBundler implements Bundler {
         }
     }
 
-    protected void sendMultiple(Address dst, Address sender, List<Message> list, ByteArrayDataOutputStream out) throws Exception {
+    protected void sendMultiple(Address dst, Address sender, List<Message> list, ByteBufferOutputStream out) throws Exception {
         if(dst == null) { // multicast
             sendMessageList(dst, sender, list, out);
             loopback(dst, transport.getAddress(), list, list.size());
@@ -254,21 +254,6 @@ public abstract class BaseBundler implements Bundler {
                 loopback(dst, transport.getAddress(), list, list.size());
             else
                 sendMessageList(dst, sender, list, out);
-        }
-    }
-
-    protected void sendMultiple(Address dst, Address sender, Message[] list, int len, ByteArrayDataOutputStream out) {
-        if(dst == null) { // multicast
-            sendMessageListArray(dst, sender, list, len, out);
-            loopback(dst, transport.getAddress(), list, len);
-        }
-        else {            // unicast
-            boolean send_to_self=Objects.equals(transport.getAddress(), dst)
-              || dst instanceof PhysicalAddress && dst.equals(transport.localPhysicalAddress());
-            if(send_to_self)
-                loopback(dst, transport.getAddress(), list, len);
-            else
-                sendMessageListArray(dst, sender, list, len, out);
         }
     }
 
@@ -312,29 +297,20 @@ public abstract class BaseBundler implements Bundler {
         loopback(dest, sender, fa, fa.size());
     }
 
-    protected void sendSingleMessage(final Address dest, final Message msg, ByteArrayDataOutputStream out) throws Exception {
+    protected void sendSingleMessage(final Address dest, final Message msg, ByteBufferOutputStream out) throws Exception {
         Util.writeMessage(msg, out, dest == null);
-        transport.doSend(out.buffer(), 0, out.position(), dest);
+        out.buf().flip();
+        transport.doSend(out.buf(), dest);
         transport.getMessageStats().incrNumSingleMsgsSent();
         num_single_msgs_sent.increment();
     }
 
-    protected void sendMessageList(Address dest, Address src, List<Message> list, ByteArrayDataOutputStream out) throws Exception {
+    protected void sendMessageList(Address dest, Address src, List<Message> list, ByteBufferOutputStream out) throws Exception {
         Util.writeMessageList(dest, src, transport.cluster_name.val(), list, out, dest == null);
-        transport.doSend(out.buffer(), 0, out.position(), dest);
+        out.buf().flip();
+        transport.doSend(out.buf(), dest);
         transport.getMessageStats().incrNumBatchesSent();
         num_batches_sent.increment();
-    }
-
-    protected void sendMessageListArray(final Address dest, final Address src, Message[] list, int len, ByteArrayDataOutputStream out) {
-        try {
-            Util.writeMessageList(dest, src, transport.cluster_name.val(), list, 0, len, out, dest == null);
-            transport.doSend(out.buffer(), 0, out.position(), dest);
-            transport.getMessageStats().incrNumBatchesSent();
-        }
-        catch(Throwable e) {
-            log.trace(Util.getMessage("FailureSendingMsgBundle"), transport.getAddress(), e);
-        }
     }
 
     @GuardedBy("lock") protected void addMessage(Message msg, int size) {

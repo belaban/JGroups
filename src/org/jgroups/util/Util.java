@@ -1255,7 +1255,6 @@ public class Util {
         return retval;
     }
 
-
     public static Throwable exceptionFromBuffer(byte[] buf, int offset, int length) throws IOException, ClassNotFoundException {
         ByteArrayDataInputStream in=new ByteArrayDataInputStream(buf, offset,length);
         return exceptionFromStream(in);
@@ -1272,6 +1271,19 @@ public class Util {
         return retval;
     }
 
+    public static ByteArray bufferToByteArray(final ByteBuffer buf) {
+        if(buf == null)
+            return null;
+        int offset=buf.hasArray()? buf.arrayOffset() + buf.position() : buf.position(), len=buf.remaining();
+        if(buf.hasArray())
+            return new ByteArray(buf.array(), offset, len);
+        else {
+            byte[] tmp=new byte[len];
+            buf.get(tmp, 0, len);
+            return new ByteArray(tmp, 0, len);
+        }
+    }
+
     @Deprecated(since = "5.5.3", forRemoval = true)
     public static void bufferToArray(final Address sender, final ByteBuffer buf, org.jgroups.blocks.cs.Receiver target) {
         if(buf == null)
@@ -1284,6 +1296,24 @@ public class Util {
             byte[] tmp=new byte[len];
             buf.get(tmp, 0, len);
             target.receive(sender, tmp, 0, len);
+        }
+    }
+
+    /**
+     * Applies a function to a list of items, resets the byte buffer before every invocation
+     * @param buf
+     * @param c
+     */
+    public static <E extends Object> void doWithByteBuffer(ByteBuffer buf, BiConsumer<E,ByteBuffer> c, List<E> list) {
+        int pos=buf.position(), limit=buf.limit();
+        boolean first=true;
+        for(E e: list) {
+            if(!first)
+                buf.position(pos).limit(limit);
+            else
+                first=false;
+            c.accept(e, buf);
+            first=false;
         }
     }
 
@@ -1342,27 +1372,6 @@ public class Util {
 
     public static Message messageFromBuffer(byte[] buf, int offset, int length) throws Exception {
         ByteArrayDataInputStream in=new ByteArrayDataInputStream(buf, offset, length);
-        short type=in.readShort();
-        Message msg=MessageFactory.create(type);
-        msg.readFrom(in);
-        return msg;
-    }
-
-    public static ByteArray messageToByteBuffer(Message msg) throws Exception {
-        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(msg.size() +2);
-        out.writeBoolean(msg != null);
-        if(msg != null) {
-            out.writeShort(msg.getType());
-            msg.writeTo(out);
-        }
-        return out.getBuffer();
-    }
-
-
-    public static Message messageFromByteBuffer(byte[] buffer, int offset, int length) throws Exception {
-        DataInput in=new ByteArrayDataInputStream(buffer,offset,length);
-        if(!in.readBoolean())
-            return null;
         short type=in.readShort();
         Message msg=MessageFactory.create(type);
         msg.readFrom(in);

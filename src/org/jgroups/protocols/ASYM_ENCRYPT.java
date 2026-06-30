@@ -409,7 +409,7 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
             num++;
         }
         int curr_pos=out.position();
-        out.position(0).writeInt(num);
+        out.reset().writeInt(num);
         out.position(curr_pos);
     }
 

@@ -9,6 +9,7 @@ import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.util.ByteArray;
 import org.jgroups.util.SuppressLog;
 import org.jgroups.util.Util;
 
@@ -16,6 +17,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.*;
+import java.nio.ByteBuffer;
 import java.util.Formatter;
 import java.util.List;
 import java.util.Map;
@@ -252,24 +254,28 @@ public class UDP extends TP {
     }
 
     @Override
-    public void sendToAll(byte[] data, int offset, int length) throws Exception {
+    public void sendToAll(ByteBuffer buf) throws Exception {
         if(ip_mcast && mcast_addr != null) {
             if(local_transport != null) {
                 try {
-                    local_transport.sendToAll(data, offset, length);
+                    local_transport.sendToAll(buf);
                 }
                 catch(Exception ex) {
                     log.warn("failed sending group message via local transport, sending it via regular transport", ex);
                 }
             }
-            _send(mcast_addr.getIpAddress(), mcast_addr.getPort(), data, offset, length);
+            ByteArray ba=Util.bufferToByteArray(buf);
+            if(ba != null)
+                _send(mcast_addr.getIpAddress(), mcast_addr.getPort(), ba.array(), ba.offset(), ba.length());
         }
         else
-            super.sendToAll(data, offset, length);
+            super.sendToAll(buf);
     }
 
-    public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {
-        _send(dest.getIpAddress(), dest.getPort(), data, offset, length);
+    public void sendUnicast(PhysicalAddress dest, ByteBuffer buf) throws Exception {
+        ByteArray ba=Util.bufferToByteArray(buf);
+        if(ba != null)
+            _send(dest.getIpAddress(), dest.getPort(), ba.array(), ba.offset(), ba.length());
     }
 
 
@@ -325,6 +331,12 @@ public class UDP extends TP {
                                                  "datagram packet size of " + Global.MAX_DATAGRAM_PACKET_SIZE);
         if(is_mac && suppress_time_out_of_buffer_space > 0)
             suppress_log_out_of_buffer_space=new SuppressLog<>(log, "FailureSendingToPhysAddr");
+
+        if(use_direct_memory) {
+            log.warn("use_direct_memory=true makes no sense in %s; ByteBuffers will be converted to " +
+                       "byte[] arrays, as DatagramSocket reads/writes only accept byte[] arrays",
+                     this.getClass().getSimpleName());
+        }
     }
 
     /** Creates the unicast and multicast sockets and starts the unicast and multicast receiver threads */

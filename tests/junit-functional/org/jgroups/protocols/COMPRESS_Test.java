@@ -1,12 +1,10 @@
 package org.jgroups.protocols;
 
-import org.jgroups.BytesMessage;
-import org.jgroups.Global;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
+import org.jgroups.*;
 import org.jgroups.util.MyReceiver;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 /**
@@ -18,23 +16,41 @@ public class COMPRESS_Test {
     protected JChannel a, b;
     protected MyReceiver<Message> r1=new MyReceiver<Message>().rawMsgs(true), r2=new MyReceiver<Message>().rawMsgs(true);
 
-    @AfterMethod
-    protected void destroy() {Util.close(r2, r1, b, a);}
-
-
-    public void testSimpleCompression() throws Exception {
+    @BeforeMethod
+    protected void setup() throws Exception {
         a=create("A").connect(COMPRESS_Test.class.getSimpleName());
         b=create("B").connect(COMPRESS_Test.class.getSimpleName());
         Util.waitUntilAllChannelsHaveSameView(10000, 500, a,b);
         a.setReceiver(r1); b.setReceiver(r2);
-        byte[] array=Util.generateArray(100);
-        a.send(new BytesMessage(b.getAddress(), array));
-        Util.waitUntil(10000, 500, () -> r2.size() > 0);
-        Message msg=r2.list().get(0);
-        assert msg.hasPayload() && msg.getLength() == array.length;
-        Util.verifyArray(msg.getArray());
     }
 
+    @AfterMethod
+    protected void destroy() {Util.close(r2, r1, b, a);}
+
+
+    public void testSimpleCompressionBytesMessage() throws Exception {
+        byte[] array=Util.generateArray(100);
+        Message msg=new BytesMessage(b.getAddress(), array);
+        _testSimpleCompression(msg);
+    }
+
+    public void testSimpleCompressionObjectMessage() throws Exception {
+        byte[] array=Util.generateArray(100);
+        Message msg=new ObjectMessage(b.getAddress(), array);
+        _testSimpleCompression(msg);
+    }
+
+
+    public void _testSimpleCompression(Message m) throws Exception {
+        byte[] array=Util.generateArray(100);
+        a.send(m);
+        Util.waitUntil(10000, 500, () -> r2.size() > 0);
+        Message msg=r2.list().get(0);
+        assert msg.hasPayload();
+        byte[] array2=msg.getObject();
+        assert array2.length == array.length;
+        Util.verifyArray(array2);
+    }
 
 
     protected static JChannel create(String name) throws Exception {

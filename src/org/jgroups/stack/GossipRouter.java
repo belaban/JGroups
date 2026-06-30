@@ -86,6 +86,9 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
     @ManagedAttribute(description="Use non-blocking IO (true) or blocking IO (false). Cannot be changed at runtime")
     protected boolean              use_nio;
 
+    @ManagedAttribute(description="Use direct (off-heap) memory when true. Ignored when use_nio is false")
+    protected boolean              use_direct_memory;
+
     @ManagedAttribute(description="Handles client disconnects: sends SUSPECT message to all other members of that group")
     protected boolean              emit_suspect_events=true;
 
@@ -153,6 +156,8 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
     public GossipRouter  jmx(boolean flag)                  {jmx=flag; return this;}
     public boolean       useNio()                           {return use_nio;}
     public GossipRouter  useNio(boolean flag)               {use_nio=flag; return this;}
+    public boolean       useDirectMemory()                  {return use_direct_memory;}
+    public GossipRouter  useDirectMemory(boolean flag)      {use_direct_memory=flag; return this;}
     public boolean       emitSuspectEvents()                {return emit_suspect_events;}
     public GossipRouter  emitSuspectEvents(boolean flag)    {emit_suspect_events=flag; return this;}
     public DumpMessages  dumpMessages()                     {return dump_msgs;}
@@ -204,6 +209,11 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
         if(jmx)
             JmxConfigurator.register(this, Util.getMBeanServer(), "jgroups:name=GossipRouter");
 
+        if(use_direct_memory && !use_nio) {
+            log.warn("use_direct_memory=%b only makes sense with use_nio=true; enabling use_nio", use_direct_memory);
+            use_nio=true;
+        }
+
         // Creating the DiagnosticsHandler _before_ the TLS socket factory makes the former use regular sockets;
         // if this was not the case, Probe would have to be extended to use SSLSockets, too
         if(tls.enabled()) {
@@ -212,7 +222,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
         }
 
         server=use_nio? new NioServer(thread_factory, socket_factory, bind_addr, port, port, null, 0,
-                                      recv_buf_size, "jgroups.nio.gossiprouter")
+                                      recv_buf_size, "jgroups.nio.gossiprouter").useDirectMemory(use_direct_memory)
           : new TcpServer(thread_factory, socket_factory, bind_addr, port, port, null, 0, recv_buf_size,
                           "jgroups.tcp.gossiprouter").nonBlockingSends(non_blocking_sends).maxSendQueue(max_send_queue);
         server.receiver(this).setMaxLength(max_length)
@@ -232,7 +242,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
 
 
     /**
-     * Always called before destroy(). Close connections and frees resources.
+     * Always called before destroy(). Closes connections and frees resources.
      */
     public void stop() {
         if(!running.compareAndSet(true, false))
@@ -305,7 +315,8 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
                     DataInput in=new ByteArrayDataInputStream(buf);
                     String group=Bits.readString(in);
                     Address dest=Util.readAddress(in);
-                    route(group, dest, buf.position(original_pos));
+                    Address s=Util.readAddress(in);
+                    route(group, dest, s, buf.position(original_pos));
 
                     if(dump_msgs == DumpMessages.ALL) {
                         ByteArrayDataInputStream input=new ByteArrayDataInputStream(buf);
@@ -354,9 +365,9 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
                         // *same* target address, so we have to synchronized below in order to avoid corruption
                         // of data (https://issues.redhat.com/browse/JGRP-2722)
                         synchronized(out) {
-                            out.position(0);
+                            out.reset();
                             request.writeTo(out);
-                            route(request.group, request.addr, out.buffer(), 0, out.position());
+                            route(request.group, request.addr, request.sender, out.buffer(), 0, out.position());
                         }
                         if(dump_msgs == DumpMessages.ALL)
                             dump(request);
@@ -637,7 +648,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
     }
 
 
-    protected void route(String group, Address dest, byte[] msg, int offset, int length) {
+    protected void route(String group, Address dest, Address sender, byte[] msg, int offset, int length) {
         ConcurrentMap<Address,Entry> map=address_mappings.get(group);
         if(map == null)
             return;
@@ -650,11 +661,11 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
         }
         else {             // multicast - send to all members in group
             Set<Map.Entry<Address,Entry>> dests=map.entrySet();
-            sendToAllMembersInGroup(dests, msg, offset, length);
+            sendToAllMembersInGroup(dests, sender, msg, offset, length);
         }
     }
 
-    protected void route(String group, Address dest, ByteBuffer buf) {
+    protected void route(String group, Address dest, Address sender, ByteBuffer buf) {
         ConcurrentMap<Address,Entry> map=address_mappings.get(group);
         if(map == null)
             return;
@@ -667,7 +678,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
         }
         else {             // multicast - send to all members in group
             Set<Map.Entry<Address,Entry>> dests=map.entrySet();
-            sendToAllMembersInGroup(dests, buf);
+            sendToAllMembersInGroup(dests, sender, buf);
         }
     }
 
@@ -682,12 +693,10 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
             log.error("failed marshalling gossip data %s: %s; dropping request", request, ex);
             return;
         }
-
         for(Map.Entry<Address,Entry> entry: dests) {
             Entry e=entry.getValue();
-            if(e == null /* || e.phys_addr == null */)
+            if(e == null)
                 continue;
-
             try {
                 server.send(e.client_addr, out.buffer(), 0, out.position());
             }
@@ -698,12 +707,14 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
     }
 
 
-    protected void sendToAllMembersInGroup(Set<Map.Entry<Address,Entry>> dests, byte[] buf, int offset, int len) {
+    protected void sendToAllMembersInGroup(Set<Map.Entry<Address,Entry>> dests, Address sender, byte[] buf, int offset, int len) {
         for(Map.Entry<Address,Entry> entry: dests) {
-            Entry e=entry.getValue();
-            if(e == null /* || e.phys_addr == null */)
+            Address dst=entry.getKey();
+            if(Objects.equals(dst, sender))
                 continue;
-
+            Entry e=entry.getValue();
+            if(e == null)
+                continue;
             try {
                 server.send(e.client_addr, buf, offset, len);
             }
@@ -713,14 +724,23 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
         }
     }
 
-    protected void sendToAllMembersInGroup(Set<Map.Entry<Address,Entry>> dests, ByteBuffer buf) {
+    protected void sendToAllMembersInGroup(Set<Map.Entry<Address,Entry>> dests, Address sender, ByteBuffer buf) {
+        int pos=buf.position(), limit=buf.limit();
+        boolean first=true;
         for(Map.Entry<Address,Entry> entry: dests) {
-            Entry e=entry.getValue();
-            if(e == null /* || e.phys_addr == null */)
+            Address dst=entry.getKey();
+            if(Objects.equals(dst, sender))
                 continue;
-
+            Entry e=entry.getValue();
+            if(e == null)
+                continue;
             try {
-                server.send(e.client_addr, buf.duplicate());
+                if(!first)
+                    buf.position(pos).limit(limit);
+                else
+                    first=false;
+                server.send(e.client_addr, buf);
+                first=false;
             }
             catch(Exception ex) {
                 log.error("failed sending message to %s (%s): %s", e.logical_name, e.phys_addr, ex);
@@ -784,7 +804,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
         TLS tls=new TLS();
         long start=System.currentTimeMillis();
         String bind_addr=null;
-        boolean jmx=false, nio=false, suspects=true;
+        boolean jmx=false, nio=false, use_direct_memory=false, suspects=true;
         DumpMessages dump_msgs = DumpMessages.NONE;
 
         for(int i=0; i < args.length; i++) {
@@ -819,6 +839,10 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
             }
             if("-nio".equals(arg)) {
                 nio=Boolean.parseBoolean(args[++i]);
+                continue;
+            }
+            if("-use_direct_memory".equals(arg)) {
+                use_direct_memory=Boolean.parseBoolean(args[++i]);
                 continue;
             }
             if("-non_blocking_sends".equals(arg)) {
@@ -937,7 +961,7 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
 
         GossipRouter router=new GossipRouter(bind_addr, port)
           .jmx(jmx).expiryTime(expiry_time).reaperInterval(reaper_interval)
-          .useNio(nio)
+          .useNio(nio).useDirectMemory(use_direct_memory)
           .recvBufferSize(recv_buf_size)
           .lingerTimeout(soLinger)
           .emitSuspectEvents(suspects)
@@ -1005,6 +1029,8 @@ public class GossipRouter extends ReceiverAdapter implements ConnectionListener,
         System.out.println("    -reaper_interval <ms>   - Time for check for expired connections. 0 means don't check.");
         System.out.println();
         System.out.println("    -nio <true|false>       - Whether or not to use non-blocking connections (NIO)");
+        System.out.println();
+        System.out.println("    -use_direct_memory boolean - Whether or not to use direct memory with NIO");
         System.out.println();
         System.out.println("    -non_blocking_sends <true|false> - Use bounded queues for sending (https://issues.redhat.com/browse/JGRP-2759))");
         System.out.println();

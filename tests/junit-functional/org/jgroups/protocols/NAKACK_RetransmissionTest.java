@@ -14,6 +14,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -152,7 +153,7 @@ public class NAKACK_RetransmissionTest {
             bundler=new NoBundler();
         }
         public boolean            supportsMulticasting() {return true;}
-        public void               sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {}
+        public void               sendUnicast(PhysicalAddress dest, ByteBuffer data) throws Exception {}
         protected PhysicalAddress getPhysicalAddress() {return null;}
 
 

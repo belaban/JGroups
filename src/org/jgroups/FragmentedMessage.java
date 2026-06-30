@@ -1,6 +1,6 @@
 package org.jgroups;
 
-import org.jgroups.util.ByteArrayDataOutputStream;
+import org.jgroups.util.BaseDataOutputStream;
 import org.jgroups.util.PartialOutputStream;
 
 import java.io.DataInput;
@@ -47,11 +47,11 @@ public class FragmentedMessage extends BytesMessage { // we need the superclass'
     }
 
     public void writePayload(DataOutput out) throws IOException {
-        ByteArrayDataOutputStream bos=out instanceof ByteArrayDataOutputStream? (ByteArrayDataOutputStream)out : null;
+        // don't fail silently (pos would be -1) if wrong type but throw an exception!
+        BaseDataOutputStream bos=(BaseDataOutputStream)out;
         int size_pos=bos != null? bos.position() : -1;
         out.writeInt(length);
         PartialOutputStream pos=new PartialOutputStream(out, offset, length);
-
         int prev_pos=bos != null? bos.position() : -1;
         original_msg.writeTo(pos);
         int last_pos=bos != null? bos.position() : -1;
@@ -75,12 +75,10 @@ public class FragmentedMessage extends BytesMessage { // we need the superclass'
         }
     }
 
-
     public String toString() {
         return String.format("%s [off=%d len=%d] (original msg: %s)",
                              getClass().getSimpleName(), offset, length, original_msg);
     }
-
 
     protected <T extends BytesMessage> T createMessage() {
         return (T)new FragmentedMessage();

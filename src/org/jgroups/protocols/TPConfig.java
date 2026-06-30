@@ -82,6 +82,11 @@ public class TPConfig extends Protocol {
     @Property(description="The fully qualified name of a class implementing LocalTransport")
     protected String                  local_transport_class;
 
+    @Property(description="When true, direct byte buffers are used for reading of messages (e.g. in TCP_NIO2), and " +
+      "for writing of messages (e.g. in a bundler). Otherwise heap-based memory is used. " +
+      "This is sanity checked; e.g. enabling this when TCP is the transport makes no sense, and will generate a warning")
+    protected boolean                 use_direct_memory;
+
     @Property(description="If true, create virtual threads, otherwise create native threads")
     protected boolean                 use_vthreads=true;
 
@@ -208,6 +213,8 @@ public class TPConfig extends Protocol {
     public <T extends TP> T setLogicalAddrCacheExpiration(long l) {this.logical_addr_cache_expiration=l; return (T)this;}
     public long             getLogicalAddrCacheReaperInterval() {return logical_addr_cache_reaper_interval;}
     public <T extends TP> T setLogicalAddrCacheReaperInterval(long l) {this.logical_addr_cache_reaper_interval=l; return (T)this;}
+    public boolean          useDirectMemory()                 {return use_direct_memory;}
+    public <T extends TP> T useDirectMemory(boolean b)        {this.use_direct_memory=b; return (T)this;}
     @Property
     public <T extends TP> T useVirtualThreads(boolean f)      {use_vthreads=f; return (T)this;}
     public boolean          useVirtualThreads()               {return use_vthreads;}

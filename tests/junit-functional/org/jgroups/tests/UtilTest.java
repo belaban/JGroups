@@ -15,6 +15,7 @@ import org.testng.annotations.Test;
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.net.*;
+import java.nio.ByteBuffer;
 import java.text.DecimalFormatSymbols;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -27,7 +28,6 @@ import java.util.stream.LongStream;
 @Test(groups=Global.FUNCTIONAL)
 public class UtilTest {
     protected static final char decimal_sep=DecimalFormatSymbols.getInstance().getDecimalSeparator();
-    //protected static final char decimal_sep=DecimalFormatSymbols.getInstance().getDecimalSeparator();
 
     public void testShuffle() {
         Integer[] array={1,2,3,4,5};
@@ -106,7 +106,7 @@ public class UtilTest {
         });
         for(ServerSocket s: sockets)
             s.close();
-        Assert.assertEquals(count.get(), 0);
+        assert count.get() == 0;
     }
 
     private static ServerSocket bindToPortInRange(SocketFactory factory) throws Exception {
@@ -123,31 +123,31 @@ public class UtilTest {
         System.setProperty("name2", "Nicole");
 
         String retval=Util.getProperty(new String[]{"name", "name2"}, props, "name", "Bine");
-        Assert.assertEquals("Bela", retval);
+        assert "Bela".equals(retval);
         props.setProperty("name", "Bela"); props.setProperty("key", "val");
 
         retval=Util.getProperty(new String[]{"name2", "name"}, props, "name", "Bine");
-        Assert.assertEquals("Bela", retval);
+        assert "Bela".equals(retval);
         props.setProperty("name", "Bela"); props.setProperty("key", "val");
 
         retval=Util.getProperty(new String[]{"name3", "name"}, props, "name", "Bine");
-        Assert.assertEquals("Bela", retval);
+        assert "Bela".equals(retval);
         props.setProperty("name", "Bela"); props.setProperty("key", "val");
 
         retval=Util.getProperty(new String[]{"name3", "name4"}, props, "name", "Bine");
-        Assert.assertEquals("Bela", retval);
+        assert "Bela".equals(retval);
         props.setProperty("name", "Bela"); props.setProperty("key", "val");
 
         retval=Util.getProperty(new String[]{"name2", "name"}, props, "name", "Bine");
-        Assert.assertEquals("Bela", retval);
+        assert "Bela".equals(retval);
         props.setProperty("name", "Bela"); props.setProperty("key", "val");
 
         retval=Util.getProperty(new String[]{"name2", "name"}, props, "name2", "Bine");
-        Assert.assertEquals("Nicole", retval);
+        assert "Nicole".equals(retval);
         props.setProperty("name", "Bela"); props.setProperty("key", "val");
 
         retval=Util.getProperty(new String[]{"name2", "name"}, props, "name2", null);
-        Assert.assertEquals("Nicole", retval);
+        assert "Nicole".equals(retval);
         props.setProperty("name", "Bela"); props.setProperty("key", "val");
     }
 
@@ -302,67 +302,67 @@ public class UtilTest {
         long num=1;
         String s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("1b", s);
+        assert "1b".equals(s);
 
         num=999;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("999b", s);
+        assert "999b".equals(s);
 
         num=1000;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("1KB", s);
+        assert "1KB".equals(s);
 
         num=1001;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("1"+decimal_sep+"00KB", s);
+        assert ("1"+decimal_sep+"00KB").equals(s);
 
         num=1010;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("1"+ decimal_sep +"01KB", s);
+        assert ("1"+ decimal_sep +"01KB").equals(s);
 
         num=1543;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("1"+ decimal_sep +"54KB", s);
+        assert ("1"+ decimal_sep +"54KB").equals(s);
 
         num=10000;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("10KB", s);
+        assert s.equals("10KB");
 
         num=150000;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("150KB", s);
+        assert "150KB".equals(s);
 
         num=150023;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("150"+ decimal_sep +"02KB", s);
+        assert ("150"+ decimal_sep +"02KB").equals(s);
 
         num=1200000;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("1"+ decimal_sep +"20MB", s);
+        assert ("1"+ decimal_sep +"20MB").equals(s);
 
         num=150000000;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("150MB", s);
+        assert "150MB".equals(s);
 
         num=150030000;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("150"+ decimal_sep +"03MB", s);
+        assert ("150"+ decimal_sep +"03MB").equals(s);
 
         num=1200000000;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        Assert.assertEquals("1"+ decimal_sep +"20GB", s);
+        assert ("1"+ decimal_sep +"20GB").equals(s);
     }
 
     public void testPrintBytes2() {
@@ -400,7 +400,7 @@ public class UtilTest {
 
     public void testIsAsciiString() {
         assert Util.isAsciiString("Bela");
-        assert !Util.isAsciiString("\u1F601");
+        assert !Util.isAsciiString("ὠ1");
     }
 
     public void testReadBytes2() throws IOException {
@@ -462,6 +462,53 @@ public class UtilTest {
                                         
     }
 
+    public void testBufferToByteArray() {
+        byte[] array={1,2,3,4,5,6,7,8,9,10};
+        ByteBuffer buf=ByteBuffer.wrap(array);
+        ByteArray ba=Util.bufferToByteArray(buf);
+        assert Arrays.equals(array, ba.array());
+        assert ba.offset() == 0;
+        assert ba.length() == array.length;
+
+        buf=ByteBuffer.allocateDirect(array.length);
+        buf.put(array).flip();
+        ba=Util.bufferToByteArray(buf);
+        assert Arrays.equals(array, ba.array());
+        assert ba.offset() == 0;
+        assert ba.length() == array.length;
+
+        buf=ByteBuffer.wrap(array, 0, 8);
+        ba=Util.bufferToByteArray(buf);
+        byte[] expected=ba.bytes();
+        assert Arrays.equals(expected, new byte[]{1,2,3,4,5,6,7,8});
+        assert ba.offset() == 0;
+        assert ba.length() == 8;
+
+        buf=ByteBuffer.allocateDirect(array.length);
+        buf.put(array, 0, 8).flip();
+        ba=Util.bufferToByteArray(buf);
+        expected=ba.bytes();
+        assert Arrays.equals(expected, new byte[]{1,2,3,4,5,6,7,8});
+        assert ba.offset() == 0;
+        assert ba.length() == 8;
+
+        buf=ByteBuffer.wrap(array, 3, 4);
+        ba=Util.bufferToByteArray(buf);
+        byte[] bytes=ba.bytes();
+        assert Arrays.equals(bytes, new byte[]{4,5,6,7});
+        assert ba.offset() == 3;
+        assert ba.length() == 4;
+
+        ByteBuffer b=ByteBuffer.allocateDirect(4);
+        b.put(ba.array(), 3, 4);
+        buf=b.flip();
+        ba=Util.bufferToByteArray(buf);
+        bytes=ba.bytes();
+        assert Arrays.equals(bytes, new byte[]{4,5,6,7});
+        assert ba.offset() == 0;
+        assert ba.length() == 4;
+    }
+
     public void testSerialization() throws Exception {
         byte[] buf;
         Address addr=Util.createRandomAddress(), addr2;
@@ -472,12 +519,12 @@ public class UtilTest {
         buf=Util.objectToByteBuffer(addr);
         addr2=Util.objectFromByteBuffer(buf);
         System.out.println("addr=" + addr + ", addr2=" + addr2);
-        Assert.assertEquals(addr, addr2);
+        assert addr.equals(addr2);
 
         buf=Util.objectToByteBuffer(list);
         list2=Util.objectFromByteBuffer(buf);
         System.out.println("list=" + list + ", list2=" + list2);
-        Assert.assertEquals(list, list2);
+        assert list.equals(list2);
 
         byte[] buffer={'B', 'e', 'l', 'a', ' ', 'B', 'a', 'n'};
         buf=Util.objectToByteBuffer(buffer);
@@ -518,7 +565,7 @@ public class UtilTest {
           Short.MAX_VALUE,
           Short.MIN_VALUE,
           "Bela Ban",
-          "\u1F601", // multibyte string
+          "ὠ1", // multibyte string
           new byte[]{'H', 'e', 'l', 'l', 'o'},
           Util.generateArray(1024)
         };
@@ -540,7 +587,7 @@ public class UtilTest {
     }
 
     public void testWriteAndReadString() throws IOException {
-        String s1="B\u00e9la B\u00060n", s2="Bela Ban";
+        String s1="Béla B\u00060n", s2="Bela Ban";
         ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(30);
         Util.writeString(s1, out);
         Util.writeString(s2, out);
@@ -563,11 +610,11 @@ public class UtilTest {
     }
 
     private static void _testMessage(Message msg) throws Exception {
-        ByteArray buf=Util.messageToByteBuffer(msg);
-        Message msg2=Util.messageFromByteBuffer(buf.array(), buf.offset(), buf.length());
-        Assert.assertEquals(msg.getSrc(), msg2.getSrc());
-        Assert.assertEquals(msg.getDest(), msg2.getDest());
-        Assert.assertEquals(msg.getLength(), msg2.getLength());
+        ByteArray buf=Util.messageToBuffer(msg);
+        Message msg2=Util.messageFromBuffer(buf.array(), buf.offset(), buf.length());
+        assert Objects.equals(msg.src(), msg2.src());
+        assert Objects.equals(msg.dest(), msg2.dest());
+        assert msg.getLength() == msg2.getLength();
     }
 
     public void testStringMarshalling() throws Exception {
@@ -755,7 +802,7 @@ public class UtilTest {
         assert buf.length > 0;
         Object obj2=Util.objectFromByteBuffer(buf);
         System.out.println("obj=" + obj + ", obj2=" + obj2 + " (type=" + obj.getClass().getName() + ", length=" + buf.length + " bytes)");
-        Assert.assertEquals(obj, obj2);
+        assert Objects.deepEquals(obj, obj2);
 
         if(obj instanceof Integer) { // test compressed ints and longs
             buf=new byte[10];
@@ -778,7 +825,8 @@ public class UtilTest {
         assert buf.length() > 0;
         Object obj2=Util.objectFromByteBuffer(buf.array(), buf.offset(), buf.length());
         System.out.println("obj=" + obj + ", obj2=" + obj2 + " (type=" + obj.getClass().getName() + ", length=" + buf.length() + " bytes)");
-        Assert.assertEquals(obj, obj2);
+        // Assert.assertEquals(obj, obj2);
+        Objects.equals(obj, obj2);
     }
 
     static void objectToStream(Object obj) throws Exception {
@@ -806,7 +854,7 @@ public class UtilTest {
         Message m2=Util.readGenericStreamable(dis);
         ViewId v3=Util.readGenericStreamable(dis);
         assert m2.getArray() != null;
-        Assert.assertEquals(m.getLength(), m2.getLength());
+        assert m.getLength() == m2.getLength();
         assert v3 != null;
     }
 
@@ -832,9 +880,9 @@ public class UtilTest {
         ByteArrayInputStream instream=new ByteArrayInputStream(buf);
         DataInputStream dis=new DataInputStream(instream);
         View v2=Util.readGenericStreamable(dis);
-        Assert.assertEquals(v, v2);
+        assert v.equals(v2);
         v2=Util.readStreamable(View::new, dis);
-        Assert.assertEquals(v, v2);
+        assert v.equals(v2);
     }
 
 
@@ -850,8 +898,8 @@ public class UtilTest {
         DataInputStream dis=new DataInputStream(instream);
         String s3=Bits.readString(dis);
         String s4=Bits.readString(dis);
-        Assert.assertEquals(s1, s3);
-        Assert.assertEquals(s2, s4);
+        assert s1.equals(s3);
+        assert s2.equals(s4);
     }
 
     public void testWriteAddress() throws Exception {
@@ -872,9 +920,9 @@ public class UtilTest {
         ByteArrayInputStream instream=new ByteArrayInputStream(buf);
         DataInputStream dis=new DataInputStream(instream);
 
-        Assert.assertEquals(a1, Util.readAddress(dis));
-        Assert.assertEquals(a2, Util.readAddress(dis));
-        Assert.assertEquals(a4, Util.readAddress(dis));
+        assert a1.equals(Util.readAddress(dis));
+        assert a2.equals(Util.readAddress(dis));
+        assert a4.equals(Util.readAddress(dis));
 
         Address tmp=Util.readAddress(dis);
         assert a5.equals(tmp);
@@ -904,7 +952,7 @@ public class UtilTest {
         DataInputStream dis=new DataInputStream(instream);
         byte[] buf2=Util.readByteBuffer(dis);
         assert buf2 != null;
-        Assert.assertEquals(buf.length, buf2.length);
+        assert buf.length == buf2.length;
     }
 
     public static void testWriteAndReadStreamableArray() throws Exception {
@@ -1240,9 +1288,9 @@ public class UtilTest {
 
         List<String> list=Util.parseCommaDelimitedStrings(input);
         System.out.println("list: " + list);
-        Assert.assertEquals(13, list.size());
-        Assert.assertEquals("1", list.get(0));
-        Assert.assertEquals("13", list.get(list.size() - 1));
+        assert list.size() == 13;
+        assert "1".equals(list.get(0));
+        assert "13".equals(list.get(list.size() - 1));
     }
 
 
@@ -1250,15 +1298,15 @@ public class UtilTest {
         String input="one;two ; three; four ; five;six";
         List<String> list=Util.parseStringList(input, ";");
         System.out.println("list: " + list);
-        Assert.assertEquals(6, list.size());
-        Assert.assertEquals("one", list.get(0));
-        Assert.assertEquals("six", list.get(list.size() - 1));
+        assert list.size() == 6;
+        assert "one".equals(list.get(0));
+        assert "six".equals(list.get(list.size() - 1));
 
         String[] arr=Util.parseStringArray(input, ";");
         System.out.println("array: " + Arrays.toString(arr));
-        Assert.assertEquals(6, arr.length);
-        Assert.assertEquals("one", arr[0]);
-        Assert.assertEquals("six", arr[arr.length - 1]);
+        assert arr.length == 6;
+        assert "one".equals(arr[0]);
+        assert "six".equals(arr[arr.length - 1]);
     }
 
 
@@ -1266,15 +1314,15 @@ public class UtilTest {
         String input="  myID1::subID1 ; myID2::mySubID2; myID3 ;myID4::blaSubID4";
         List<String> list=Util.parseStringList(input, ";");
         System.out.println("list: " + list);
-        Assert.assertEquals(4, list.size());
-        Assert.assertEquals("myID1::subID1", list.get(0));
-        Assert.assertEquals("myID4::blaSubID4", list.get(list.size() - 1));
+        assert list.size() == 4;
+        assert "myID1::subID1".equals(list.get(0));
+        assert "myID4::blaSubID4".equals(list.get(list.size() - 1));
 
         String[] arr=Util.parseStringArray(input, ";");
         System.out.println("array: " + Arrays.toString(arr));
-        Assert.assertEquals(4, arr.length);
-        Assert.assertEquals("myID1::subID1", arr[0]);
-        Assert.assertEquals("myID4::blaSubID4", arr[arr.length - 1]);
+        assert arr.length == 4;
+        assert "myID1::subID1".equals(arr[0]);
+        assert "myID4::blaSubID4".equals(arr[arr.length - 1]);
     }
 
     public void testParseHost() throws UnknownHostException {

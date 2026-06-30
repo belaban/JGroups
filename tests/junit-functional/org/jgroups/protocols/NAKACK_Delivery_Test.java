@@ -10,6 +10,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -49,7 +50,7 @@ public class NAKACK_Delivery_Test {
 
         TP transport=new TP() {
             public boolean supportsMulticasting() {return false;}
-            public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {}
+            public void sendUnicast(PhysicalAddress dest, ByteBuffer data) throws Exception {}
             public Object down(Event evt) {return null;}
             public Object down(Message msg) {return null;}
             protected PhysicalAddress getPhysicalAddress() {return null;}

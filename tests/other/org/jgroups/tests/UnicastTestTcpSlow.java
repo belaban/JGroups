@@ -336,7 +336,7 @@ public class UnicastTestTcpSlow {
         }
 
         protected ByteArray writeMessage(final Message msg) throws Exception {
-            dos.position(0);
+            dos.reset();
             byte flags=0;
             dos.writeShort(Version.version); // write the version
             if(msg.getDest() == null)

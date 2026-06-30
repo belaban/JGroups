@@ -178,7 +178,8 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
         private final Lock                      lock=new ReentrantLock(false);
         private final BlockingQueue<Message>    queue;
         private final FastArray<Message>        remove_queue;
-        private final ByteArrayDataOutputStream output=new ByteArrayDataOutputStream(max_size + MSG_OVERHEAD);
+        private final ByteBufferOutputStream    output=new ByteBufferOutputStream(max_size + MSG_OVERHEAD, false,
+                                                                                  transport.useDirectMemory());
         private Runner                          sendbuf_runner;
         private long                            count;
 
@@ -287,7 +288,7 @@ public class PerDestinationBundler extends BaseBundler implements Runnable {
         protected void sendMessages(final Address dest, final Address src, final List<Message> list) {
             long start=transport.statsEnabled()? System.nanoTime() : 0;
             try {
-                output.position(0);
+                output.reset();
                 int size=list.size();
                 // list.size() is guaranteed to be > 0 when this method is called
                 if(size == 1)

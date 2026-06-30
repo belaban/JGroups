@@ -7,7 +7,7 @@ import org.jgroups.Message;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.AverageMinMax;
-import org.jgroups.util.ByteArrayDataOutputStream;
+import org.jgroups.util.ByteBufferOutputStream;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -109,14 +109,14 @@ public class RED_Test {
         protected double getAvgBatchSize() {return avg_batch_size.average();}
 
         @Override
-        protected void sendSingleMessage(final Address dest, final Message msg, ByteArrayDataOutputStream out) {
+        protected void sendSingleMessage(final Address dest, final Message msg, ByteBufferOutputStream out) {
             sent.increment();
             single.increment();
             Util.sleepRandom(5, 100);
         }
 
         @Override
-        protected void sendMessageList(Address dest, Address src, List<Message> list, ByteArrayDataOutputStream out) {
+        protected void sendMessageList(Address dest, Address src, List<Message> list, ByteBufferOutputStream out) {
             if(list != null) {
                 int size=list.size();
                 batches.increment();

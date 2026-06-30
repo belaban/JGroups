@@ -5,9 +5,13 @@ import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.pbcast.NAKACK2;
 import org.jgroups.protocols.pbcast.NakAckHeader2;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.*;
+import org.jgroups.util.AsciiString;
+import org.jgroups.util.MessageBatch;
+import org.jgroups.util.MutableDigest;
+import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -179,7 +183,7 @@ public class NAKACK_StressTest {
         @Override public boolean supportsMulticasting() {return false;}
 
         @Override
-        public void sendUnicast(PhysicalAddress dest, byte[] data, int offset, int length) throws Exception {}
+        public void sendUnicast(PhysicalAddress dest, ByteBuffer data) throws Exception {}
         @Override protected PhysicalAddress getPhysicalAddress() {return null;}
     }
 

@@ -12,9 +12,8 @@ import java.util.Objects;
  * @author Bela Ban
  * @since  3.5
  */
-public class ByteBufferOutputStream implements DataOutput {
+public class ByteBufferOutputStream extends BaseDataOutputStream {
     protected ByteBuffer buf;
-    protected boolean    grow_exponentially; // if true, the buffer will double up to a certain size
     protected boolean    use_direct_memory;  // direct or heap memory
 
     public ByteBufferOutputStream(ByteBuffer buf) {
@@ -37,11 +36,12 @@ public class ByteBufferOutputStream implements DataOutput {
     }
 
     public ByteBuffer             buf()                        {return buf;}
+    @Override
+    public BaseDataOutputStream   reset()                      {buf.clear(); return this;}
     public int                    position()                   {return buf.position();}
+    public ByteBufferOutputStream position(int p)              {buf.position(p); return this;}
     public int                    limit()                      {return buf.limit();}
     public int                    capacity()                   {return buf.capacity();}
-    public boolean                growExponentially()          {return grow_exponentially;}
-    public ByteBufferOutputStream growExponentially(boolean b) {grow_exponentially=b; return this;}
     public boolean                useDirectMemory()            {return use_direct_memory;}
 
     public void write(int b) throws IOException {

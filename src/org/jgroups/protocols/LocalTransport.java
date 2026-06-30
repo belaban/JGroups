@@ -2,6 +2,10 @@ package org.jgroups.protocols;
 
 import org.jgroups.Address;
 import org.jgroups.View;
+import org.jgroups.util.ByteArray;
+import org.jgroups.util.Util;
+
+import java.nio.ByteBuffer;
 
 /**
  * A local transport is used for sending messages only to single (or all) members of the same host.
@@ -36,6 +40,12 @@ public interface LocalTransport {
      */
     void sendTo(Address dest, byte[] buf, int offset, int length) throws Exception;
 
+    default void sendTo(Address dest, ByteBuffer buf) throws Exception {
+        ByteArray ba=Util.bufferToByteArray(buf);
+        if(ba != null)
+            sendTo(dest, ba.array(), ba.offset(), ba.length());
+    }
+
     /**
      * Sends a message to all local members.
      * @param buf The buffer to send
@@ -44,4 +54,10 @@ public interface LocalTransport {
      * @exception Exception Thrown when the send failed.
      */
     void sendToAll(byte[] buf, int offset, int length) throws Exception;
+
+    default void sendToAll(ByteBuffer buf) throws Exception {
+        ByteArray ba=Util.bufferToByteArray(buf);
+        if(ba != null)
+            sendToAll(ba.array(), ba.offset(), ba.length());
+    }
 }

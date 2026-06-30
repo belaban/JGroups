@@ -5,10 +5,7 @@ import org.jgroups.BytesMessage;
 import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.protocols.pbcast.NakAckHeader2;
-import org.jgroups.util.Bits;
-import org.jgroups.util.ByteBufferInputStream;
-import org.jgroups.util.ByteBufferOutputStream;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 import org.testng.annotations.Test;
 
 import java.io.EOFException;
@@ -133,6 +130,24 @@ public class ByteBufferOutputStreamTest {
         in.buf().position(10);
         for(int i=0; i < 4; i++) in.read();
         assert in.read() == -1;
+    }
+
+    public void testReadBeyondLimit2() {
+        byte[] buf=new byte[100];
+        buf[10]='B'; buf[11]='e'; buf[12]='l'; buf[13]='a';
+        ByteArrayDataInputStream in=new ByteArrayDataInputStream(buf, 10, 4);
+        assert in.position() == 10;
+        assert in.limit() == 14;
+        assert in.capacity() == buf.length;
+        byte[] tmp=new byte[5];
+        try {
+            in.readFully(tmp, 0, tmp.length);
+            assert false : " should have gotten an exception";
+        }
+        catch(Exception ex) {
+            System.out.println("caught exception as expected: " + ex);
+            assert ex instanceof EOFException;
+        }
     }
 
     public void testExpanding() throws IOException {

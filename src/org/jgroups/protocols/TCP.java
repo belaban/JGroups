@@ -13,6 +13,7 @@ import org.jgroups.util.SocketFactory;
 import org.jgroups.util.TLS;
 import org.jgroups.util.Util;
 
+import java.nio.ByteBuffer;
 import java.util.Collection;
 
 /**
@@ -112,13 +113,24 @@ public class TCP extends BasicTCP {
             srv.socketFactory(factory);
     }
 
-    public void send(Address dest, byte[] data, int offset, int length) throws Exception {
+    @Override
+    public void sendUnicast(PhysicalAddress dest, ByteBuffer data) throws Exception {
         if(srv != null)
-            srv.send(dest, data, offset, length);
+            srv.send(dest, data);
     }
 
     public void retainAll(Collection<Address> members) {
         srv.retainAll(members, is_member);
+    }
+
+    @Override
+    public void init() throws Exception {
+        super.init();
+        if(use_direct_memory) {
+            log.warn("use_direct_memory=true makes no sense in %s; ByteBuffers will be converted to " +
+                       "byte[] arrays, as Socket reads/writes only accept byte[] arrays",
+                     this.getClass().getSimpleName());
+        }
     }
 
     public void start() throws Exception {
