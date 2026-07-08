@@ -61,11 +61,14 @@ public class Runner implements Runnable, Closeable {
         return this;
     }
 
-    public synchronized Runner stop() {
-        boolean rc=state(State.stopping);
-        if(!rc)
-            return this;
-        Thread tmp=thread;
+    public Runner stop() {
+        Thread tmp;
+        synchronized (this) {
+            boolean rc=state(State.stopping);
+            if(!rc)
+                return this;
+            tmp=thread;
+        }
         if(tmp != null) {
             tmp.interrupt();
             if(join_timeout > 0) {

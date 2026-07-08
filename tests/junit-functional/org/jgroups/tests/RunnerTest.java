@@ -81,6 +81,23 @@ public class RunnerTest {
         Util.waitUntil(5000, 100, () -> runner.state() == stopped);
     }
 
+    /** Tests https://redhat.atlassian.net/browse/JGRP-3020 */
+    public void testStop2() throws TimeoutException {
+        final long timeout=3000;
+        Runnable fun=() -> Util.sleep(100);
+        runner=createRunner(fun, null)
+          .setJoinTimeout(timeout)
+          .start();
+        Util.waitUntil(2000, 100, () -> runner.state() == running);
+        long start=System.nanoTime();
+        runner.stop(); // will block without https://redhat.atlassian.net/browse/JGRP-3020 for join_timeout ms
+        long time=System.nanoTime() - start;
+        long millis=TimeUnit.NANOSECONDS.toMillis(time);
+        assert millis < 300 // sleep 100ms
+          : String.format("expected to block in stop() less than 300 ms, but blocked for %s", Util.printTime(time));
+        System.out.printf("stop() blocked for %s\n", Util.printTime(time));
+    }
+
     /**
      * Tests the ABA problem (https://issues.redhat.com/browse/JGRP-2919)
      */
