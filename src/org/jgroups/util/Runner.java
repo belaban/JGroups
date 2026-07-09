@@ -76,7 +76,7 @@ public class Runner implements Runnable, Closeable {
                 try {tmp.join(join_timeout);} catch(InterruptedException e) {}
             }
         }
-        runStopFuntion();
+        runStopFunction();
         return this;
     }
 
@@ -145,7 +145,7 @@ public class Runner implements Runnable, Closeable {
         throw new IllegalStateException(String.format("illegal transition from %s -> %s", state, new_state));
     }
 
-    protected void runStopFuntion() {
+    protected void runStopFunction() {
         try {
             if(stop_function != null)
                 stop_function.run();
