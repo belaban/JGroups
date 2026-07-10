@@ -60,10 +60,6 @@ public class DefaultThreadFactory implements ThreadFactory {
         this.address=address;
     }
 
-    @Deprecated(forRemoval=true)
-    public boolean                            useFibers()                  {return useVirtualThreads();}
-    @Deprecated(forRemoval=true)
-    public <T extends DefaultThreadFactory> T useFibers(boolean f)         {return useVirtualThreads(f);}
     @Override
     public boolean                            useVirtualThreads()          {return use_vthreads;}
     public <T extends DefaultThreadFactory> T useVirtualThreads(boolean f) {this.use_vthreads=f; return (T)this;}

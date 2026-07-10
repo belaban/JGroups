@@ -65,11 +65,6 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
 
     @ManagedAttribute(description="When A connects to B, B reuses the same TCP connection to send data to A")
     protected boolean                         use_peer_connections;
-    @ManagedAttribute(description="Wait for an ack from the server when a connection is established, and retry " +
-      "connection establishment until a valid connection has been established, or the connection to the peer cannot " +
-      "be established (https://issues.redhat.com/browse/JGRP-2684)",writable=true)
-    @Deprecated(since="5.4.4",forRemoval=true)
-    protected boolean                         use_acks;
     @ManagedAttribute(description="Log a stack trace when a connection is closed")
     protected boolean                         log_details=true;
     protected int                             sock_conn_timeout=1000;      // max time in millis to wait for Socket.connect() to return

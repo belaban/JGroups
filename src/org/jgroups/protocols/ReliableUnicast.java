@@ -61,7 +61,7 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
 
     @Property(description="When true, the sender retransmits messages until ack'ed and the receiver asks for missing " +
       "messages. When false, this is not done, but ack'ing and stale connection testing is still done. " +
-      "https://issues.redhat.com/browse/JGRP-2676",deprecatedMessage="is ignored")
+      "https://issues.redhat.com/browse/JGRP-2676. Will be removed in 6.0",deprecatedMessage="is ignored")
     @Deprecated(since="5.4.4",forRemoval=true)
     protected boolean xmits_enabled=true;
 
@@ -275,14 +275,6 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
         cached_batches.values().forEach(mb -> mb.array().trimTo(DEFAULT_INITIAL_CAPACITY));
         return this;
     }
-
-    /** Don't remove! https://issues.redhat.com/browse/JGRP-2814 */
-    @ManagedAttribute(type=SCALAR) @Deprecated
-    public long getNumMessagesSent()     {return num_msgs_sent.sum();}
-
-    /** Don't remove! https://issues.redhat.com/browse/JGRP-2814 */
-    @ManagedAttribute(type=SCALAR) @Deprecated
-    public long getNumMessagesReceived() {return num_msgs_received.sum();}
 
 
     public long getNumAcksSent()         {return num_acks_sent.sum();}

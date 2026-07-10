@@ -67,7 +67,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     @Property(description="Number of times a LEAVE request is sent to the coordinator (without receiving a LEAVE " +
       "response, before giving up and leaving anyway (failure detection will eventually exclude the left member). " +
-      "A value of 0 means wait forever",deprecatedMessage="ignored")
+      "A value of 0 means wait forever. Will be removed in 6.0",deprecatedMessage="ignored")
     @Deprecated
     protected int                       max_leave_attempts=1;
 
@@ -726,21 +726,6 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         final ViewId next_view_id=next_view.getViewId();
         Address[][] diff=View.diff(current_view, next_view);
         return new DeltaView(next_view_id, current_view_id, diff[1], diff[0]);
-    }
-
-    /** Checks whether the potential_new_coord would be the new coordinator (2nd in line) */
-    @Deprecated(since="5.5.3",forRemoval=true)
-    protected boolean wouldBeNewCoordinator(Address potential_new_coord) {
-        if(potential_new_coord == null) return false;
-        lock.lock();
-        try {
-            if(members.size() < 2) return false;
-            Address new_coord=members.elementAt(1);  // member at 2nd place
-            return Objects.equals(new_coord, potential_new_coord);
-        }
-        finally {
-            lock.unlock();
-        }
     }
 
     /** Send down a SET_DIGEST event */

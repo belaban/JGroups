@@ -57,7 +57,8 @@ public abstract class BasicTCP extends TP implements Receiver, ConnectionListene
     protected int         linger=-1; // SO_LINGER (number of seconds, -1 disables it)
 
     @Property(description="Wait for an ack from the server when a connection is established " +
-      "(https://issues.redhat.com/browse/JGRP-2684)",deprecatedMessage="will be ignored (JGRP-2866)")
+      "(https://issues.redhat.com/browse/JGRP-2684). Will be removed in 6.0"
+      ,deprecatedMessage="will be ignored (JGRP-2866)")
     @Deprecated(since="5.4.4",forRemoval=true)
     protected boolean     use_acks;
 

@@ -45,7 +45,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
     protected boolean use_mcast_xmit_req;
 
     /** Ask a random member for retransmission of a missing message. If true, discard_delivered_msgs is set to false */
-    @Property(description="Ask a random member for retransmission of a missing message",
+    @Property(description="Ask a random member for retransmission of a missing message. Will be removed in 6.0",
       deprecatedMessage="will be ignored (always false). See https://issues.redhat.com/browse/JGRP-2985")
     @Deprecated
     protected boolean xmit_from_random_member;
@@ -55,7 +55,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
      * from the retransmit table, so they can get GC'ed. When this property is true, everyone (except the sender of a
      * message) removes the message from their retransmit table as soon as it has been delivered to the application
      */
-    @Property(description="Should messages delivered to the application be discarded",
+    @Property(description="Should messages delivered to the application be discarded. Will be removed in 6.0",
       deprecatedMessage="will be ignored (always true). See https://issues.redhat.com/browse/JGRP-2985")
     @Deprecated
     protected boolean discard_delivered_msgs=true;
@@ -243,9 +243,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
     public ReliableMulticast useMcastXmit(boolean u)                  {this.use_mcast_xmit=u; return this;}
     public boolean           useMcastXmitReq()                        {return use_mcast_xmit_req;}
     public ReliableMulticast useMcastXmitReq(boolean flag)            {this.use_mcast_xmit_req=flag; return this;}
-    public boolean           xmitFromRandomMember()                   {return false;}
     public ReliableMulticast xmitFromRandomMember(boolean ignored)    {return this;}
-    public boolean           discardDeliveredMsgs()                   {return true;}
     public ReliableMulticast discardDeliveredMsgs(boolean ignored)    {return this;}
     public boolean           logDiscardMessages()                     {return log_discard_msgs;}
     public ReliableMulticast logDiscardMessages(boolean l)            {this.log_discard_msgs=l; return this;}

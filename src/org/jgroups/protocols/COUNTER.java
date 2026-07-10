@@ -198,12 +198,6 @@ public class COUNTER extends Protocol {
         transport = getTransport();
     }
 
-    @Deprecated
-    public Counter getOrCreateCounter(String name, long initial_value) {
-        CounterImpl counter = CompletableFutures.join(doGetOrCreateCounter(name, initial_value));
-        return counter.sync;
-    }
-
     public CompletionStage<AsyncCounter> getOrCreateAsyncCounter(String name, long initial_value) {
         return doGetOrCreateCounter(name, initial_value).thenApply(Function.identity());
     }
@@ -599,7 +593,7 @@ public class COUNTER extends Protocol {
     }
 
     @SuppressWarnings("deprecation")
-    private record SyncCounterImpl(AsyncCounter counter) implements Counter {
+    private record SyncCounterImpl(AsyncCounter counter) implements SyncCounter {
 
         @Override
         public String getName() {

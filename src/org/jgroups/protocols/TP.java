@@ -55,9 +55,6 @@ public abstract class TP extends TPConfig implements DiagnosticsHandler.ProbeHan
     /** Whether hardware multicasting is supported */
     public abstract boolean            supportsMulticasting();
 
-    @Deprecated(since="5.5.4",forRemoval=true)
-    public boolean                     isMulticastCapable() {return supportsMulticasting();}
-
     /** Returns the physical address of this transport */
     protected abstract PhysicalAddress getPhysicalAddress();
 

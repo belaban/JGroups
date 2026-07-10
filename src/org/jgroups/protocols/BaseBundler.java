@@ -77,7 +77,8 @@ public abstract class BaseBundler implements Bundler {
     protected boolean                               use_single_sender_thread=true;
 
     @Property(description="When true, when there's no space to queue a message, senders will drop the message rather" +
-      "than wait until space is available (https://issues.redhat.com/browse/JGRP-2765)",deprecatedMessage="ignored")
+      "than wait until space is available (https://issues.redhat.com/browse/JGRP-2765). Will be removed in 6.0"
+      ,deprecatedMessage="ignored")
     @Deprecated(since="5.5.0",forRemoval=true)
     protected boolean                               drop_when_full=true;
 

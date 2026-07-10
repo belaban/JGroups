@@ -51,12 +51,12 @@ public class ThreadPool implements Lifecycle {
     @Property(description="Time (in milliseconds) during which thread-pool full messages are suppressed",type=TIME)
     protected long                thread_pool_full_suppress_time=60_000;
 
-    @Property(description="The number of times a thread pool needs to be full before a thread dump is logged",
-    deprecatedMessage="ignored")
+    @Property(description="The number of times a thread pool needs to be full before a thread dump is logged. " +
+      "Will be removed in 6.0",deprecatedMessage="ignored")
     @Deprecated(since="5.4")
     protected int                 thread_dumps_threshold=1;
 
-    @Property(description="Path to which the thread dump will be written. Ignored if null",
+    @Property(description="Path to which the thread dump will be written. Ignored if null. Will be removed in 6.0",
       systemProperty="jgroups.threaddump.path",deprecatedMessage="ignored")
     @Deprecated(since="5.4")
     protected String              thread_dump_path;
@@ -169,11 +169,6 @@ public class ThreadPool implements Lifecycle {
     public ThreadPool setDelta(int d)                          {delta=d; return this;}
     public long       numberOfRejectedMessages()               {return num_rejected_msgs.sum();}
     public ThreadPool log(Log l)                               {log=l; return this;}
-
-    @Deprecated public static int getThreadDumpsThreshold()           {return 0;}
-    @Deprecated public ThreadPool setThreadDumpsThreshold(int ignore) {return this;}
-    @Deprecated public static int getNumberOfThreadDumps()            {return -1;}
-    @Deprecated public void       resetThreadDumps()                  {}
 
     @ManagedAttribute(description="Current number of threads in the thread pool",type=SCALAR,gauge=true)
     public int getThreadPoolSize() {

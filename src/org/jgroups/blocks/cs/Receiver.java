@@ -1,9 +1,10 @@
 package org.jgroups.blocks.cs;
 
-import java.io.DataInput;
-import java.nio.ByteBuffer;
 import org.jgroups.Address;
 import org.jgroups.util.ByteBufferInputStream;
+
+import java.io.DataInput;
+import java.nio.ByteBuffer;
 
 /**
  * Receiver interface to be used with {@link BaseServer} instances
@@ -39,11 +40,6 @@ public interface Receiver {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    @Deprecated(since="5.3.3",forRemoval=true)
-    default void receive(Address sender, DataInput in) throws Exception {
-        receive(sender, in, -1);
     }
 
     /**

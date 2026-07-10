@@ -238,11 +238,6 @@ public class Util {
         return NIC_SKIP_LIST.stream().anyMatch(p -> p.matcher(name).matches());
     }
 
-    @Deprecated
-    public static boolean fibersAvailable() {
-        return ThreadCreator.hasVirtualThreads();
-    }
-
     public static boolean virtualThreadsAvailable() {
         return ThreadCreator.hasVirtualThreads();
     }
@@ -252,7 +247,6 @@ public class Util {
         int highestBit=Integer.highestOneBit(num);
         return num <= highestBit? highestBit : highestBit << 1;
     }
-
 
     public static String bold(String msg) {
         StringBuilder sb=new StringBuilder("\033[1m");
@@ -1281,21 +1275,6 @@ public class Util {
             byte[] tmp=new byte[len];
             buf.get(tmp, 0, len);
             return new ByteArray(tmp, 0, len);
-        }
-    }
-
-    @Deprecated(since = "5.5.3", forRemoval = true)
-    public static void bufferToArray(final Address sender, final ByteBuffer buf, org.jgroups.blocks.cs.Receiver target) {
-        if(buf == null)
-            return;
-        int offset=buf.hasArray()? buf.arrayOffset() + buf.position() : buf.position(),
-          len=buf.remaining();
-        if(!buf.isDirect())
-            target.receive(sender, buf.array(), offset, len);
-        else { // by default use a copy; but of course implementers of Receiver can override this
-            byte[] tmp=new byte[len];
-            buf.get(tmp, 0, len);
-            target.receive(sender, tmp, 0, len);
         }
     }
 

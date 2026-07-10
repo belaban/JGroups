@@ -544,7 +544,7 @@ public class TPConfig extends Protocol {
     public long             getNumRejectedMsgs()              {return thread_pool.numberOfRejectedMessages();}
     /** Don't remove! https://issues.redhat.com/browse/JGRP-2814 */
     @ManagedAttribute(type=SCALAR) @Deprecated
-    public static long      getNumberOfThreadDumps()          {return ThreadPool.getNumberOfThreadDumps();}
+    public static long      getNumberOfThreadDumps()          {return 0;}
     /** Don't remove! https://issues.redhat.com/browse/JGRP-2814 */
     @ManagedAttribute(type=SCALAR) @Deprecated
     public long             getNumUcastMsgsSent()             {return msg_stats.getNumUcastsSent();}

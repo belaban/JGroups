@@ -25,13 +25,6 @@ public class SiteUUID extends ExtendedUUID implements SiteAddress {
         this.site=site;
     }
 
-    /** @deprecated Use {@link SiteUUID#SiteUUID(long, long, java.lang.String, java.lang.String)} instead */
-    @Deprecated(since="5.2.15")
-    public SiteUUID(long mostSigBits, long leastSigBits, byte[] name, byte[] site) {
-        this(mostSigBits, leastSigBits, name != null? new String(name) : null,
-             site != null? new String(site) : null);
-    }
-
     public SiteUUID(UUID uuid, String name, String site) {
         this(uuid.getMostSignificantBits(), uuid.getLeastSignificantBits(), name, site);
     }
