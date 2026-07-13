@@ -85,9 +85,7 @@ public class GossipData implements SizeStreamable {
     public int              getOffset()          {return offset;}
     public int              getLength()          {return length;}
     public PhysicalAddress  getPhysicalAddress() {return physical_addr;}
-    public GossipData setPingData(List<PingData> mbrs) {
-        this.ping_data=mbrs; return this;
-    }
+    public GossipData       setPingData(List<PingData> mbrs) {this.ping_data=mbrs; return this;}
 
     public GossipData addPingData(PingData data) {
         if(ping_data == null)
@@ -96,7 +94,6 @@ public class GossipData implements SizeStreamable {
             ping_data.add(data);
         return this;
     }
-
 
     public String toString() {
         StringBuilder sb=new StringBuilder();

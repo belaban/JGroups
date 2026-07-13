@@ -1273,7 +1273,7 @@ public class Util {
             return new ByteArray(buf.array(), offset, len);
         else {
             byte[] tmp=new byte[len];
-            buf.get(tmp, 0, len);
+            buf.get(buf.position(), tmp, 0, len);
             return new ByteArray(tmp, 0, len);
         }
     }
