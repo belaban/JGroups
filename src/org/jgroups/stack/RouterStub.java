@@ -145,8 +145,7 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
         synchronized(this) {
             _doConnect();
         }
-        if(handle_heartbeats)
-            last_heartbeat=currentTimeMillis();
+        last_heartbeat=currentTimeMillis();
         try {
             writeRequest(new GossipData(GossipType.REGISTER, group, addr, logical_name, phys_addr));
         }
