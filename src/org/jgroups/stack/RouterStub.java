@@ -4,15 +4,16 @@ import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.PhysicalAddress;
 import org.jgroups.annotations.GuardedBy;
-import org.jgroups.util.*;
 import org.jgroups.blocks.cs.*;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.PingData;
+import org.jgroups.util.*;
 
 import java.io.DataInput;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.util.*;
 
 import static java.lang.System.currentTimeMillis;
@@ -209,9 +210,12 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
         }
     }
 
-
     public void sendToAllMembers(String group, Address sender, byte[] data, int offset, int length) throws Exception {
         sendToMember(group, null, sender, data, offset, length); // null destination represents mcast
+    }
+
+    public void sendToAllMembers(String group, Address sender, ByteBuffer buf) throws Exception {
+        sendToMember(group, null, sender, buf); // null destination represents mcast
     }
 
     public void sendToMember(String group, Address dest, Address sender, byte[] data, int offset, int length) throws Exception {
@@ -224,6 +228,18 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
         }
     }
 
+    public void sendToMember(String group, Address dest, Address sender, ByteBuffer buf) throws Exception {
+        try {
+            ByteArray ba=Util.bufferToByteArray(buf);
+            GossipData data=new GossipData(GossipType.MESSAGE, group, dest, ba.array(), ba.offset(), ba.length())
+              .setSender(sender);
+            writeRequest(data);
+        }
+        catch(Exception ex) {
+            throw new Exception(String.format("connection to %s broken. Could not send message to %s: %s",
+                                              gossipRouterAddress(), dest, ex));
+        }
+    }
 
     @Override
     public void receive(Address sender, byte[] buf, int offset, int length) {
@@ -311,9 +327,9 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
 
     public void writeRequest(GossipData req) throws Exception {
         int size=req.serializedSize();
-        ByteArrayDataOutputStream out=new ByteArrayDataOutputStream(size+5);
+        ByteBufferOutputStream out=new ByteBufferOutputStream(size);
         req.writeTo(out);
-        client.send(remote, out.buffer(), 0, out.position());
+        client.send(remote, out.buf().flip());
     }
 
     protected void removeResponse(String group, MembersNotification notif) {

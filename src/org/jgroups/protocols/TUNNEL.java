@@ -13,7 +13,6 @@ import org.jgroups.stack.GossipData;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.RouterStub;
 import org.jgroups.stack.RouterStubManager;
-import org.jgroups.util.ByteArray;
 import org.jgroups.util.SocketFactory;
 import org.jgroups.util.TLS;
 import org.jgroups.util.Util;
@@ -47,7 +46,9 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
 
     public interface TUNNELPolicy {
         void sendToAllMembers(String group, Address sender, byte[] data, int offset, int length) throws Exception;
+        void sendToAllMembers(String group, Address sender, ByteBuffer data) throws Exception;
         void sendToSingleMember(String group, Address dest, Address sender, byte[] data, int offset, int length) throws Exception;
+        void sendToSingleMember(String group, Address dest, Address sender, ByteBuffer data) throws Exception;
     }
 
     /* ----------------------------------------- Properties -------------------------------------------------- */
@@ -186,6 +187,10 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
             log.warn("%s: port_range=%d; setting it to 0 (https://issues.redhat.com/browse/JGRP-2806)", local_addr, port_range);
             port_range=0; // https://issues.redhat.com/browse/JGRP-2806
         }
+        if(use_direct_memory && !use_nio) {
+            log.warn("use_direct_memory=%b only makes sense with use_nio=true; enabling use_nio", use_direct_memory);
+            use_nio=true;
+        }
         gossip_routers.clear();
         gossip_routers.addAll(Util.parseCommaDelimitedHosts2(gossip_router_hosts, port_range));
         if(gossip_routers.isEmpty())
@@ -272,10 +277,9 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
     }
 
     @Override
-    public void sendToAll(ByteBuffer data) throws Exception {
+    public void sendToAll(ByteBuffer buf) throws Exception {
         String group=cluster_name != null? cluster_name.toString() : null;
-        ByteArray ba=Util.bufferToByteArray(data);
-        tunnel_policy.sendToAllMembers(group, local_addr, ba.array(), ba.offset(), ba.length());
+        tunnel_policy.sendToAllMembers(group, local_addr, buf);
     }
 
     public void sendUnicast(PhysicalAddress dest, ByteBuffer data) throws Exception {
@@ -287,8 +291,7 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
         if(dest instanceof PhysicalAddress)
             throw new IllegalArgumentException(String.format("destination %s cannot be a physical address", dest));
         String group=cluster_name != null? cluster_name.toString() : null;
-        ByteArray ba=Util.bufferToByteArray(buf);
-        tunnel_policy.sendToSingleMember(group, dest, local_addr, ba.array(), ba.offset(), ba.length());
+        tunnel_policy.sendToSingleMember(group, dest, local_addr, buf);
     }
 
     protected PhysicalAddress getPhysicalAddress() {
@@ -313,6 +316,21 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
             });
         }
 
+        public void sendToAllMembers(final String group, Address sender,
+                                     final ByteBuffer data) throws Exception {
+            stubManager.forAny( stub -> {
+                try {
+                    if(log.isTraceEnabled())
+                        log.trace("%s: sending a message to all members, GR used %s", local_addr, stub.gossipRouterAddress());
+                    stub.sendToAllMembers(group, sender, data);
+                }
+                catch(Exception ex) {
+                    log.warn("%s: failed sending a message to all members, router used %s: %s",
+                             local_addr, stub.gossipRouterAddress(), ex);
+                }
+            });
+        }
+
         public void sendToSingleMember(final String group, final Address dest, Address sender,
                                        final byte[] data, final int offset, final int length) throws Exception {
             stubManager.forAny( stub -> {
@@ -320,6 +338,21 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
                     if(log.isTraceEnabled())
                         log.trace("%s: sending a message to %s (router used %s)", local_addr, dest, stub.gossipRouterAddress());
                     stub.sendToMember(group, dest, sender, data, offset, length);
+                }
+                catch(Exception ex) {
+                    log.warn("%s: failed sending a message to %s (router used %s): %s", local_addr, dest,
+                             stub.gossipRouterAddress(), ex);
+                }
+            });
+        }
+
+        public void sendToSingleMember(final String group, final Address dest, Address sender,
+                                       final ByteBuffer data) throws Exception {
+            stubManager.forAny( stub -> {
+                try {
+                    if(log.isTraceEnabled())
+                        log.trace("%s: sending a message to %s (router used %s)", local_addr, dest, stub.gossipRouterAddress());
+                    stub.sendToMember(group, dest, sender, data);
                 }
                 catch(Exception ex) {
                     log.warn("%s: failed sending a message to %s (router used %s): %s", local_addr, dest,
