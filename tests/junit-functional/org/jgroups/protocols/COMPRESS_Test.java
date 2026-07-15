@@ -41,7 +41,7 @@ public class COMPRESS_Test {
     }
 
 
-    public void _testSimpleCompression(Message m) throws Exception {
+    private void _testSimpleCompression(Message m) throws Exception {
         byte[] array=Util.generateArray(100);
         a.send(m);
         Util.waitUntil(10000, 500, () -> r2.size() > 0);
