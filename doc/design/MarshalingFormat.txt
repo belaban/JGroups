@@ -35,12 +35,11 @@ MessageList:
 Headers:
 - length: int. Number of headers
 - For each Header:
-  - Key: UTF-8 string
+  - Key: short (magic ID)
   - Header
 
 
 Header:
-- magic_number (short)
 - if magic number == -1 (not present):
   - no-op
 - else
