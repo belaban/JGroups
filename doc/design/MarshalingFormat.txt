@@ -16,7 +16,7 @@ An org.jgroups.BaseMessage is marshalled to a byte stream as follows.
 
 SingleMessage:
 - leading: byte. Has bits set for null src and dest addresses, buf and headers
-- flags: byte
+- flags: short
 - src address: Address
 - [Headers]: list of headers --> Headers
 - [length of buf]: int
