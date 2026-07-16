@@ -12,6 +12,7 @@ An org.jgroups.BaseMessage is marshalled to a byte stream as follows.
   - single message or list of messages (LIST)
     If single message --> SingleMessage, else MessageList
   - multicast (MULTICAST) or unicast message (for optimizations)
+- message type: short (2 bytes).
 
 SingleMessage:
 - leading: byte. Has bits set for null src and dest addresses, buf and headers
