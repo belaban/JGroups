@@ -1,64 +1,234 @@
 
 // Author: Bela Ban
+// Updated: 2026 (reflects JGroups 5.x code)
 
 
-Binary format for marshalled messages
-=====================================
+Binary network format for marshalled messages
+==============================================
 
-Note: this specification may become outdated; the authoritative source is the code.
-
-An org.jgroups.BaseMessage is marshalled to a byte stream as follows.
-
-- version ID: short (2 bytes). Version.encode() encodes the major, minor and patch version into the short.
-- flags (byte):
-  - single message or list of messages (LIST)
-    If single message --> SingleMessage, else MessageList
-  - multicast (MULTICAST) or unicast message (for optimizations)
-- message type: short (2 bytes).
-
-SingleMessage:
-- leading: byte. Has bits set for null src and dest addresses, buf and headers
-- flags: short
-- src address: Address
-- [Headers]: list of headers --> Headers
-- [length of buf]: int
-- [buf]: byte[] array
+Note: this specification may become outdated; the authoritative source is the code
+      (primarily Util.writeMessage/writeMessageList, BaseMessage.writeTo/writeToNoAddrs,
+      and Headers.writeHeaders in src/org/jgroups/).
 
 
-MessageList:
-- length: int. Number of messages in the list
-- dest address: Address
-- src address: Address
-- cluster-name: UTF-8 string
-- 1-m Messages: --> SingleMessage, but with no src and dest addresses
+================================================================================
+Outer frame (wire header) — written by Util.writeMessage / Util.writeMessageList
+================================================================================
+
+Every datagram or TCP segment starts with:
+
+  | version (2) | flags (1) | ... payload ... |
+
+- version: short (2 bytes).
+  Encodes major (5 bits), minor (5 bits) and micro (6 bits) versions into one
+  16-bit value.  See Version.encode(major, minor, micro).
+  Layout (bit 15 = MSB):
+    [15..11] major  [10..6] minor  [5..0] micro
+
+- flags: byte (1 bit-field).
+  Bit 0 (LIST=1)      — set when the payload is a MessageList (bundled messages);
+                        cleared for a single message.
+  Bit 1 (MULTICAST=2) — set when the message was sent to the multicast group.
+
+The remaining bytes after the flags depend on the LIST bit:
+
+  LIST=0  --> SingleMessage payload (see below)
+  LIST=1  --> MessageList payload   (see below)
 
 
+================================================================================
+SingleMessage  (Util.writeMessage, then BaseMessage.writeTo)
+================================================================================
 
-Headers:
-- length: int. Number of headers
-- For each Header:
-  - Key: short (magic ID)
-  - Header
+  | type (2) | leading (1) | msg-flags (2) | [dest] | [src] | headers | payload |
+
+- type: short (2 bytes). Message type; used by MessageFactory to instantiate the
+  correct subclass on receipt.  Known built-in types (Message interface constants):
+    0  BYTES_MSG      — BytesMessage     (byte[])
+    1  NIO_MSG        — NioMessage       (ByteBuffer)
+    2  EMPTY_MSG      — EmptyMessage     (no payload)
+    3  OBJ_MSG        — ObjectMessage    (SizeStreamable object)
+    4  LONG_MSG       — LongMessage      (long, variable-length encoded)
+    5  COMPOSITE_MSG  — CompositeMessage (N sub-messages)
+    6  FRAG_MSG       — FragmentedMessage (fragment of another message; used by FRAG4)
+    7  EARLYBATCH_MSG — BatchMessage     (early-batching of N sub-messages)
+  Additional types can be registered at runtime via MessageFactory.
+
+- leading: byte (1 bit-field).  Written by BaseMessage.writeTo.
+  Bit 0 (DEST_SET=1) — dest address is present.
+  Bit 1 (SRC_SET=2)  — src  address is present.
+
+- msg-flags: short (2 bytes).  The persistent (non-transient) message flags.
+  Transient flags (OOB_DELIVERED, DONT_LOOPBACK, DONT_BLOCK) are NOT marshalled.
+  Defined flag bits (Message.Flag enum):
+    bit  0  OOB             — out-of-band message
+    bit  1  DONT_BUNDLE     — bypass bundler at transport
+    bit  2  NO_FC           — bypass flow control
+    bit  4  NO_RELIABILITY  — bypass UNICAST/NAKACK
+    bit  5  NO_TOTAL_ORDER  — bypass SEQUENCER
+    bit  6  NO_RELAY        — bypass RELAY
+    bit  7  RSVP            — multicast ack requested
+    bit  8  RSVP_NB         — non-blocking RSVP
+    bit 10  SKIP_BARRIER    — pass through closed BARRIER
+    bit 11  SERIALIZED      — payload was Java-serialized (BytesMessage/NioMessage)
+                              or object is wrapped (ObjectMessage)
+
+- [dest]: Address, present only when DEST_SET is set.  See Address Encoding below.
+
+- [src]:  Address, present only when SRC_SET is set.   See Address Encoding below.
+
+- headers: see Headers Encoding below.
+
+- payload: message-type-specific, see Payload Encoding below.
 
 
-Header:
-- if magic number == -1 (not present):
-  - no-op
-- else
-  - UTF-8 string (class name)
-- size in bytes (short)
-- contents (header-specific)
+================================================================================
+MessageList  (Util.writeMessageList / writeMessageListHeader + per-msg loop)
+================================================================================
+
+Written after the outer wire header (version + flags with LIST=1):
+
+  | dest | src | cluster-name-len (2) | [cluster-name] | count (4) | Message* |
+
+- dest: Address (always written; see Address Encoding).
+- src:  Address (always written; may be null).
+- cluster-name-len: short (2 bytes). -1 if cluster name is null.
+- cluster-name: byte[], length bytes, UTF-8 encoded cluster name (omitted if len == -1).
+- count: int (4 bytes). Number of messages that follow.
+- Message*: count repetitions of:
+    | type (2) | leading (1) | msg-flags (2) | [src] | headers | payload |
+  Each message is written via Message.writeToNoAddrs(src, out), which omits the dest
+  address entirely, and omits the src address when it equals the list-level src.
+  If the per-message src differs from the list-level src it is written.
+  The leading byte therefore only ever has SRC_SET set when the src differs.
 
 
-UTF-8 strings:
-- All strings start with a short that is the length of the string (DataOutputStream.writeUTF(String))
+================================================================================
+Address Encoding  (Util.writeAddress / Util.readAddress)
+================================================================================
+
+  | addr-flags (1) | ... address bytes ... |
+
+- addr-flags: byte (1 bit-field).
+  Bit 0 (NULL=1)        — address is null; no further bytes follow.
+  Bit 1 (UUID_ADDR=2)   — plain UUID.
+  Bit 2 (SITE_UUID=4)   — SiteUUID (cross-site relay).
+  Bit 3 (SITE_MASTER=8) — SiteMaster (cross-site relay).
+  Bit 4 (IP_ADDR=16)    — IpAddress (physical host:port address).
+  If none of those flag bits are set, the address is an "other" type encoded as:
+    | magic-number (2) | address bytes |
+  where magic-number is the ClassConfigurator magic number for the address class.
+
+UUID (addr-flags UUID_ADDR):   | leastSigBits (8) | mostSigBits (8) |   (16 bytes)
+SiteUUID (addr-flags SITE_UUID): same 16-byte UUID followed by site-name UTF-8 string
+IpAddress (addr-flags IP_ADDR):
+  | ip-len (1) | ip-bytes (4 or 16) | [scope-id (4) IPv6 only] | port (2) |
+  ip-len is 4 for IPv4, 16 for IPv6; 0 means no IP address (localhost).
+  port is written as an unsigned short (readUnsignedShort on read).
 
 
-Notes:
+================================================================================
+Headers Encoding  (Headers.writeHeaders / Headers.readHeaders)
+================================================================================
 
-- In most cases, we don't need to send the dest address, because the sender knows whether the message
-  was received on the unicast or multicast socket, and can thus set the dest address in an incoming
-  message to its own local address, or multicast address
+  | count (2) | Header* |
 
-- This is currently as used by UDP. Once we move to Transport (e.g. including TCP), this needs to be
-  revisited. Currently (2.2.8), TCP uses externalization, *not* Streamable.
+- count: short (2 bytes). Number of headers (0 means no headers).
+- Header*: for each header:
+    | prot-id (2) | magic-number (2) | header-bytes |
+  - prot-id: short — the protocol ID that added the header (e.g. from jg-protocol-ids.xml).
+  - magic-number: short — ClassConfigurator magic number for the header class
+    (from jg-magic-map.xml).  Used to instantiate the header on receipt via
+    ClassConfigurator.create(magic_number).
+  - header-bytes: header-type-specific content written by Header.writeTo(out).
+
+Note: the old format described a UTF-8 class name when magic-number == -1;
+this path no longer exists for headers (ClassConfigurator.create is always used).
+For generic streamables (ObjectMessage payload) the fallback still exists; see below.
+
+
+================================================================================
+Payload Encoding  (per message type)
+================================================================================
+
+BytesMessage (type=0):
+  | length (4) | [bytes] |
+  length is -1 when the byte array is null; otherwise the array length.
+  bytes: length raw bytes (the sub-range [offset, offset+length) of the array).
+
+NioMessage (type=1):
+  | use-direct (1) | length (4) | [bytes] |
+  use-direct: boolean — whether the receiver should allocate a direct ByteBuffer.
+  length: -1 when buf is null.
+  bytes: length raw bytes from the ByteBuffer's current position.
+
+EmptyMessage (type=2):
+  (no payload bytes)
+
+ObjectMessage (type=3):
+  Written via Util.writeGenericStreamable(obj, out):
+  | presence (1) | magic-number (2) | [classname-utf8] | object-bytes |
+  presence: 0 if obj is null (no further bytes); 1 otherwise.
+  magic-number: short — ClassConfigurator magic number, or -1 if not registered.
+  classname-utf8: present only when magic-number == -1; DataOutputStream.writeUTF().
+  object-bytes: content written by SizeStreamable.writeTo(out).
+
+LongMessage (type=4):
+  | len (1) | value-bytes (1-8) |
+  Variable-length (compressed) long: Bits.writeLongCompressed.
+  len==0 means value is 0 (no value bytes follow).
+  Otherwise len (1-8) payload bytes encode the long in little-endian order.
+
+CompositeMessage (type=5):
+  | count (4) | SubMessage* |
+  SubMessage*: count repetitions of:
+    | type (2) | leading (1) | msg-flags (2) | [src] | headers | payload |
+  (same writeToNoAddrs format as a MessageList entry; dest is not written)
+  If collapse==true the message is sent as a BYTES_MSG instead (type changes to 0).
+
+FragmentedMessage (type=6):
+  | length (4) | bytes |
+  length: number of bytes in this fragment.
+  bytes: the raw fragment bytes (a sub-range of the original serialised message).
+
+BatchMessage / EARLYBATCH_MSG (type=7):
+  | count (4) | orig-src | SubMessage* |
+  count: int — number of sub-messages.
+  orig-src: Address (see Address Encoding) — original sender address.
+  SubMessage*: count repetitions of:
+    | type (2) | leading (1) | msg-flags (2) | [src] | headers | payload |
+
+
+================================================================================
+Variable-length integer encoding  (Bits.writeIntCompressed / writeLongCompressed)
+================================================================================
+
+Used for LongMessage payload and other numeric fields:
+  | len (1) | value-bytes (len) |
+  len==0 encodes value 0.  Otherwise 1-4 (int) or 1-8 (long) bytes follow,
+  encoding the value in little-endian byte order.
+
+
+================================================================================
+UTF-8 strings
+================================================================================
+
+All strings use DataOutputStream.writeUTF(String), which prepends a 2-byte length
+(the byte count of the UTF-8 encoding, NOT the character count).
+
+
+================================================================================
+Notes
+================================================================================
+
+- In most cases the dest address is not sent for unicast messages because the
+  receiver can infer it (unicast socket → local address; multicast socket → group).
+
+- The LIST flag is set by the bundler (e.g. TransferQueueBundler) when multiple
+  messages are batched together into a single datagram/TCP segment.
+
+- Version compatibility: major and minor must match; micro versions may differ
+  (unless jgroups.version.check.micro is set to true).
+
+- MSG_OVERHEAD (TP.MSG_OVERHEAD = SHORT_SIZE*2 + BYTE_SIZE = 5 bytes) accounts
+  for the outer wire header: version (2) + flags (1) + msg-type (2).
