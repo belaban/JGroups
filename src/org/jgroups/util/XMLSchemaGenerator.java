@@ -21,7 +21,10 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.lang.reflect.Field;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URL;
@@ -64,6 +67,11 @@ public class XMLSchemaGenerator {
 
         String version = Version.major + "." + Version.minor;
         File f = new File(outputDir, "jgroups-" + version + ".xsd");
+        try {
+            Files.createDirectories(Path.of(outputDir));
+        } catch(IOException e) {
+            throw new RuntimeException("Failed to create output directory " + outputDir, e);
+        }
         try(FileWriter fw = new FileWriter(f, false)) {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();

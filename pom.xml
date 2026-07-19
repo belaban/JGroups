@@ -134,7 +134,7 @@
                 </includes>
             </resource>
             <resource>
-                <directory>${project.build.directory}/schema</directory>
+                <directory>conf</directory>
                 <includes>
                     <include>*.xsd</include>
                 </includes>
@@ -287,51 +287,51 @@
               </executions>
            </plugin>
            <plugin>
-                <artifactId>maven-antrun-plugin</artifactId>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.5.0</version>
                 <executions>
-                     <execution>
-                         <id>generate-keystores</id>
-                         <phase>initialize</phase>
-                         <goals>
-                             <goal>run</goal>
-                         </goals>
-                         <configuration>
-                             <target>
-                                 <ant antfile="build.xml" target="make-keystore"/>
-                             </target>
-                         </configuration>
-                     </execution>
                     <execution>
-                        <id>compile</id>
+                        <id>generate-schema</id>
                         <phase>compile</phase>
                         <goals>
-                            <goal>run</goal>
+                            <goal>java</goal>
                         </goals>
                         <configuration>
-                            <target>
-                                <property name="compile_classpath" refid="maven.compile.classpath" />
-                                <property name="plugin_classpath" refid="maven.plugin.classpath" />
-                                <delete dir="${project.build.directory}/schema" failonerror="false" />
-                                <mkdir dir="${project.build.directory}/schema" />
-                                <java classname="org.jgroups.util.XMLSchemaGenerator" fork="true">
-                                    <classpath>
-                                        <pathelement path="${compile_classpath}" />
-                                        <pathelement path="${plugin_classpath}" />
-                                    </classpath>
-                                    <jvmarg value="-Dlog4j2.disable.jmx=true" />
-                                    <arg line="-o ${project.build.directory}/schema" />
-                                </java>
-                                <copy todir="${project.build.directory}/schema">
-                                    <fileset dir="conf">
-                                        <include name="*.xsd" />
-                                    </fileset>
-                                </copy>
-                                <copy todir="${project.build.outputDirectory}">
-                                    <fileset dir="${project.build.directory}/schema">
-                                        <include name="*.xsd" />
-                                    </fileset>
-                                </copy>
-                            </target>
+                            <mainClass>org.jgroups.util.XMLSchemaGenerator</mainClass>
+                            <commandlineArgs>-o ${project.build.directory}/schema</commandlineArgs>
+                            <classpathScope>compile</classpathScope>
+                            <systemProperties>
+                                <systemProperty>
+                                    <key>log4j2.disable.jmx</key>
+                                    <value>true</value>
+                                </systemProperty>
+                            </systemProperties>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.3.1</version>
+                <executions>
+                    <execution>
+                        <id>copy-generated-schema</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.outputDirectory}</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.build.directory}/schema</directory>
+                                    <includes>
+                                        <include>*.xsd</include>
+                                    </includes>
+                                </resource>
+                            </resources>
                         </configuration>
                     </execution>
                 </executions>
@@ -411,6 +411,12 @@
                     <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
                 </configuration>
                 <executions>
+                    <!-- Suppress the default-test execution so only the defined suites run -->
+                    <execution>
+                        <id>default-test</id>
+                        <phase>none</phase>
+                    </execution>
+
                     <!-- Functional suite -->
                     <execution>
                         <id>functional</id>
@@ -755,11 +761,6 @@
         </plugins>
         <pluginManagement>
             <plugins>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-antrun-plugin</artifactId>
-                    <version>3.2.0</version>
-                </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-clean-plugin</artifactId>
