@@ -24,6 +24,7 @@
         <nexus3.plugin.version>1.0.13</nexus3.plugin.version>
         <enforcer.plugin.version>3.6.3</enforcer.plugin.version>
         <gpg.plugin.version>3.2.8</gpg.plugin.version>
+        <byteman.version>4.0.27</byteman.version>
     </properties>
 
     <organization>
@@ -97,14 +98,14 @@
         <dependency>
             <groupId>org.jboss.byteman</groupId>
             <artifactId>byteman-bmunit</artifactId>
-            <version>4.0.27</version>
+            <version>${byteman.version}</version>
             <scope>test</scope>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.jboss.byteman</groupId>
             <artifactId>byteman</artifactId>
-            <version>4.0.27</version>
+            <version>${byteman.version}</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
