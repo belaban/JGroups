@@ -7,7 +7,7 @@ import java.io.ObjectStreamClass;
 
 /**
  * Override {@link java.io.ObjectInputStream#resolveClass(java.io.ObjectStreamClass)} using the passed-in
- * classloader
+ * classloader. Requirement: https://redhat.atlassian.net/browse/JGRP-1860
  * @author Bela Ban
  * @since  3.5
  */
