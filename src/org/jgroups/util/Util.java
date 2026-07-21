@@ -352,12 +352,21 @@ public class Util {
     }
 
 
-    public static void waitUntil(long timeout, long interval, BooleanSupplier condition, Supplier<String> msg) throws TimeoutException {
+    public static void waitUntil(long timeout, long interval, BooleanSupplier c, Supplier<String> msg)
+      throws TimeoutException {
+        waitUntil(timeout, interval, c, msg, null);
+    }
+
+    public static void waitUntil(long timeout, long interval, BooleanSupplier condition, Supplier<String> msg,
+                                 Runnable r)
+      throws TimeoutException {
         long target_time=System.currentTimeMillis() + timeout;
         while(System.currentTimeMillis() <= target_time) {
             if(condition.getAsBoolean())
                 return;
             Util.sleep(interval);
+            if(r != null)
+                r.run();
         }
         String error_msg=String.format("Timeout %d kicked in%s", timeout, msg != null? ": " + msg.get() : "");
         throw new TimeoutException(error_msg);
@@ -374,11 +383,17 @@ public class Util {
     }
 
     public static boolean waitUntilTrue(long timeout, long interval, BooleanSupplier condition) {
+        return waitUntilTrue(timeout, interval, condition, null);
+    }
+
+    public static boolean waitUntilTrue(long timeout, long interval, BooleanSupplier condition, Runnable r) {
         long target_time=System.currentTimeMillis() + timeout;
         while(System.currentTimeMillis() <= target_time) {
             if(condition.getAsBoolean())
                 return true;
             Util.sleep(interval);
+            if(r != null)
+                r.run();
         }
         return false;
     }
@@ -1276,6 +1291,37 @@ public class Util {
             buf.get(buf.position(), tmp, 0, len);
             return new ByteArray(tmp, 0, len);
         }
+    }
+
+    public static ByteArray bufferToByteArray(ByteBuffer[] bufs) {
+        if(bufs == null || bufs.length == 0)
+            return null;
+
+        if(bufs.length == 1) // special case: array of 1
+            return bufferToByteArray(bufs[0]);
+
+        int total_length=length(bufs);
+        byte[] tmp=new byte[total_length];
+        int index=0;
+        for(ByteBuffer b: bufs) {
+            if(b == null)
+                continue;
+            int offset=b.hasArray()? b.arrayOffset() + b.position() : b.position(), len=b.remaining();
+            b.get(offset, tmp, index, len);
+            index+=len;
+        }
+        return new ByteArray(tmp, 0, tmp.length);
+    }
+
+    public static int length(ByteBuffer[] bufs) {
+        int total_length=0;
+        if(bufs == null)
+            return total_length;
+        for(ByteBuffer b: bufs) {
+            if(b != null)
+                total_length+=b.remaining();
+        }
+        return total_length;
     }
 
     /**

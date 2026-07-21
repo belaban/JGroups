@@ -116,6 +116,7 @@ public class TcpConnection extends Connection {
         receiver=new Receiver(server.factory).start();
     }
 
+    @Override
     public void send(byte[] data, int offset, int length) throws Exception {
         if(out == null)
             return;
@@ -135,10 +136,19 @@ public class TcpConnection extends Connection {
         }
     }
 
+    @Override
     public void send(ByteBuffer buf) throws Exception {
         if(buf == null)
             return;
         ByteArray ba=Util.bufferToByteArray(buf);
+        send(ba.array(), ba.offset(), ba.length());
+    }
+
+    @Override
+    public void send(ByteBuffer[] bufs) throws Exception {
+        if(bufs == null || bufs.length == 0)
+            return;
+        ByteArray ba=Util.bufferToByteArray(bufs);
         send(ba.array(), ba.offset(), ba.length());
     }
 

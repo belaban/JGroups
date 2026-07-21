@@ -509,6 +509,45 @@ public class UtilTest {
         assert ba.length() == 4;
     }
 
+    public void testBufferToByteArray2() {
+        ByteArray ba=Util.bufferToByteArray((ByteBuffer[])null);
+        assert ba == null;
+
+        byte[] array1={1,2,3,4,5,6,7,8,9,10};
+        byte[] array2={11,12,13,14,15};
+        ByteBuffer buf1=ByteBuffer.wrap(array1);
+        ByteBuffer buf2=ByteBuffer.wrap(array2);
+        int expected_length=buf1.remaining() + buf2.remaining();
+        ByteBuffer[] bufs={buf1,buf2};
+        ba=Util.bufferToByteArray(bufs);
+        assert ba.offset() == 0;
+        assert ba.length() == expected_length;
+        byte[] bytes=ba.bytes();
+        assert bytes.length == expected_length;
+        for(int i=1; i <= 15; i++)
+            assert bytes[i-1] == i;
+
+        buf1.position(5);
+        expected_length-=5;
+        ba=Util.bufferToByteArray(bufs);
+        assert ba.offset() == 0;
+        assert ba.length() == expected_length;
+        bytes=ba.bytes();
+        assert bytes.length == expected_length;
+        for(int i=6; i <= 15; i++)
+            assert bytes[i-6] == i;
+
+        bufs[0]=buf1=ByteBuffer.allocateDirect(5);
+        bufs[1]=buf2=ByteBuffer.allocateDirect(5);
+        buf1.put(0, new byte[]{1,2,3,4,5});
+        buf2.put(0, new byte[]{6,7,8,9,10});
+        ba=Util.bufferToByteArray(bufs);
+        assert ba.length() == 10;
+        bytes=ba.bytes();
+        for(int i=1; i <= 10; i++)
+            assert bytes[i-1] == i;
+    }
+
     public void testSerialization() throws Exception {
         byte[] buf;
         Address addr=Util.createRandomAddress(), addr2;

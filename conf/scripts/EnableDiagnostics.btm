@@ -1,0 +1,21 @@
+
+## Script to enable diagnostics (TCP) in an already running process
+
+# 1. 'bminstall.sh <PID>'. This shell script can be found in the binary Byteman download
+# 2. ./bmsubmit EnableDiagnostics.btm
+# 3. Once a message is sent, check that diagnostics are running: 'netstat -na |grep 7500'
+# 4. Uninstall the rule: ./bmsubmit -u EnableDiagnostics.btm
+# 5. Use probe: probe.sh -tcp true
+
+# The script should probably use a better entry point than JChannel.send(Message) - e.g. one that's called less frequently - but this is just an example.
+
+
+RULE Enable diagnostics dynamically
+CLASS JChannel
+METHOD send(Message)
+AT ENTRY
+BIND tp=$this.stack().getTransport(), diag=tp.getDiagnosticsHandler(), d=diag.enableTcp(true), d2=d.start()
+IF TRUE
+  DO System.out.println("diag: " + diag + ", enabled: " + diag.start())
+ENDRULE
+

@@ -33,6 +33,7 @@ public abstract class Connection implements Closeable {
     abstract public void       start() throws Exception;
     abstract public void       send(byte[] buf, int offset, int length) throws Exception;
     abstract public void       send(ByteBuffer buf) throws Exception;
+    abstract public void       send(ByteBuffer[] bufs) throws Exception;
     abstract public String     status();
     abstract public void       close(boolean graceful) throws IOException;
 

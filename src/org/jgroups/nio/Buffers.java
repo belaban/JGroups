@@ -39,7 +39,6 @@ public class Buffers implements Iterable<ByteBuffer> {
     protected final ByteBuffer[] bufs; // the buffers to be written or read
     protected short position;          // points to the next buffer in bufs to be read or written
     protected short limit;             // points beyond the last buffer in bufs that was read or written
-    protected short next_to_copy;      // index of the next buffer to copy, set by copy(): position <= last_copied <= limit
     protected int   max_length;        // max number of bytes to read (JGRP-2523)
 
     /**
@@ -63,11 +62,9 @@ public class Buffers implements Iterable<ByteBuffer> {
     }
 
     public int     position()              {return position;}
-    public Buffers position(int new_pos)   {this.position=toPositiveUnsignedShort(new_pos); nextToCopy(new_pos); return this;}
+    public Buffers position(int new_pos)   {this.position=toPositiveUnsignedShort(new_pos); return this;}
     public int     limit()                 {return limit;}
     public Buffers limit(int new_limit)    {this.limit=toPositiveUnsignedShort(new_limit); return this;}
-    public int     nextToCopy()            {return next_to_copy;}
-    public Buffers nextToCopy(int next)    {next_to_copy=toPositiveUnsignedShort(next); return this;}
     public int     maxLength()             {return max_length;}
     public Buffers maxLength(int len)      {max_length=len; return this;}
 
@@ -95,26 +92,50 @@ public class Buffers implements Iterable<ByteBuffer> {
      * e.g. because of exceeding the capacity, none of them will be added!</em>
      */
     public Buffers add(ByteBuffer ... buffers) {
+        return add(false, buffers);
+    }
+
+    /**
+     * Adds multiple buffers
+     * @param skip_space_check If true, the check whether enough space is available will be skipped. Used in
+     *                         conjunction with {@link #ensureCapacity(int)}, which ensure that enough space is
+     *                         available, or the buffers will not get added
+     * @param buffers The buffers to be added
+     * @return The current instance
+     */
+    public Buffers add(boolean skip_space_check, ByteBuffer ... buffers) {
         if(buffers == null)
             return this;
         assertPositiveUnsignedShort(buffers.length);
         int len=buffers.length;
-        if(spaceAvailable(len) || (makeSpace() && spaceAvailable(len))) {
+        if(skip_space_check || spaceAvailable(len) || (makeSpace() && spaceAvailable(len))) {
             for(ByteBuffer buf: buffers)
-                bufs[limit++]=buf;
+                if(buf != null)
+                    bufs[limit++]=buf;
         }
         return this;
     }
 
     /** Adds a buffer. If there's no capacity, the buffer will not be added and will be silently dropped */
     public Buffers add(ByteBuffer buf) {
+        return add(false, buf);
+    }
+
+    /**
+     * Adds a single buffer
+     * @param skip_space_check If true, the check whether enough space is available will be skipped. Used in
+     *                         conjunction with {@link #ensureCapacity(int)}, which ensure that enough space is
+     *                         available, or the buffer will not get added
+     * @param buf The buffer to be added
+     * @return The current instance
+     */
+    public Buffers add(boolean skip_space_check, ByteBuffer buf) {
         if(buf == null)
             return this;
-        if(spaceAvailable(1) || (makeSpace() && spaceAvailable(1)))
+        if(skip_space_check || spaceAvailable(1) || (makeSpace() && spaceAvailable(1)))
             bufs[limit++]=buf;
         return this;
     }
-
 
     public ByteBuffer get(int index) {
         return this.bufs[index];
@@ -129,6 +150,14 @@ public class Buffers implements Iterable<ByteBuffer> {
         return set(index, null);
     }
 
+    /**
+     * Checks if there is space to add num buffers, making space if possible
+     * @param num The number of additional buffers to add
+     * @return True if there is space, false if not.
+     */
+    public boolean ensureCapacity(int num) {
+        return spaceAvailable(num) || (makeSpace() && spaceAvailable(num));
+    }
 
     /**
      * Reads length and then length bytes into the data buffer, which is grown if needed. Note that this method is not
@@ -220,10 +249,8 @@ public class Buffers implements Iterable<ByteBuffer> {
      * write, if copying is required. This is typically needed if the output buffer is reused. Note that
      * direct buffers will be converted to heap-based buffers */
     public Buffers copy() {
-        for(int i=Math.max(position, next_to_copy); i < limit; i++) {
+        for(int i=position; i < limit; i++)
             this.bufs[i]=copyBuffer(this.bufs[i]);
-            next_to_copy=(short)(i+1);
-        }
         return this;
     }
 
@@ -242,7 +269,7 @@ public class Buffers implements Iterable<ByteBuffer> {
 
     protected boolean makeSpace() {
         if(position == limit) { // easy case: no pending writes, but pos and limit are not at the head of the buffer
-            position=limit=next_to_copy=0;   // redundant if position == 0, but who cares
+            position=limit=0;   // redundant if position == 0, but who cares
             return true;
         }
         // limit > position: copy to head of buffer if position > 0
@@ -257,10 +284,8 @@ public class Buffers implements Iterable<ByteBuffer> {
         // null buffers
         for(int i=buffers_to_move; i < limit; i++)
             bufs[i]=null;
-        next_to_copy-=position;
         limit=(short)buffers_to_move; // same as limit-=position
         position=0;
-        next_to_copy=(short)Math.max(next_to_copy, position);
         return true;
     }
 
@@ -282,8 +307,6 @@ public class Buffers implements Iterable<ByteBuffer> {
             if(null_complete_data)
                 bufs[position]=null;
             position++;
-            if(next_to_copy < position)
-                next_to_copy=position;
         }
         return true;
     }

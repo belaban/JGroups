@@ -319,6 +319,21 @@ public class BuffersTest {
         check(buf, 0, 2, 2, remaining(buf2,buf3));
     }
 
+    public void testEnsureSpace() throws Exception {
+        Buffers buf=new Buffers(10);
+        assert buf.ensureCapacity(2);
+        assert buf.ensureCapacity(10);
+        assert !buf.ensureCapacity(12);
+        for(int i=1; i <= 8; i++)
+            buf.add(ByteBuffer.allocate(10));
+        assert buf.ensureCapacity(1);
+        assert buf.ensureCapacity(2);
+        assert !buf.ensureCapacity(3);
+        MockSocketChannel ch=new MockSocketChannel().bytesToWrite(50);
+        buf.write(ch);
+        assert buf.ensureCapacity(5);
+    }
+
     /**
      * post=limit=capacity=0: add an element that greater than capacity
      */
@@ -526,7 +541,6 @@ public class BuffersTest {
         makeSpace(bufs);
         assert bufs.position() == 0;
         assert bufs.limit() == 2;
-        assert bufs.nextToCopy() == 2;
 
         // now modify the original buffers
         for(ByteBuffer buf: Arrays.asList(a,b,c,d))

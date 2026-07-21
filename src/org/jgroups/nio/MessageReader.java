@@ -42,30 +42,22 @@ public class MessageReader {
 
     /**
      * Reads length prefixed messages from a channel.
-     * 
      * @return The buffer (position is 0 and limit is length), or null if not all data could be read.
      */
     public ByteBuffer readMessage() throws IOException {
+        if (readerIndex + Integer.BYTES > buffer.position()) {
+            // We don't have length yet
 
-        ByteBuffer message;
-
-        if (readerIndex + 4 > buffer.position()) {
-            // We don't have length
-
-            if (readerIndex + 4 > buffer.capacity()) {
+            if (readerIndex + Integer.BYTES > buffer.capacity()) {
                 // Ensure buffer fits at least length
-                makeSpace(4);
+                makeSpace(Integer.BYTES);
             }
 
-            // Fill as much data as possible
-            if (!fillBuffer()) {
-                return null;
-            }
+            // Read as much data as possible
+            fillBuffer();
 
-            if (readerIndex + 4 > buffer.position()) {
-                // Did not even get length
+            if (readerIndex + Integer.BYTES > buffer.position()) // Did not even get length
                 return null;
-            }
         }
 
         // We have at least length
@@ -76,26 +68,24 @@ public class MessageReader {
             return null;
         }
 
+        ByteBuffer message;
         // Check if we have a full message
         if ((message = tryGetMessage(length)) != null) {
             return message;
         }
 
         // Not enough data or buffer too small
-        if (readerIndex + 4 + length > buffer.capacity()) {
+        if (readerIndex + Integer.BYTES + length > buffer.capacity()) {
             // Ensure buffer fits entire message
-            makeSpace(4 + length);
+            makeSpace(Integer.BYTES + length);
         }
 
-        // Fill as much data as possible
-        if (!fillBuffer()) {
-            return null;
-        }
+        // Read as much data as possible
+        fillBuffer();
 
         // Check if we have a full message now
-        if ((message = tryGetMessage(length)) != null) {
+        if ((message = tryGetMessage(length)) != null)
             return message;
-        }
 
         return null;
     }
@@ -123,9 +113,9 @@ public class MessageReader {
      * Position should be at start of the message (before the length)
      */
     private ByteBuffer tryGetMessage(int length) {
-        if (readerIndex + 4 + length <= buffer.position()) {
-            ByteBuffer message = buffer.slice(readerIndex + 4, length);
-            readerIndex = readerIndex + 4 + length;
+        if (readerIndex + Integer.BYTES + length <= buffer.position()) {
+            ByteBuffer message = buffer.slice(readerIndex + Integer.BYTES, length);
+            readerIndex = readerIndex + Integer.BYTES + length;
             if (readerIndex == buffer.position()) {
                 buffer.position(0);
                 readerIndex = 0;
