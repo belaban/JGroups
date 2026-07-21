@@ -39,6 +39,7 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
     protected IpAddress         remote;    // address of remote GossipRouter
     protected InetSocketAddress remote_sa; // address of remote GossipRouter, not resolved yet
     protected final boolean     use_nio;
+    protected boolean           use_direct_memory;
     protected StubReceiver      receiver;  // external consumer of data, e.g. TUNNEL
     protected CloseListener     close_listener;
     protected SocketFactory     socket_factory;
@@ -67,6 +68,8 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
     // map to correlate GET_MBRS requests and responses
     protected final Map<String,List<MembersNotification>> get_members_map=new HashMap<>();
     protected final LazyRemovalList<MembersNotification>  get_all_members_list;
+    // reused output stream to write metadata to
+    protected ByteBufferOutputStream metadata_out;
 
     public RouterStub(InetSocketAddress local_sa, InetSocketAddress remote_sa, boolean use_nio, CloseListener l, SocketFactory sf) {
        this(local_sa, remote_sa, use_nio, l, sf, -1);
@@ -117,6 +120,8 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
     public int           socketConnectionTimeout()            {return sock_conn_timeout;}
     public RouterStub    socketConnectionTimeout(int timeout) {this.sock_conn_timeout=timeout; return this;}
     public boolean       useNio()                             {return use_nio;}
+    public boolean       useDirectMemory()                    {return use_direct_memory;}
+    public RouterStub    useDirectMemory(boolean b)           {use_direct_memory=b; return this;}
     public IpAddress     gossipRouterAddress()                {return remote;}
     public boolean       isConnected()                        {return client != null && ((Client)client).isConnected();}
     public RouterStub    handleHeartbeats(boolean f)          {handle_heartbeats=f; return this;}
@@ -161,6 +166,7 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
 
     @GuardedBy("lock")
     protected void _doConnect() throws Exception {
+        metadata_out=new ByteBufferOutputStream(32, false, use_direct_memory);
         if(client != null)
             client.start();
         else {
@@ -170,7 +176,6 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
                 throw new IllegalStateException("client could not be created as remote address has not yet been resolved");
         }
     }
-
 
     public void disconnect(String group, Address addr) throws Exception {
         if(isConnected())
@@ -230,10 +235,9 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
 
     public void sendToMember(String group, Address dest, Address sender, ByteBuffer buf) throws Exception {
         try {
-            ByteArray ba=Util.bufferToByteArray(buf);
-            GossipData data=new GossipData(GossipType.MESSAGE, group, dest, ba.array(), ba.offset(), ba.length())
-              .setSender(sender);
-            writeRequest(data);
+            metadata_out.reset();
+            GossipData.writeMetadata(metadata_out, group, dest, sender, buf.remaining());
+            writeRequest(metadata_out.buf().flip(), buf);
         }
         catch(Exception ex) {
             throw new Exception(String.format("connection to %s broken. Could not send message to %s: %s",
@@ -330,6 +334,11 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
         ByteBufferOutputStream out=new ByteBufferOutputStream(size);
         req.writeTo(out);
         client.send(remote, out.buf().flip());
+    }
+
+    public void writeRequest(ByteBuffer metadata, ByteBuffer payload) throws Exception {
+        ByteBuffer[] bufs={metadata, payload};
+        ((Client)client).send(bufs);
     }
 
     protected void removeResponse(String group, MembersNotification notif) {

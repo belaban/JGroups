@@ -80,6 +80,10 @@ public class TCP_NIO2 extends BasicTCP {
       type=AttributeType.SCALAR)
     public int     numPartialWrites() {return server.numPartialWrites();}
 
+    @ManagedAttribute(description="Number of write drops (not enough space in buffer (max_send_buffers) for all " +
+      "connections (not all bytes were written)", type=AttributeType.SCALAR)
+    public int     numDrops()         {return server.numDrops();}
+
     @ManagedAttribute(description="Number of ms a reader thread on a given connection can be idle (not receiving any messages) " +
       "until it terminates. New messages will start a new reader")
     public void readerIdleTime(long t) {
