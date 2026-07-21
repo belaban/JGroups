@@ -242,17 +242,17 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         }
     }
 
-    public void send(Address dest, ByteBuffer data) throws Exception {
-        if(!validateArgs(dest, data))
+    public void send(Address dest, ByteBuffer buf) throws Exception {
+        if(!validateArgs(dest, buf))
             return;
 
         if(dest == null) {
-            sendToAll(data);
+            sendToAll(buf);
             return;
         }
 
         if(dest.equals(local_addr)) {
-            receive(dest, data);
+            receive(dest, buf);
             return;
         }
 
@@ -260,7 +260,7 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
         Connection conn=null;
         try {
             conn=getConnection(dest);
-            conn.send(data);
+            conn.send(buf);
         }
         catch(Exception ex) {
             removeConnectionIfPresent(dest, conn);

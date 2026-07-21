@@ -88,20 +88,27 @@ public class TcpClient extends TcpBaseServer implements Client, ConnectionListen
     }
 
     @Override
-    public void send(Address dest, ByteBuffer data) throws Exception {
-        send(data);
+    public void send(Address dest, ByteBuffer buf) throws Exception {
+        send(buf);
     }
 
+    @Override
     public void send(byte[] data, int offset, int length) throws Exception {
         if(conn == null)
             throw new IllegalStateException("connection to server " + remote_addr + " doesn't exist (has start() been called?)");
         conn.send(data, offset, length);
     }
 
-    public void send(ByteBuffer data) throws Exception {
+    @Override
+    public void send(ByteBuffer buf) throws Exception {
         if(conn == null)
             throw new IllegalStateException("connection to server " + remote_addr + " doesn't exist (has start() been called?)");
-        conn.send(data);
+        conn.send(buf);
+    }
+
+    @Override
+    public void send(ByteBuffer[] bufs) throws Exception {
+        conn.send(bufs);
     }
 
     @Override

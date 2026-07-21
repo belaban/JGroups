@@ -21,4 +21,7 @@ public interface Client {
 
     /** Sends data to the remote server.  The server's address must have been set before. */
     void send(ByteBuffer data) throws Exception;
+
+    /** Sends data to the remote server.  The server's address must have been set before. */
+    void send(ByteBuffer[] data) throws Exception;
 }

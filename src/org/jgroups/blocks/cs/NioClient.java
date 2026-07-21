@@ -84,8 +84,8 @@ public class NioClient extends NioBaseServer implements Client {
     }
 
     @Override
-    public void send(Address dest, ByteBuffer data) throws Exception {
-        send(data);
+    public void send(Address dest, ByteBuffer buf) throws Exception {
+        send(buf);
     }
 
     @Override
@@ -93,18 +93,26 @@ public class NioClient extends NioBaseServer implements Client {
         send(data, offset, length);
     }
 
+    @Override
     public void send(byte[] data, int offset, int length) throws Exception {
         if(conn == null)
             throw new IllegalStateException("connection to server " + remote_addr + " doesn't exist (has start() been called?)");
         conn.send(data, offset, length);
     }
 
+    @Override
     public void send(ByteBuffer data) throws Exception {
         if(conn == null)
             throw new IllegalStateException("connection to server " + remote_addr + " doesn't exist (has start() been called?)");
         conn.send(data);
     }
 
+    @Override
+    public void send(ByteBuffer[] bufs) throws Exception {
+        if(conn == null)
+            throw new IllegalStateException("connection to server " + remote_addr + " doesn't exist (has start() been called?)");
+        conn.send(bufs);
+    }
 
     public String toString() {
         return conn == null? String.format("%s -> %s [not connected]", localAddress(), remoteAddress())

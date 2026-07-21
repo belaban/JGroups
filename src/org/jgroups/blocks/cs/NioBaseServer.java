@@ -73,6 +73,14 @@ public abstract class NioBaseServer extends BaseServer {
         return retval;
     }
 
+    public synchronized int numDrops() {
+        int retval=0;
+        for(Connection c: conns.values()) {
+            NioConnection conn=(NioConnection)c;
+            retval+=conn.numDrops();
+        }
+        return retval;
+    }
 
     /** Prints send and receive buffers for all connections */
     @ManagedOperation(description="Prints the send and receive buffers")
@@ -88,7 +96,6 @@ public abstract class NioBaseServer extends BaseServer {
         }
         return sb.toString();
     }
-
 
     protected SelectionKey register(SelectableChannel ch, int interest_ops, NioConnection conn) throws Exception {
         reg_lock.lock();
@@ -147,7 +154,7 @@ public abstract class NioBaseServer extends BaseServer {
                             if(key.isReadable())
                                 conn.read();
                             if(key.isWritable())
-                                conn.send();
+                                conn.send((Runnable)null);
                         }
                     }
                     catch(Throwable ex) {

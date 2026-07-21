@@ -45,9 +45,7 @@ import java.util.Objects;
 public class TUNNEL extends TP implements RouterStub.StubReceiver {
 
     public interface TUNNELPolicy {
-        void sendToAllMembers(String group, Address sender, byte[] data, int offset, int length) throws Exception;
         void sendToAllMembers(String group, Address sender, ByteBuffer data) throws Exception;
-        void sendToSingleMember(String group, Address dest, Address sender, byte[] data, int offset, int length) throws Exception;
         void sendToSingleMember(String group, Address dest, Address sender, ByteBuffer data) throws Exception;
     }
 
@@ -173,9 +171,9 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
     /*------------------------------ Protocol interface ------------------------------ */
 
     public synchronized TUNNEL setTUNNELPolicy(TUNNELPolicy policy) {
-        if (policy == null)
+        if(policy == null)
             throw new IllegalArgumentException("Tunnel policy has to be non null");
-        tunnel_policy = policy;
+        tunnel_policy=policy;
         return this;
     }
 
@@ -241,7 +239,7 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
                         InetSocketAddress target=gr.isUnresolved()? new InetSocketAddress(gr.getHostString(), gr.getPort())
                           : new InetSocketAddress(gr.getAddress(), gr.getPort());
                         stubManager.createAndRegisterStub(new InetSocketAddress(bind_addr, bind_port), target, linger)
-                          .receiver(this).tcpNoDelay(tcp_nodelay);
+                          .receiver(this).tcpNoDelay(tcp_nodelay).useDirectMemory(use_direct_memory);
                     }
                     catch(Throwable t) {
                         log.error("%s: failed creating stub to %s: %s", local, bind_addr + ":" + bind_port, t);
@@ -302,21 +300,6 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
     private class DefaultTUNNELPolicy implements TUNNELPolicy {
 
         public void sendToAllMembers(final String group, Address sender,
-                                     final byte[] data, final int offset, final int length) throws Exception {
-            stubManager.forAny( stub -> {
-                try {
-                    if(log.isTraceEnabled())
-                        log.trace("%s: sending a message to all members, GR used %s", local_addr, stub.gossipRouterAddress());
-                    stub.sendToAllMembers(group, sender, data, offset, length);
-                }
-                catch(Exception ex) {
-                    log.warn("%s: failed sending a message to all members, router used %s: %s",
-                             local_addr, stub.gossipRouterAddress(), ex);
-                }
-            });
-        }
-
-        public void sendToAllMembers(final String group, Address sender,
                                      final ByteBuffer data) throws Exception {
             stubManager.forAny( stub -> {
                 try {
@@ -327,21 +310,6 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
                 catch(Exception ex) {
                     log.warn("%s: failed sending a message to all members, router used %s: %s",
                              local_addr, stub.gossipRouterAddress(), ex);
-                }
-            });
-        }
-
-        public void sendToSingleMember(final String group, final Address dest, Address sender,
-                                       final byte[] data, final int offset, final int length) throws Exception {
-            stubManager.forAny( stub -> {
-                try {
-                    if(log.isTraceEnabled())
-                        log.trace("%s: sending a message to %s (router used %s)", local_addr, dest, stub.gossipRouterAddress());
-                    stub.sendToMember(group, dest, sender, data, offset, length);
-                }
-                catch(Exception ex) {
-                    log.warn("%s: failed sending a message to %s (router used %s): %s", local_addr, dest,
-                             stub.gossipRouterAddress(), ex);
                 }
             });
         }
@@ -360,6 +328,5 @@ public class TUNNEL extends TP implements RouterStub.StubReceiver {
                 }
             });
         }
-
     }
 }

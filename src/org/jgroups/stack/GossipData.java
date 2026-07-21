@@ -159,11 +159,19 @@ public class GossipData implements SizeStreamable {
             out.write(buffer, offset, length);
     }
 
+    public static void writeMetadata(DataOutput out, String group, Address addr, Address sender, int len)
+      throws IOException {
+        out.writeByte(GossipType.MESSAGE.ordinal());
+        Bits.writeString(group, out);
+        Util.writeAddress(addr, out);
+        Util.writeAddress(sender, out);
+        out.writeInt(len);
+    }
+
     @Override
     public void readFrom(DataInput in) throws IOException, ClassNotFoundException {
         readFrom(in, true);
     }
-
 
     public void readFrom(DataInput in, boolean read_type) throws IOException, ClassNotFoundException {
         readFrom(in, read_type, true);

@@ -3,6 +3,7 @@ package org.jgroups.blocks.cs;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.Version;
+import org.jgroups.annotations.GuardedBy;
 import org.jgroups.nio.Buffers;
 import org.jgroups.nio.MessageReader;
 import org.jgroups.stack.IpAddress;
@@ -37,6 +38,7 @@ public class NioConnection extends Connection {
     protected final MessageReader     message_reader;
     protected boolean                 copy_on_partial_write=true;
     protected int                     partial_writes; // number of partial writes (write which did not write all bytes)
+    protected int                     num_drops; // number of messages dropped due to insufficient capacity
     protected final PeerAddressReader peer_addr_reader;
     protected ByteBuffer              length_buf;     // reused: send the length of the next buf
     protected ByteBuffer              graceful_close_buf;
@@ -96,6 +98,8 @@ public class NioConnection extends Connection {
     public NioConnection copyOnPartialWrite(boolean b) {this.copy_on_partial_write=b; return this;}
     public boolean       copyOnPartialWrite()          {return copy_on_partial_write;}
     public int           numPartialWrites()            {return partial_writes;}
+    public int           numDrops()                    {return num_drops;}
+    public NioConnection reset()                       {num_drops=partial_writes=0; return this;}
 
     public synchronized void registerSelectionKey(int interest_ops) {
         if(key != null && key.isValid())
@@ -148,64 +152,13 @@ public class NioConnection extends Connection {
      */
     @Override
     public void send(ByteBuffer buf) throws Exception {
-        send(buf, true);
+        send(() -> addBuffer(buf));
     }
 
-    protected void send(ByteBuffer buf, boolean send_length) throws Exception {
-        send_lock.lock();
-        try {
-            // makeLengthBuffer() reuses the same pre-allocated buffer and copies it only if the write didn't complete
-            if(send_length) {
-                int length=buf.remaining();
-                length_buf.clear().putInt(0, length);
-                send_buf.add(length_buf, buf);
-            }
-            else
-                send_buf.add(buf);
-            boolean success=send_buf.write(channel);
-            if(!success) {
-                registerSelectionKey(OP_WRITE);
-                if(copy_on_partial_write)
-                    send_buf.copy(); // copy data on partial write as further writes might corrupt data (https://issues.redhat.com/browse/JGRP-1991)
-                partial_writes++;
-            }
-        }
-        catch(Exception ex) {
-            if(!(ex instanceof SocketException || ex instanceof EOFException || ex instanceof ClosedChannelException))
-                server.log.error("%s: failed sending message to %s: %s", server.localAddress(), peerAddress(), ex);
-            throw ex;
-        }
-        finally {
-            send_lock.unlock();
-        }
+    @Override
+    public void send(ByteBuffer[] bufs) throws Exception {
+        send(() -> addBuffers(bufs));
     }
-
-    /**
-     * Sends the buffers currently present in send_buf
-     * @return True if all buffers were sent successfully, false otherwise
-     * @throws Exception If the send failed, e.g. because the channel was closed
-     */
-    public boolean send() throws Exception {
-        send_lock.lock();
-        try {
-            boolean success=send_buf.write(channel);
-            if(success) {
-                clearSelectionKey(OP_WRITE);
-                return true;
-            }
-            else {
-                // copy data on partial write as further writes might corrupt data (https://issues.redhat.com/browse/JGRP-1991)
-                if(copy_on_partial_write)
-                    send_buf.copy();
-                partial_writes++;
-                return false;
-            }
-        }
-        finally {
-            send_lock.unlock();
-        }
-    }
-
 
     /** Read the length first, then the actual data. This method is not reentrant and access must be synchronized */
     public void read() throws Exception {
@@ -222,23 +175,6 @@ public class NioConnection extends Connection {
                 return;
             }
         }
-    }
-
-    protected boolean _read() throws Exception {
-        ByteBuffer msg;
-        Receiver   receiver=server.receiver();
-
-        if(peer_addr == null) {
-            if((peer_addr=peer_addr_reader.readPeerAddress(channel)) == null)
-                return false;
-            server.handleIncomingConnection(peer_addr, this);
-            return true;
-        }
-        if((msg=message_reader.readMessage()) == null)
-            return false;
-        if(receiver != null)
-            receiver.receive(peer_addr, msg);
-        return true;
     }
 
     @Override
@@ -259,7 +195,7 @@ public class NioConnection extends Connection {
         send_lock.lock();
         try {
             if(send_buf.remaining() > 0) { // try to flush send buffer if it still has pending data to send
-                try {send();} catch(Throwable e) {}
+                try {send((Runnable)null);} catch(Throwable e) {}
             }
         }
         finally {
@@ -285,6 +221,82 @@ public class NioConnection extends Connection {
         if(isConnected())         return "connected";
         if(isConnectionPending()) return "connection pending";
         return                           "open";
+    }
+
+    protected boolean _read() throws Exception {
+        ByteBuffer msg;
+        Receiver   receiver=server.receiver();
+
+        if(peer_addr == null) {
+            if((peer_addr=peer_addr_reader.readPeerAddress(channel)) == null)
+                return false;
+            server.handleIncomingConnection(peer_addr, this);
+            return true;
+        }
+        if((msg=message_reader.readMessage()) == null)
+            return false;
+        if(receiver != null)
+            receiver.receive(peer_addr, msg);
+        return true;
+    }
+
+    /**
+     * Sends the buffers currently present in send_buf
+     * @return True if all buffers were sent successfully, false otherwise
+     * @throws Exception If the send failed, e.g. because the channel was closed
+     */
+    protected void send(Runnable add_buf) throws Exception {
+        send_lock.lock();
+        try {
+            if(add_buf != null)
+                add_buf.run();
+            boolean success=send_buf.write(channel);
+            if(success)
+                clearSelectionKey(OP_WRITE);
+            else {
+                registerSelectionKey(OP_WRITE);
+                // copy data on partial write as further writes might corrupt data (https://issues.redhat.com/browse/JGRP-1991)
+                if(copy_on_partial_write)
+                    send_buf.copy();
+                partial_writes++;
+            }
+        }
+        catch(Exception ex) {
+            if(!(ex instanceof SocketException || ex instanceof EOFException || ex instanceof ClosedChannelException))
+                server.log.error("%s: failed sending message to %s: %s", server.localAddress(), peerAddress(), ex);
+            throw ex;
+        }
+        finally {
+            send_lock.unlock();
+        }
+    }
+
+    @GuardedBy("send_lock")
+    protected void addBuffer(ByteBuffer buf) {
+        boolean rc=send_buf.ensureCapacity(2); // length_buf and buf
+        if(!rc) {
+            num_drops++;
+            return;
+        }
+        int length=buf.remaining();
+        length_buf.clear().putInt(0, length);
+        // all buffers will be guaranteed to be added if we get here
+        send_buf.add(true, length_buf).add(true, buf);
+    }
+
+    @GuardedBy("send_lock")
+    protected void addBuffers(ByteBuffer[] bufs) {
+        if(bufs == null || bufs.length == 0)
+            return;
+        boolean rc=send_buf.ensureCapacity(bufs.length +1);
+        if(!rc) {
+            num_drops++;
+            return;
+        }
+        int length=Util.length(bufs);
+        length_buf.clear().putInt(0, length);
+        // all buffers will be guaranteed to be added if we get here
+        send_buf.add(true, length_buf).add(true, bufs);
     }
 
     protected void doClose() {
@@ -326,7 +338,8 @@ public class NioConnection extends Connection {
             out.writeShort(addr_size); // address size
             local_addr.writeTo(out);
             ByteBuffer buf=ByteBuffer.wrap(out.buffer(), 0, out.position());
-            send(buf, false);
+            Runnable r=() -> send_buf.add(buf); // no length buffer
+            send(r);
         }
         catch(Exception ex) {
             close();

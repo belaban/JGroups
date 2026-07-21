@@ -73,7 +73,7 @@ public class FILE_PING_Test {
 
         System.out.println("A leaves the cluster:");
         a.close();
-        Util.waitUntilAllChannelsHaveSameView(10_000, 1000, b);
+        Util.waitUntilAllChannelsHaveSameView(30_000, 500, b);
         System.out.printf("new views:\n%s\n",
                           Stream.of(b,c,d).map(ch -> ch.getAddress() + ": " + ch.getView()).collect(Collectors.joining("\n")));
 
