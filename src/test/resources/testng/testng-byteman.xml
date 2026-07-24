@@ -1,0 +1,29 @@
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="JGroups Byteman Tests" verbose="1"
+       parallel="classes" thread-count="1"
+       time-out="1800000"
+       configfailurepolicy="continue"
+       usedefaultlisteners="false">
+
+    <test name="Byteman">
+        <groups>
+            <run>
+                <include name="byteman"/>
+                <exclude name="broken"/>
+            </run>
+        </groups>
+        <packages>
+            <package name="org.jgroups.tests.*"/>
+            <package name="org.jgroups.tests.byteman.*"/>
+            <package name="org.jgroups.tests.helpers.*"/>
+            <package name="org.jgroups.protocols.*"/>
+            <package name="org.jgroups.protocols.dns.*"/>
+            <package name="org.jgroups.blocks.*"/>
+            <package name="org.jgroups.util.*"/>
+        </packages>
+    </test>
+
+    <listeners>
+        <listener class-name="org.jgroups.util.JUnitXMLReporter"/>
+    </listeners>
+</suite>
