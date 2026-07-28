@@ -255,11 +255,11 @@ public abstract class TP extends TPConfig implements DiagnosticsHandler.ProbeHan
             case Event.VIEW_CHANGE:
                 Collection<Address> old_members;
                 synchronized(members) {
-                    View v=evt.getArg();
-                    this.view=v;
+                    View view=evt.getArg();
+                    this.view=view;
                     old_members=new ArrayList<>(members);
                     members.clear();
-                    members.addAll(v.getMembers());
+                    members.addAll(view.getMembers());
 
                     // fix for https://issues.redhat.com/browse/JGRP-918
                     logical_addr_cache.retainAll(members);
@@ -281,7 +281,7 @@ public abstract class TP extends TPConfig implements DiagnosticsHandler.ProbeHan
                     ((MaxOneThreadPerSender)msg_processing_policy).viewChange(view.getMembers());
 
                 if(local_transport != null)
-                    local_transport.viewChange(this.view);
+                    local_transport.viewChange(view);
 
                 // Increase thread pool size when view.size() > max_threads (https://issues.redhat.com/browse/JGRP-2655)
                 if(ergonomics && thread_pool.getIncreaseMaxSizeDynamically()) {

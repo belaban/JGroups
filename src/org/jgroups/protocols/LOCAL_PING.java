@@ -79,10 +79,11 @@ public class LOCAL_PING extends Discovery {
 
     public Object down(Event evt) {
         if(evt.type() == Event.VIEW_CHANGE && cluster_name != null) {
-            Address old_coord=view != null? view.getCoord() : null;
+            View old_view=this.view;
+            Address old_coord=old_view != null? old_view.getCoord() : null;
             boolean was_coord=Objects.equals(local_addr, old_coord);
             Object retval=super.down(evt);
-
+            View view=evt.arg();
             // synchronize TP.logical_addr_cache with discovery cache
             synchronized(discovery) {
                 List<PingData> list=discovery.get(cluster_name);

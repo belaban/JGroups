@@ -96,6 +96,7 @@ public class SimpleTCP extends TP {
                 addr_table.put(tuple.val1(), val.getSocketAddress());
                 break;
             case Event.VIEW_CHANGE:
+                View view=evt.arg();
                 for(Iterator<Map.Entry<Address,SocketAddress>> it=addr_table.entrySet().iterator(); it.hasNext();) {
                     Map.Entry<Address,SocketAddress> entry=it.next();
                     if(!view.containsMember(entry.getKey())) {
@@ -131,6 +132,7 @@ public class SimpleTCP extends TP {
         if(dest != null) // unicast
             sendTo(dest, out.buffer(), 0, out.position());
         else { // multicast
+            View view=this.view;
             Collection<Address> dests=view != null? view.getMembers(): addr_table.keySet();
             for(Address dst: dests) {
                 try {
