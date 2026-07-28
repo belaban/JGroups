@@ -699,7 +699,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
     }
 
     public String defaultHeaders(boolean detailed) {
-        int num_members=view != null? view.size() : 0;
+        View view=this.view;
+        int num_members=view != null ? view.size() : 0;
         String fmt=detailed? "%s (ip=%s)\nview=%s\ncluster=%s\nversion=%s %s\n"
           : "%s [ip=%s, %d mbr(s), cluster=%s, version=%s %s]\n";
         return String.format(fmt, local_addr != null? local_addr.toString() : "n/a", local_physical_addr,
@@ -949,12 +950,12 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
             case Event.TMP_VIEW:
             case Event.VIEW_CHANGE:
                 Collection<Address> old_members;
+                View view=evt.getArg();
                 synchronized(members) {
-                    View v=evt.getArg();
-                    this.view=v;
+                    this.view=view;
                     old_members=new ArrayList<>(members);
                     members.clear();
-                    members.addAll(v.getMembers());
+                    members.addAll(view.getMembers());
 
                     // fix for https://issues.redhat.com/browse/JGRP-918
                     logical_addr_cache.retainAll(members);
@@ -976,7 +977,7 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
                     ((MaxOneThreadPerSender)msg_processing_policy).viewChange(view.getMembers());
 
                 if(local_transport != null)
-                    local_transport.viewChange(this.view);
+                    local_transport.viewChange(view);
 
                 // Increase thread pool size when view.size() > max_threads (https://issues.redhat.com/browse/JGRP-2655)
                 if(ergonomics && thread_pool.getIncreaseMaxSizeDynamically()) {

@@ -185,17 +185,25 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     public GMS     logViewWarnings(boolean b)          {log_view_warnings=b; return this;}
     public boolean printViewDetails()                  {return print_view_details;}
     public GMS     printViewDetails(boolean p)         {print_view_details=p; return this;}
-    public ViewId  getViewId()                         {return view != null? view.getViewId() : null;}
     public View    view()                              {return view;}
+
+    public ViewId getViewId() {
+        View view=this.view;
+        return view != null? view.getViewId() : null;
+    }
 
     /** Returns the current view and digest. Try to find a matching digest twice (if not found on the first try) */
     public Tuple<View,Digest> getViewAndDigest() {
+    	View view=this.view;
         MutableDigest digest=new MutableDigest(view.getMembersRaw()).set(getDigest());
         return digest.allSet() || digest.set(getDigest()).allSet()? new Tuple<>(view, digest) : null;
     }
 
     @ManagedAttribute
-    public String getView()                  {return view != null? view.toString() : "null";}
+    public String getView() {
+        View view=this.view;
+        return view != null? view.toString() : "null";
+    }
 
 
     @ManagedAttribute(description="impl")
@@ -542,6 +550,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
         up_prot.up(new Event(Event.TMP_VIEW, new_view));
         down_prot.down(new Event(Event.TMP_VIEW, new_view));
 
+        View view=this.view;
         View full_view=new_view;
         if(use_delta_views && view != null && !(new_view instanceof MergeView)) {
             if(!first_view_sent) // send the first view as coord as *full* view
@@ -914,7 +923,8 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                break;
 
             case Event.GET_VIEW_FROM_COORD:
-                Address coord=view != null? view.getCreator() : null;
+                View view=this.view;
+                Address coord=view != null ? view.getCreator() : null;
                 if(coord != null) {
                     ViewId view_id=view != null? view.getViewId() : null;
                     Message msg=new BytesMessage(coord).putHeader(id, new GmsHeader(GmsHeader.GET_CURRENT_VIEW))
@@ -970,15 +980,16 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                     return null;
 
                 // Discards view with id lower than or equal to our own. Will be installed without check if it is the first view
-                ViewId viewId=getViewId();
+                View current_view=this.view;
+                ViewId viewId=(current_view != null)? current_view.getViewId() : null;
                 if (viewId != null && new_view.getViewId().compareToIDs(viewId) <= 0)
                     return null;
                 if(new_view instanceof DeltaView) {
                     try {
-                        new_view=createViewFromDeltaView(view,(DeltaView)new_view);
+                        new_view=createViewFromDeltaView(current_view,(DeltaView)new_view);
                     }
                     catch(Throwable t) {
-                        if(view != null)
+                        if(current_view != null)
                             log.trace("%s: failed to create view from delta-view; dropping view: %s", local_addr, t.toString());
                         log.trace("%s: sending request for full view to %s", local_addr, msg.getSrc());
                         Message full_view_req=new EmptyMessage(msg.getSrc())
@@ -1069,9 +1080,10 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
             case GmsHeader.GET_CURRENT_VIEW:
                 ViewId view_id=readViewId(msg.getArray(), msg.getOffset(), msg.getLength());
+                View view=this.view;
                 if(view_id != null) {
                     // check if my view-id differs from view-id:
-                    ViewId my_view_id=this.view != null? this.view.getViewId() : null;
+                    ViewId my_view_id=view != null? view.getViewId() : null;
                     if(my_view_id != null && my_view_id.compareToIDs(view_id) <= 0)
                         return null; // my view-id doesn't differ from sender's view-id; no need to send view
                 }

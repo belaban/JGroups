@@ -483,17 +483,17 @@ public class STABLE extends Protocol {
             return;
         }
 
-        // Check if STABLE message is from the same view
-        if(!view_id.equals(view.getViewId())) {
-            log.trace("%s: discarded STABLE message with different view-id %s (my view-id=%s)",
-                      local_addr, view_id, view.getViewId());
-            return;
-        }
-
         Digest stable_digest=null;
         ViewId stable_view_id=null;
         lock.lock();
         try {
+            // Check if STABLE message is from the same view
+            if(!view_id.equals(view.getViewId())) {
+                log.trace("%s: discarded STABLE message with different view-id %s (my view-id=%s)",
+                          local_addr, view_id, view.getViewId());
+                return;
+            }
+
             int rank=getRank(sender, view);
             if(rank < 0 || votes.get(rank))  // already received gossip from sender; discard it
                 return;

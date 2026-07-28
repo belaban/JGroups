@@ -247,7 +247,8 @@ public class MERGE3 extends Protocol {
                 stopViewConsistencyChecker(); // should already be stopped
                 stopInfoSender();             // should already be stopped
                 Object ret=down_prot.down(evt);
-                view=evt.getArg();
+                View view=evt.getArg();
+                this.view=view;
                 clearViews();
 
                 if(ergonomics && max_participants_in_merge > 0)
@@ -344,7 +345,7 @@ public class MERGE3 extends Protocol {
         return null;
     }
 
-    protected MergeHeader createInfo() {
+    protected MergeHeader createInfo(View view) {
         PhysicalAddress physical_addr=local_addr != null?
           (PhysicalAddress)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, local_addr)) : null;
         return MergeHeader.createInfo(view.getViewId(), NameCache.get(local_addr), physical_addr);
@@ -403,19 +404,20 @@ public class MERGE3 extends Protocol {
                      local_addr, target, target);
             return;
         }
-        MergeHeader hdr=createInfo();
+        MergeHeader hdr=createInfo(this.view);
         Message info=new EmptyMessage(dest).putHeader(getId(), hdr).setFlag(Message.TransientFlag.DONT_BLOCK);
         down_prot.down(info);
     }
 
     protected class InfoSender implements TimeScheduler.Task {
         public void run() {
+            View view=MERGE3.this.view;
             if(view == null) {
                 log.warn("%s: view is null, cannot send INFO message", local_addr);
                 return;
             }
 
-            MergeHeader hdr=createInfo();
+            MergeHeader hdr=createInfo(view);
             if(transport_supports_multicasting) {
                 Message msg=new EmptyMessage().putHeader(getId(), hdr).setFlag(Message.TransientFlag.DONT_LOOPBACK);
                 down_prot.down(msg);
@@ -437,21 +439,22 @@ public class MERGE3 extends Protocol {
     protected class ViewConsistencyChecker implements TimeScheduler.Task {
 
         public void run() {
+            View view=MERGE3.this.view;
             try {
-                MergeHeader hdr=createInfo();
+                MergeHeader hdr=createInfo(view);
                 addInfo(local_addr, hdr.view_id, hdr.logical_name, hdr.physical_addr);
                 if(!differentViewIds()) {
                     log.trace("%s: found no inconsistent views: %s", local_addr, dumpViews());
                     return;
                 }
-                _run();
+                run(view);
             }
             finally {
                 clearViews();
             }
         }
 
-        protected void _run() {
+        protected void run(View view) {
             SortedSet<Address>       coords=new TreeSet<>();
             Map<ViewId,Set<Address>> converted_views=convertViews();
 

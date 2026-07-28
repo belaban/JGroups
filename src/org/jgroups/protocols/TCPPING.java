@@ -166,6 +166,7 @@ public class TCPPING extends Discovery {
         Object retval=super.down(evt);
         switch(evt.getType()) {
             case Event.VIEW_CHANGE:
+                View view=evt.arg();
                 for(Address logical_addr: view.getMembersRaw()) {
                     PhysicalAddress physical_addr=(PhysicalAddress)down_prot.down(new Event(Event.GET_PHYSICAL_ADDRESS, logical_addr));
                     if(physical_addr != null && !initial_hosts.contains(physical_addr)) {
