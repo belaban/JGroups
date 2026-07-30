@@ -590,8 +590,10 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             case Event.VIEW_CHANGE:
                 tmp_view=evt.getArg();
                 List<Address> mbrs=tmp_view.getMembers();
-                members=mbrs;
-                view=tmp_view;
+                synchronized (this) {
+                    members=mbrs;
+                    view=tmp_view;
+                }
                 adjustReceivers(mbrs);
                 is_server=true;  // check vids from now on
                 if(suppress_log_non_member != null)
