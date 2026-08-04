@@ -20,7 +20,10 @@ import java.util.concurrent.atomic.LongAdder;
  * Link: https://issues.redhat.com/browse/JGRP-2759
  * @author Bela Ban
  * @since  5.3.3
+ * @deprecated Use PerDestinationBundler with use_single_sender_thread = false instead
+ * (https://redhat.atlassian.net/browse/JGRP-3028)
  */
+@Deprecated(since="5.6.0",forRemoval=true)
 public class TcpConnectionNonBlocking extends TcpConnection implements Runnable {
     protected final BlockingQueue<ByteArray> queue;
     protected int                            max_size=1024;
