@@ -10,7 +10,6 @@
         xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd"
         >
     <include file="${transport-config:nio-default.xml}" />
-    <RED/>
     <TCPPING async_discovery="true"
              initial_hosts="${jgroups.tcpping.initial_hosts:localhost[7800],localhost[7801]}"
              port_range="2"/>

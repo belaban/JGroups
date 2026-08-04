@@ -7,7 +7,6 @@
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/jgroups.xsd">
     <include file="${transport-config:udp-default.xml}" />
-    <RED/>
     <PING />
     <MERGE3 max_interval="30s"
             min_interval="10s"/>

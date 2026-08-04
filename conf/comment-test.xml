@@ -13,7 +13,6 @@
          <!--thread_pool.min_threads="0"
          thread_pool.max_threads="200"--> <!-- weird XML shit but JGroups is happy to eat it:-) -->
          thread_pool.keep_alive_time="30s"/>
-    <RED/>
     <LOCAL_PING />
     <MERGE3 max_interval="30s"
             min_interval="10s"/>
