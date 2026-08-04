@@ -20,7 +20,9 @@ import static org.jgroups.conf.AttributeType.SCALAR;
  * See Floyd and Van Jacobsen's paper for details.
  * @author Bela Ban
  * @since  5.0.0, 4.2.2
+ * @deprecated Functionality replaced by PerDestinationBundler, see https://redhat.atlassian.net/browse/JGRP-3027
  */
+@Deprecated(since="5.6.0",forRemoval=true)
 @MBean(description="Implementation of Random Early Drop: messages are discarded when the bundler's queue in " +
   "the transport nears exhaustion")
 public class RED extends Protocol {

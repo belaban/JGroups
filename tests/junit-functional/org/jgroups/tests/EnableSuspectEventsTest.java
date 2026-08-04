@@ -128,8 +128,6 @@ public class EnableSuspectEventsTest {
         tcp.enableSuspectEvents(true); // Critical: enable suspect events on connection close!
         tcp.setLevel("debug");
 
-        RED red = new RED();
-
         TCPPING tcpping = new TCPPING()
                 .setInitialHosts(initialHosts)
                 .setPortRange(0)
@@ -159,7 +157,7 @@ public class EnableSuspectEventsTest {
                 .setFragSize(60000);  // 60k
 
         // Without VERIFY_SUSPECT2, suspect events will immediately cause removal
-        return new JChannel(tcp, red, tcpping, merge3, fdAll3, verifySuspect2, nakack4, unicast4, gms, frag4).name(name);
+        return new JChannel(tcp, tcpping, merge3, fdAll3, verifySuspect2, nakack4, unicast4, gms, frag4).name(name);
     }
 
 }
