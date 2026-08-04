@@ -58,7 +58,9 @@ public class TCP extends BasicTCP {
     @Component(name="tls",description="Contains the attributes for TLS (SSL sockets) when enabled=true")
     protected TLS       tls=new TLS();
 
-    @Property(description="use bounded queues for sending (https://issues.redhat.com/browse/JGRP-2759)")
+    @Property(description="use bounded queues for sending (https://issues.redhat.com/browse/JGRP-2759)"
+      ,deprecatedMessage="ignored")
+    @Deprecated
     protected boolean   non_blocking_sends;
 
     @Property(description="when sending and non_blocking, how many messages to queue max")
