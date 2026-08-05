@@ -69,10 +69,6 @@ public class EncryptOldKeyCacheTest extends EncryptTest {
         super.destroy();
     }
 
-    /** For some obscure TestNG reasons, this method is needed. Remove it and all tests are executed in separate threads,
-     * which makes the testsuite fail!!! */
-    public void dummy() {}
-
     public void testOldKeyMessageDeliveredAfterRotation() throws Exception {
         ASYM_ENCRYPT asym_a=a.getProtocolStack().findProtocol(ASYM_ENCRYPT.class);
         ASYM_ENCRYPT asym_b=b.getProtocolStack().findProtocol(ASYM_ENCRYPT.class);
