@@ -33,11 +33,6 @@ public class SYM_ENCRYPT_Test extends EncryptTest {
         super.destroy();
     }
 
-    /** For some obscure TestNG reasons, this method is needed. Remove it and all tests are executed in separate threads,
-     * which makes the testsuite fail!!! */
-    public void dummy() {}
-
-
     @Override protected JChannel create(String name, Consumer<List<Protocol>> c) throws Exception {
         // Verify that the SecureRandom instance can be customized
         SecureRandom secureRandom = SecureRandom.getInstance("SHA1PRNG");
