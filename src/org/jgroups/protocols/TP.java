@@ -514,7 +514,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
      */
     public <T extends TP> T setDiagnosticsHandler(DiagnosticsHandler handler) throws Exception {
         if(handler != null) {
-            diag_handler.stop();
+            if(diag_handler != null)
+                diag_handler.stop();
             diag_handler=handler;
             diag_handler.start();
         }
@@ -745,7 +746,8 @@ public abstract class TP extends Protocol implements DiagnosticsHandler.ProbeHan
         // local_addr is null when shared transport, channel_name is not used
         setInAllThreadFactories(cluster_name != null? cluster_name.toString() : null, local_addr, thread_naming_pattern);
 
-        diag_handler=createDiagnosticsHandler();
+        if(diag_handler == null)
+            diag_handler=createDiagnosticsHandler();
 
         who_has_cache=new ExpiryCache<>(who_has_cache_timeout);
 
