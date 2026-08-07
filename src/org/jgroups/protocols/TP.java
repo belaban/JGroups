@@ -96,7 +96,8 @@ public abstract class TP extends TPConfig implements DiagnosticsHandler.ProbeHan
         // local_addr is null when shared transport, channel_name is not used
         setInAllThreadFactories(cluster_name != null? cluster_name.toString() : null, local_addr, thread_naming_pattern);
 
-        diag_handler=createDiagnosticsHandler();
+        if(diag_handler == null)
+            diag_handler=createDiagnosticsHandler();
 
         who_has_cache=new ExpiryCache<>(who_has_cache_timeout);
 

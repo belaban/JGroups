@@ -430,8 +430,9 @@ public class TPConfig extends Protocol {
 
     /** Sets a {@link DiagnosticsHandler}. Should be set before the stack is started */
     public <T extends TP> T setDiagnosticsHandler(DiagnosticsHandler handler) throws Exception {
-        if(handler != null && diag_handler != null) {
-            diag_handler.stop();
+        if(handler != null) {
+            if(diag_handler != null)
+                diag_handler.stop();
             diag_handler=handler;
             diag_handler.start();
         }
