@@ -22,10 +22,6 @@ public class LeaveTest extends BaseLeaveTest  {
         super.destroy();
     }
 
-    /** For some obscure TestNG reasons, this method is needed. Remove it and all tests are executed in separate threads,
-     * which makes the testsuite fail!!! */
-    public void dummy() {}
-
     protected JChannel create(String name) throws Exception {
         return new JChannel(
           new SHARED_LOOPBACK(),

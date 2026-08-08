@@ -13,11 +13,6 @@ public class ASYM_ENCRYPT_TestKeyExchange extends ASYM_ENCRYPT_Test {
 
     @Override protected boolean useExternalKeyExchange() {return true;}
 
-    /** For some obscure TestNG reasons, this method is needed. Remove it and all tests are executed in separate threads,
-     * which makes the testsuite fail!!! */
-    public void dummy() {}
-
-
     @AfterMethod
     protected void destroy() {
         super.destroy();
