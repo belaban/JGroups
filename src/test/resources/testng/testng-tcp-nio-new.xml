@@ -1,0 +1,33 @@
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="JGroups TCP-NIO-New Tests" verbose="1"
+       parallel="classes" thread-count="20"
+       time-out="1800000"
+       configfailurepolicy="continue"
+       usedefaultlisteners="false">
+
+    <parameter name="channel.conf" value="tcp-nio-new.xml"/>
+
+    <test name="TCP-NIO-New">
+        <groups>
+            <run>
+                <include name="base"/>
+                <include name="stack-dependent"/>
+                <exclude name="stack-independent"/>
+                <exclude name="broken"/>
+            </run>
+        </groups>
+        <packages>
+            <package name="org.jgroups.tests.*"/>
+            <package name="org.jgroups.tests.byteman.*"/>
+            <package name="org.jgroups.tests.helpers.*"/>
+            <package name="org.jgroups.protocols.*"/>
+            <package name="org.jgroups.protocols.dns.*"/>
+            <package name="org.jgroups.blocks.*"/>
+            <package name="org.jgroups.util.*"/>
+        </packages>
+    </test>
+
+    <listeners>
+        <listener class-name="org.jgroups.util.JUnitXMLReporter"/>
+    </listeners>
+</suite>

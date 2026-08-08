@@ -144,6 +144,27 @@ total ordering and so on.
 JGroups ships with multiple sample configurations, e.g. `tcp.xml`, which uses TCP instead of UDP as transport
 protocol. Consult the manual (link below) for more details.
 
+== Running the tests
+
+The unit tests are executed with Maven:
+
+[source,bash]
+----
+mvn test
+----
+
+This runs all TestNG suites (functional, encrypt, byteman, jdbc, stack-independent,
+time-sensitive, udp, udp-new, tcp, tcp-new, tcp-nio, tcp-nio-new).
+
+To run a single suite:
+
+[source,bash]
+----
+mvn surefire:test@functional
+----
+
+Replace `functional` with any of the suite names listed above.
+
 == Links
 * Web site: link:$$http://jgroups.org$$[http://www.jgroups.org]
 * Manual: link:$$http://www.jgroups.org/ug.html$$[http://www.jgroups.org/ug.html]
