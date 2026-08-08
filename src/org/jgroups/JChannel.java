@@ -59,7 +59,7 @@ public class JChannel implements Closeable {
     protected Address                               local_addr;
     protected String                                name;
     protected String                                cluster_name;
-    protected View                                  view;
+    protected volatile View                         view;
     protected volatile State                        state=State.OPEN;
     protected ProtocolStack                         prot_stack;
     protected UpHandler                             up_handler;   // when set, all events are passed to the UpHandler

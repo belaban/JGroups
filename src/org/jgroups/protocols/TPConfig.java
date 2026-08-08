@@ -517,6 +517,7 @@ public class TPConfig extends Protocol {
     }
 
     public String defaultHeaders(boolean detailed) {
+        View view=this.view;
         int num_members=view != null? view.size() : 0;
         String fmt=detailed? "%s (ip=%s)\nview=%s\ncluster=%s\nversion=%s %s\n"
           : "%s [ip=%s, %d mbr(s), cluster=%s, version=%s %s]\n";

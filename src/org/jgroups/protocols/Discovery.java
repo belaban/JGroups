@@ -173,14 +173,21 @@ public abstract class Discovery extends Protocol {
     public <T extends Discovery> T asyncDiscoveryUseSeparateThread(boolean a) {this.async_discovery_use_separate_thread_per_request = a; return (T)this;}
 
     @ManagedAttribute
-    public String getView() {return view != null? view.getViewId().toString() : "null";}
+    public String getView() {
+        View view=this.view;
+        return view != null? view.getViewId().toString() : "null";
+    }
 
     public ViewId getViewId() {
+        View view=this.view;
         return view != null? view.getViewId() : null;
     }
 
     @ManagedAttribute(description="The address of the current coordinator")
-    public String getCurrentCoord() {return current_coord != null? current_coord.toString() : "n/a";}
+    public String getCurrentCoord() {
+        Address current_coord=this.current_coord;
+        return current_coord != null? current_coord.toString() : "n/a";
+    }
 
     protected boolean isMergeRunning() {
         Object retval=up_prot.up(new Event(Event.IS_MERGE_IN_PROGRESS));
@@ -349,6 +356,7 @@ public abstract class Discovery extends Protocol {
                     }
                 }
 
+                View view=this.view;
                 if(return_entire_cache) {
                     Map<Address,PhysicalAddress> cache=(Map<Address,PhysicalAddress>)down(new Event(Event.GET_LOGICAL_PHYSICAL_MAPPINGS));
                     if(cache != null) {
@@ -450,9 +458,14 @@ public abstract class Discovery extends Protocol {
 
             case Event.VIEW_CHANGE:
                 View old_view=view;
-                view=evt.getArg();
-                current_coord=view.getCoord();
-                is_coord=Objects.equals(current_coord, local_addr);
+                View view=evt.getArg();
+                Address current_coord=view.getCoord();
+                boolean is_coord=Objects.equals(current_coord, local_addr);
+                synchronized (this) {
+                    this.view=view;
+                    this.current_coord=current_coord;
+                    this.is_coord=is_coord;
+                }
                 Object retval=down_prot.down(evt);
                 if(send_cache_on_join && !isDynamic() && is_coord) {
                     List<Address> curr_mbrs, left_mbrs, new_mbrs;

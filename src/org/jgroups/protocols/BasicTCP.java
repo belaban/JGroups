@@ -4,6 +4,7 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.PhysicalAddress;
+import org.jgroups.View;
 import org.jgroups.annotations.LocalAddress;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
@@ -203,7 +204,8 @@ public abstract class BasicTCP extends TP implements Receiver, ConnectionListene
         Object ret=super.down(evt);
         if(evt.getType() == Event.VIEW_CHANGE) {
             Set<Address> physical_mbrs=new HashSet<>();
-            for(Address addr: members) {
+            View view=evt.getArg();
+            for(Address addr: view.getMembers()) {
                 PhysicalAddress physical_addr=getPhysicalAddressFromCache(addr);
                 if(physical_addr != null)
                     physical_mbrs.add(physical_addr);
