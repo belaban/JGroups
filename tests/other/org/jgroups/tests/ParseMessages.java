@@ -1,9 +1,6 @@
 package org.jgroups.tests;
 
-import org.jgroups.Header;
-import org.jgroups.Message;
-import org.jgroups.Version;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.Discovery;
 import org.jgroups.protocols.PingData;
@@ -19,9 +16,11 @@ import org.jgroups.util.Util;
 import java.io.*;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Parses messages out of a captured file and writes them to stdout
@@ -40,7 +39,20 @@ public class ParseMessages {
     public void parse(InputStream in, BiConsumer<Short,Message> msg_consumer, BiConsumer<Short,MessageBatch> batch_consumer,
                       Consumer<GossipData> gossip_consumer,
                       boolean tcp, boolean gossip) throws FileNotFoundException {
-        Util.parse(in, msg_consumer, batch_consumer, gossip_consumer, tcp, gossip);
+        try {
+            Util.parse(in, msg_consumer, batch_consumer, gossip_consumer, tcp, gossip);
+        }
+        finally {
+            System.out.printf("\nContents of NameCache:\n%s\n%s\n%s\n\n",
+                              "-".repeat(10),
+                              printCache(NameCache.getContents()), "-".repeat(10));
+        }
+    }
+
+    protected static String printCache(Map<Address,String> c) {
+        return c.entrySet().stream()
+          .map(e -> String.format("%s %s", ((UUID)e.getKey()).toStringLong(), e.getValue()))
+          .collect(Collectors.joining("\n"));
     }
 
 
