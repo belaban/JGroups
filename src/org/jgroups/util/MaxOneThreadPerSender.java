@@ -285,7 +285,7 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
             }
             catch(Throwable t) {
                 // e.g. an OOME raised by log.error() above: don't terminate with running still set to true, or else
-                // no further messages from that sender would ever be delivered
+                // no further messages from that sender would ever be delivered: https://redhat.atlassian.net/browse/JGRP-3032
                 entry.setRunning(false);
                 throw t;
             }
