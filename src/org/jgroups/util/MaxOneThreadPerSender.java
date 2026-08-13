@@ -273,7 +273,14 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
                         tp.passBatchUp(mb, !loopback, !loopback);
                 }
                 catch(Throwable t) {
-                    log.error("failed processing batch", t);
+                    try {
+                        log.error("failed processing batch", t);
+                    }
+                    catch(Throwable tt) {
+                        // e.g. an OOME raised by log.error() above: don't terminate with running still set to true, or else
+                        // no further messages from that sender would ever be delivered: https://redhat.atlassian.net/browse/JGRP-3032
+                        ;
+                    }
                 }
             }
         }
