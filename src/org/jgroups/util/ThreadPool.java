@@ -234,6 +234,9 @@ public class ThreadPool implements Lifecycle {
     public Executor pool() {return thread_pool;}
 
     public boolean execute(Runnable task) {
+        // a shut-down pool drops the task silently (ShutdownRejectedExecutionHandler), so don't even submit it
+        if(isShutdown())
+            return false;
         try {
             thread_pool.execute(task);
             return true;

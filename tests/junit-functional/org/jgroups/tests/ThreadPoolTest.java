@@ -38,4 +38,15 @@ public class ThreadPoolTest {
             pool.destroy();
         }
     }
+
+    /**
+     * A shut-down pool rejects every task, but ShutdownRejectedExecutionHandler swallows the rejection rather than
+     * raising an exception; execute() must not report such a task as accepted
+     */
+    public void testExecuteAfterShutdown() throws Exception {
+        ThreadPool pool=new ThreadPool();
+        pool.init();
+        pool.destroy();
+        assert !pool.execute(() -> {}) : "the pool is shut down, but execute() returned true";
+    }
 }
