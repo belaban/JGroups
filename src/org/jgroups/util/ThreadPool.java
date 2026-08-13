@@ -133,8 +133,8 @@ public class ThreadPool implements Lifecycle {
     public ThreadPool setRejectionPolicy(String policy) {
         RejectedExecutionHandler p=Util.parseRejectionPolicy(policy);
         this.rejection_policy=policy;
-        if(thread_pool instanceof ThreadPoolExecutor)
-            ((ThreadPoolExecutor)thread_pool).setRejectedExecutionHandler(p);
+        if(thread_pool instanceof ThreadPoolExecutor) // same decoration as when the pool was created
+            ((ThreadPoolExecutor)thread_pool).setRejectedExecutionHandler(new ShutdownRejectedExecutionHandler(p));
         return this;
     }
 
