@@ -142,8 +142,8 @@ public class ThreadPool implements Lifecycle {
     public ThreadPool setRejectionPolicy(String policy) {
         RejectedExecutionHandler p=Util.parseRejectionPolicy(policy);
         this.rejection_policy=policy;
-        if(thread_pool instanceof ThreadPoolExecutor)
-            ((ThreadPoolExecutor)thread_pool).setRejectedExecutionHandler(p);
+        if(thread_pool instanceof ThreadPoolExecutor) // same decoration as when the pool was created
+            ((ThreadPoolExecutor)thread_pool).setRejectedExecutionHandler(new ShutdownRejectedExecutionHandler(p));
         return this;
     }
 
@@ -234,17 +234,25 @@ public class ThreadPool implements Lifecycle {
     public Executor pool() {return thread_pool;}
 
     public boolean execute(Runnable task, RejectedExecutionHandler h) {
+        // a shut-down pool drops the task silently (ShutdownRejectedExecutionHandler), so don't even submit it
+        if(isShutdown())
+            return false;
         try {
             thread_pool.execute(task);
             return true;
         }
         catch(RejectedExecutionException ex) {
-            rejected_handler.rejectedExecution(task, null); // we want the default behavior (incr rej. msgs)
-            if(h != null) {
-                ThreadPoolExecutor tmp=thread_pool instanceof ThreadPoolExecutor? (ThreadPoolExecutor)thread_pool : null;
-                h.rejectedExecution(task, tmp);
+            try {
+                rejected_handler.rejectedExecution(task, null); // we want the default behavior (incr rej. msgs)
+                if(h != null) {
+                    ThreadPoolExecutor tmp=thread_pool instanceof ThreadPoolExecutor? (ThreadPoolExecutor)thread_pool : null;
+                    h.rejectedExecution(task, tmp);
+                }
+                return false;
             }
-            return false;
+            catch(Throwable t) { // the code above could throw an exception
+                return false;
+            }
         }
         catch(Throwable t) {
             log.error("failure submitting task to thread pool", t);
@@ -276,7 +284,7 @@ public class ThreadPool implements Lifecycle {
         if(pool == null) {
             RejectedExecutionHandler handler=Util.parseRejectionPolicy(rejection_policy);
             pool=new ThreadPoolExecutor(min_threads, max_threads, keep_alive_time,
-                                        TimeUnit.MILLISECONDS, queue, factory, handler);
+                                        TimeUnit.MILLISECONDS, queue, factory, new ShutdownRejectedExecutionHandler(handler));
             ((ThreadPoolExecutor)pool).allowCoreThreadTimeOut(true);
             if(log != null)
                 log.debug("thread pool min/max/keep-alive (ms): %d/%d/%d", min_threads, max_threads, keep_alive_time);
