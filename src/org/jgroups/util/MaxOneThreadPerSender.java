@@ -271,16 +271,24 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
         }
 
         public void run() {
-            do {
-                try {
-                    super.run();
+            try {
+                do {
+                    try {
+                        super.run();
+                    }
+                    catch(Throwable t) {
+                        log.error("failed processing batch", t);
+                    }
                 }
-                catch(Throwable t) {
-                    log.error("failed processing batch", t);
-                }
+                while(entry.workAvailable(this.batch)); // transfers msgs from entry.batch --> this.batch
+                // worker termination: workAvailable() already set running=false
             }
-            while(entry.workAvailable(this.batch)); // transfers msgs from entry.batch --> this.batch
-            // worker termination: workAvailable() already set running=false
+            catch(Throwable t) {
+                // e.g. an OOME raised by log.error() above: don't terminate with running still set to true, or else
+                // no further messages from that sender would ever be delivered
+                entry.setRunning(false);
+                throw t;
+            }
         }
 
         @Override protected void passBatchUp() {
