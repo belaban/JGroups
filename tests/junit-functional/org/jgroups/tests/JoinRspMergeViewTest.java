@@ -82,7 +82,7 @@ public class JoinRspMergeViewTest {
                                 Arrays.asList(View.create(a, 1, a, b), View.create(c, 1, c)));
         ByteArray buf=marshalLegacy(view, createDigest(view));
         try {
-            JoinRsp rsp=Util.streamableFromBuffer(JoinRsp::new, buf.array(), buf.getOffset(), buf.getLength());
+            JoinRsp rsp=Util.streamableFromBuffer(JoinRsp::new, buf.getArray(), buf.getOffset(), buf.getLength());
             for(Digest.Entry ignored: rsp.getDigest()) // what NAKACK2.setDigest() does
                 ;
             throw new AssertionError("should have thrown an IOException, but got " + rsp);
@@ -111,7 +111,7 @@ public class JoinRspMergeViewTest {
         assertEquals(digest.capacity(), view.size());
 
         ByteArray buf=Util.streamableToBuffer(new JoinRsp(view, digest));
-        JoinRsp rsp=Util.streamableFromBuffer(JoinRsp::new, buf.array(), buf.getOffset(), buf.getLength());
+        JoinRsp rsp=Util.streamableFromBuffer(JoinRsp::new, buf.getArray(), buf.getOffset(), buf.getLength());
 
         View rv=rsp.getView();
         assert view.equals(rv) : String.format("view changed: view=%s, deserialized view=%s", view, rv);
