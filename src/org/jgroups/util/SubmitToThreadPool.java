@@ -7,6 +7,7 @@ import org.jgroups.protocols.TP;
 import org.jgroups.stack.MessageProcessingPolicy;
 
 import java.util.Iterator;
+import java.util.Objects;
 
 /**
  * Default message processing policy. Submits all received messages and batches to the thread pool
@@ -21,7 +22,7 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
 
     public void init(TP transport) {
         this.tp=transport;
-        this.log=tp.getLog();
+        this.log=Objects.requireNonNull(tp.getLog());
     }
 
     public boolean loopback(Message msg, boolean oob) {
