@@ -33,13 +33,7 @@ public class JoinRsp implements SizeStreamable, Constructable<JoinRsp> {
     }
 
     public JoinRsp(View v, Digest d) {
-        // A JoinRsp cannot marshal a MergeView: writeTo() writes the view polymorphically (so a MergeView's
-        // subgroups are written), but readFrom() always creates a plain View and therefore never reads them back.
-        // The leftover subgroup bytes would then be read as the digest's member count, yielding a Digest whose
-        // seqnos array doesn't match its members - which blows up with an ArrayIndexOutOfBoundsException when the
-        // digest is iterated (e.g. in NAKACK2.setDigest()). The joiner doesn't need the subgroups, so strip them.
-        // https://redhat.atlassian.net/browse/JGRP-3033
-        view=v; // v instanceof MergeView? new View(v.getViewId(), v.getMembers()) : v;
+        view=v;
         digest=d;
     }
 
