@@ -905,18 +905,24 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
         AtomicInteger adders=buf.getAdders();
         if(adders.getAndIncrement() != 0)
             return;
-        boolean remove_msgs=discard_delivered_msgs && !loopback;
-        AsciiString cl=cluster != null? cluster : getTransport().getClusterNameAscii();
-        int cap=Math.max(Math.max(Math.max(buf.size(), max_batch_size), min_size), DEFAULT_INITIAL_CAPACITY);
         MessageBatch b=null;
-        if(reuse_message_batches) {
-            b=cached_batches.get(sender);
-            if(b == null)
-                b=cached_batches.computeIfAbsent(sender, __ -> new MessageBatch(cap).dest(null).sender(sender)
-                  .cluster(cl).mcast(true).incr(DEFAULT_INCREMENT));
+        boolean remove_msgs=discard_delivered_msgs && !loopback;
+        try {
+            AsciiString cl=cluster != null? cluster : getTransport().getClusterNameAscii();
+            int cap=Math.max(Math.max(Math.max(buf.size(), max_batch_size), min_size), DEFAULT_INITIAL_CAPACITY);
+            if(reuse_message_batches) {
+                b=cached_batches.get(sender);
+                if(b == null)
+                    b=cached_batches.computeIfAbsent(sender, __ -> new MessageBatch(cap).dest(null).sender(sender)
+                      .cluster(cl).mcast(true).incr(DEFAULT_INCREMENT));
+            }
+            else
+                b=new MessageBatch(cap).dest(null).sender(sender).cluster(cl).mcast(true).incr(DEFAULT_INCREMENT);
         }
-        else
-            b=new MessageBatch(cap).dest(null).sender(sender).cluster(cl).mcast(true).incr(DEFAULT_INCREMENT);
+        catch(Throwable t) {
+            adders.set(0); // so others can remove/deliver msgs (https://redhat.atlassian.net/browse/JGRP-3034)
+            throw t;
+        }
         MessageBatch batch=b;
         Supplier<MessageBatch> batch_creator=() -> batch;
         MessageBatch mb=null;
@@ -928,7 +934,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                                   batch_creator, BATCH_ACCUMULATOR);
             }
             catch(Throwable t) {
-                log.error("failed removing messages from table for " + sender, t);
+                log.failSafeWarn("failed removing messages from table for " + sender, t);
             }
             int size=batch.size();
             if(size > 0) {
@@ -1003,7 +1009,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             batch.reset(); // doesn't null the messages in the batch
         }
         catch(Throwable t) {
-            log.error(Util.getMessage("FailedToDeliverMsg"), local_addr, "batch", batch, t);
+            log.failSafeError(Util.getMessage("FailedToDeliverMsg"), local_addr, "batch", batch, t);
         }
     }
 
