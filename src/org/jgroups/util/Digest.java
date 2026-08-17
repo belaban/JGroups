@@ -168,8 +168,16 @@ public class Digest implements SizeStreamable, Iterable<Digest.Entry>, Construct
             members=Util.readAddresses(in);
             seqnos=new long[capacity() * 2];
         }
-        else
-            seqnos=new long[in.readShort() *2];
+        else {
+            int num_mbrs=in.readShort();
+            // 'members' was set by the caller (e.g. to a view's membership, to avoid shipping it twice). If the
+            // stream disagrees, it isn't the digest we expect, and reading on would create a Digest whose seqnos
+            // don't match its members - failing much later with an ArrayIndexOutOfBoundsException on iteration
+            if(members != null && num_mbrs != members.length)
+                throw new IOException(String.format("digest in stream has %d members, but %d were expected",
+                                                    num_mbrs, members.length));
+            seqnos=new long[num_mbrs * 2];
+        }
 
         for(int i=0; i < seqnos.length/2; i++)
             Bits.readLongSequence(in, seqnos, i*2);

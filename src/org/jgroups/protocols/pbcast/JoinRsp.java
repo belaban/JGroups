@@ -4,6 +4,7 @@ package org.jgroups.protocols.pbcast;
 
 import org.jgroups.Constructable;
 import org.jgroups.Global;
+import org.jgroups.MergeView;
 import org.jgroups.View;
 import org.jgroups.util.Digest;
 import org.jgroups.util.SizeStreamable;
@@ -25,6 +26,7 @@ public class JoinRsp implements SizeStreamable, Constructable<JoinRsp> {
     protected static final byte VIEW_PRESENT        = 1 << 0;
     protected static final byte DIGEST_PRESENT      = 1 << 1;
     protected static final byte FAIL_REASON_PRESENT = 1 << 2;
+    protected static final byte MERGE_VIEW_PRESENT  = 1 << 3;
 
 
     public JoinRsp() {
@@ -49,8 +51,12 @@ public class JoinRsp implements SizeStreamable, Constructable<JoinRsp> {
     @Override
     public void writeTo(DataOutput out) throws IOException {
         byte flags=0;
-        if(view != null)
-            flags|=VIEW_PRESENT;
+        if(view != null) {
+            if(view instanceof MergeView)
+                flags|=MERGE_VIEW_PRESENT;
+            else
+                flags|=VIEW_PRESENT;
+        }
         if(digest != null)
             flags|=DIGEST_PRESENT;
         if(fail_reason != null)
@@ -75,9 +81,15 @@ public class JoinRsp implements SizeStreamable, Constructable<JoinRsp> {
         byte flags=in.readByte();
 
         // 1. view
-        if((flags & VIEW_PRESENT) == VIEW_PRESENT) {
-            view=new View();
+        if((flags & MERGE_VIEW_PRESENT) == MERGE_VIEW_PRESENT) {
+            view=new MergeView();
             view.readFrom(in);
+        }
+        else {
+            if((flags & VIEW_PRESENT) == VIEW_PRESENT) {
+                view=new View();
+                view.readFrom(in);
+            }
         }
 
         // 2. digest
