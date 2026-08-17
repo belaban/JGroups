@@ -840,18 +840,25 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
         AtomicInteger adders=win.getAdders();
         if(adders.getAndIncrement() != 0)
             return;
-        boolean remove_msgs=!loopback;
-        int cap=max_batch_size > 0 && max_batch_size < win.capacity()? max_batch_size : win.capacity();
-        AsciiString cl=cluster != null? cluster : getTransport().getClusterNameAscii();
+
         MessageBatch b=null;
-        if(reuse_message_batches) {
-            b=cached_batches.get(sender);
-            if(b == null)
-                b=cached_batches.computeIfAbsent(sender, __ -> new MessageBatch(cap).dest(null).sender(sender)
-                  .cluster(cl).mcast(true));
+        boolean remove_msgs=!loopback;
+        try {
+            int cap=max_batch_size > 0 && max_batch_size < win.capacity()? max_batch_size : win.capacity();
+            AsciiString cl=cluster != null? cluster : getTransport().getClusterNameAscii();
+            if(reuse_message_batches) {
+                b=cached_batches.get(sender);
+                if(b == null)
+                    b=cached_batches.computeIfAbsent(sender, __ -> new MessageBatch(cap).dest(null).sender(sender)
+                      .cluster(cl).mcast(true));
+            }
+            else
+                b=new MessageBatch(cap).dest(null).sender(sender).cluster(cl).mcast(true);
         }
-        else
-            b=new MessageBatch(cap).dest(null).sender(sender).cluster(cl).mcast(true);
+        catch(Throwable t) {
+            adders.set(0); // so others can remove/deliver msgs (https://redhat.atlassian.net/browse/JGRP-3034)
+            throw t;
+        }
         MessageBatch batch=b;
         Supplier<MessageBatch> batch_creator=() -> batch;
         MessageBatch mb=null;
@@ -864,7 +871,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
                 batch.determineMode();
             }
             catch(Throwable t) {
-                log.error("failed removing messages from table for " + sender, t);
+                log.failSafeError("failed removing messages from table for " + sender, t);
             }
             int size=batch.size();
             if(size > 0) {
@@ -947,7 +954,7 @@ public abstract class ReliableMulticast extends Protocol implements DiagnosticsH
             batch.reset(); // doesn't null messages in the batch
         }
         catch(Throwable t) {
-            log.error(Util.getMessage("FailedToDeliverMsg"), local_addr, "batch", batch, t);
+            log.failSafeError(Util.getMessage("FailedToDeliverMsg"), local_addr, "batch", batch, t);
         }
     }
 
