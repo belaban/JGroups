@@ -884,18 +884,23 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
         AtomicInteger adders=buf.getAdders();
         if(adders.getAndIncrement() != 0)
             return;
-
-        AsciiString cl=cluster != null? cluster : getTransport().getClusterNameAscii();
-        int cap=Math.max(Math.max(Math.max(buf.size(), max_batch_size), min_size), DEFAULT_INITIAL_CAPACITY);
         MessageBatch b=null;
-        if(reuse_message_batches) {
-            b=cached_batches.get(sender);
-            if(b == null)
-                b=cached_batches.computeIfAbsent(sender, __ -> new MessageBatch(cap).dest(local_addr)
-                  .sender(sender).cluster(cl).incr(DEFAULT_INCREMENT));
+        try {
+            AsciiString cl=cluster != null? cluster : getTransport().getClusterNameAscii();
+            int cap=Math.max(Math.max(Math.max(buf.size(), max_batch_size), min_size), DEFAULT_INITIAL_CAPACITY);
+            if(reuse_message_batches) {
+                b=cached_batches.get(sender);
+                if(b == null)
+                    b=cached_batches.computeIfAbsent(sender, __ -> new MessageBatch(cap).dest(local_addr)
+                      .sender(sender).cluster(cl).incr(DEFAULT_INCREMENT));
+            }
+            else
+                b=new MessageBatch(cap).dest(local_addr).sender(sender).cluster(cl).incr(DEFAULT_INCREMENT);
         }
-        else
-            b=new MessageBatch(cap).dest(local_addr).sender(sender).cluster(cl).incr(DEFAULT_INCREMENT);
+        catch(Throwable t) {
+            adders.set(0); // so others can remove/deliver msgs (https://redhat.atlassian.net/browse/JGRP-3034)
+            throw t;
+        }
         MessageBatch batch=b;
         Supplier<MessageBatch> batch_creator=() -> batch;
         MessageBatch mb=null;
@@ -906,7 +911,7 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
                                   batch_creator, BATCH_ACCUMULATOR);
             }
             catch(Throwable t) {
-                log.error("%s: failed removing messages from table for %s: %s", local_addr, sender, t);
+                log.failSafeError("%s: failed removing messages from table for %s: %s", local_addr, sender, t);
             }
             if(!batch.isEmpty()) {
                 // batch is guaranteed to NOT contain any OOB messages as the drop_oob_msgs_filter above removed them
@@ -1180,7 +1185,7 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
                 avg_delivery_batch_size.add(batch.size());
         }
         catch(Throwable t) {
-            log.warn(Util.getMessage("FailedToDeliverMsg"), local_addr, "batch", batch, t);
+            log.failSafeWarn(Util.getMessage("FailedToDeliverMsg"), local_addr, "batch", batch, t);
         }
     }
 
