@@ -199,6 +199,7 @@ public class ProtocolStack extends Protocol {
         this.channel=ch; return this;
     }
 
+    public TP transport() {return getTransport();}
 
     /** Returns all protocols in a list, from top to bottom. <em>These are not copies of protocols,
      so modifications will affect the actual instances !</em> */
