@@ -23,7 +23,12 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
- * Parses messages out of a captured file and writes them to stdout
+ * Parses messages out of a captured file and writes them to stdout * Process each TCP stream separately (10 streams in this capture):
+ * for stream in 0 1 2 3 4 5 6 7 8 9; do
+ *   tshark -r 273.pcapng -qz "follow,tcp,raw,$stream" 2>/dev/null \
+ *     | grep -v "^===\|^Follow\|^Filter\|^Node\|^$" | sed 's/^\t//' \
+ *     | java org.jgroups.tests.ParseMessages -tcp -parse-discovery-responses true
+ * done
  * @author Bela Ban
  */
 public class ParseMessages {
@@ -267,12 +272,12 @@ public class ParseMessages {
 
         @Override public int read() throws IOException {
             input[0]=(byte)in.read();
-            if(input[0] == '\n' || input[0] == '\r')
+            if(input[0] == '\n' || input[0] == '\r' || input[0] == ':') // tshark -Tfields -edata separates bytes with colons
                 return read();
             if(input[0] < 0)
                 return input[0];
             input[1]=(byte)in.read();
-            if(input[1] == '\n')
+            if(input[1] == '\n' || input[1] == ':')
                 return read();
             if(input[1] < 0)
                 return input[1];
