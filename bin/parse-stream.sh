@@ -13,7 +13,12 @@ fi
 file=$1
 stream=$2
 
+shift
+shift
+
+arguments=$*
+echo file is $file, stream is $stream, args are $arguments
 
 tshark -r $file -qz "follow,tcp,raw,$stream" 2>/dev/null \
     | grep -v "^===\|^Follow\|^Filter\|^Node\|^$" | sed 's/^\t//' \
-    | java org.jgroups.tests.ParseMessages -tcp -parse-discovery-responses true
+    | java org.jgroups.tests.ParseMessages -tcp -parse-discovery-responses true -show-views true $arguments
