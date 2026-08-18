@@ -1683,6 +1683,8 @@ public class Util {
         if(msg_consumer == null && batch_consumer == null)
             return;
         byte[] tmp=new byte[Global.INT_SIZE];
+        byte[] ver_buf=new byte[Global.SHORT_SIZE];
+        short observed_version=0; // version seen in the first successfully parsed frame; used for resync
         try(DataInputStream dis=new DataInputStream(input)) {
             for(;;) {
                 // for TCP, we send the length first; this needs to be skipped as it is not part of the JGroups payload
@@ -1696,10 +1698,38 @@ public class Util {
                         peer.readFrom(dis);
                         continue;
                     }
-                    else {
-                        // do nothing - the 4 bytes were the length
-                        // int len=Bits.readInt(tmp, 0);
+                    // Also read the JGroups version (first 2 bytes of the payload) so we can validate the frame
+                    // boundary. If the bytes do not look like a valid JGroups TCP frame start (e.g. data from a
+                    // non-JGroups connection on the same port), slide a 6-byte window forward byte-by-byte until
+                    // a valid [length, version] boundary is found.
+                    // Once we have seen at least one valid frame we use that exact version for resync.
+                    dis.readFully(ver_buf);
+                    int len=Bits.readInt(tmp, 0);
+                    short ver=Bits.readShort(ver_buf, 0);
+                    while(!isValidTcpFrame(len, ver, observed_version)) {
+                        System.err.printf("skipping non-JGroups data: len=%d ver=0x%04x\n", len, ver & 0xffff);
+                        tmp[0]=tmp[1]; tmp[1]=tmp[2]; tmp[2]=tmp[3]; tmp[3]=ver_buf[0];
+                        ver_buf[0]=ver_buf[1];
+                        int b=dis.read();
+                        if(b < 0)
+                            return;
+                        ver_buf[1]=(byte)b;
+                        len=Bits.readInt(tmp, 0);
+                        ver=Bits.readShort(ver_buf, 0);
                     }
+                    if(observed_version == 0)
+                        observed_version=ver;
+                    // read the remaining len-2 bytes of the frame (ver_buf already holds the first 2)
+                    byte[] frame=new byte[len];
+                    frame[0]=ver_buf[0]; frame[1]=ver_buf[1];
+                    dis.readFully(frame, Global.SHORT_SIZE, len - Global.SHORT_SIZE);
+                    try {
+                        parseFrame(frame, gossip, msg_consumer, batch_consumer, gossip_consumer);
+                    }
+                    catch(Throwable t) {
+                        t.printStackTrace();
+                    }
+                    continue;
                 }
                 if(gossip) { // messages to or from a GossipRouter
                     GossipData g=new GossipData();
@@ -1738,6 +1768,59 @@ public class Util {
         }
         catch(Throwable t) {
             t.printStackTrace();
+        }
+    }
+
+    /**
+     * Returns true if the 4-byte len and 2-byte JGroups version look like a valid TCP frame header.
+     * If observed_version is non-zero (learned from a previously parsed frame), the version must match exactly.
+     * Otherwise a heuristic check on the major-version bits is used.
+     */
+    protected static boolean isValidTcpFrame(int len, short ver, short observed_version) {
+        if(len <= 0)
+            return false;
+        if(observed_version != 0)
+            return ver == observed_version;
+        int major=(ver & 0xffff) >>> 11;  // 5 major-version bits (unsigned)
+        return major > 0 && major < 10;   // JGroups major versions have been 2-5; allow up to 9
+    }
+
+    protected static void parseFrame(byte[] frame, boolean gossip,
+                                     BiConsumer<Short,Message> msg_consumer,
+                                     BiConsumer<Short,MessageBatch> batch_consumer,
+                                     Consumer<GossipData> gossip_consumer) throws Exception {
+        try(DataInputStream in=new DataInputStream(new ByteArrayInputStream(frame))) {
+            if(gossip) {
+                GossipData g=new GossipData();
+                g.readFrom(in, true, false);
+                if(g.getType() != GossipType.MESSAGE) {
+                    if(gossip_consumer != null)
+                        gossip_consumer.accept(g);
+                    return;
+                }
+            }
+            short version=in.readShort();
+            byte flags=in.readByte();
+            boolean is_message_list=(flags & LIST) == LIST;
+            boolean multicast=(flags & MULTICAST) == MULTICAST;
+            if(is_message_list) {
+                final MessageBatch[] batches=Util.readMessageBatch(in, multicast);
+                for(MessageBatch batch: batches) {
+                    if(batch == null)
+                        continue;
+                    if(batch_consumer != null)
+                        batch_consumer.accept(version, batch);
+                    else {
+                        for(Message msg: batch)
+                            msg_consumer.accept(version, msg);
+                    }
+                }
+            }
+            else {
+                Message msg=Util.readMessage(in);
+                if(msg_consumer != null)
+                    msg_consumer.accept(version, msg);
+            }
         }
     }
 
