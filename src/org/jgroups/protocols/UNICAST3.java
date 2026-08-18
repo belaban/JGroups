@@ -968,7 +968,8 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
                                   batch_creator, BATCH_ACCUMULATOR);
             }
             catch(Throwable t) {
-                log.error("%s: failed removing messages from table for %s: %s", local_addr, sender, t);
+                // will not throw an exception
+                log.failSafeError("%s: failed removing messages from table for %s: %s", local_addr, sender, t);
             }
             if(!batch.isEmpty()) {
                 // batch is guaranteed to NOT contain any OOB messages as the drop_oob_msgs_filter above removed them
@@ -1144,7 +1145,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             up_prot.up(msg);
         }
         catch(Throwable t) {
-            log.warn(Util.getMessage("FailedToDeliverMsg"), local_addr, msg.isFlagSet(OOB) ?
+            log.failSafeWarn(Util.getMessage("FailedToDeliverMsg"), local_addr, msg.isFlagSet(OOB) ?
               "OOB message" : "message", msg, t);
         }
     }
@@ -1169,7 +1170,7 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address> {
             up_prot.up(batch);
         }
         catch(Throwable t) {
-            log.warn(Util.getMessage("FailedToDeliverMsg"), local_addr, "batch", batch, t);
+            log.failSafeWarn(Util.getMessage("FailedToDeliverMsg"), local_addr, "batch", batch, t);
         }
     }
 

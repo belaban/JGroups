@@ -54,4 +54,49 @@ public interface Log {
     void setLevel(String level);
 
     String getLevel();
+
+    default void failSafeWarn(String msg) {
+        try {
+            warn(msg);
+        }
+        catch(Throwable t) {
+        }
+    }
+    default void failSafeWarn(String format, Object ... args) {
+        try {
+            warn(format, args);
+        }
+        catch(Throwable t) {
+        }
+    }
+
+    default void failSafeWarn(String msg, Throwable throwable) {
+        try {
+            warn(msg, throwable);
+        }
+        catch(Throwable t) {
+        }
+    }
+
+    default void failSafeError(String msg) {
+        try {
+            error(msg);
+        }
+        catch(Throwable t) {}
+    }
+
+    default void failSafeError(String format, Object ... args) {
+        try {
+            error(format, args);
+        }
+        catch(Throwable t) {
+        }
+    }
+
+    default void failSafeError(String msg, Throwable throwable) {
+        try {
+            error(msg, throwable);
+        }
+        catch(Throwable t) {}
+    }
 }

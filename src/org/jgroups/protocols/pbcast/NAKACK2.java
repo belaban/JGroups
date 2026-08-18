@@ -950,7 +950,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
                                   batch_creator, BATCH_ACCUMULATOR);
             }
             catch(Throwable t) {
-                log.error("failed removing messages from table for " + sender, t);
+                log.failSafeWarn("failed removing messages from table for " + sender, t);
             }
             int size=batch.size();
             if(size > 0) {
@@ -1029,7 +1029,7 @@ public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler
             batch.clear();
         }
         catch(Throwable t) {
-            log.error(Util.getMessage("FailedToDeliverMsg"), local_addr, "batch", batch, t);
+            log.failSafeError(Util.getMessage("FailedToDeliverMsg"), local_addr, "batch", batch, t);
         }
     }
 
