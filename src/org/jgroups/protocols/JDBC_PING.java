@@ -431,6 +431,7 @@ public class JDBC_PING extends FILE_PING {
     protected DataSource getDataSourceFromJNDI(String name) {
         final DataSource data_source;
         InitialContext ctx = null;
+        validateDatasourceJndiName(name);
         try {
             ctx = new InitialContext();
             Object whatever = ctx.lookup(name);
@@ -451,6 +452,16 @@ public class JDBC_PING extends FILE_PING {
                     log.warn("Failed to close naming context.", e);
                 }
             }
+        }
+    }
+    
+    protected static void validateDatasourceJndiName(String name) {
+        if(name == null || name.isEmpty())
+            throw new IllegalArgumentException("JNDI name must not be empty");
+        int colon=name.indexOf(':');
+        if(colon > 0 && !name.regionMatches(true, 0, "java:", 0, "java:".length())) {
+            NamingException cause=new NamingException("Remote JNDI URL schemes are not supported for datasource_jndi_name");
+            throw new IllegalArgumentException("Remote JNDI URL schemes are not supported for datasource_jndi_name: " + name, cause);
         }
     }
     
