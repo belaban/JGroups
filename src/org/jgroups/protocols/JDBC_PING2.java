@@ -1,25 +1,5 @@
 package org.jgroups.protocols;
 
-import static java.sql.ResultSet.CONCUR_UPDATABLE;
-import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
-
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
-import javax.sql.DataSource;
-
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.PhysicalAddress;
@@ -31,6 +11,21 @@ import org.jgroups.stack.IpAddress;
 import org.jgroups.util.NameCache;
 import org.jgroups.util.Responses;
 import org.jgroups.util.Util;
+
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.sql.DataSource;
+import java.sql.*;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static java.sql.ResultSet.CONCUR_UPDATABLE;
+import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 
 /**
  * New version of {@link JDBC_PING}. Has a new, better legible schema. plus some refactoring
@@ -530,6 +525,7 @@ public class JDBC_PING2 extends FILE_PING {
     protected DataSource getDataSourceFromJNDI(String name) {
         final DataSource data_source;
         InitialContext ctx=null;
+        validateDatasourceJndiName(name);
         try {
             ctx=new InitialContext();
             Object whatever=ctx.lookup(name);
@@ -556,6 +552,15 @@ public class JDBC_PING2 extends FILE_PING {
         }
     }
 
+    protected static void validateDatasourceJndiName(String name) {
+        if(name == null || name.isEmpty())
+            throw new IllegalArgumentException("JNDI name must not be empty");
+        int colon=name.indexOf(':');
+        if(colon > 0 && !name.regionMatches(true, 0, "java:", 0, "java:".length())) {
+            NamingException cause=new NamingException("Remote JNDI URL schemes are not supported for datasource_jndi_name");
+            throw new IllegalArgumentException("Remote JNDI URL schemes are not supported for datasource_jndi_name: " + name, cause);
+        }
+    }
 
     protected static void assertNonNull(String... strings) {
         for(int i=0; i < strings.length; i+=2) {
