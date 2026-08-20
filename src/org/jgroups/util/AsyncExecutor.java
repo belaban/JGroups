@@ -13,7 +13,7 @@ import java.util.function.Supplier;
 import static org.jgroups.conf.AttributeType.SCALAR;
 
 /**
- * Used to execute asynchronous tasks, e.g. async-send (https://issues.redhat.com/browse/JGRP-2603). Uses a blockng
+ * Used to execute asynchronous tasks, e.g. async-send (https://issues.redhat.com/browse/JGRP-2603). Uses a blocking
  * queue and a dequeuer thread, which passes removed tasks to the thread pool
  * @param <T> T
  * @author Bela Ban
