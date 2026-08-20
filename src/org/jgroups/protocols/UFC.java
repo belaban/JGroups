@@ -39,7 +39,7 @@ public class UFC extends FlowControl {
      */
     protected final Map<Address,? extends Credit> sent=Util.createConcurrentMap();
 
-
+    public Map<Address,? extends Credit> sent() {return sent;}
 
     @ManagedOperation(description="Print sender credits")
     public String printSenderCredits() {
