@@ -140,6 +140,8 @@ public abstract class FlowControl extends Protocol {
         return credits == null? 0 : credits.get();
     }
 
+    public Map<Address,Credit> received() {return received;}
+
     public String printCredits() {
         return String.format("receivers:\n%s", printMap(received));
     }
