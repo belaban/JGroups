@@ -366,7 +366,8 @@ public abstract class FlowControl extends Protocol {
      */
     protected void handleCreditRequest(Map<Address,Credit> map, Address sender, long requested_credits) {
         if(requested_credits > 0 && sender != null) {
-            Credit cred=map.putIfAbsent(sender, new Credit(max_credits)); // https://redhat.atlassian.net/browse/JGRP-3036
+            // https://redhat.atlassian.net/browse/JGRP-3036
+            Credit cred=map.computeIfAbsent(sender, addr -> new Credit(max_credits));
             if(log.isTraceEnabled())
                 log.trace("received credit request from %s: sending %d credits", sender, requested_credits);
             cred.increment(requested_credits, max_credits);
