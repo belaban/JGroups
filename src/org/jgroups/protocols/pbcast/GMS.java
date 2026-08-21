@@ -681,17 +681,17 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
                 prev_views.add(Util.utcNow() + ": " + new_view);
             }
             am_i_coord=Objects.equals(local_addr, new_view.getCoord());
+
+            // - Changed order of passing view up and down (https://issues.redhat.com/browse/JGRP-347)
+            // - Changed it back (bela Sept 4 2007): https://issues.redhat.com/browse/JGRP-564
+            // - Moved sending up view_event out of the synchronized block (bela Nov 2011)
+            // - Moved back inside the lock scope: https://redhat.atlassian.net/browse/JGRP-3036 (bela Aug 2026)
+            Util.failSafe(() -> down_prot.down(view_event), this.log); // needed e.g. by failure detector or UDP
+            Util.failSafe(() -> up_prot.up(view_event), this.log);
         }
         finally {
             lock.unlock();
         }
-
-        // - Changed order of passing view up and down (https://issues.redhat.com/browse/JGRP-347)
-        // - Changed it back (bela Sept 4 2007): https://issues.redhat.com/browse/JGRP-564
-        // - Moved sending up view_event out of the synchronized block (bela Nov 2011)
-        down_prot.down(view_event); // needed e.g. by failure detector or UDP
-        up_prot.up(view_event);
-
         // Everybody except the merge leader cancels the merge, otherwise - if UNICAST3.loopback is true - we'd
         // interrupt our own thread which will fail code that later sends a message before returning!
         // Note that the merge leader does cancel the merge later, after having installed the MergeView
