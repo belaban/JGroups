@@ -456,6 +456,19 @@ public class Util {
         assert list.size() == expected_size : "list doesn't have the expected (" + expected_size + ") elements: " + list;
     }
 
+    /** Executes a runnable without throwing an exception */
+    public static void failSafe(Runnable r, Log log) {
+        if(r != null) {
+            try {
+                r.run();
+            }
+            catch(Throwable t) {
+                if(log != null)
+                    log.failSafeError("failed execution task %s: %s", r, t);
+            }
+        }
+    }
+
     public static void removeFromViews(Address mbr, JChannel ... channels) {
         if(mbr == null || channels == null)
             return;

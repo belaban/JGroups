@@ -366,9 +366,7 @@ public abstract class FlowControl extends Protocol {
      */
     protected void handleCreditRequest(Map<Address,Credit> map, Address sender, long requested_credits) {
         if(requested_credits > 0 && sender != null) {
-            Credit cred=map.get(sender);
-            if(cred == null)
-                return;
+            Credit cred=map.putIfAbsent(sender, new Credit(max_credits)); // https://redhat.atlassian.net/browse/JGRP-3036
             if(log.isTraceEnabled())
                 log.trace("received credit request from %s: sending %d credits", sender, requested_credits);
             cred.increment(requested_credits, max_credits);
@@ -401,7 +399,6 @@ public abstract class FlowControl extends Protocol {
         num_credit_requests_sent++;
     }
 
-
     protected void handleViewChange(List<Address> mbrs) {
         if(mbrs == null) return;
         if(log.isTraceEnabled()) log.trace("new membership: %s", mbrs);
@@ -412,8 +409,6 @@ public abstract class FlowControl extends Protocol {
         // remove members that left
         received.keySet().retainAll(mbrs);
     }
-
-
 
     protected static String printMap(Map<Address,? extends Credit> m) {
         return m.entrySet().stream().map(e -> String.format("%s: %s", e.getKey(), e.getValue()))
