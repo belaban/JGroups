@@ -48,10 +48,6 @@ public class ASYM_ENCRYPT_Test extends EncryptTest {
         super.destroy();
     }
 
-    /** For some obscure TestNG reasons, this method is needed. Remove it and all tests are executed in separate threads,
-     * which makes the testsuite fail!!! */
-    public void dummy() {}
-
 
 
     /** Verifies that a non-member (non-coord) cannot send a JOIN-RSP to a member */

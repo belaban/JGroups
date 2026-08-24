@@ -551,10 +551,12 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
 
     protected void createNewKey(String message) {
         try {
+            // cache the previous group key before overwriting it, so that messages still in flight (encrypted with
+            // the old key) can be decrypted after the rotation
+            cacheGroupKey(secret_key, sym_version);
             this.secret_key=createSecretKey();
             initSymCiphers(sym_algorithm, secret_key);
             log.debug("%s: created new group key (version: %s) %s", local_addr, Util.byteArrayToHexString(sym_version), message);
-            cacheGroupKey(sym_version);
         }
         catch(Exception ex) {
             log.error("%s: failed creating group key and initializing ciphers: %s", local_addr, ex);
@@ -570,17 +572,19 @@ public class ASYM_ENCRYPT extends Encrypt<KeyStore.PrivateKeyEntry> {
         }
         log.debug("%s: installing group key received from %s (version: %s)",
                   local_addr, sender != null? sender : "key exchange protocol", Util.byteArrayToHexString(version));
+        // cache the previous group key before overwriting it, so that messages still in flight (encrypted with
+        // the old key) can be decrypted after the key change
+        cacheGroupKey(secret_key, sym_version);
         secret_key=key;
         initSymCiphers(sym_algorithm, key);
         sym_version=version;
-        cacheGroupKey(version);
     }
 
-    /** Cache the current shared key to decrypt messages encrypted with the old shared group key */
-    protected void cacheGroupKey(byte[] version) throws Exception {
-        // put the previous key into the map
-        if(secret_key != null)
-            key_map.putIfAbsent(new AsciiString(version), secret_key);
+    /** Caches a group key (key, version) so that messages encrypted with a previous group key can still be decrypted
+     * after a key rotation */
+    protected void cacheGroupKey(Key key, byte[] version) {
+        if(key != null && version != null)
+            key_map.putIfAbsent(new AsciiString(version), key);
     }
 
     /** Encrypts the current secret key with the requester's public key (the requester will decrypt it with its private key) */
