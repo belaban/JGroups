@@ -62,7 +62,7 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
     protected long                           suspect_msg_interval=5000;
 
     @Property(description="Max time (ms) to wait for a connect attempt",type=AttributeType.TIME)
-    protected int                            connect_timeout=1000;
+    protected int                            connect_timeout=500;
 
     @Property(description="The lowest port the FD_SOCK server can listen on. Needed when wrapping around, looking " +
       "for ports. See https://issues.redhat.com/browse/JGRP-2560 for details")
