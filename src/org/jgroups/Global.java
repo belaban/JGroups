@@ -50,6 +50,7 @@ public final class Global {
     public static final String NAME_CACHE_MAX_ELEMENTS="jgroups.name_cache.max_elements";
     public static final String NAME_CACHE_MAX_AGE="jgroups.name_cache.max_age";
 
+    public static final String USE_NOOP_LOGGER="jgroups.use.noop_logger";
     public static final String USE_JDK_LOGGER="jgroups.use.jdk_logger"; // forces use of the JDK logger
     public static final String LOG_CLASS="jgroups.log_class"; // class of preferred logger
 
@@ -101,6 +102,18 @@ public final class Global {
     // when set, the network interfaces listed in the arg are skipped, even when down
     // Example: -Dskip-up-check-for="tap*,utun0"
     public static final String SKIP_UP_CHECK_FOR="skip-up-check-for";
+
+    /** System prop used to configure a {@code java.io.ObjectInputFilter} (JEP 290) applied to every
+     * {@link org.jgroups.util.ObjectInputStreamWithClassloader} created by JGroups, i.e. to the deserialization
+     * of RPC calls/responses (unicast and multicast requests, {@link org.jgroups.blocks.MethodCall} arguments)
+     * as well as state-transfer / replicated-map marshalling that go through {@link org.jgroups.util.Util}.
+     * The value uses the same pattern syntax as the JDK's own {@code jdk.serialFilter} property, e.g.:
+     * {@code -Djgroups.deserialization.filter="!*;java.lang.*;java.util.*;org.jgroups.**"}.
+     * If unset, no filter is applied (backward compatible). Ignored on JVMs that don't support
+     * {@code java.io.ObjectInputFilter} (pre Java 9). Like other {@code jgroups.*} system properties, this is
+     * read once, when {@link org.jgroups.util.ObjectInputStreamWithClassloader} is loaded - set it on the command
+     * line (or otherwise before that point), not at runtime. */
+    public static final String DESERIALIZATION_FILTER="jgroups.deserialization.filter";
 
     public static final int IPV4_SIZE=4;
     public static final int IPV6_SIZE=16;

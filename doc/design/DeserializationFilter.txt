@@ -1,0 +1,167 @@
+
+Filtering (Java) deserialization of RPC and state / replicated-map data
+=========================================================================
+JIRA: gadget-chain / unsafe deserialization hardening
+
+Background
+----------
+JGroups uses standard Java serialization (ObjectInputStream/ObjectOutputStream) as a fallback whenever an
+object being sent is neither a primitive type nor Streamable. This is the case for:
+
+* RPC calls: arguments and return values of a MethodCall that aren't Streamable (org.jgroups.blocks.MethodCall,
+  org.jgroups.blocks.RequestCorrelator), including building blocks that make RPC calls through a custom
+  Marshaller, e.g. org.jgroups.blocks.PartitionedHashMap, org.jgroups.blocks.ReplCache, and the task/result
+  marshalling in org.jgroups.protocols.Executing.
+* Real state transfer: the object graph passed to channel.getState()/received by a Receiver's setState()
+  callback, when that building block chooses to marshal it via Util rather than handling the InputStream/
+  OutputStream itself, e.g. org.jgroups.blocks.ReplicatedTree (see "Known gap" below for one that doesn't).
+
+All of these go through a single choke point: org.jgroups.util.Util#objectFromByteBuffer() and
+org.jgroups.util.Util#objectFromStream(), both of which construct an
+org.jgroups.util.ObjectInputStreamWithClassloader to do the actual java.io.ObjectInputStream#readObject() call.
+
+Like any application that deserializes attacker-influenced byte streams with plain Java serialization, JGroups is
+potentially exposed to "gadget-chain" deserialization attacks if a class with an exploitable readObject()/
+readResolve() (e.g. from a library on the classpath) can be instantiated from the incoming bytes.
+
+
+Mitigation: java.io.ObjectInputFilter (JEP 290)
+------------------------------------------------
+Since Java 9, the JDK provides java.io.ObjectInputFilter, which can be attached to an ObjectInputStream to
+allow/reject classes during deserialization, by name, pattern, array depth, graph size, etc., before any
+readObject()/readResolve() of a rejected class runs.
+
+JGroups now supports configuring such a filter process-wide, via the system property:
+
+    jgroups.deserialization.filter   (see org.jgroups.Global#DESERIALIZATION_FILTER)
+
+The value uses the same pattern syntax as the JDK's own "jdk.serialFilter" property
+(see java.io.ObjectInputFilter.Config#createFilter(String)), e.g. a allow-list denying everything not explicitly
+listed:
+
+    -Djgroups.deserialization.filter="org.jgroups.**;java.lang.*;java.util.*;!*"
+
+or a deny-list blocking specific known-dangerous classes while allowing everything else:
+
+    -Djgroups.deserialization.filter="!org.some.exploit.Gadget;*"
+
+If the property is not set, no filter is applied - behavior is unchanged from before this change (fully backward
+compatible; nothing is enabled by default, since a suitable allow/deny list is application-specific).
+
+Where it's applied
+-------------------
+The filter is built (from the current value of the system property) and attached in
+org.jgroups.util.ObjectInputStreamWithClassloader, the single class used by Util.objectFromByteBuffer() /
+Util.objectFromStream(). This means it automatically covers:
+
+* RPC request/response unmarshalling: MethodCall arguments and return values, via RequestCorrelator and
+  MethodCall - this is the path org.jgroups.blocks.PartitionedHashMap, org.jgroups.blocks.ReplCache, and
+  org.jgroups.protocols.Executing also ride on, via their own Marshaller/Util usage.
+* Real state transfer done via Util: currently only org.jgroups.blocks.ReplicatedTree
+  (ReplicatedTree.getState()/setState() call Util.objectToStream()/objectFromStream() directly), plus a few
+  demo classes (org.jgroups.demos.QuoteServer, org.jgroups.demos.wb.GraphPanel/Whiteboard,
+  org.jgroups.demos.TotalOrder).
+
+It does NOT apply to Streamable objects (JGroups' own binary format), since those are never deserialized via
+ObjectInputStream in the first place and thus aren't exposed to this class of attack.
+
+When the filter rejects a class, ObjectInputStream throws java.io.InvalidClassException, which is an IOException;
+this propagates through the existing "throws IOException" signature of objectFromByteBuffer()/objectFromStream()
+without any change needed in callers. Callers already handle IOException from unmarshalling failures (e.g.
+RequestCorrelator.handleResponse() logs the error and turns it into an exception response) - a bad/oversized/
+disallowed payload therefore fails safely rather than crashing the JVM or silently constructing the gadget object.
+For real state transfer specifically, a rejected class surfaces as an org.jgroups.StateTransferException wrapping
+the InvalidClassException (JChannel.getState() checks the StateTransferResult it gets back and throws if it
+carries an exception) - again, no caller changes were needed.
+
+
+Known gap: org.jgroups.blocks.ReplicatedHashMap
+--------------------------------------------------
+ReplicatedHashMap is the one building block in this codebase that implements real state transfer
+(getState()/setState()) but does NOT go through Util - it constructs a plain java.io.ObjectInputStream directly:
+
+    public void setState(InputStream istream) throws Exception {
+        HashMap<K, V> new_copy = null;
+        try (ObjectInputStream ois = new ObjectInputStream(istream)) {   // <-- not ObjectInputStreamWithClassloader
+            new_copy = (HashMap<K, V>) ois.readObject();
+        }
+        ...
+
+It's the only place in the whole src tree using "new ObjectInputStream(" directly (everything else - including
+ReplicatedTree, PartitionedHashMap, ReplCache, Executing, and the demo classes - goes through Util). This means
+jgroups.deserialization.filter currently does NOT protect ReplicatedHashMap's state transfer: a gadget-chain
+payload delivered that way would deserialize unfiltered.
+
+This was found while writing tests for this fix (see org.jgroups.tests.ObjectInputFilterTest) and deliberately
+left as-is rather than folded into this change - fixing it (swapping in ObjectInputStreamWithClassloader, the
+same one-line change ReplicatedTree already does correctly) is a reasonable, low-risk follow-up, but is a
+separate change with its own review, not bundled into this one.
+
+Compatibility
+-------------
+Access to java.io.ObjectInputFilter is entirely via reflection, so the code still compiles and runs unmodified on
+JVMs older than Java 9: if the class isn't found, the property is simply ignored and a warning is logged.
+
+Like every other "jgroups.*" system property in this codebase, jgroups.deserialization.filter is read once, in a
+static initializer (in org.jgroups.util.ObjectInputStreamWithClassloader), not re-checked per stream. Set it on
+the command line (-D...), not at runtime - changing it after JGroups classes have loaded has no effect.
+
+
+Why reflection, specifically
+-----------------------------
+This module still compiles/targets Java 8 (maven.compiler.source/target=1.8 in pom.xml), but
+java.io.ObjectInputFilter, ObjectInputFilter.Config.createFilter(String), and
+ObjectInputStream.setObjectInputFilter() were all only added in Java 9 (JEP 290) - they simply don't exist on a
+Java 8 classpath.
+
+The naive fix - adding "import java.io.ObjectInputFilter;" and calling setObjectInputFilter() directly in
+ObjectInputStreamWithClassloader - would compile fine on a Java 9+ build machine, but would break at class-load
+time on any Java 8 runtime: the JVM verifies/resolves a class's constant pool (which would now reference
+ObjectInputFilter and setObjectInputFilter()) when the class is first loaded, not just when that particular line
+of code executes. Since ObjectInputStreamWithClassloader is loaded the very first time anything is deserialized -
+which happens for every RPC call and every state/replicated-map transfer - this isn't a rare edge case that only
+Java-8-plus-filter-enabled users would hit; it would be a hard NoClassDefFoundError/NoSuchMethodError for every
+single Java 8 user of JGroups, whether or not they ever configured jgroups.deserialization.filter.
+
+Reflection (Class.forName("java.io.ObjectInputFilter"), Method.invoke(), etc.) sidesteps this because those
+lookups only happen at runtime, inside a try/catch, when the static initializer actually runs - not at class-load/
+verification time. On Java 8, Class.forName() throws ClassNotFoundException, we catch it, FILTER and SET_FILTER
+stay null, and every other constructor/method in the class is completely unaffected: normal deserialization
+(RPC, state transfer, everything this class already did before this change) keeps working exactly as before,
+just without filtering. On Java 9+, the lookups succeed once (in the static initializer) and filtering is applied
+per stream via a plain Method.invoke() - cheap, and only paid once per JVM for the lookup itself.
+
+This is the same trick already used elsewhere in this codebase for optional, JDK-version-gated features without
+bumping the minimum supported Java version - see Util's fibers/Loom support (BUILDER/VIRTUAL/TASK/NAME/BUILD
+Method fields, populated via reflection against java.lang.Thread$Builder, which only exists on Java 15+).
+
+The alternative to reflection would be a multi-release JAR (a real Java-9-only class under
+META-INF/versions/9/... with a Java-8-compatible no-op stub as the default), which avoids reflection entirely,
+but requires build/packaging changes beyond a single source file; it wasn't pursued here to keep this fix
+self-contained to the existing single-jar build.
+
+
+Testing
+-------
+org.jgroups.tests.ObjectInputFilterTest (run via "ant compile single-test -Dtest-class=ObjectInputFilterTest",
+NOT via mvn - Surefire is disabled in pom.xml) covers, in increasing order of how close to production it gets:
+
+* testNoFilterConfigured/testFilterAllowsMatchingClass/testFilterRejectsClass: the property unset, an allow-list,
+  and a deny-list, calling Util.objectTo/FromByteBuffer() directly.
+* testRpcAllowsNormalTraffic/testRpcRejectsGadgetClass: a real RPC call between two JChannels (SHARED_LOOPBACK
+  transport, RpcDispatcher, MethodCall in ID+MethodLookup mode so only the argument itself needs java
+  serialization), proving the filter genuinely reaches RequestCorrelator/MethodCall unmarshalling.
+* testStateTransferAllowsNormalTraffic/testStateTransferRejectsGadgetClass: a real state transfer between two
+  JChannels (SHARED_LOOPBACK + STATE_TRANSFER, ReplicatedTree), proving the filter genuinely reaches
+  ReplicatedTree.setState().
+
+Because the filter is read once at class-load (see "Compatibility" above), the RPC/state tests can't just flip
+the system property mid-test - each scenario forks a fresh JVM with jgroups.deserialization.filter set on its
+command line and checks what got printed. Two things about that worth knowing if these tests ever need touching:
+
+* SHARED_LOOPBACK still opens a real (diagnostics/probe) multicast socket on every network interface, unrelated
+  to its actual (in-memory) message transport; on a machine with several VPN/utun interfaces each failed join
+  logs a harmless warning to stdout. The test stack disables TP.enable_diagnostics to avoid this, and assertions
+  check the tail of the captured output rather than an exact match, in case any other incidental logging shows up.
+* GMS's default join_timeout (1000ms, from Util.getTestStack()) is bumped to 5000ms for these forked-JVM tests to
+  reduce flakiness on a slow/busy machine.
