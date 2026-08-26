@@ -153,6 +153,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
 
     public long    getJoinTimeout()                    {return join_timeout;}
     public GMS     setJoinTimeout(long t)              {join_timeout=t; return this;}
+    public GMS     joinTimeout(long t)                 {return setJoinTimeout(t);}
     public long    getLeaveTimeout()                   {return leave_timeout;}
     public GMS     setLeaveTimeout(long t)             {leave_timeout=t; return this;}
     public long    getMergeTimeout()                   {return merge_timeout;}

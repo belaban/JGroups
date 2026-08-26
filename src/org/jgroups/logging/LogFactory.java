@@ -18,7 +18,7 @@ public final class LogFactory {
 
     public static final boolean                 IS_SLF4J_AVAILABLE;
     public static final boolean                 IS_LOG4J2_AVAILABLE;  // log4j2 is the default logger
-    protected static boolean                    use_jdk_logger;
+    protected static boolean                    use_jdk_logger, use_noop_logger;
     protected static CustomLogFactory           custom_log_factory=null;
     protected static Constructor<? extends Log> ctor_class=null;
 
@@ -28,6 +28,7 @@ public final class LogFactory {
 
     static {
         use_jdk_logger=isPropertySet(Global.USE_JDK_LOGGER);
+        use_noop_logger=isPropertySet(Global.USE_NOOP_LOGGER);
 
         String classname=Util.getProperty(Global.LOG_CLASS);
         if(classname != null) {
@@ -49,6 +50,8 @@ public final class LogFactory {
 
     public static CustomLogFactory getCustomLogFactory()                         {return custom_log_factory;}
     public static void             setCustomLogFactory(CustomLogFactory factory) {custom_log_factory=factory;}
+    public static boolean          useNoopLogger()                               {return use_noop_logger;}
+    public static void             useNoopLogger(boolean flag)                   {use_noop_logger=flag;}
     public static boolean          useJdkLogger()                                {return use_jdk_logger;}
     public static void             useJdkLogger(boolean flag)                    {use_jdk_logger=flag;}
 
@@ -63,6 +66,8 @@ public final class LogFactory {
                 throw new RuntimeException(t);
             }
         }
+        if(use_noop_logger)
+            return new NoopLogImpl();
         if(use_jdk_logger)
             return new JDKLogImpl(clazz);
         if(IS_LOG4J2_AVAILABLE)
@@ -75,6 +80,7 @@ public final class LogFactory {
     public static String loggerType() {
         if(ctor_class != null)
             return ctor_class.getDeclaringClass().getSimpleName();
+        if(use_noop_logger)     return "no-op";
         if(use_jdk_logger)      return "jdk";
         if(IS_LOG4J2_AVAILABLE) return "log4j2";
         if(IS_SLF4J_AVAILABLE)  return "slf4j";
