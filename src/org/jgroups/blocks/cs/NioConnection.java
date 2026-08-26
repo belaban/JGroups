@@ -242,7 +242,6 @@ public class NioConnection extends Connection {
 
     /**
      * Sends the buffers currently present in send_buf
-     * @return True if all buffers were sent successfully, false otherwise
      * @throws Exception If the send failed, e.g. because the channel was closed
      */
     protected void send(Runnable add_buf) throws Exception {
