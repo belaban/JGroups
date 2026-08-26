@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentMap;
  * 
  * @author Bela Ban
  */
-public class JUnitXMLReporter implements ITestListener, IConfigurationListener2 {
+public class JUnitXMLReporter implements ITestListener, IConfigurationListener {
     protected String output_dir=null;
 
     protected static final String XML_DEF="<?xml version=\"1.0\" encoding=\"UTF-8\" ?>";
