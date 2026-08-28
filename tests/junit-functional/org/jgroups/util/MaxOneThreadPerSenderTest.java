@@ -8,6 +8,7 @@ import org.jgroups.protocols.UDP;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Proxy;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * Tests {@link MaxOneThreadPerSender}
@@ -46,6 +47,32 @@ public class MaxOneThreadPerSenderTest {
         }
     }
 
+    public void testRunningIsResetOnFullThreadPool() throws Exception {
+        UDP tp=new UDP() {};
+        MaxOneThreadPerSender policy=new MaxOneThreadPerSender();
+        ThreadPool thread_pool=tp.getThreadPool().setMinThreads(1).setMaxThreads(5);
+        thread_pool.init();
+        CountDownLatch latch=new CountDownLatch(1);
+        try {
+            boolean success;
+            do {
+                BlockingTask bt=new BlockingTask(latch);
+                success=thread_pool.execute(bt);
+            }
+            while(success);
+            policy.init(tp);
+            Message msg=new EmptyMessage(null).setSrc(Util.createRandomAddress("A"));
+            assert !policy.process(msg, false);
+            latch.countDown(); // releases all BlockingTasks from the thread pool
+            assert policy.process(msg, false);
+            MaxOneThreadPerSender.Entry entry=policy.mcasts.map.values().iterator().next();
+            Util.waitUntil(5000, 100, () -> !running(entry), () -> "entry is still marked as running");
+        }
+        finally {
+            thread_pool.destroy();
+        }
+    }
+
     protected static boolean running(MaxOneThreadPerSender.Entry entry) {
         entry.lock.lock();
         try {
@@ -53,6 +80,24 @@ public class MaxOneThreadPerSenderTest {
         }
         finally {
             entry.lock.unlock();
+        }
+    }
+
+    protected static class BlockingTask implements Runnable {
+        protected final CountDownLatch latch;
+
+        protected BlockingTask(CountDownLatch latch) {
+            this.latch=latch;
+        }
+
+        @Override
+        public void run() {
+            try {
+                latch.await();
+            }
+            catch(InterruptedException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
