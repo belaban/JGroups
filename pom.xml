@@ -309,6 +309,24 @@
                             </systemProperties>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>generate-native-metadata</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>org.jgroups.util.NativeMetadataGenerator</mainClass>
+                            <commandlineArgs>-o ${project.build.directory}/native-metadata</commandlineArgs>
+                            <classpathScope>compile</classpathScope>
+                            <systemProperties>
+                                <systemProperty>
+                                    <key>log4j2.disable.jmx</key>
+                                    <value>true</value>
+                                </systemProperty>
+                            </systemProperties>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
             <plugin>
@@ -329,6 +347,24 @@
                                     <directory>${project.build.directory}/schema</directory>
                                     <includes>
                                         <include>*.xsd</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>copy-native-metadata</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.outputDirectory}</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.build.directory}/native-metadata</directory>
+                                    <includes>
+                                        <include>META-INF/**</include>
                                     </includes>
                                 </resource>
                             </resources>
@@ -955,6 +991,53 @@
                                         <sectnumlevels>3</sectnumlevels>
                                         <sectanchors>true</sectanchors>
                                     </attributes>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>native</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.graalvm.buildtools</groupId>
+                        <artifactId>native-maven-plugin</artifactId>
+                        <version>1.1.9</version>
+                        <extensions>true</extensions>
+                        <executions>
+                            <execution>
+                                <id>build-native</id>
+                                <goals>
+                                    <goal>compile-no-fork</goal>
+                                </goals>
+                                <phase>package</phase>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <mainClass>org.jgroups.tests.NativeSmokeTest</mainClass>
+                            <imageName>jgroups-native-test</imageName>
+                            <fallback>false</fallback>
+                            <quickBuild>true</quickBuild>
+                            <buildArgs>
+                                <buildArg>-H:+ReportExceptionStackTraces</buildArg>
+                            </buildArgs>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>run-native-test</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>${project.build.directory}/jgroups-native-test</executable>
                                 </configuration>
                             </execution>
                         </executions>

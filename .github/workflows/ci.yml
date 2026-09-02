@@ -35,3 +35,17 @@ jobs:
       - name: Build with Maven
         # In order to support Windows PowerShell, a space between --define property=true is required.
         run: mvn --batch-mode --no-transfer-progress verify --define skipTests=true
+  native:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Set up GraalVM
+        uses: graalvm/setup-graalvm@5298d94fb55a4f185c602eeac5de1b553882abe2
+        with:
+          java-version: '25'
+          distribution: 'graalvm-community'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          cache: maven
+      - name: Build and verify native image
+        run: mvn --batch-mode --no-transfer-progress verify --define skipTests=true -Pnative
