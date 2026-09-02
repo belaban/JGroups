@@ -8,6 +8,7 @@
 
     <property name="root.dir"              value="${basedir}"/>
     <property name="compile.dir"           value="${root.dir}/classes"/>
+    <property name="compile.dir.mvn"       value="${root.dir}/target/classes"/>
     <property name="conf.dir"              value="${root.dir}/conf"/>
     <property name="version.file"          value="JGROUPS_VERSION.properties"/>
     <property name="build.properties.file" value="build.properties"/>
@@ -57,6 +58,7 @@
 
     <path id="jg.classpath">
         <pathelement location="${compile.dir}"/>
+        <pathelement location="${compile.dir.mvn}"/>
         <pathelement location="${conf.dir}"/>
         <pathelement location="${keystore.dir}"/>
         <fileset dir="${lib.dir}">
