@@ -2,13 +2,14 @@ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.protocols.*;
+import org.jgroups.util.MyReceiver;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Tests the BARRIER protocol
@@ -37,14 +38,16 @@ public class BARRIERTest {
         assert !barrier_prot.isClosed();
     }
 
-    public void testThreadsBlockedOnBarrier() {
-        MyReceiver receiver=new MyReceiver();
+    public void testThreadsBlockedOnBarrier() throws TimeoutException {
+        MyReceiver<String> receiver=new MyReceiver<String>().verbose(true);
         ch.setReceiver(receiver);
         ch.down(new Event(Event.CLOSE_BARRIER)); // BARRIER starts discarding messages from now on
-        for(int i=0; i < 5; i++) {
-            new Thread(() -> discovery_prot.up(createMessage())).start();
-        }
-
+        final Address sender=Util.createRandomAddress("B");
+        Runnable r=() -> {
+            Message m=new ObjectMessage(null, "hello").src(sender).putHeader(tp.getId(), new TpHeader("BARRIERTest"));
+            discovery_prot.up(m);
+        };
+        new Thread(r).start();
         Util.sleep(2000);
         int num_in_flight_threads=barrier_prot.getNumberOfInFlightThreads();
         assert num_in_flight_threads == 0;
@@ -54,8 +57,8 @@ public class BARRIERTest {
 
         num_in_flight_threads=barrier_prot.getNumberOfInFlightThreads();
         assert num_in_flight_threads == 0;
-        int received_msgs=receiver.getNumberOfReceivedMessages();
-        assert received_msgs == 0 : "expected " + 0 + " messages but got " + received_msgs;
+        Util.waitUntil(5000, 100, () -> receiver.size() == 1,
+                       () -> String.format("expected 5 messages but got %d",  receiver.size()));
     }
 
 
@@ -121,19 +124,6 @@ public class BARRIERTest {
         }
     }
 
-
-    protected static class MyReceiver implements Receiver {
-        protected final AtomicInteger num_mgs_received=new AtomicInteger(0);
-
-        public void receive(Message msg) {
-            if(num_mgs_received.incrementAndGet() % 1000 == 0)
-                System.out.println("<== " + num_mgs_received.get());
-        }
-
-        public int getNumberOfReceivedMessages() {
-            return num_mgs_received.get();
-        }
-    }
 
 
     protected static class BlockingReceiver implements Receiver {

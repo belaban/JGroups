@@ -27,7 +27,6 @@ import java.util.stream.Stream;
 public class BlockingQueueTest {
     protected BlockingQueue<Integer> q;
 
-
     @DataProvider
     static Object[][] createBlockingQueue() {
         return new Object[][]{
@@ -35,8 +34,6 @@ public class BlockingQueueTest {
           {ConcurrentBlockingRingBuffer.class}
         };
     }
-
-
 
     public void testConstructor(Class<? extends BlockingQueue<Integer>> clazz) throws Exception {
         q=create(clazz, 10, true, true);
@@ -193,7 +190,7 @@ public class BlockingQueueTest {
         putter.start();
         Util.waitUntilTrue(5000, 100, () -> q.size() == 10);
         for(int i=0; i < 5; i++)
-            q.poll();
+            assert q.poll() != null;
         Util.waitUntilTrue(5000, 100, () -> q.size() == 10);
         Util.waitUntil(1000, 100, () -> !putter.isAlive());
         putter.join();

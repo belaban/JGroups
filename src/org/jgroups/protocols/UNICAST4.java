@@ -90,10 +90,10 @@ public class UNICAST4 extends ReliableUnicast {
             log.debug("defaulted ack_threshold to %d", ack_threshold);
         }
         if(conn_expiry_timeout == 0)
-            log.warn("%s: conn_expiry_timeout should be >= 0, or sender threads could be blocked until " +
+            log.warn("conn_expiry_timeout should be >= 0, or sender threads could be blocked until " +
                        "the channel is closed. See https://issues.redhat.com/browse/JGRP-2929 for details");
         if(conn_close_timeout == 0)
-            log.warn("%s: conn_close_timeout should be >= 0, or sender threads could be blocked until " +
+            log.warn("conn_close_timeout should be >= 0, or sender threads could be blocked until " +
                        "the channel is closed. See https://issues.redhat.com/browse/JGRP-2929 for details");
     }
 

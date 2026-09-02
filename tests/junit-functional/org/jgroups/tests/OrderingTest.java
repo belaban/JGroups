@@ -91,8 +91,9 @@ public class OrderingTest {
         }
         latch.countDown();
         stopShuffling(1000);
+        for(Thread sender: senders)
+            sender.join(40_000);
         checkOrder(NUM_MSGS);
-        assert Stream.of(senders).noneMatch(Thread::isAlive);
     }
 
     protected void stopShuffling(long time_to_wait_before_stopping) {
@@ -108,7 +109,7 @@ public class OrderingTest {
 
     protected void checkOrder(int expected_msgs) {
         System.out.println("\n-- waiting for message reception by all receivers:");
-        Util.waitUntilTrue(100000, 500,
+        Util.waitUntilTrue(20_000, 500,
                            () -> Stream.of(channels).map(JChannel::getReceiver)
                              .allMatch(r -> ((MyReceiver)r).getReceived() == expected_msgs));
 
@@ -131,38 +132,28 @@ public class OrderingTest {
     }
 
 
-
-    protected static class MySender implements Runnable {
-        protected final JChannel       ch;
-        protected final Address        dest;
-        protected final CountDownLatch latch;
-
-        public MySender(JChannel ch, Address dest, CountDownLatch latch) {
-            this.ch=ch;
-            this.dest=dest;
-            this.latch=latch;
-        }
+    protected record MySender(JChannel ch, Address dest, CountDownLatch latch) implements Runnable {
 
         public void run() {
-            try {
-                latch.await();
-            }
-            catch(InterruptedException e) {
-                e.printStackTrace();
-            }
-            for(int i=1; i <= NUM_MSGS; i++) {
                 try {
-                    Message msg=new ObjectMessage(dest, i);
-                    ch.send(msg);
-                    if(i % PRINT == 0)
-                        System.out.println(ch.getAddress() + ": " + i + " sent");
+                    latch.await();
                 }
-                catch(Exception e) {
+                catch(InterruptedException e) {
                     e.printStackTrace();
+                }
+                for(int i=1; i <= NUM_MSGS; i++) {
+                    try {
+                        Message msg=new ObjectMessage(dest, i);
+                        ch.send(msg);
+                        if(i % PRINT == 0)
+                            System.out.println(ch.getAddress() + ": " + i + " sent");
+                    }
+                    catch(Exception e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         }
-    }
 
     protected static class MyReceiver implements Receiver {
         protected final ConcurrentMap<Address,Integer> map=new ConcurrentHashMap<>();

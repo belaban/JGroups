@@ -1,6 +1,5 @@
 package org.jgroups.util;
 
-import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.logging.Log;
 import org.jgroups.protocols.TP;
@@ -26,7 +25,7 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
     }
 
     public boolean loopback(Message msg, boolean oob) {
-        return tp.getThreadPool().execute(new SingleLoopbackHandler(msg));
+        return tp.getThreadPool().execute(new SingleMessageHandler(msg, true));
     }
 
     public boolean loopback(MessageBatch batch, boolean oob) {
@@ -39,7 +38,7 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
     }
 
     public boolean process(Message msg, boolean oob) {
-        return tp.getThreadPool().execute(new SingleMessageHandler(msg));
+        return tp.getThreadPool().execute(new SingleMessageHandler(msg, false));
     }
 
     public boolean process(MessageBatch batch, boolean oob) {
@@ -64,40 +63,28 @@ public class SubmitToThreadPool implements MessageProcessingPolicy {
             Message msg=it.next();
             if(msg.isFlagSet(Message.Flag.DONT_BUNDLE) && msg.isFlagSet(Message.Flag.OOB)) {
                 it.remove();
-                Runnable handler=loopback? new SingleLoopbackHandler(msg) : new SingleMessageHandler(msg);
-                tp.getThreadPool().execute(handler);
+                tp.getThreadPool().execute(new SingleMessageHandler(msg, loopback));
                 removed=true;
             }
         }
         return removed;
     }
 
-    public class SingleLoopbackHandler implements Runnable {
-        protected final Message msg;
-
-        public SingleLoopbackHandler(Message msg) {
-            this.msg=msg;
-        }
-
-        public void run() {
-            tp.passMessageUp(msg, false, msg.getDest() == null, false);
-        }
-    }
 
     public class SingleMessageHandler implements Runnable {
         protected final Message msg;
+        protected final boolean loopback;
 
-        protected SingleMessageHandler(final Message msg) {
+        protected SingleMessageHandler(final Message msg, boolean loopback) {
             this.msg=msg;
+            this.loopback=loopback;
         }
 
         public Message getMessage() {return msg;}
 
         public void run() {
-            Address dest=msg.getDest();
-            boolean multicast=dest == null;
             try {
-                tp.passMessageUp(msg, true, multicast, true);
+                tp.passMessageUp(msg, !loopback, msg.dest() == null, !loopback);
             }
             catch(Throwable t) {
                 log.error(Util.getMessage("PassUpFailure"), t);

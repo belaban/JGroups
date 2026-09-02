@@ -1,5 +1,6 @@
 package org.jgroups.stack;
 
+import org.jgroups.Lifecycle;
 import org.jgroups.Message;
 import org.jgroups.protocols.TP;
 import org.jgroups.util.MessageBatch;
@@ -11,7 +12,7 @@ import org.jgroups.util.MessageBatch;
  * @author Bela Ban
  * @since  4.0
  */
-public interface MessageProcessingPolicy {
+public interface MessageProcessingPolicy extends Lifecycle {
     /** Called after creation. Implementations may want to cache the transport reference to get access to thread pools,
         message counters etc */
     void init(TP transport);

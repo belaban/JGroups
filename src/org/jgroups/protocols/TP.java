@@ -160,6 +160,7 @@ public abstract class TP extends TPConfig implements DiagnosticsHandler.ProbeHan
         fetchLocalAddresses();
         startDiagnostics();
         bundler.start();
+        msg_processing_policy.start();
         // local_addr is null when shared transport
         setInAllThreadFactories(cluster_name != null? cluster_name.toString() : null, local_addr, thread_naming_pattern);
     }

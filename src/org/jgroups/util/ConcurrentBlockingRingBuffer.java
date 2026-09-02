@@ -40,18 +40,18 @@ import java.util.function.Predicate;
  * @since  5.5.0
  */
 public class ConcurrentBlockingRingBuffer<T> implements BlockingQueue<T> {
-    protected final int                     capacity;
-    protected final AtomicReferenceArray<T> array;
-    protected final AtomicInteger           wi=new AtomicInteger(); // write index, accessed by all producers
-    protected int                           ri; // read index, accessed only by a single consumer
-    protected final AtomicInteger           size=new AtomicInteger(0);  // cannot exceed array.length
-    protected final boolean                 block_on_empty, block_on_full;
-    protected final Lock                    lock=new ReentrantLock();
-    protected final Condition               not_empty=lock.newCondition();
-    protected final Condition               not_full=lock.newCondition();
-    protected final IntUnaryOperator        INCR; // increments up to capacity, never exceeds capacity
-    protected final IntUnaryOperator        INCR_INDEX;
-    protected static final IntUnaryOperator DECR=x -> x == 0? x : x-1; // decrements, but never < 0
+    protected final int                      capacity;
+    protected final AtomicReferenceArray<T>  array;
+    protected final AtomicInteger            wi=new AtomicInteger(); // write index, accessed by all producers
+    protected int                            ri; // read index, accessed only by a single consumer
+    protected final AtomicInteger            size=new AtomicInteger(0);  // cannot exceed array.length
+    protected final boolean                  block_on_empty, block_on_full;
+    protected final Lock                     lock=new ReentrantLock();
+    protected final Condition                not_empty=lock.newCondition();
+    protected final Condition                not_full=lock.newCondition();
+    protected final IntUnaryOperator         INCR; // increments up to capacity, never exceeds capacity
+    protected final IntUnaryOperator         INCR_INDEX;
+    protected static final IntUnaryOperator  DECR=x -> x == 0? x : x-1; // decrements, but never < 0
     protected static final IntBinaryOperator DECR_DELTA=(x,y) -> y >= x? 0 : x-y;
 
 
@@ -109,7 +109,14 @@ public class ConcurrentBlockingRingBuffer<T> implements BlockingQueue<T> {
 
     @Override
     public boolean addAll(Collection<? extends T> c) {
-        throw new UnsupportedOperationException();
+        if(c == null)
+            return false;
+        for(T el: c) {
+            boolean rc=add(el);
+            if(!rc)
+                return rc;
+        }
+        return true;
     }
 
     @Override

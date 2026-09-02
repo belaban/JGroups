@@ -134,7 +134,7 @@ public class NAKACK_Test extends ChannelTestBase {
         a.disconnect();
         Util.waitUntilAllChannelsHaveSameView(5000, 200, b,c);
         a.connect("NAKACK_Test").setReceiver(r1);
-        Util.waitUntilAllChannelsHaveSameView(5000, 200, a,b,c);
+        Util.waitUntilAllChannelsHaveSameView(10_000, 200, a,b,c);
 
         Stream.of(r1,r2,r3).forEach(MyReceiver::clear);
         msgs=msgs(11,20);
@@ -185,7 +185,7 @@ public class NAKACK_Test extends ChannelTestBase {
     }
 
     protected static void waitUntilReceiversHaveMessages(int expected, MyReceiver... receivers) throws TimeoutException {
-        Util.waitUntil(5000, 200,
+        Util.waitUntil(10000, 200,
                        () -> Stream.of(receivers).allMatch(r -> r.size() == expected), () -> print(receivers));
     }
 

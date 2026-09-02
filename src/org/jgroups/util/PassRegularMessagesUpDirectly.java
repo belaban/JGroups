@@ -31,7 +31,7 @@ public class PassRegularMessagesUpDirectly extends SubmitToThreadPool {
     public boolean process(Message msg, boolean oob) {
         if(oob)
             return super.process(msg, oob);
-        SingleMessageHandler smh=new SingleMessageHandler(msg);
+        SingleMessageHandler smh=new SingleMessageHandler(msg, false);
         smh.run();
         return true;
     }

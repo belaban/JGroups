@@ -592,6 +592,30 @@ public class FastArrayTest {
         assert fa.capacity() == new_capacity;
     }
 
+    public void testResize3() {
+        FastArray<Integer> fa=new FastArray<>(10);
+        assert fa.addAll(List.of(1,2,3));
+        int el=fa.removeFirst();
+        assert el == 1;
+        List<Integer> list=IntStream.rangeClosed(4, 10).boxed().toList();
+        assert fa.addAll(list);
+        assert fa.capacity() == 10;
+    }
+
+    public void testResize4() {
+        FastArray<Integer> fa=new FastArray<>(5);
+        fa.add(1);
+        fa.add(2);
+        fa.add(3);
+        fa.resize(3);
+        assert fa.capacity() == 5;
+        fa.resize(10);
+        assert fa.capacity() >= 10;
+        fa.increment(10);
+        fa.resize(12);
+        assert fa.capacity() >= 22;
+    }
+
     public void testTrimTo() {
         FastArray<Integer> fa=create(16).increment(10);
         fa.trimTo(10); // no-op
@@ -662,6 +686,20 @@ public class FastArrayTest {
             el=it.next();
             assert el == 5;
         }
+    }
+
+    public void testIteration5() {
+        FastArray<Integer> fa=create(6);
+        fa.remove(0);
+        fa.remove(2);
+        fa.remove(4);
+
+        List<Integer> l=new FastArray<>(3);
+        for(Iterator<Integer> it=fa.iterator(); it.hasNext();) {
+            Integer num=it.next();
+            l.add(num);
+        }
+        assert l.equals(List.of(1,3,5));
     }
 
     public void testIterationWithFilter() {

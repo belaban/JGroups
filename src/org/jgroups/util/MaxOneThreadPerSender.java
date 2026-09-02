@@ -4,17 +4,17 @@ import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
-import org.jgroups.protocols.TP;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * {@link org.jgroups.stack.MessageProcessingPolicy} which processes <em>regular</em> messages and message batches by
@@ -30,9 +30,18 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
     protected final MessageTable mcasts=new MessageTable();
     protected final MessageTable ucasts=new MessageTable();
 
-    @Property(description="Max number of messages buffered for consumption of the delivery thread in " +
-      "MaxOneThreadPerSender. 0 creates an unbounded buffer")
-    protected int                max_buffer_size;
+    @Property(description="The initial capacity of the message batch. When exceeded, the batch's capacity " +
+      "will be increased. A view change resets this value")
+    protected int                batch_capacity=128;
+
+    @Property(description="The fixed capacity of the queue used to buffer incoming messages. Messages exceeding" +
+      "this capacity are discarded. The consumer blocks on an empty queue")
+    protected int                queue_capacity=2048;
+
+    public int                   batchCapacity()      {return batch_capacity;}
+    public MaxOneThreadPerSender batchCapacity(int c) {this.batch_capacity=c; return this;}
+    public int                   queueCapacity()      {return queue_capacity;}
+    public MaxOneThreadPerSender queueCapacity(int c) {this.queue_capacity=c; return this;}
 
     @ManagedOperation(description="Dumps unicast and multicast tables")
     public String dump() {
@@ -44,10 +53,6 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
         ucasts.map.values().forEach(Entry::reset);
     }
 
-    public void init(TP transport) {
-        super.init(transport);
-    }
-
     public void destroy() {
         mcasts.clear();
         ucasts.clear();
@@ -57,28 +62,28 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
         if(oob)
             return super.loopback(msg, oob);
         MessageTable table=msg.getDest() == null? mcasts : ucasts;
-        return table.process(msg, true);
+        return table.process(msg);
     }
 
     public boolean loopback(MessageBatch batch, boolean oob) {
         if(oob)
             return super.loopback(batch, oob);
         MessageTable table=batch.dest() == null? mcasts : ucasts;
-        return table.process(batch, true);
+        return table.process(batch);
     }
 
     public boolean process(Message msg, boolean oob) {
         if(oob)
             return super.process(msg, oob);
         MessageTable table=msg.getDest() == null? mcasts : ucasts;
-        return table.process(msg, false);
+        return table.process(msg);
     }
 
     public boolean process(MessageBatch batch, boolean oob) {
         if(oob)
             return super.process(batch, oob);
         MessageTable table=batch.dest() == null? mcasts : ucasts;
-        return table.process(batch, false);
+        return table.process(batch);
     }
 
     public void viewChange(List<Address> members) {
@@ -93,32 +98,38 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
         public MessageTable() {
         }
 
-        protected Entry get(final Address sender, boolean multicast) {
+        protected Entry get(final Address sender, final Address dest) {
             Entry e=map.get(sender);
             if(e != null)
                 return e;
-            // not so elegant, but avoids lambda allocation! true?
-            Entry tmp=map.putIfAbsent(sender, (e=new Entry(sender, multicast, tp.getClusterNameAscii())));
-            return tmp!= null? tmp: e;
-            // return map.computeIfAbsent(sender, s -> new Entry(sender, multicast, tp.getClusterNameAscii()));
+            e=map.computeIfAbsent(sender, s -> new Entry(sender, dest, tp.getClusterNameAscii()).start());
+            return e;
         }
 
         protected void clear() {
-            map.values().forEach(Entry::trimToInitialCapacity);
+            map.values().forEach(Util::close);
             map.clear();
         }
 
-        protected boolean process(Message msg, boolean loopback) {
+        protected boolean process(Message msg) {
             Address dest=msg.getDest(), sender=msg.getSrc();
-            return sender != null && get(sender, dest == null).process(msg, loopback);
+            return sender != null && get(sender, dest).process(msg);
         }
 
-        protected boolean process(MessageBatch batch, boolean loopback) {
+        protected boolean process(MessageBatch batch) {
             Address dest=batch.dest(), sender=batch.sender();
-            return get(sender, dest == null).process(batch, loopback);
+            return get(sender, dest).process(batch);
         }
 
         protected void viewChange(List<Address> mbrs) {
+            // close all entries for sender which are not in the new view (stops mq-handler runner thread)
+            for(Map.Entry<Address,Entry> e: map.entrySet()) {
+                Address key=e.getKey();
+                if(!mbrs.contains(key)) {
+                    Entry val=e.getValue();
+                    Util.close(val);
+                }
+            }
             // remove all senders that are not in the new view
             map.keySet().retainAll(mbrs);
             map.values().forEach(Entry::trimToInitialCapacity);
@@ -130,156 +141,121 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
     }
 
 
-    protected class Entry {
-        protected final Lock               lock=new ReentrantLock();
-        protected final boolean            mcast;
-        protected final MessageBatch       batch;     // grabs queued msgs from msg_queue and passes them up the stack
-        protected final FastArray<Message> msg_queue; // used to queue incoming (regular) messages
-        protected final Address            sender;
-        protected final AsciiString        cluster_name;
-        protected final AtomicInteger      adders=new AtomicInteger(0);
-        protected final LongAdder          submitted_batches=new LongAdder();
-        protected final LongAdder          queued_msgs=new LongAdder();
-        protected static final int         DEFAULT_INITIAL_CAPACITY=128;
-        protected static final int         DEFAULT_INCREMENT=128;
+    protected class Entry implements Closeable {
+        protected final MessageBatch           batch;      // grabs queued msgs from msg_queue and passes them up the stack
+        protected final BlockingQueue<Message> mq;         // Producers (receiver threads) add messages to this queue
+        protected final Runner                 mq_handler; // consumes messages/batches from mq and sends them up
+        protected final Address                dest, sender;
+        protected final AsciiString            cluster_name;
+        protected final LongAdder              queued_msgs=new LongAdder();
+        protected final boolean                loopback;
 
 
-        protected Entry(Address sender, boolean mcast, AsciiString cluster_name) {
-            this.mcast=mcast;
+        protected Entry(Address sender, Address dest, AsciiString cluster_name) {
             this.sender=sender;
+            this.dest=dest;
             this.cluster_name=cluster_name;
-            int cap=max_buffer_size > 0? max_buffer_size : DEFAULT_INITIAL_CAPACITY; // initial capacity
-            Address dest=mcast? null : tp.getAddress();
-            batch=new MessageBatch(cap).dest(dest).sender(sender).clusterName(cluster_name)
-              .multicast(mcast).mode(MessageBatch.Mode.REG); // only regular messages are queued
-            batch.array().increment(DEFAULT_INCREMENT);
-            msg_queue=max_buffer_size > 0? new FastArray<>(max_buffer_size) : new FastArray<>(DEFAULT_INITIAL_CAPACITY);
-            msg_queue.increment(DEFAULT_INCREMENT);
+            batch=new MessageBatch(batch_capacity).dest(dest).sender(sender).clusterName(cluster_name)
+              .multicast(dest == null).mode(MessageBatch.Mode.REG); // only regular messages are queued
+            batch.array().increment(128);
+
+            // the queue blocks the runner (mq-handler) when empty, but discards new messages when full
+            // (they will get retransmitted anyway)
+            mq=new ConcurrentBlockingRingBuffer<>(queue_capacity, true, false);
+            mq_handler=new Runner(tp.getThreadFactory(),
+                                  String.format("mq-handler-%s-%s-%s", cluster_name, sender, dest == null? "mcast" : "ucast"),
+                                  this::run, null);
+            loopback=Objects.equals(sender, tp.addr());
         }
 
         public Entry reset() {
-            Stream.of(submitted_batches,queued_msgs).forEach(LongAdder::reset);
+            queued_msgs.reset();
             return this;
+        }
+
+        public Entry start() {
+            mq_handler.start();
+            return this;
+        }
+
+        public void stop(){
+            mq_handler.stop();
+        }
+
+        @Override
+        public void close() throws IOException {
+            stop();
         }
 
         public Entry trimToInitialCapacity() {
-            lock.lock();
-            try {
-                msg_queue.trimTo(max_buffer_size > 0? max_buffer_size : DEFAULT_INITIAL_CAPACITY);
-                batch.array().trimTo(max_buffer_size > 0? max_buffer_size : DEFAULT_INITIAL_CAPACITY);
-            }
-            finally {
-                lock.unlock();
-            }
+            batch.array().trimTo(batch_capacity);
             return this;
         }
 
-        protected boolean process(Message msg, boolean loopback) {
-            lock.lock();
-            try {
-                msg_queue.add(msg, max_buffer_size == 0);
-            }
-            finally {
-                lock.unlock();
-            }
-            queued_msgs.increment();
-            if(adders.getAndIncrement() != 0)
-                return false;
-            return submit(loopback);
-        }
-
-        protected boolean process(MessageBatch batch, boolean loopback) {
-            FastArray<Message> fa=batch.array();
-            lock.lock();
-            try {
-                msg_queue.addAll(fa, max_buffer_size == 0);
-            }
-            finally {
-                lock.unlock();
-            }
-            queued_msgs.add(batch.size());
-            if(adders.getAndIncrement() != 0)
-                return false;
-            return submit(loopback);
-        }
-
-        protected boolean submit(boolean loopback) {
-            submitted_batches.increment();
-            BatchHandlerLoop handler=new BatchHandlerLoop(this, loopback);
-            if(!tp.getThreadPool().execute(handler)) {
-                adders.set(0);
-                return false;
-            }
+        protected boolean process(Message msg) {
+            if(mq.offer(msg))
+                queued_msgs.increment();
             return true;
         }
 
-        /** Called by {@link BatchHandlerLoop}. Atomically transfer messages from the entry.msg_queue to entry.batch
-         * and returns true if messages were transferred.
-         */
-        protected boolean workAvailable() {
-            lock.lock();
+        protected boolean process(MessageBatch batch) {
+            int added=0;
+            for(Message msg: batch) {
+                if(mq.offer(msg) == false)
+                    break;
+                added++;
+            }
+            queued_msgs.add(added);
+            return true;
+        }
+
+        protected void run() {
             try {
-                batch.clear();
-                int num_msgs=batch.array().transferFrom(msg_queue, true); // clears msg_queue
-                return num_msgs > 0;
+                batch.reset();
+                batch.add(mq.take());
+                int size=mq.size();
+                if(size > 0) {
+                    FastArray<Message> array=batch.array();
+                    int cap=array.capacity(), index=array.index();
+                    if(index + size > cap)
+                        array.resize(index + size);
+                    mq.drainTo(array);
+                }
+
+                if(!batch.multicast()) {
+                    // due to an incorrect (e.g. late) view change, the cached batch's destination might be
+                    // different from our local address. If this is the case, change the cached batch's dest address
+                    if(tp.unicastDestMismatch(batch.dest())) {
+                        Address d=tp.addr();
+                        if(d != null)
+                            batch.dest(d);
+                    }
+                }
+                // https://issues.redhat.com/browse/JGRP-2958
+                if(batch.size() == 1) {
+                    Message msg=batch.first();
+                    tp.passMessageUp(msg, !this.loopback, msg.dest() == null, !this.loopback);
+                }
+                else
+                    tp.passBatchUp(batch, !this.loopback, !this.loopback);
+            }
+            catch(InterruptedException iex) {
             }
             catch(Throwable t) {
-                return false;
-            }
-            finally {
-                lock.unlock();
+                // Will not throw an exception, e.g. an OOME raised by log.error() above: don't terminate with
+                // entry.adders > 0, or else no further messages from that sender would ever be delivered:
+                // https://redhat.atlassian.net/browse/JGRP-3032.
+                // NPE due to null 'log' is impossible (log is guaranteed to be non-bull)
+                log.failSafeError("failed processing batch", t);
             }
         }
 
         // unsynchronized on batch but who cares
         public String toString() {
-            return String.format("msg_queue.size=%,d msg_queue.cap: %,d batch.cap=%,d queued msgs=%,d submitted batches=%,d",
-                                 msg_queue.size(), msg_queue.capacity(), batch.capacity(), queued_msgs.sum(),
-                                 submitted_batches.sum());
+            return String.format("mq.size=%,d mq.cap: %,d batch.cap=%,d queued msgs=%,d", mq.size(),
+                                 ((ConcurrentBlockingRingBuffer<?>)mq).capacity(), batch.capacity(), queued_msgs.sum());
         }
     }
 
 
-    protected class BatchHandlerLoop extends BatchHandler {
-        protected final Entry entry;
-
-        protected BatchHandlerLoop(Entry entry, boolean loopback) {
-            super(null, loopback);
-            this.entry=entry;
-            this.loopback=loopback;
-        }
-
-        public void run() {
-            while(entry.workAvailable() || entry.adders.decrementAndGet() != 0) {
-                try {
-                    MessageBatch mb=entry.batch;
-                    if(mb.isEmpty())
-                        continue;
-                    if(!mb.multicast()) {
-                        // due to an incorrect (e.g. late) view change, the cached batch's destination might be
-                        // different from our local address. If this is the case, change the cached batch's dest address
-                        if(tp.unicastDestMismatch(mb.dest())) {
-                            Address dest=tp.addr();
-                            if(dest != null)
-                                mb.dest(dest);
-                        }
-                    }
-                    // https://issues.redhat.com/browse/JGRP-2958
-                    if(mb.size() == 1) {
-                        Message msg=mb.first();
-                        tp.passMessageUp(msg, !loopback, msg.dest() == null, !loopback);
-                    }
-                    else
-                        tp.passBatchUp(mb, !loopback, !loopback);
-                }
-                catch(Throwable t) {
-                    // Will not throw an exception, e.g. an OOME raised by log.error() above: don't terminate with
-                    // entry.adders > 0, or else no further messages from that sender would ever be delivered:
-                    // https://redhat.atlassian.net/browse/JGRP-3032.
-                    // NPE due to null 'log' is impossible (log is guaranteed to be non-bull)
-                    log.failSafeError("failed processing batch", t);
-                }
-            }
-        }
-    }
 }
