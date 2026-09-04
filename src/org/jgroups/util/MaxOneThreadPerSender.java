@@ -36,6 +36,12 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
         return String.format("\nmcasts:\n%s\nucasts:\n%s", mcasts, ucasts);
     }
 
+    @ManagedOperation(description="Drains entries if stuck (https://redhat.atlassian.net/browse/JGRP-3038)")
+    public void drain() {
+        mcasts.map.values().forEach(Entry::drain);
+        ucasts.map.values().forEach(Entry::drain);
+    }
+
     public void reset() {
         mcasts.map.values().forEach(Entry::reset);
         ucasts.map.values().forEach(Entry::reset);
@@ -105,7 +111,9 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
         }
 
         public String toString() {
-            return map.entrySet().stream().map(e -> String.format("%s: %s", e.getKey(), e.getValue())).collect(Collectors.joining("\n"));
+            return map.entrySet().stream()
+              .map(e -> String.format("%s: %s", e.getKey(), e.getValue()))
+              .collect(Collectors.joining("\n"));
         }
     }
 
@@ -138,6 +146,12 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
             return this;
         }
 
+
+        /** Resets adders to 0 (if > 0) */
+        public void drain() {
+            if(running)
+                running=false;
+        }
 
         protected boolean process(Message msg, boolean loopback) {
             if(!allowedToSubmitToThreadPool(msg))
@@ -254,8 +268,8 @@ public class MaxOneThreadPerSender extends SubmitToThreadPool {
 
         // unsynchronized on batch but who cares
         public String toString() {
-            return String.format("batch size=%d queued msgs=%d queued batches=%d submitted msgs=%d submitted batches=%d",
-                                 batch.size(), queued_msgs, queued_batches, submitted_msgs, submitted_batches);
+            return String.format("batch size=%d queued msgs=%d queued batches=%d submitted msgs=%d submitted batches=%d running=%b",
+                                 batch.size(), queued_msgs, queued_batches, submitted_msgs, submitted_batches, running);
         }
     }
 
