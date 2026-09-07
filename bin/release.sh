@@ -5,7 +5,6 @@
 CURRENT_DIR=`dirname $0`
 BASE_DIR="$CURRENT_DIR/../"
 POM=$BASE_DIR/pom.xml
-POM2=$BASE_DIR/pom2.xml
 CURRENT_VERSION=`grep version $POM | head -1 | sed "s/version//g" |  sed "s/[[<>/]*//g" | tr -d " "`
 RELEASE_VERSION=`echo $CURRENT_VERSION | sed "s/-SNAPSHOT//g"`
 NEW_VERSION=`$BASE_DIR/bin/jgroups.sh org.jgroups.Version -incr $CURRENT_VERSION`
