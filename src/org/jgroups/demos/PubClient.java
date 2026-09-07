@@ -2,6 +2,7 @@ package org.jgroups.demos;
 
 import org.jgroups.Address;
 import org.jgroups.blocks.cs.*;
+import org.jgroups.util.ByteArray;
 import org.jgroups.util.Util;
 
 import java.io.BufferedInputStream;
@@ -29,8 +30,8 @@ public class PubClient implements Receiver, ConnectionListener {
 
     @Override
     public void receive(Address sender, ByteBuffer buf) {
-        byte[] buffer=buf.array();
-        String msg=new String(buffer, buf.arrayOffset(), buf.remaining());
+        ByteArray ba=Util.bufferToByteArray(buf);
+        String msg=new String(ba.array(), ba.offset(), ba.length());
         System.out.printf("-- %s\n", msg);
     }
 
@@ -92,8 +93,8 @@ public class PubClient implements Receiver, ConnectionListener {
     }
 
     protected void send(String str) throws Exception {
-        byte[] buf=str.getBytes();
-        ((Client)client).send(buf, 0, buf.length);
+        ByteBuffer buf=ByteBuffer.wrap(str.getBytes());
+        ((Client)client).send(buf);
     }
 
     public static void main(String[] args) throws Exception {
