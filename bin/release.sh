@@ -30,8 +30,6 @@ fi
 
 echo ""
 echo "changing version in pom.xml from $CURRENT_VERSION to $RELEASE_VERSION:"
-#cat $POM | sed "s/$CURRENT_VERSION/$RELEASE_VERSION/g" > $POM2
-#mv $POM2 $POM
 mvn -B -q -f $POM versions:set -DnewVersion="$RELEASE_VERSION" -DgenerateBackupPoms=false
 
 echo ""
@@ -56,9 +54,7 @@ case $answer in
         * ) echo "";;
 esac
 
-## uncomment
 mvn -B -q -f $POM -DskipTests deploy -Prelease
-# echo "Please commit and push your changes"
 
 echo "Was the upload successful? Shall I continue with pushing the tag and setting the new version?"
 read -p "[<enter> to proceed | <ctrl-c> to cancel]" $answer
@@ -69,29 +65,24 @@ case $answer in
         * ) echo "";;
 esac
 
-## uncomment
-git commit -m 'Changed version from $CURRENT_VERSION to $RELEASE_VERSION' . ; git push
+git commit -m "Changed version from $CURRENT_VERSION to $RELEASE_VERSION" . ; git push
 
 echo ""
 echo "================================================================"
 echo "Tagging the repo with $TAG"
-## uncomment
 git tag $TAG
-## uncomment
 git push --tags
 
 echo ""
 echo ""
 
 NEXT_VERSION="$NEW_VERSION-SNAPSHOT"
-echo "changing pom.xml to version $NEXT_VERSION:"
-#cat $POM | sed "s/$RELEASE_VERSION/$NEXT_VERSION/g" > $POM2
-#mv $POM2 $POM
+echo "changing $POM to version $NEXT_VERSION:"
 mvn -B -q -f $POM versions:set -DnewVersion="$NEXT_VERSION" -DgenerateBackupPoms=false
 
 ## uncomment
 msg="Changed version from $RELEASE_VERSION to $NEXT_VERSION"
-git commit -m $msg . ; git push
+git commit -m '$msg' . ; git push
 echo ""
 
 echo "--------------------------------------------------------"
