@@ -13,14 +13,18 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <!-- nexus-staging-maven-plugin -->
-        <autoReleaseAfterClose>true</autoReleaseAfterClose>
         <nexus.server.id>jboss-releases-repository</nexus.server.id>
-        <nexus.server.url>https://repository.jboss.org/nexus</nexus.server.url>
+        <nexus.server.url>https://repository.jboss.org/nexus/repository/releases/</nexus.server.url>
         <nexus.snapshot.server.id>jboss-snapshots-repository</nexus.snapshot.server.id>
-        <nexus.snapshot.server.url>https://repository.jboss.org/nexus/content/repositories/snapshots/</nexus.snapshot.server.url>
+        <nexus.snapshot.server.url>https://repository.jboss.org/nexus/repository/snapshots/</nexus.snapshot.server.url>
         <insecure.repositories>ERROR</insecure.repositories>
         <log4j2.version>2.20.0</log4j2.version>
+        <version.maven.sonatype.central>0.8.0</version.maven.sonatype.central>
+        <javadoc.plugin.version>3.12.0</javadoc.plugin.version>
+        <compiler.plugin.version>3.15.0</compiler.plugin.version>
+        <nexus3.plugin.version>1.0.13</nexus3.plugin.version>
+        <enforcer.plugin.version>3.6.3</enforcer.plugin.version>
+        <gpg.plugin.version>3.2.8</gpg.plugin.version>
     </properties>
 
     <organization>
@@ -69,39 +73,6 @@
     <prerequisites>
         <maven>3.0.4</maven>
     </prerequisites>
-
-    <repositories>
-        <repository>
-            <id>jboss-public-repository-group</id>
-            <name>JBoss Public Maven Repository Group</name>
-            <url>https://repository.jboss.org/nexus/content/groups/public/</url>
-            <layout>default</layout>
-            <releases>
-                <enabled>true</enabled>
-                <updatePolicy>never</updatePolicy>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-
-        <repository>
-            <id>jboss-snapshots-repository</id>
-            <name>JBoss Nexus snapshots repository</name>
-            <url>https://repository.jboss.org/nexus/content/repositories/snapshots/</url>
-            <layout>default</layout>
-            <releases>
-                <enabled>false</enabled>
-                <updatePolicy>never</updatePolicy>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-                <updatePolicy>always</updatePolicy>
-            </snapshots>
-        </repository>
-
-
-    </repositories>
 
     <dependencies>
         <dependency>
@@ -184,17 +155,37 @@
             </testResource>
         </testResources>
         <plugins>
+
             <plugin>
                 <groupId>org.sonatype.plugins</groupId>
-                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <artifactId>nxrm3-maven-plugin</artifactId>
+                <version>${nexus3.plugin.version}</version>
                 <extensions>true</extensions>
                 <configuration>
-                    <!-- See configuration details at http://books.sonatype.com/nexus-book/reference/staging-deployment.html -->
-                    <nexusUrl>${nexus.server.url}</nexusUrl>
-                    <serverId>${nexus.server.id}</serverId>
-                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                    <nexusUrl>https://repository.jboss.org/nexus</nexusUrl>
+
+                    <!-- The server "id" element from settings to use authentication from settings.xml-->
+                    <serverId>jboss-releases-repository</serverId>
+
+                    <!-- Change to repository you will be deploying to -->
+                    <repository>releases</repository>
+
+                    <!-- Skip the staging deploy mojo -->
+                    <skipNexusStagingDeployMojo>true</skipNexusStagingDeployMojo>
                 </configuration>
+
+                <!-- replacing the standard Maven Deployment Plugin -->
+                <executions>
+                    <execution>
+                        <id>default-deploy</id>
+                        <phase>deploy</phase>
+                        <goals>
+                            <goal>deploy</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -303,6 +294,31 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.3.1</version>
+                <executions>
+                    <execution>
+                        <id>copy-generated-schema</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.outputDirectory}</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.build.directory}/schema</directory>
+                                    <includes>
+                                        <include>*.xsd</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <!-- Make sure we generate src jars too -->
             <plugin>
                <groupId>org.apache.maven.plugins</groupId>
@@ -342,8 +358,6 @@
                             <addDefaultEntries>true</addDefaultEntries>
                             <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
                             <addBuildEnvironmentEntries>true</addBuildEnvironmentEntries>
-                            <!--addClasspath>true</addClasspath-->
-                            <!--classpathPrefix>libs/</classpathPrefix-->
                             <mainClass>org.jgroups.Version</mainClass>
                         </manifest>
                         <manifestEntries>
@@ -355,12 +369,20 @@
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-release-plugin</artifactId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>${javadoc.plugin.version}</version>
                 <configuration>
-                    <arguments>-DskipTests=true -Dmaven.test.skip=true -Dmaven.javadoc.skip=true</arguments>
-                    <preparationGoals>clean</preparationGoals>
+                    <doclint>none</doclint>
                 </configuration>
-
+                <executions>
+                    <execution>
+                        <id>javadoc</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
             <!-- Disable default tests: they won't run since they are lacking configuration -->
@@ -484,4 +506,43 @@
             </plugins>
         </pluginManagement>
     </build>
+
+    <profiles>
+        <profile>
+            <id>release</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>${gpg.plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                                <configuration>
+                                    <!-- the name of the gpg key -->
+                                    <!--keyname>bban@redhat.com</keyname-->
+                                    <gpgArguments>
+                                        <arg>--pinentry-mode</arg>
+                                        <arg>loopback</arg>
+                                    </gpgArguments>
+                                    <!-- the name of the server in .m2/settings.xml -->
+                                    <passphraseServerId>gpg.passphrase</passphraseServerId>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
 </project>
