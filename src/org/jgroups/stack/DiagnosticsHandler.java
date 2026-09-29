@@ -37,7 +37,7 @@ public class DiagnosticsHandler extends ReceiverAdapter implements Closeable {
     protected volatile boolean         enable_tcp;
 
     @Property(description="Multicast address for diagnostic probing (UDP MulticastSocket). Used when enable_udp " +
-      "is true", defaultValueIPv4=Global.DEFAULT_DIAG_ADDR, defaultValueIPv6=Global.DEFAULT_DIAG_ADDR_IPv6)
+      "is true",defaultValueIPv4=Global.DEFAULT_DIAG_ADDR, defaultValueIPv6=Global.DEFAULT_DIAG_ADDR_IPv6)
     protected InetAddress              mcast_addr;
 
     @Property(description="Port for diagnostic probing. Default is 7500")
@@ -258,6 +258,11 @@ public class DiagnosticsHandler extends ReceiverAdapter implements Closeable {
     protected DiagnosticsHandler startUDP() throws Exception {
         if(udp_ucast_sock == null || udp_ucast_sock.isClosed())
             udp_ucast_sock=socket_factory.createDatagramSocket("jgroups.tp.diag.udp_ucast_sock");
+
+        if(mcast_addr == null) { // https://redhat.atlassian.net/browse/JGRP-3041
+            mcast_addr=Util.isStackAvailable(true)? InetAddress.getByName(Global.DEFAULT_DIAG_ADDR)
+              : InetAddress.getByName(Global.DEFAULT_DIAG_ADDR_IPv6);
+        }
 
         if(udp_mcast_sock == null || udp_mcast_sock.isClosed()) {
             // https://issues.redhat.com/browse/JGRP-777 - this doesn't work on MacOS, and we don't have

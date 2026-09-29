@@ -117,7 +117,7 @@ public class Util {
     private static final StackType                  ip_stack_type;
     private static volatile List<NetworkInterface>  CACHED_INTERFACES=null;
     private static volatile Collection<InetAddress> CACHED_ADDRESSES=null;
-    private static InetAddress                      LOCALHOST=null;
+    private static volatile InetAddress             LOCALHOST=null;
     // https://redhat.atlassian.net/browse/JGRP-2994
     private static final List<Pattern>              NIC_SKIP_LIST=new FastArray<>();
     public static final boolean                     can_bind_to_mcast_addr;
@@ -135,21 +135,22 @@ public class Util {
     public static final VarHandle INT_ARRAY_VIEW=MethodHandles.byteArrayViewVarHandle(int[].class, ByteOrder.BIG_ENDIAN);
 
     static {
-
-        try {
+        // https://redhat.atlassian.net/browse/JGRP-3041
+        /* try {
             CACHED_INTERFACES=getAllAvailableInterfaces();
             CACHED_ADDRESSES=getAllAvailableAddresses();
         }
         catch(SocketException e) {
             throw new RuntimeException(e);
-        }
+        }*/
         ip_stack_type=_getIpStackType();
 
-        try {
-            LOCALHOST=IpAddress.getLocalHost();
-        }
-        catch(Throwable ex) {
-        }
+        // to avoid GraalVM storing an InetAddress in the native image (https://redhat.atlassian.net/browse/JGRP-3041)
+        CACHED_ADDRESSES=null;
+        CACHED_INTERFACES=null;
+
+        // Moved from static initailizer to dynamic: https://redhat.atlassian.net/browse/JGRP-3041
+        // LOCALHOST=IpAddress.getLocalHost();
         resource_bundle=ResourceBundle.getBundle("jg-messages",Locale.getDefault(),Util.class.getClassLoader());
 
         add(TYPE_NULL, Void.class);
@@ -4420,7 +4421,7 @@ public class Util {
     public static String generateLocalName() {
         String retval=null;
         try {
-            InetAddress host=LOCALHOST != null? LOCALHOST : InetAddress.getLocalHost();
+            InetAddress host=LOCALHOST != null? LOCALHOST : (LOCALHOST=InetAddress.getLocalHost());
             retval=shortName(host.getHostName());
         }
         catch(Throwable ignored) {
@@ -4802,14 +4803,13 @@ public class Util {
         }
         // https://issues.redhat.com/browse/JGRP-2897
         if(value.toUpperCase().startsWith("USE-LOCALHOST") || value.toUpperCase().startsWith("USE_LOCALHOST"))
-            return LOCALHOST;
+            return LOCALHOST != null? LOCALHOST : (LOCALHOST=InetAddress.getLocalHost());
         if(value.startsWith("match"))
             return Util.getAddressByPatternMatch(value, ip_version);
         if(value.startsWith("custom:"))
             return Util.getAddressByCustomCode(value.substring("custom:".length()));
         return Util.getByName(value, ip_version);
     }
-
 
     /**
      * Returns the first address on any interface which satisfies scope and ip_version. If ip_version is Dual, then
