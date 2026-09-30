@@ -467,6 +467,12 @@ public record Configurator(ProtocolStack stack) {
             default_ip_address=Util.getLoopback(ip_version);
         }
 
+        if(skip_setting_default_values) {
+            log.trace("skipped setting default address values in protocols as skip_setting_default_values=%b",
+                      skip_setting_default_values);
+            return;
+        }
+
         // Process the attributes which are defined via methods first
         setDefaultAddressValuesMethods(obj, ip_version, default_ip_address);
 
