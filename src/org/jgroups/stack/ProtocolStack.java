@@ -947,7 +947,9 @@ public class ProtocolStack extends Protocol {
     public String getName()  {return "ProtocolStack";}
 
     public Object up(Event evt) {
-        return channel.up(evt);
+        if(channel != null)
+            return channel.up(evt);
+        return null;
     }
     public Object up(Message msg) {return channel.up(msg);}
 

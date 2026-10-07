@@ -188,11 +188,21 @@ public class JChannel implements Closeable {
     public View          view()                              {return state == State.CONNECTED ? view : null;}
     public ProtocolStack getProtocolStack()                  {return prot_stack;}
     public ProtocolStack stack()                             {return prot_stack;}
+    public JChannel      stack(ProtocolStack st)             {return stack(st, false);}
     public UpHandler     getUpHandler()                      {return up_handler;}
     public JChannel      setUpHandler(UpHandler h)           {this.up_handler=h; return this;}
     public boolean       getDiscardOwnMessages()             {return discard_own_messages;}
     public JChannel      setDiscardOwnMessages(boolean flag) {discard_own_messages=flag; return this;}
 
+    public JChannel stack(ProtocolStack st, boolean delete_old_stack) {
+        ProtocolStack old_stack=prot_stack;
+        this.prot_stack=st;
+        if(old_stack != null && delete_old_stack) {
+            old_stack.stopStack(cluster_name);
+            old_stack.destroy();
+        }
+        return this;
+    }
 
     @ManagedAttribute(name="address")
     public String getAddressAsString() {return local_addr != null? local_addr.toString() : "n/a";}
