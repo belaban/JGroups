@@ -154,6 +154,12 @@ public class DiagnosticsHandler extends ReceiverAdapter implements Closeable {
         return this;
     }
 
+    public DiagnosticsHandler unregisterProbeHandler(Class<? extends ProbeHandler> cl) {
+        if(cl != null)
+            handlers.removeIf(next -> cl.equals(next.getClass()));
+        return this;
+    }
+
     public DiagnosticsHandler start() throws Exception {
         if(!enabled)
             return this;
@@ -302,7 +308,7 @@ public class DiagnosticsHandler extends ReceiverAdapter implements Closeable {
     }
 
 
-    protected void handleDiagnosticProbe(SocketAddress sender, String request,
+    public void handleDiagnosticProbe(SocketAddress sender, String request,
                                          BiConsumer<SocketAddress,String> rsp_sender) {
         StringTokenizer tok=new StringTokenizer(request);
         List<String> list=new ArrayList<>(10);

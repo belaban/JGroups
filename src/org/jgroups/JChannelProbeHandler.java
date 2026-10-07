@@ -22,13 +22,18 @@ import java.util.stream.Stream;
  * @since  4.0
  */
 public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
-    protected final JChannel      ch;
-    protected final Log           log;
+    protected JChannel ch;
+    protected Log      log;
 
     public JChannelProbeHandler(JChannel ch) {
         this.ch=ch;
         log=LogFactory.getLog(ch.getClass());
     }
+
+    public JChannel channel()            {return ch;}
+    public void     channel(JChannel ch) {this.ch=ch;}
+    public Log      log()                {return log;}
+    public void     log(Log log)         {this.log=log;}
 
     public Map<String, String> handleProbe(String... keys) {
         Map<String,String> map=new TreeMap<>();
@@ -239,8 +244,6 @@ public class JChannelProbeHandler implements DiagnosticsHandler.ProbeHandler {
     protected Map<String,Map<String,Object>> dumpAttrsSelectedProtocol(String protocol_name, List<String> attrs) {
         return ch.dumpStats(protocol_name, attrs);
     }
-
-
 
     protected void handleJmx(Map<String,String> map, String input) {
         int index=input.indexOf('=');

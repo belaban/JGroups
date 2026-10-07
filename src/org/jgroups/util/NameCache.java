@@ -63,6 +63,10 @@ public class NameCache {
         return cache.contents();
     }
 
+    public static Map<Address,String> getContents(boolean skip_removed_values) {
+        return cache.contents(skip_removed_values);
+    }
+
     public static void remove(Address addr) {
         cache.remove(addr);
     }

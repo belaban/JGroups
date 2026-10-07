@@ -62,6 +62,7 @@
     <class id="76" name="org.jgroups.protocols.NAKACK3"/>
     <class id="77" name="org.jgroups.protocols.NAKACK4"/>
     <class id="78" name="org.jgroups.protocols.UNICAST4"/>
+    <class id="79" name="org.jgroups.protocols.VERSION" />
 
     <!-- IDs reserved for building blocks -->
     <class id="200" name="org.jgroups.blocks.RequestCorrelator"/> <!-- ID should be the same as Global.BLOCKS_START_ID -->
@@ -79,6 +80,7 @@
     <class id="531" name="org.jgroups.protocols.mongo.MONGO_PING" external="true"/>
 
     <class id="550" name="org.jgroups.protocols.OPEN_TELEMETRY"   external="true"/>
+    <class id="600" name="org.jgroups.admin.Admin" />
 
     <!-- User-defined protocols should use IDs >= 1024 -->
 

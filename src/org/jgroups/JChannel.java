@@ -1,5 +1,9 @@
 package org.jgroups;
 
+import org.jgroups.admin.Admin;
+import org.jgroups.admin.AdminHeader;
+import org.jgroups.admin.ProbeAdminHandler;
+import org.jgroups.admin.SwitchAdminHandler;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
@@ -10,6 +14,7 @@ import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.*;
+import org.jgroups.stack.DiagnosticsHandler.ProbeHandler;
 import org.jgroups.util.*;
 import org.jgroups.util.UUID;
 
@@ -68,7 +73,10 @@ public class JChannel implements Closeable {
     protected List<AddressGenerator>                address_generators;
     protected final Promise<StateTransferResult>    state_promise=new Promise<>();
     protected boolean                               state_transfer_supported; // true if state transfer prot is in the stack
-    protected final DiagnosticsHandler.ProbeHandler probe_handler=new JChannelProbeHandler(this);
+    protected ProbeHandler                          probe_handler=new JChannelProbeHandler(this);
+    protected Admin                                 admin=new Admin(this)
+                                                      .register("probe", new ProbeAdminHandler(this))
+                                                      .register("switch", new SwitchAdminHandler(this));
 
     @ManagedAttribute(description="Whether or not to discard messages sent by this channel",writable=true)
     protected boolean                               discard_own_messages;
@@ -174,7 +182,8 @@ public class JChannel implements Closeable {
             Configurator.resolveAndAssignFields(prot, map, ip_version);
     }
 
-
+    public Log           log()                               {return log;}
+    public Admin         admin()                             {return admin;}
     public Receiver      getReceiver()                       {return receiver;}
     public JChannel      setReceiver(Receiver r)             {receiver=r; return this;}
     public JChannel      receiver(Receiver r)                {return setReceiver(r);}
@@ -188,11 +197,24 @@ public class JChannel implements Closeable {
     public View          view()                              {return state == State.CONNECTED ? view : null;}
     public ProtocolStack getProtocolStack()                  {return prot_stack;}
     public ProtocolStack stack()                             {return prot_stack;}
+    public JChannel      stack(ProtocolStack st)             {return stack(st, false);}
     public UpHandler     getUpHandler()                      {return up_handler;}
     public JChannel      setUpHandler(UpHandler h)           {this.up_handler=h; return this;}
     public boolean       getDiscardOwnMessages()             {return discard_own_messages;}
     public JChannel      setDiscardOwnMessages(boolean flag) {discard_own_messages=flag; return this;}
+    public ProbeHandler  probeHandler()                      {return probe_handler;}
+    public JChannel      probeHandler(ProbeHandler h)        {this.probe_handler=h; return this;}
 
+    public JChannel stack(ProtocolStack st, boolean delete_old_stack) {
+        ProtocolStack old_stack=prot_stack;
+        this.prot_stack=st;
+        this.prot_stack.setChannel(this);
+        if(old_stack != null && delete_old_stack) {
+            old_stack.stopStack(cluster_name);
+            old_stack.destroy();
+        }
+        return this;
+    }
 
     @ManagedAttribute(name="address")
     public String getAddressAsString() {return local_addr != null? local_addr.toString() : "n/a";}
@@ -318,8 +340,6 @@ public class JChannel implements Closeable {
         return prot_stack.dumpStats(protocol_name, null);
     }
 
-
-
     /**
      * Joins the cluster. The application is now able to receive messages from cluster members, views and to send
      * messages to (all or single) cluster members. This is a no-op if already connected.<p>
@@ -339,6 +359,7 @@ public class JChannel implements Closeable {
             _connect(connect_event);
             state=State.CONNECTED;
             notifyChannelConnected(this);
+            admin.start();
             return this;
         }
         finally {
@@ -371,6 +392,7 @@ public class JChannel implements Closeable {
             canFetchState=view != null && view.size() > 1;
             if(canFetchState) // if I am not the only member in cluster then ...
                 getState(target, timeout); // fetch state from target
+            admin.start();
             return this;
         }
         finally {
@@ -388,6 +410,7 @@ public class JChannel implements Closeable {
     public JChannel disconnect() {
         lock.lock();
         try {
+            admin.stop();
             switch(state) {
                 case OPEN:
                 case CLOSED:
@@ -428,6 +451,7 @@ public class JChannel implements Closeable {
     public void close() {
         lock.lock();
         try {
+            admin.destroy();
             _close(true); // by default disconnect before closing channel and close mq
         }
         finally {
@@ -666,6 +690,12 @@ public class JChannel implements Closeable {
         if(discard_own_messages && local_addr != null && msg.getSrc() != null && local_addr.equals(msg.getSrc()))
             return null;
 
+        AdminHeader hdr=msg.getHeader(Admin.ID);
+        if(hdr != null) {
+            admin.handleAdminMessage(msg, hdr);
+            return null;
+        }
+
         // If UpHandler is installed, pass all events to it and return (UpHandler is e.g. a building block)
         if(up_handler != null)
             return up_handler.up(msg);
@@ -681,6 +711,15 @@ public class JChannel implements Closeable {
         // discard local messages (sent by myself to me)
         if(discard_own_messages && local_addr != null && batch.sender() != null && local_addr.equals(batch.sender()))
             return this;
+
+        for(Iterator<Message> it=batch.iterator(); it.hasNext();) {
+            Message msg=it.next();
+            AdminHeader hdr=msg.getHeader(Admin.ID);
+            if(hdr != null) {
+                admin.handleAdminMessage(msg, hdr);
+                it.remove();
+            }
+        }
 
         if(up_handler != null) {
             try {
@@ -788,20 +827,27 @@ public class JChannel implements Closeable {
         configs.forEach(ProtocolConfiguration::substituteVariables);
         prot_stack=new ProtocolStack(this);
         prot_stack.setup(configs, configurator); // Setup protocol stack (creates protocol, calls init() on them)
+        admin.init();
         return this;
     }
 
 
     /** Initializes all variables. Used after close() or disconnect(), to be ready for new connect() */
     protected JChannel init() {
+        Address old_addr=local_addr;
         if(local_addr != null)
             down(new Event(Event.REMOVE_ADDRESS, local_addr));
         local_addr=null;
         cluster_name=null;
         view=null;
+        try {
+            admin.init();
+        }
+        catch(Throwable t) {
+            log.error("%s: failed initailizaing admin: %s", old_addr, t);
+        }
         return this;
     }
-
 
     protected JChannel startStack(String cluster_name) throws Exception {
         checkClosed();

@@ -1530,8 +1530,6 @@ public class Util {
         return arg;
     }
 
-
-
     public static void writeMessage(Message msg, DataOutput dos, boolean multicast) throws IOException {
         byte flags=0;
         dos.writeShort(Version.version); // write the version
@@ -4321,6 +4319,11 @@ public class Util {
         for(int i=0; i < tmp.size(); i++)
             retval[i]=tmp.get(i);
         return retval;
+    }
+
+    public static String parse(String s, int start) {
+        int index=s.trim().indexOf(' ');
+        return index == -1? s.substring(start).trim() : s.substring(start, index).trim();
     }
 
     /**

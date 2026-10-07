@@ -461,6 +461,11 @@ public class TPConfig extends Protocol {
         return (T)this;
     }
 
+    public <T extends TP> T unregisterProbeHandler(Class<? extends DiagnosticsHandler.ProbeHandler> cl) {
+        diag_handler.unregisterProbeHandler(cl);
+        return (T)this;
+    }
+
     @Property(name="level", description="Sets the level")
     public <T extends Protocol> T setLevel(String level) {
         T retval=super.setLevel(level);

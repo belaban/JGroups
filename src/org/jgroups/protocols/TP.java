@@ -43,10 +43,10 @@ import java.util.concurrent.TimeUnit;
  */
 @MBean(description="Transport protocol")
 public abstract class TP extends TPConfig implements DiagnosticsHandler.ProbeHandler {
-    public static final    byte    LIST=1; // we have a list of messages rather than a single message when set
-    public static final    byte    MULTICAST=2; // message is a multicast (versus a unicast) message when set
-    public static final    int     MSG_OVERHEAD=Global.SHORT_SIZE*2 + Global.BYTE_SIZE; // version + flags
-    protected static final long    MIN_WAIT_BETWEEN_DISCOVERIES=TimeUnit.NANOSECONDS.convert(10, TimeUnit.SECONDS);  // ns
+    public static final    byte LIST=1;         // we have a list of messages rather than a single message when set
+    public static final    byte MULTICAST=2;    // message is a multicast (versus a unicast) message when set
+    public static final    int  MSG_OVERHEAD=Global.SHORT_SIZE*2 + Global.BYTE_SIZE; // version + flags
+    protected static final long MIN_WAIT_BETWEEN_DISCOVERIES=TimeUnit.NANOSECONDS.convert(10, TimeUnit.SECONDS);  // ns
 
 
     protected TP() {

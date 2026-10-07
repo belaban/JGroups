@@ -1,6 +1,7 @@
 package org.jgroups.demos;
 
 import org.jgroups.*;
+import org.jgroups.admin.*;
 import org.jgroups.util.Util;
 
 import java.io.BufferedReader;
@@ -48,16 +49,81 @@ public class Chat implements Receiver {
 
 
     private void eventLoop() {
+        channel.admin().register(PartitionHandler.KEY, new PartitionHandler(channel));
+        channel.admin().register("chat", new AdminHandler(channel) {
+            @Override
+            public void handleRequest(Message msg, AdminHeader hdr) {
+                String s=msg.getObject();
+                if(s.startsWith("/X"))
+                    System.exit(0);
+            }
+
+            @Override
+            public void handleResponse(Message msg, AdminHeader hdr) {
+            }
+        });
         BufferedReader in=new BufferedReader(new InputStreamReader(System.in));
         while(true) {
             try {
                 System.out.print("> "); System.out.flush();
                 String line=in.readLine();
-                line=line != null? line.toLowerCase() : null;
                 if(line == null)
                     continue;
-                if(line.startsWith("quit") || line.startsWith("exit"))
+                if(line.toLowerCase().startsWith("/quit") || line.toLowerCase().startsWith("/exit"))
                     break;
+                if(line.startsWith("/handlers")) {
+                    System.out.printf("handlers:\n%s\n", channel.admin().print());
+                    continue;
+                }
+                if(line.startsWith("/probe")) {
+                    String cmd=line.substring("/probe".length()).trim();
+                    ProbeAdminHandler h=channel.admin().get("probe");
+                    h.sendProbeRequest(null, cmd);
+                    continue;
+                }
+                if(line.startsWith("/switch")) {
+                    String new_config=line.substring("/switch".length()).trim();
+                    SwitchAdminHandler h=channel.admin().get("switch");
+                    h.listener((p, m) -> System.out.printf("-- [switch / %.2f %% done]: %s\n", p, m));
+                    long start=System.nanoTime();
+                    boolean result=h.switchToNewConfiguration(new_config);
+                    long time=System.nanoTime()-start;
+                    System.out.printf("-- result of attempting to switch to %s: %b (%s)\n",
+                                      new_config, result, Util.printTime(time));
+                    h.listener(null);
+                    continue;
+                }
+                if(line.startsWith("/view")) {
+                    String partitions=line.substring("/view".length()).trim();
+                    PartitionHandler h=channel.admin().get(PartitionHandler.KEY);
+                    h.injectView(partitions);
+                    continue;
+                }
+                if(line.startsWith("/merge")) {
+                    String partitions=line.substring("/merge".length()).trim();
+                    PartitionHandler h=channel.admin().get(PartitionHandler.KEY);
+                    h.injectMergeView(partitions);
+                    continue;
+                }
+                if(line.startsWith("/install-handler")) {
+                    String s=line.substring("/install-handler".length()).trim();
+                    Message msg=new ObjectMessage(null, String.format("%s %s", Admin.INSTALL_HANDLER, s))
+                      .putHeader(Admin.ID, new AdminHeader(Admin.ADMIN_KEY, AdminHeader.Type.request));
+                    channel.send(msg);
+                    continue;
+                }
+                if(line.startsWith("/remove-handler")) {
+                    String s=line.substring("/remove-handler".length()).trim();
+                    Message msg=new ObjectMessage(null, String.format("%s %s", Admin.REMOVE_HANDLER, s))
+                      .putHeader(Admin.ID, new AdminHeader(Admin.ADMIN_KEY, AdminHeader.Type.request));
+                    channel.send(msg);
+                    continue;
+                }
+                if(line.startsWith("/X")) {
+                    Message msg=new ObjectMessage(null, "/X").putHeader(Admin.ID, new AdminHeader("chat", AdminHeader.Type.request));
+                    channel.send(msg);
+                    continue;
+                }
                 Message msg=new ObjectMessage(null, line);
                 channel.send(msg);
             }
