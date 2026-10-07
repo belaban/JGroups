@@ -121,7 +121,7 @@ public class ClientGmsImpl extends GmsImpl {
                 }
                 join_attempts++;
                 if(gms.max_join_attempts > 0 && join_attempts >= gms.max_join_attempts) {
-                    log.warn("%s: too many JOIN attempts (%d): becoming singleton", gms.getAddress(), join_attempts);
+                    log.warn("%s: too many JOIN attempts (%d): becoming singleton", gms.getAddress(), join_attempts-1);
                     becomeSingletonMember(mbr);
                     return;
                 }
