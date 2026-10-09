@@ -45,12 +45,12 @@ public class VERSION_Test {
             a.stack().insertProtocol(v1, ProtocolStack.Position.ABOVE, TP.class);
             b.stack().insertProtocol(v2, ProtocolStack.Position.ABOVE, TP.class);
             GMS gms=b.stack().findProtocol(GMS.class);
-            gms.setJoinTimeout(2000).setMaxJoinAttempts(1);
+            gms.setJoinTimeout(1000).setMaxJoinAttempts(1);
             a.connect("ver");
             b.connect("ver");
 
             // won't be true
-            Util.waitUntilTrue(3000, 100, () -> a.view().size() == 2 && b.view().size() == 2);
+            Util.waitUntilTrue(2000, 100, () -> a.view().size() == 2 && b.view().size() == 2);
             assert a.view().size() == 1;
             assert b.view().size() == 1;
             assert v1.dropped() > 0;
