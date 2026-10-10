@@ -71,6 +71,7 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     protected boolean                         tcp_nodelay=false;
     protected int                             linger=-1;
     protected TimeService                     time_service;
+    protected TimeScheduler                   timer;                       // optional; used to enforce deadlines, e.g. of TLS handshakes
     // to access the connection map, 1 lock / destination
     protected final Map<Address,Lock>         locks=new ConcurrentHashMap<>();
 
@@ -110,6 +111,8 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
     public BaseServer       connExpireTimeout(long t)               {conn_expire_time=NANOSECONDS.convert(t, MILLISECONDS); return this;}
     public TimeService      timeService()                           {return time_service;}
     public BaseServer       timeService(TimeService ts)             {this.time_service=ts; return this;}
+    public TimeScheduler    timer()                                 {return timer;}
+    public BaseServer       timer(TimeScheduler t)                  {this.timer=t; return this;}
     public int              receiveBufferSize()                     {return recv_buf_size;}
     public BaseServer       receiveBufferSize(int recv_buf_size)    {this.recv_buf_size = recv_buf_size; return this;}
     public int              sendBufferSize()                        {return send_buf_size;}

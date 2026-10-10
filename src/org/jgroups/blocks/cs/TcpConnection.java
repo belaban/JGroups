@@ -13,6 +13,9 @@ import java.io.*;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -90,11 +93,12 @@ public class TcpConnection extends Connection {
         try {
             if(!server.defer_client_binding)
                 this.sock.bind(new InetSocketAddress(server.client_bind_addr, server.client_bind_port));
+            long start=System.nanoTime();
             Util.connect(this.sock, destAddr, server.sock_conn_timeout);
             if(this.sock.getLocalSocketAddress() != null && this.sock.getLocalSocketAddress().equals(destAddr))
                 throw new IllegalStateException("socket's bind and connect address are the same: " + destAddr);
-            if(sock instanceof SSLSocket)
-                ((SSLSocket) sock).startHandshake();
+            if(sock instanceof SSLSocket ssl)
+                handshake(ssl, dest, server.sock_conn_timeout - NANOSECONDS.toMillis(System.nanoTime() - start));
             this.out=createDataOutputStream(sock.getOutputStream());
             this.in=createDataInputStream(sock.getInputStream());
             if(send_local_addr)
@@ -107,6 +111,43 @@ public class TcpConnection extends Connection {
             Util.close(this.sock);
             connected=false;
             throw t;
+        }
+    }
+
+    /**
+     * Performs the TLS handshake, bounded by {@code timeout} ms, which is what is left of {@code sock_conn_timeout}
+     * after the TCP connect, so that the connection setup as a whole is bounded by it. If the server has a timer, the handshake as a
+     * whole is bounded: a watchdog closes the socket when the deadline expires, which makes the blocked handshake fail.
+     * Without a timer, SO_TIMEOUT is used, which only bounds each single read of the handshake.
+     */
+    protected void handshake(SSLSocket ssl, Address dest, long timeout) throws IOException {
+        if(timeout <= 0) // SO_TIMEOUT of 0 means 'no timeout', so don't start the handshake at all
+            throw new SocketTimeoutException(String.format("no time left for TLS handshake with %s (sock_conn_timeout: %d ms)",
+                                                           dest, server.sock_conn_timeout));
+        TimeScheduler timer=server.timer();
+        if(timer == null) {
+            int old_timeout=ssl.getSoTimeout();
+            ssl.setSoTimeout((int)timeout);
+            ssl.startHandshake();
+            ssl.setSoTimeout(old_timeout);
+            return;
+        }
+        AtomicBoolean timed_out=new AtomicBoolean();
+        Future<?> watchdog=timer.schedule(() -> {
+            timed_out.set(true);
+            Util.close(ssl);
+        }, timeout, TimeUnit.MILLISECONDS);
+        try {
+            ssl.startHandshake();
+        }
+        catch(IOException ex) {
+            if(timed_out.get())
+                throw new SocketTimeoutException(String.format("TLS handshake with %s timed out (sock_conn_timeout: %d ms)",
+                                                               dest, server.sock_conn_timeout));
+            throw ex;
+        }
+        finally {
+            watchdog.cancel(false);
         }
     }
 
