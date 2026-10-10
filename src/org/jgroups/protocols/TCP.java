@@ -150,6 +150,7 @@ public class TCP extends BasicTCP {
           .socketFactory(getSocketFactory())
           .receiver(this)
           .timeService(time_service)
+          .timer(getTimer())
           .socketConnectionTimeout(sock_conn_timeout)
           .tcpNodelay(tcp_nodelay).linger(linger)
           .clientBindAddress(client_bind_addr).clientBindPort(client_bind_port).deferClientBinding(defer_client_bind_addr)
