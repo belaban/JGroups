@@ -487,7 +487,11 @@ public abstract class BaseServer implements Closeable, ConnectionListener {
             if(is_mbr != null && is_mbr.test(key))
                 continue;
             Connection conn=e.getValue();
-            Util.close(conn);
+            try {
+                conn.close(false); // https://redhat.atlassian.net/browse/JGRP-3045
+            }
+            catch(Throwable ignored) {
+            }
         }
         copy.clear();
     }
