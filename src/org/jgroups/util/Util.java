@@ -1530,8 +1530,6 @@ public class Util {
         return arg;
     }
 
-
-
     public static void writeMessage(Message msg, DataOutput dos, boolean multicast) throws IOException {
         byte flags=0;
         dos.writeShort(Version.version); // write the version
