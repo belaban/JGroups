@@ -3,6 +3,7 @@ package org.jgroups.tests;
 
 
 import org.jgroups.*;
+import org.jgroups.admin.AdminHeader;
 import org.jgroups.auth.FixedMembershipToken;
 import org.jgroups.auth.RegexMembership;
 import org.jgroups.auth.X509Token;
@@ -802,6 +803,11 @@ public class SizeTest {
 
         hdr=DH_KEY_EXCHANGE.DhHeader.createSecretKeyResponse(dh_key, encr_secret, version);
         _test(hdr);
+    }
+
+    public void testAdminHeader() throws Exception {
+        Header hdr=new AdminHeader("admin", AdminHeader.Type.response);
+        _testSize(hdr);
     }
 
     protected static void _test(DH_KEY_EXCHANGE.DhHeader hdr) throws Exception {
