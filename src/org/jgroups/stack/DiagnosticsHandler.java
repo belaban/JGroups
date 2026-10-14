@@ -302,7 +302,7 @@ public class DiagnosticsHandler extends ReceiverAdapter implements Closeable {
     }
 
 
-    protected void handleDiagnosticProbe(SocketAddress sender, String request,
+    public void handleDiagnosticProbe(SocketAddress sender, String request,
                                          BiConsumer<SocketAddress,String> rsp_sender) {
         StringTokenizer tok=new StringTokenizer(request);
         List<String> list=new ArrayList<>(10);

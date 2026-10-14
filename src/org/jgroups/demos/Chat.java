@@ -1,6 +1,7 @@
 package org.jgroups.demos;
 
 import org.jgroups.*;
+import org.jgroups.admin.ProbeAdminHandler;
 import org.jgroups.util.Util;
 
 import java.io.BufferedReader;
@@ -53,11 +54,17 @@ public class Chat implements Receiver {
             try {
                 System.out.print("> "); System.out.flush();
                 String line=in.readLine();
-                line=line != null? line.toLowerCase() : null;
                 if(line == null)
                     continue;
-                if(line.startsWith("quit") || line.startsWith("exit"))
+                if(line.toLowerCase().startsWith("quit") || line.toLowerCase().startsWith("exit"))
                     break;
+
+                if(line.startsWith("probe")) {
+                    String cmd=line.substring("probe".length()).trim();
+                    ProbeAdminHandler h=channel.admin().get("probe");
+                    h.sendProbeRequest(null, cmd);
+                    continue;
+                }
                 Message msg=new ObjectMessage(null, line);
                 channel.send(msg);
             }
