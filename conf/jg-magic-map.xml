@@ -65,6 +65,7 @@
     <class id="100" name="org.jgroups.protocols.UnicastHeader"/>
     <class id="101" name="org.jgroups.protocols.InfoHeader"/>
     <class id="102" name="org.jgroups.protocols.VERSION$VersionHeader"/>
+    <class id="103" name="org.jgroups.admin.AdminHeader"/>
 
 </magic-number-class-mapping>
 
