@@ -3,6 +3,7 @@ package org.jgroups;
 import org.jgroups.admin.Admin;
 import org.jgroups.admin.AdminHeader;
 import org.jgroups.admin.ProbeAdminHandler;
+import org.jgroups.admin.SwitchAdminHandler;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
@@ -73,7 +74,8 @@ public class JChannel implements Closeable {
     protected boolean                               state_transfer_supported; // true if state transfer prot is in the stack
     protected final DiagnosticsHandler.ProbeHandler probe_handler=new JChannelProbeHandler(this);
     protected Admin                                 admin=new Admin(this)
-                                                      .register("probe", new ProbeAdminHandler(this));
+                                                      .register("probe", new ProbeAdminHandler(this))
+                                                      .register("switch", new SwitchAdminHandler(this));
 
     @ManagedAttribute(description="Whether or not to discard messages sent by this channel",writable=true)
     protected boolean                               discard_own_messages;
