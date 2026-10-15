@@ -51,7 +51,7 @@ public class Admin implements Lifecycle {
         if(handler == null)
             log.error(String.format("%s: no admin handler registered for key \"%s\"", ch.address(), hdr.key()));
         else
-            handler.handleMessage(ch, msg, hdr);
+            handler.handleMessage(msg, hdr);
     }
 
     @Override

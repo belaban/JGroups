@@ -2,6 +2,7 @@ package org.jgroups.demos;
 
 import org.jgroups.*;
 import org.jgroups.admin.ProbeAdminHandler;
+import org.jgroups.admin.SwitchAdminHandler;
 import org.jgroups.util.Util;
 
 import java.io.BufferedReader;
@@ -63,6 +64,15 @@ public class Chat implements Receiver {
                     String cmd=line.substring("probe".length()).trim();
                     ProbeAdminHandler h=channel.admin().get("probe");
                     h.sendProbeRequest(null, cmd);
+                    continue;
+                }
+                if(line.startsWith("switch")) {
+                    String new_config=line.substring("switch".length()).trim();
+                    SwitchAdminHandler h=channel.admin().get("switch");
+                    h.listener((p, m) -> System.out.printf("-- switch: (%.2f %% done: %s\n", p, m));
+                    boolean result=h.switchToNewConfiguration(new_config);
+                    System.out.printf("-- result of attempting to switch to %s: %b\n", new_config, result);
+                    h.listener(null);
                     continue;
                 }
                 Message msg=new ObjectMessage(null, line);

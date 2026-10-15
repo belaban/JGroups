@@ -9,21 +9,43 @@ import org.jgroups.Message;
  * @since  5.6.0
  */
 public abstract class AdminHandler {
-    protected final JChannel     ch;
+    public static final String OK="OK: ", FAIL="FAIL: ";
+    protected final JChannel   ch;
 
     protected AdminHandler(JChannel ch) {
         this.ch=ch;
     }
 
-    void handleMessage(JChannel ch, Message msg, AdminHeader hdr) {}
+    public JChannel channel() {return ch;}
 
-    public void sendRequest(String key, Message msg) throws Exception {
-        msg.putHeader(Admin.ID, new AdminHeader(key, AdminHeader.Type.request));
-        ch.send(msg);
+    public void handleMessage(Message msg, AdminHeader hdr) {
+        switch(hdr.type()) {
+            case request -> handleRequest(msg, hdr);
+            case response -> handleResponse(msg, hdr);
+        }
     }
 
-    public void sendResponse(String key, Message msg) throws Exception {
-        msg.putHeader(Admin.ID, new AdminHeader(key, AdminHeader.Type.response));
-        ch.send(msg);
+    public void sendRequest(String key, Message msg) {
+        try {
+            msg.putHeader(Admin.ID, new AdminHeader(key, AdminHeader.Type.request));
+            ch.send(msg);
+        }
+        catch(Exception e) {
+            ch.log().error("%s: failed sending request: %s", ch.address(), e.getMessage());
+        }
     }
+
+    public void sendResponse(String key, Message msg) {
+        try {
+            msg.putHeader(Admin.ID, new AdminHeader(key, AdminHeader.Type.response));
+            ch.send(msg);
+        }
+        catch(Exception e) {
+            ch.log().error("%s: failed sending response: %s", ch.address(), e.getMessage());
+        }
+    }
+
+    public abstract void handleRequest(Message msg, AdminHeader hdr);
+
+    public abstract void handleResponse(Message msg, AdminHeader hdr);
 }

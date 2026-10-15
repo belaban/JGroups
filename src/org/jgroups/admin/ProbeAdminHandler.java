@@ -26,37 +26,26 @@ public class ProbeAdminHandler extends AdminHandler {
      * @param dest The destination address; null to send the command to all members
      * @param cmd The probe command
      */
-    public void sendProbeRequest(Address dest, String cmd) throws Exception {
+    public void sendProbeRequest(Address dest, String cmd) {
         cnt.set(0);
         sendRequest(KEY, new ObjectMessage(dest, cmd));
     }
 
     @Override
-    public void handleMessage(JChannel ch, Message msg, AdminHeader hdr) {
-        switch(hdr.type()) {
-            case request -> handleRequest(msg, hdr);
-            case response -> handleResponse(msg, hdr);
-        }
-    }
-
-    protected void handleRequest(Message msg, AdminHeader ignored) {
+    public void handleRequest(Message msg, AdminHeader ignored) {
         TP tp=ch.stack().getTransport();
         DiagnosticsHandler diag=tp.getDiagnosticsHandler();
         String req=msg.getObject();
         PhysicalAddress sender=tp.getPhysicalAddressFromCache(msg.src());
         SocketAddress sa=sender == null? null : sender.getSocketAddress();
         diag.handleDiagnosticProbe(sa, req, (addr,r) -> {
-            try {
-                Message rsp=new ObjectMessage(msg.src(), r);
-                sendResponse(KEY, rsp);
-            }
-            catch(Exception e) {
-                throw new RuntimeException(e);
-            }
+            Message rsp=new ObjectMessage(msg.src(), r);
+            sendResponse(KEY, rsp);
         });
     }
 
-    protected void handleResponse(Message msg, AdminHeader ignored) {
+    @Override
+    public void handleResponse(Message msg, AdminHeader ignored) {
         int count=cnt.incrementAndGet();
         System.out.printf("#%d: %s\n", count, msg.getObject());
     }
