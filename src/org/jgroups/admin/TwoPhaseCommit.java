@@ -15,19 +15,19 @@ import java.util.Map;
  * @author Bela Ban
  * @since  5.6.0
  */
-public record TwoPhaseCommit(String key, String name, AdminHandler admin, List<Address> targets,
+public record TwoPhaseCommit(String key, String name, AdminHandler admin, Address dest, List<Address> targets,
                              String prepare, String rollback, String commit,
                              long timeout, ResponseCollector<String> rsps) {
 
 
-    public TwoPhaseCommit(String key, String name, AdminHandler admin, List<Address> targets,
+    public TwoPhaseCommit(String key, String name, AdminHandler admin, Address dest, List<Address> targets,
                                  String prepare, String rollback, String commit,
                                  long timeout) {
-        this(key, name, admin, targets, prepare, rollback, commit, timeout, new ResponseCollector<>(targets));
+        this(key, name, admin, dest, targets, prepare, rollback, commit, timeout, new ResponseCollector<>(targets));
     }
 
     public boolean execute() {
-        admin.sendRequest(key, new ObjectMessage(null, prepare));
+        admin.sendRequest(key, new ObjectMessage(dest, prepare));
         boolean result=rsps.waitForAllResponses(timeout);
 
         // check responses for "FAIL: " instances
@@ -35,12 +35,16 @@ public record TwoPhaseCommit(String key, String name, AdminHandler admin, List<A
             result=checkAllResponsesOK(rsps);
         if(result == false) {
             // send an async request and don't wait for responses
-            admin.sendRequest(key, new ObjectMessage(null, rollback));
+            admin.sendRequest(key, new ObjectMessage(dest, rollback));
             return false;
         }
         if(commit != null)
-            admin.sendRequest(key, new ObjectMessage(null, commit));
+            admin.sendRequest(key, new ObjectMessage(dest, commit));
         return true;
+    }
+
+    public void performRollback() {
+        admin.sendRequest(key, new ObjectMessage(dest, rollback));
     }
 
     public void handleResponse(Address sender, String rsp) {
@@ -53,7 +57,7 @@ public record TwoPhaseCommit(String key, String name, AdminHandler admin, List<A
     }
 
     private static boolean checkAllResponsesOK(ResponseCollector<String> rsps) {
-        Map<Address, String> results=rsps.getResults();
+        Map<Address,String> results=rsps.getResults();
         return results.values().stream().allMatch(r -> r.startsWith(AdminHandler.OK));
     }
 }
