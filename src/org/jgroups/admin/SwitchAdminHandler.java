@@ -4,6 +4,7 @@ import org.jgroups.*;
 import org.jgroups.protocols.TP;
 import org.jgroups.protocols.VERSION;
 import org.jgroups.stack.AddressGenerator;
+import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.ByteArrayDataInputStream;
 import org.jgroups.util.ResponseCollector;
@@ -144,7 +145,7 @@ public class SwitchAdminHandler extends AdminHandler {
                 break;
             case CREATE_NEW_STACK:
                 if(new_channel != null && new_channel.isOpen()) {
-                    sendResponse(KEY, new ObjectMessage(msg.src(), "OK: new chanel already created"));
+                    sendResponse(KEY, new ObjectMessage(msg.src(), "OK: new channel already created"));
                     return;
                 }
                 handleCreateNewStack(s.substring(cmd.length()), msg.src());
@@ -166,8 +167,20 @@ public class SwitchAdminHandler extends AdminHandler {
                 Util.close(new_channel);
                 break;
             case COMMIT_CONNECT:
+                // 1. Make channel use the new stack, delete the old stack
+                if(new_channel == null)
+                    break;
+                ProtocolStack old_stack=ch.stack();
+                ch.stack(new_channel.stack());
+                new_channel.stack(old_stack);
+                Util.close(new_channel);
+                new_channel=null;
+                DiagnosticsHandler.ProbeHandler ph=new JChannelProbeHandler(ch);
+                ch.probeHandler(ph);
+                TP tp=ch.stack().getTransport();
+                tp.unregisterProbeHandler(ph.getClass());
+                tp.registerProbeHandler(ph);
                 break;
-
             default:
                 ch.log().warn("%s: request %s not known", ch.address(), cmd);
         }
@@ -286,7 +299,7 @@ public class SwitchAdminHandler extends AdminHandler {
 
     protected static JChannel createNewChannel(int version, String config, String name) throws Exception {
         try(ByteArrayDataInputStream in=new ByteArrayDataInputStream(config.getBytes())) {
-            JChannel new_ch=new JChannel(in).name(name);
+            JChannel new_ch=new JChannel(in).name(name + "-new");
             VERSION v=new VERSION().version(version);
             new_ch.stack().insertProtocol(v, ProtocolStack.Position.ABOVE, TP.class);
             return new_ch;
