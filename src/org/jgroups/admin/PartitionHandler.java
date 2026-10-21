@@ -10,7 +10,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Injects partitions into a cluster
+ * Injects partitions into a cluster (via injectView()). The syntax is string based, and partitions are separated
+ * by '||'. Example: if we have member A,B,C,D,E, we can inject a partition with injectView("A,B,C || D,E"). To
+ * heal this, injectView("A,B,C,D") can be used. Note that view IDs will be incremented by 1, but no MergeViews
+ * will be installed.
  * @author Bela Ban
  * @since  5.6.0
  */
