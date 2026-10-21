@@ -154,6 +154,12 @@ public class DiagnosticsHandler extends ReceiverAdapter implements Closeable {
         return this;
     }
 
+    public DiagnosticsHandler unregisterProbeHandler(Class<? extends ProbeHandler> cl) {
+        if(cl != null)
+            handlers.removeIf(next -> cl.equals(next.getClass()));
+        return this;
+    }
+
     public DiagnosticsHandler start() throws Exception {
         if(!enabled)
             return this;

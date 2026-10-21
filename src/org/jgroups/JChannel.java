@@ -14,6 +14,7 @@ import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.*;
+import org.jgroups.stack.DiagnosticsHandler.ProbeHandler;
 import org.jgroups.util.*;
 import org.jgroups.util.UUID;
 
@@ -72,7 +73,7 @@ public class JChannel implements Closeable {
     protected List<AddressGenerator>                address_generators;
     protected final Promise<StateTransferResult>    state_promise=new Promise<>();
     protected boolean                               state_transfer_supported; // true if state transfer prot is in the stack
-    protected final DiagnosticsHandler.ProbeHandler probe_handler=new JChannelProbeHandler(this);
+    protected ProbeHandler                          probe_handler=new JChannelProbeHandler(this);
     protected Admin                                 admin=new Admin(this)
                                                       .register("probe", new ProbeAdminHandler(this))
                                                       .register("switch", new SwitchAdminHandler(this));
@@ -201,10 +202,13 @@ public class JChannel implements Closeable {
     public JChannel      setUpHandler(UpHandler h)           {this.up_handler=h; return this;}
     public boolean       getDiscardOwnMessages()             {return discard_own_messages;}
     public JChannel      setDiscardOwnMessages(boolean flag) {discard_own_messages=flag; return this;}
+    public ProbeHandler  probeHandler()                      {return probe_handler;}
+    public JChannel      probeHandler(ProbeHandler h)        {this.probe_handler=h; return this;}
 
     public JChannel stack(ProtocolStack st, boolean delete_old_stack) {
         ProtocolStack old_stack=prot_stack;
         this.prot_stack=st;
+        this.prot_stack.setChannel(this);
         if(old_stack != null && delete_old_stack) {
             old_stack.stopStack(cluster_name);
             old_stack.destroy();
@@ -335,8 +339,6 @@ public class JChannel implements Closeable {
     public Map<String,Map<String,Object>> dumpStats(String protocol_name) {
         return prot_stack.dumpStats(protocol_name, null);
     }
-
-
 
     /**
      * Joins the cluster. The application is now able to receive messages from cluster members, views and to send
@@ -846,7 +848,6 @@ public class JChannel implements Closeable {
         }
         return this;
     }
-
 
     protected JChannel startStack(String cluster_name) throws Exception {
         checkClosed();
