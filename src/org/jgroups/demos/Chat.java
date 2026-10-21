@@ -66,12 +66,34 @@ public class Chat implements Receiver {
                     h.sendProbeRequest(null, cmd);
                     continue;
                 }
+
+                if(line.startsWith("/s")) {
+                    String new_config=line.substring("/s".length()).trim();
+
+                    // todo: remove (used only for quicker testing)!!
+                    if(new_config == null || new_config.trim().isEmpty())
+                        new_config="/Users/bela/tcp-new.xml";
+
+                    SwitchAdminHandler h=channel.admin().get("switch");
+                    h.listener((p, m) -> System.out.printf("-- [switch / %.2f %% done]: %s\n", p, m));
+                    long start=System.nanoTime();
+                    boolean result=h.switchToNewConfiguration(new_config);
+                    long time=System.nanoTime()-start;
+                    System.out.printf("-- result of attempting to switch to %s: %b (%s)\n",
+                                      new_config, result, Util.printTime(time));
+                    h.listener(null);
+                    continue;
+                }
+
                 if(line.startsWith("switch")) {
                     String new_config=line.substring("switch".length()).trim();
                     SwitchAdminHandler h=channel.admin().get("switch");
-                    h.listener((p, m) -> System.out.printf("-- switch: (%.2f %% done: %s\n", p, m));
+                    h.listener((p, m) -> System.out.printf("-- [switch / %.2f %% done]: %s\n", p, m));
+                    long start=System.nanoTime();
                     boolean result=h.switchToNewConfiguration(new_config);
-                    System.out.printf("-- result of attempting to switch to %s: %b\n", new_config, result);
+                    long time=System.nanoTime()-start;
+                    System.out.printf("-- result of attempting to switch to %s: %b (%s)\n",
+                                      new_config, result, Util.printTime(time));
                     h.listener(null);
                     continue;
                 }
