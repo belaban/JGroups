@@ -1,6 +1,7 @@
 package org.jgroups.demos;
 
 import org.jgroups.*;
+import org.jgroups.admin.PartitionHandler;
 import org.jgroups.admin.ProbeAdminHandler;
 import org.jgroups.admin.SwitchAdminHandler;
 import org.jgroups.util.Util;
@@ -50,6 +51,7 @@ public class Chat implements Receiver {
 
 
     private void eventLoop() {
+        channel.admin().register(PartitionHandler.KEY, new PartitionHandler(channel));
         BufferedReader in=new BufferedReader(new InputStreamReader(System.in));
         while(true) {
             try {
@@ -95,6 +97,12 @@ public class Chat implements Receiver {
                     System.out.printf("-- result of attempting to switch to %s: %b (%s)\n",
                                       new_config, result, Util.printTime(time));
                     h.listener(null);
+                    continue;
+                }
+                if(line.startsWith("inject")) {
+                    String partitions=line.substring("inject".length()).trim();
+                    PartitionHandler h=channel.admin().get(PartitionHandler.KEY);
+                    h.injectView(partitions);
                     continue;
                 }
                 Message msg=new ObjectMessage(null, line);
