@@ -8,6 +8,7 @@ import org.jgroups.logging.Log;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * Class to manage JGroups-internal cluster wide requests and responses (https://redhat.atlassian.net/browse/JGRP-3043).
@@ -52,6 +53,12 @@ public class Admin implements Lifecycle {
             log.error(String.format("%s: no admin handler registered for key \"%s\"", ch.address(), hdr.key()));
         else
             handler.handleMessage(msg, hdr);
+    }
+
+    public String print() {
+        return handlers.entrySet().stream()
+          .map(e -> String.format("%s: %s", e.getKey(), e.getValue().getClass().getName()))
+          .collect(Collectors.joining("\n"));
     }
 
     @Override

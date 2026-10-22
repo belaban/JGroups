@@ -62,6 +62,11 @@ public class Chat implements Receiver {
                 if(line.toLowerCase().startsWith("quit") || line.toLowerCase().startsWith("exit"))
                     break;
 
+                if(line.startsWith("admin.keys")) {
+                    System.out.printf("admin.keys:\n%s\n", channel.admin().print());
+                    continue;
+                }
+
                 if(line.startsWith("probe")) {
                     String cmd=line.substring("probe".length()).trim();
                     ProbeAdminHandler h=channel.admin().get("probe");
