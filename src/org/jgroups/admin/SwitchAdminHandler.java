@@ -34,6 +34,7 @@ public class SwitchAdminHandler extends AdminHandler {
     public static final String     PREPARE_CONNECT="prepare-connect"; // | expected cluster size |
     public static final String     ROLLBACK_CONNECT="rollback-connect";
     public static final String     COMMIT_CONNECT="commit-connect";
+    public static final String     COMMIT_CONNECT_SINGLE="commit-connect-single";
 
     public static final String     VERSION="version=";
     public static final String     CFG="cfg=";
@@ -67,6 +68,8 @@ public class SwitchAdminHandler extends AdminHandler {
         List<Address> members=ch.view().getMembers();
         Address       local=ch.address();
 
+        phases.clear();
+
         // 1. Insert VERSION(1) into the old stack
         TwoPhaseCommit ph=new TwoPhaseCommit(KEY, "insert VERSION", this, null, members,
                                              String.format("%s %d", INSERT_VERSION, 1),
@@ -82,7 +85,7 @@ public class SwitchAdminHandler extends AdminHandler {
         // 3. Connect the first (=current) member
         ph=new TwoPhaseCommit(KEY, "connect first member", this, local, List.of(local),
                               String.format("%s %d", PREPARE_CONNECT, 1),
-                              ROLLBACK_CONNECT, COMMIT_CONNECT, 5000);
+                              ROLLBACK_CONNECT, COMMIT_CONNECT_SINGLE, 5000);
         phases.add(ph);
 
         // 4. Connect the new channel in all other members (the current member will skip this)
@@ -90,7 +93,6 @@ public class SwitchAdminHandler extends AdminHandler {
                               String.format("%s %d", PREPARE_CONNECT, members.size()),
                               ROLLBACK_CONNECT, COMMIT_CONNECT, 10000);
         phases.add(ph);
-
         int incr=100 / phases.size(), p=0;
         while(!phases.isEmpty()) {
             TwoPhaseCommit phase=phases.get(0);
@@ -108,6 +110,7 @@ public class SwitchAdminHandler extends AdminHandler {
                 listener.statusChange(p, String.format("FAIL: %s failed in %s, results:\n%s",
                                                        phase.name(), Util.printTime(time), print(phase.rsps())));
                 rollbackCompletedPhases();
+                phases.clear();
                 return false;
             }
         }
@@ -117,8 +120,7 @@ public class SwitchAdminHandler extends AdminHandler {
     @Override
     public void handleRequest(Message msg, AdminHeader hdr) {
         String s=msg.getObject();
-        int index=s.indexOf(' ');
-        String cmd=index == -1? s : s.substring(0, index);
+        String cmd=Util.parse(s, 0);
 
         ch.log().debug("%s received command %s", ch.address(), cmd);
         switch(cmd) {
@@ -166,6 +168,8 @@ public class SwitchAdminHandler extends AdminHandler {
             case ROLLBACK_CONNECT:
                 Util.close(new_channel);
                 break;
+            case COMMIT_CONNECT_SINGLE:
+                break;
             case COMMIT_CONNECT:
                 // 1. Make channel use the new stack, delete the old stack
                 if(new_channel == null)
@@ -180,6 +184,7 @@ public class SwitchAdminHandler extends AdminHandler {
                 TP tp=ch.stack().getTransport();
                 tp.unregisterProbeHandler(ph.getClass());
                 tp.registerProbeHandler(ph);
+                ch.stack().removeProtocol(VERSION.class);
                 break;
             default:
                 ch.log().warn("%s: request %s not known", ch.address(), cmd);
@@ -299,7 +304,7 @@ public class SwitchAdminHandler extends AdminHandler {
 
     protected static JChannel createNewChannel(int version, String config, String name) throws Exception {
         try(ByteArrayDataInputStream in=new ByteArrayDataInputStream(config.getBytes())) {
-            JChannel new_ch=new JChannel(in).name(name + "-new");
+            JChannel new_ch=new JChannel(in).name(name);
             VERSION v=new VERSION().version(version);
             new_ch.stack().insertProtocol(v, ProtocolStack.Position.ABOVE, TP.class);
             return new_ch;

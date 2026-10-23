@@ -50,8 +50,7 @@ public class PartitionHandler extends AdminHandler {
     @Override
     public void handleRequest(Message msg, AdminHeader hdr) {
         String s=msg.getObject();
-        int index=s.indexOf(' ');
-        String cmd=index == -1? s : s.substring(0, index).trim();
+        String cmd=Util.parse(s, 0);
 
         switch(cmd) {
             case INJECT_VIEW:
