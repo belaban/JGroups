@@ -1,9 +1,7 @@
 package org.jgroups.demos;
 
 import org.jgroups.*;
-import org.jgroups.admin.PartitionHandler;
-import org.jgroups.admin.ProbeAdminHandler;
-import org.jgroups.admin.SwitchAdminHandler;
+import org.jgroups.admin.*;
 import org.jgroups.util.Util;
 
 import java.io.BufferedReader;
@@ -59,28 +57,23 @@ public class Chat implements Receiver {
                 String line=in.readLine();
                 if(line == null)
                     continue;
-                if(line.toLowerCase().startsWith("quit") || line.toLowerCase().startsWith("exit"))
+                if(line.toLowerCase().startsWith("/quit") || line.toLowerCase().startsWith("/exit"))
                     break;
 
-                if(line.startsWith("admin.keys")) {
-                    System.out.printf("admin.keys:\n%s\n", channel.admin().print());
+                if(line.startsWith("/handlers")) {
+                    System.out.printf("handlers:\n%s\n", channel.admin().print());
                     continue;
                 }
 
-                if(line.startsWith("probe")) {
-                    String cmd=line.substring("probe".length()).trim();
+                if(line.startsWith("/probe")) {
+                    String cmd=line.substring("/probe".length()).trim();
                     ProbeAdminHandler h=channel.admin().get("probe");
                     h.sendProbeRequest(null, cmd);
                     continue;
                 }
 
-                if(line.startsWith("/s")) {
-                    String new_config=line.substring("/s".length()).trim();
-
-                    // todo: remove (used only for quicker testing)!!
-                    if(new_config == null || new_config.trim().isEmpty())
-                        new_config="/Users/bela/tcp-new.xml";
-
+                if(line.startsWith("/switch")) {
+                    String new_config=line.substring("/switch".length()).trim();
                     SwitchAdminHandler h=channel.admin().get("switch");
                     h.listener((p, m) -> System.out.printf("-- [switch / %.2f %% done]: %s\n", p, m));
                     long start=System.nanoTime();
@@ -91,23 +84,24 @@ public class Chat implements Receiver {
                     h.listener(null);
                     continue;
                 }
-
-                if(line.startsWith("switch")) {
-                    String new_config=line.substring("switch".length()).trim();
-                    SwitchAdminHandler h=channel.admin().get("switch");
-                    h.listener((p, m) -> System.out.printf("-- [switch / %.2f %% done]: %s\n", p, m));
-                    long start=System.nanoTime();
-                    boolean result=h.switchToNewConfiguration(new_config);
-                    long time=System.nanoTime()-start;
-                    System.out.printf("-- result of attempting to switch to %s: %b (%s)\n",
-                                      new_config, result, Util.printTime(time));
-                    h.listener(null);
-                    continue;
-                }
-                if(line.startsWith("inject")) {
-                    String partitions=line.substring("inject".length()).trim();
+                if(line.startsWith("/inject")) {
+                    String partitions=line.substring("/inject".length()).trim();
                     PartitionHandler h=channel.admin().get(PartitionHandler.KEY);
                     h.injectView(partitions);
+                    continue;
+                }
+                if(line.startsWith("/install-handler")) {
+                    String s=line.substring("/install-handler".length()).trim();
+                    Message msg=new ObjectMessage(null, String.format("%s %s", Admin.INSTALL_HANDLER, s))
+                      .putHeader(Admin.ID, new AdminHeader(Admin.ADMIN_KEY, AdminHeader.Type.request));
+                    channel.send(msg);
+                    continue;
+                }
+                if(line.startsWith("/remove-handler")) {
+                    String s=line.substring("/remove-handler".length()).trim();
+                    Message msg=new ObjectMessage(null, String.format("%s %s", Admin.REMOVE_HANDLER, s))
+                      .putHeader(Admin.ID, new AdminHeader(Admin.ADMIN_KEY, AdminHeader.Type.request));
+                    channel.send(msg);
                     continue;
                 }
                 Message msg=new ObjectMessage(null, line);
