@@ -4321,6 +4321,11 @@ public class Util {
         return retval;
     }
 
+    public static String parse(String s, int start) {
+        int index=s.indexOf(' ');
+        return index == -1? s.substring(start).trim() : s.substring(start, index).trim();
+    }
+
     /**
      * Reads a line of text.  A line is considered to be terminated by any one of a line feed ('\n'), a carriage
      * return ('\r'), or a carriage return followed immediately by a linefeed.
