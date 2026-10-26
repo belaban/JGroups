@@ -486,7 +486,7 @@ public class GMS extends Protocol implements DiagnosticsHandler.ProbeHandler {
     }
 
     /** Computes a merge membership */
-    protected List<Address> computeNewMembership(final Collection<Collection<Address>> subviews) {
+    public List<Address> computeNewMembership(final Collection<Collection<Address>> subviews) {
         try {
             List<Address> retval=membership_change_policy.getNewMembership(subviews);
             if(retval == null)

@@ -93,10 +93,16 @@ public class Chat implements Receiver {
                     h.listener(null);
                     continue;
                 }
-                if(line.startsWith("/inject")) {
-                    String partitions=line.substring("/inject".length()).trim();
+                if(line.startsWith("/view")) {
+                    String partitions=line.substring("/view".length()).trim();
                     PartitionHandler h=channel.admin().get(PartitionHandler.KEY);
                     h.injectView(partitions);
+                    continue;
+                }
+                if(line.startsWith("/merge")) {
+                    String partitions=line.substring("/merge".length()).trim();
+                    PartitionHandler h=channel.admin().get(PartitionHandler.KEY);
+                    h.injectMergeView(partitions);
                     continue;
                 }
                 if(line.startsWith("/install-handler")) {

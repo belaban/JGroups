@@ -808,6 +808,9 @@ public class SizeTest {
     public void testAdminHeader() throws Exception {
         Header hdr=new AdminHeader("admin", AdminHeader.Type.response);
         _testSize(hdr);
+
+        hdr=new AdminHeader("admin", AdminHeader.Type.request, "/switch");
+        _testSize(hdr);
     }
 
     protected static void _test(DH_KEY_EXCHANGE.DhHeader hdr) throws Exception {

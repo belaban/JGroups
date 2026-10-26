@@ -26,8 +26,12 @@ public abstract class AdminHandler {
     }
 
     public void sendRequest(String key, Message msg) {
+        sendRequest(key, msg, null);
+    }
+
+    public void sendRequest(String key, Message msg, String command) {
         try {
-            msg.putHeader(Admin.ID, new AdminHeader(key, AdminHeader.Type.request));
+            msg.putHeader(Admin.ID, new AdminHeader(key, AdminHeader.Type.request, command));
             ch.send(msg);
         }
         catch(Exception e) {
@@ -36,8 +40,12 @@ public abstract class AdminHandler {
     }
 
     public void sendResponse(String key, Message msg) {
+        sendResponse(key, msg, null);
+    }
+
+    public void sendResponse(String key, Message msg, String command) {
         try {
-            msg.putHeader(Admin.ID, new AdminHeader(key, AdminHeader.Type.response));
+            msg.putHeader(Admin.ID, new AdminHeader(key, AdminHeader.Type.response, command));
             ch.send(msg);
         }
         catch(Exception e) {
