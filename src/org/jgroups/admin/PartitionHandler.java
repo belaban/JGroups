@@ -65,7 +65,6 @@ public class PartitionHandler extends AdminHandler {
             ch.log().error("%s failed fetching all responses from %s: rsps:\n%s\n", ch.address(), view, rsp_coll);
             return;
         }
-        System.out.printf("-- successfully fetched all responses:\n%s\n", rsp_coll);
         MergeView mv=createMergeView(rsp_coll.getResults());
         for(Address target: mv)
             sendRequest(KEY, new ObjectMessage(target, mv), INJECT_VIEW);
