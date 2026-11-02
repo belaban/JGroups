@@ -24,7 +24,7 @@
         <nexus3.plugin.version>1.0.13</nexus3.plugin.version>
         <enforcer.plugin.version>3.6.3</enforcer.plugin.version>
         <gpg.plugin.version>3.2.8</gpg.plugin.version>
-        <byteman.version>4.0.27</byteman.version>
+        <byteman.version>4.0.28.1</byteman.version>
     </properties>
 
     <organization>
@@ -1005,7 +1005,7 @@
                     <plugin>
                         <groupId>org.graalvm.buildtools</groupId>
                         <artifactId>native-maven-plugin</artifactId>
-                        <version>1.1.14</version>
+                        <version>1.1.17</version>
                         <extensions>true</extensions>
                         <executions>
                             <execution>
