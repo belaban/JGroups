@@ -2029,8 +2029,6 @@ Ergonomics is work-in-progress, and will be implemented over multiple releases.
 
 
 [[Probe]]
-
-
 === Probe
 
 Probe is the Swiss Army Knife of JGroups; it allows to fetch information about the members running in
@@ -2843,7 +2841,10 @@ the position (ProtocolStack.ABOVE/BELOW) relative to the neighbor protocol has t
 
 The design of FORK / ForkChannel is discussed in more detail in
 link:$$https://github.com/belaban/JGroups/blob/master/doc/design/FORK.txt$$[FORK.txt]
-        
+
+
+
+
 [[Admin]]
 === Admin: out of band messages to cluster members
 In 5.6, classes `Admin` and `AdminHandler` (<<AdminHandler>>) were added. This allows for _administrative_ messages to
@@ -2884,7 +2885,7 @@ ch.admin().register("switch", new SwitchAdminHandler(ch));
 This registers a `SwitchAdminHandler` (see below) with the current channel.
 
 Every message sent via `Admin` carries an `AdminHeader` which has a key (string) and a type (request or response) to
-be used to dispatch a message to the correct `AdminHandler`. A typical
+be used to dispatch a message to the correct `AdminHandler`. A typical interaction looks as follows:
 
 [ditaa]
 ----
@@ -2908,11 +2909,51 @@ be used to dispatch a message to the correct `AdminHandler`. A typical
            +-----------------------------------+
 ----
 
-E.g. when invoking a method in `SwitchAdminHandler` the request will carry an admin header
-with key `"switch"`. When the request is received, `SwitchAdminHandler.handleRequest(Message,AdminHeader)` will be
-called.
+When invoking a method in `SwitchAdminHandler` the request will carry an admin header with key `"switch"`. When the
+request is received, and it has an `AdminHeader`, `SwitchAdminHandler.handleRequest(Message,AdminHeader)` will be called.
+
+This handler may or may not send a response. When it does, the response message will also carry an `AdminHeader` with
+`key="switch"` and `type=response`.
+
+When the response is received by the invoker, and it has an `AdminHeader`, the correct admin handler is fetched and
+`handleResponse(Message,AdminHeader)` called.
+
 
 ==== Admin messages versus application messages
+The functionality of an admin handler could also have been provided by a class with access to a `JChannel`. Such a class
+(e.g. `Switch` could have used a special header (`SwitchHeader`) and injected itself as a `Receiver`
+(or `UpHandler`) in the channel. All messages with a `SwitchHeader` would have been dispatched to `Switch`; others would
+have been forwarded to the original `Receiver` (or `UpHandler`).
+
+However, the has the following disadvantages:
+
+* Whether or not a given funtionality is available is dependent on the application. Dynamically switching to a new
+configuration is only available if an application programmer actually provided this functionality. For example, in a
+debugging scenario, one doesn't have to change applicaton code or configuration first, before being able to run
+diagnostic code (assuming this is present in an admin handler).
+* Every application needs to write similar code; this is better done in JGroups itself
+
+==== Admin messages versus probe
+The functionality of probe (<<Probe>>) also allows for dynamic invocation of methods across a cluster. However, the
+following disadvantages make `Admin` a better choice in some cases:
+
+* Probe may not be enabled
+* Probe commands may be lost, ie. not reach all members. This can be the case with a `UDP` transport. This is not the
+  case with `Admin`, as admin messages are sent reliable
+* Probe commands are sent to the entire network, so even members outside the cluster may respond (note that sometimes
+  this can also be an advantage!). In contrast, `Admin` messages are sent to the current cluster members only, or
+  to selected nodes.
+
+==== Admin versus an `ADMIN` protocol
+The advantage of a separate `ADMIN` protocol would have been that checking for an `AdminHeader` in received messages
+is only done when this protocol is actually present.
+
+The downside is that if `ADMIN` is not present, none of the admin functionality is available and `ADMIN` would have to
+be inserted first, e.g. via probe.
+
+I therefore decided to use an `Admin` object associated with every channel to make sure that this functionality is
+always available, and does not have to be enabled / configured first. The cost of header checking is negligible, and
+is incurred by many other protocols (e.g. `STABLE`, fragmentation, flow control).
 
 
 [[AdminHandler]]
