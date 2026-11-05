@@ -2958,11 +2958,28 @@ is incurred by many other protocols (e.g. `STABLE`, fragmentation, flow control)
 
 [[AdminHandler]]
 ==== AdminHandler
+An `AdminHandler` is registered on a given key in `Admin` and is called to process requests and responses. It has
+methods `sendRequest(String key, Message msg)` and `sendResponse(String key, Message msg)` to send requests and
+responses, accordingly.
+
+Method `executeRequest(String)` is used to handle request invocations received as a message from a `Client`
+(see <<admin.Client>> below).
+
+The methods that every subclass must override are `handleRequest(Message,AdminHeader)` to process requests and
+optionally send a response, and `handleResponse(Message,AdminHeader)` to process a response.
+
 
 ==== Dynamically install or remove AdminHandlers
+`Admin` itself provides methods to install and remove admin handlers dynamically, when receiving a message from an
+`admin.Client`. See <<admin.Client>> below for details.
+
+Alternatively, methods `register(String key, AdminHandler handler)` and `deregister(String key)` can be used
+to programmatically install or remove an admin handler.
+
 
 [[ProbeAdminHandler]]
 ==== ProbeAdminHandler
+
 
 [[PartitionHandler]]
 ==== PartitionHandler
@@ -2972,4 +2989,8 @@ is incurred by many other protocols (e.g. `STABLE`, fragmentation, flow control)
 
 [[admin.Client]]
 ==== admin.Client: invoke AdminHandlers with a message to a node
+
+// expain install-handler / remove-handler
+
+
 // TCP, TCP+TLS, NIO, UDP
