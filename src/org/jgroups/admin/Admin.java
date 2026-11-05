@@ -1,9 +1,6 @@
 package org.jgroups.admin;
 
-import org.jgroups.JChannel;
-import org.jgroups.Lifecycle;
-import org.jgroups.Message;
-import org.jgroups.ObjectMessage;
+import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.logging.Log;
 import org.jgroups.util.Util;
@@ -97,9 +94,17 @@ public class Admin implements Lifecycle {
         String s=msg.getObject();
         s=s.trim();
         String command=Util.parse(s.trim(), 0);
-        AdminHandler h=command != null? getHandler(command) : null;
+        if(command == null) {
+            ch.log().error("%s: command is null", ch.address());
+            return;
+        }
+        String args=s.substring(command.length()).trim();
+        if(command.equals(ADMIN_KEY)) {
+            sendAdminRequest(null, ADMIN_KEY, args);
+            return;
+        }
+        AdminHandler h=getHandler(command);
         if(h != null) {
-            String args=s.substring(command.length()).trim();
             String rsp=h.executeRequest(args);
             if(rsp != null) {
                 try {
@@ -143,7 +148,16 @@ public class Admin implements Lifecycle {
     }
 
     protected void handleInternalResponse(Message msg, AdminHeader hdr) {
+    }
 
+    protected void sendAdminRequest(Address dest, String key, String args) {
+        Message msg=new ObjectMessage(dest, args).putHeader(Admin.ID, new AdminHeader(key, AdminHeader.Type.request));
+        try {
+            ch.send(msg);
+        }
+        catch(Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

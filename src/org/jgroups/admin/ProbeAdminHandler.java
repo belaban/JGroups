@@ -6,6 +6,7 @@ import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.util.ResponseCollector;
 
 import java.net.SocketAddress;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -41,7 +42,7 @@ public class ProbeAdminHandler extends AdminHandler {
      */
     public String sendProbeRequest(Address dest, String cmd) {
         cnt.set(0);
-        rsp_coll.reset(ch.view().getMembers());
+        rsp_coll.reset(dest == null? ch.view().getMembers() : List.of(dest));
         sendRequest(KEY, new ObjectMessage(dest, cmd));
         rsp_coll.waitForAllResponses(timeout);
         return rsp_coll.getResults().entrySet().stream()

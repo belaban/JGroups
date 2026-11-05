@@ -18,7 +18,7 @@ import java.net.InetAddress;
  * @author Bela Ban
  * @since x.y
  */
-public class Client implements Receiver {
+public class AdminClient implements Receiver {
     protected long timeout=500;
 
     protected void start(InetAddress addr, int port, String command, long timeout) throws Exception {
@@ -33,7 +33,7 @@ public class Client implements Receiver {
             Util.writeMessage(msg, out, true);
             ByteArray buf=out.getBuffer();
             client.send(null, buf.array(), 0, buf.length());
-            Util.sleep(2000);
+            Util.sleep(500);
         }
     }
 
@@ -68,11 +68,11 @@ public class Client implements Receiver {
             System.err.println("no command given");
             return;
         }
-        new Client().start(host, port, command, timeout);
+        new AdminClient().start(host, port, command, timeout);
     }
 
     protected static void help() {
-        System.out.printf("%s [-host host] [-port port] [-timeout millis] command\n", Client.class.getName());
+        System.out.printf("%s [-host host] [-port port] [-timeout millis] command\n", AdminClient.class.getName());
     }
 
     @Override

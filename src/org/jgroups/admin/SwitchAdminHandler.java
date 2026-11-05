@@ -78,25 +78,25 @@ public class SwitchAdminHandler extends AdminHandler {
         // 1. Insert VERSION(1) into the old stack
         TwoPhaseCommit ph=new TwoPhaseCommit(KEY, "insert VERSION", this, null, members,
                                              String.format("%s %d", INSERT_VERSION, 1),
-                                             ROLLBACK_INSERT_VERSION, null, 3000);
+                                             ROLLBACK_INSERT_VERSION, null, timeout);
         phases.add(ph);
 
         // 2. Create the new channel in all cluster members, insert VERSION(2)
         ph=new TwoPhaseCommit(KEY, "create new channel", this, null, members,
                               createNewStack(new_config, 2),
-                              ROLLBACK_NEW_STACK, null, 3000);
+                              ROLLBACK_NEW_STACK, null, timeout);
         phases.add(ph);
 
         // 3. Connect the first (=current) member
         ph=new TwoPhaseCommit(KEY, "connect first member", this, local, List.of(local),
                               String.format("%s %d", PREPARE_CONNECT, 1),
-                              ROLLBACK_CONNECT, COMMIT_CONNECT_SINGLE, 5000);
+                              ROLLBACK_CONNECT, COMMIT_CONNECT_SINGLE, timeout);
         phases.add(ph);
 
         // 4. Connect the new channel in all other members (the current member will skip this)
         ph=new TwoPhaseCommit(KEY, "connect all members", this, null, members,
                               String.format("%s %d", PREPARE_CONNECT, members.size()),
-                              ROLLBACK_CONNECT, COMMIT_CONNECT, 10000);
+                              ROLLBACK_CONNECT, COMMIT_CONNECT, timeout);
         phases.add(ph);
         int incr=100 / phases.size(), p=0;
         while(!phases.isEmpty()) {

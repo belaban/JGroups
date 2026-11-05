@@ -5,7 +5,7 @@ import org.jgroups.util.MessageBatch;
 
 /**
  * Provides a hook to hijack all events received by a certain channel which has installed this UpHandler.<p>
- * Client usually never need to implement this interface and it is mostly used by JGroups building blocks.
+ * Clients usually never need to implement this interface and it is mostly used by JGroups building blocks.
  * @since 2.0
  * @author Bela Ban
  */

@@ -2029,8 +2029,6 @@ Ergonomics is work-in-progress, and will be implemented over multiple releases.
 
 
 [[Probe]]
-
-
 === Probe
 
 Probe is the Swiss Army Knife of JGroups; it allows to fetch information about the members running in
@@ -2643,8 +2641,6 @@ The effect of this is that - while there are beefy servers in a view - the oldes
         
 
 [[ForkChannel]]
-
-
 === ForkChannels: light-weight channels to piggy-back messages over an existing channel
 
 A ForkChannel is a subclass of JChannel (<<JChannel>>) implementing only a subset of methods
@@ -2837,14 +2833,382 @@ public ForkChannel(final Channel main_channel,
             
 ----
 
-In addition to passing the main channel, the fork stack and channel IDs and the list of protocols, this
-                constructor also allows a user to create FORK in the main stack if not present. To do so,
-                create_fork_if_absent has to be set to true (else an exception is thrown if FORK is not found), and the
-                neighbor protocol (e.g. FRAG2.class) has to be defined, plus the position (ProtocolStack.ABOVE/BELOW)
-                relative to the neighbor protocol has to be defined as well.
+In addition to passing the main channel, the fork stack and channel IDs and the list of protocols, this constructor also
+allows a user to create FORK in the main stack if not present. To do so, create_fork_if_absent has to be set to true
+(else an exception is thrown if FORK is not found), and the neighbor protocol (e.g. FRAG2.class) has to be defined, plus
+the position (ProtocolStack.ABOVE/BELOW) relative to the neighbor protocol has to be defined as well.
             
 
 The design of FORK / ForkChannel is discussed in more detail in
 link:$$https://github.com/belaban/JGroups/blob/master/doc/design/FORK.txt$$[FORK.txt]
-        
 
+
+
+
+[[Admin]]
+=== Admin: out of band messages to cluster members
+In 5.6, classes `Admin` and `AdminHandler` (<<AdminHandler>>) were added. This allows for _administrative_ messages to
+be sent to individual nodes, or all nodes in a cluster, and to optionally receive responses.
+
+Administrative messages are messages which perform a task that's out of the scope of application messages, e.g.
+install/heal network partitions (<<PartitionHandler>>), invoke probe commands (<<ProbeAdminHandler>>) or switch to
+a new configuration without shutting down a channel (<<SwitchAdminHandler>>). But nothing prevents applications from
+sending other types of messages.
+
+Request and response messages are handled by a subclass of `AdminHandler`. `Admin` keeps track of admin handlers in a map:
+
+[ditaa]
+----
+
+   Admin
+   +---------------------------------------------+
+   |                                             |
+   |      handlers                               |
+   |      +----------------------------------+   |
+   |      | "switch"    | SwitchAdminHandler |   |
+   |      +----------------------------------+   |
+   |      | "probe"     | ProbeAdminHandler  |   |
+   |      +----------------------------------+   |
+   |      | "partition" | PartitionHandler   |   |
+   |      +----------------------------------+   |
+   |                                             |
+   +---------------------------------------------+
+----
+
+Each `AdminHandler` is registered with a key in `Admin`, e.g. an application can register an admin handler as follows:
+
+[source,java]
+----
+JChannel ch;
+ch.admin().register("switch", new SwitchAdminHandler(ch));
+----
+This registers a `SwitchAdminHandler` (see below) with the current channel.
+
+Every message sent via `Admin` carries an `AdminHeader` which has a key (string) and a type (request or response) to
+be used to dispatch a message to the correct `AdminHandler`. A typical interaction looks as follows:
+
+[ditaa]
+----
+     +----------+             +-----+     +----------+              +-----+
+     | JChannel |  -------->  |Admin|     | JChannel |   -------->  |Admin|
+     +----------+  (req/rsp)  +-----+     +----------+   (req/rsp)  +-----+
+           |                                    |
+     +----------+                         +----------+
+     |    GMS   |                         |   GMS    |
+     +----------+                         +----------+
+     | UNICAST3 |                         | UNICAST3 |
+     +----------+                         +----------+
+     | NAKACK2  |                         |  NAKACK2 |
+     +----------+                         +----------+
+     |   ...    |                         |    ...   |
+     +----------+                         +----------+
+     |   TCP    |                         |   TCP    |
+     +----------+                         +----------+
+           ^                                   ^
+           |                                   |
+           +-----------------------------------+
+----
+
+When invoking a method in `SwitchAdminHandler` the request will carry an admin header with key `"switch"`. When the
+request is received, and it has an `AdminHeader`, `SwitchAdminHandler.handleRequest(Message,AdminHeader)` will be called.
+
+This handler may or may not send a response. When it does, the response message will also carry an `AdminHeader` with
+`key="switch"` and `type=response`.
+
+When the response is received by the invoker, and it has an `AdminHeader`, the correct admin handler is fetched and
+`handleResponse(Message,AdminHeader)` called.
+
+
+==== Admin messages versus application messages
+The functionality of an admin handler could also have been provided by a class with access to a `JChannel`. Such a class
+(e.g. `Switch` could have used a special header (`SwitchHeader`) and injected itself as a `Receiver`
+(or `UpHandler`) in the channel. All messages with a `SwitchHeader` would have been dispatched to `Switch`; others would
+have been forwarded to the original `Receiver` (or `UpHandler`).
+
+However, the has the following disadvantages:
+
+* Whether or not a given funtionality is available is dependent on the application. Dynamically switching to a new
+configuration is only available if an application programmer actually provided this functionality. For example, in a
+debugging scenario, one doesn't have to change applicaton code or configuration first, before being able to run
+diagnostic code (assuming this is present in an admin handler).
+* Every application needs to write similar code; this is better done in JGroups itself
+
+==== Admin messages versus probe
+The functionality of probe (<<Probe>>) also allows for dynamic invocation of methods across a cluster. However, the
+following disadvantages make `Admin` a better choice in some cases:
+
+* Probe may not be enabled
+* Probe commands may be lost, ie. not reach all members. This can be the case with a `UDP` transport. This is not the
+  case with `Admin`, as admin messages are sent reliable
+* Probe commands are sent to the entire network, so even members outside the cluster may respond (note that sometimes
+  this can also be an advantage!). In contrast, `Admin` messages are sent to the current cluster members only, or
+  to selected nodes.
+
+==== Admin versus an `ADMIN` protocol
+The advantage of a separate `ADMIN` protocol would have been that checking for an `AdminHeader` in received messages
+is only done when this protocol is actually present.
+
+The downside is that if `ADMIN` is not present, none of the admin functionality is available and `ADMIN` would have to
+be inserted first, e.g. via probe.
+
+I therefore decided to use an `Admin` object associated with every channel to make sure that this functionality is
+always available, and does not have to be enabled / configured first. The cost of header checking is negligible, and
+is incurred by many other protocols (e.g. `STABLE`, fragmentation, flow control).
+
+
+[[AdminHandler]]
+==== AdminHandler
+An `AdminHandler` is registered on a given key in `Admin` and is called to process requests and responses. It has
+methods `sendRequest(String key, Message msg)` and `sendResponse(String key, Message msg)` to send requests and
+responses, accordingly.
+
+Method `executeRequest(String)` is used to handle request invocations received as a message from a `AdminClient`
+(see <<AdminClient>> below).
+
+The methods that every subclass must override are `handleRequest(Message,AdminHeader)` to process requests and
+optionally send a response, and `handleResponse(Message,AdminHeader)` to process a response.
+
+
+==== Dynamically install or remove AdminHandlers
+`Admin` itself provides methods to install and remove admin handlers dynamically, when receiving a message from an
+`AdminClient`. See <<AdminClient>> below for details.
+
+Alternatively, methods `register(String key, AdminHandler handler)` and `deregister(String key)` can be used
+to programmatically install or remove an admin handler.
+
+
+[[ProbeAdminHandler]]
+==== ProbeAdminHandler
+This handler invokes <<Probe>> in all of its cluster members. This is done reliably, ie. every non-faulty member is
+guaranteed to receive requests and responses (none are dropped, or received in the wrong order). Contrary to Probe,
+the request is only sent to members of the cluster which the channel joined, not to the entire network.
+
+Also, whether <<Probe>> is enabled does not matter as the `ProbeAdminHandler` is always present, unless it is removed
+with `Admin.remove(String)`.
+
+A probe request can be sent as follows:
+
+[source,java]
+----
+ProbeAdminHandler h=channel.admin().get("probe");
+h.sendProbeRequest(null, "print-protocols");
+----
+
+First, the handler is fetched from `Admin`, then method `sendProbeRequest(Address dest, String cmd)` is sent. The null
+destination means that the command `"print-protocols"` is sent to all members. The result of this method is a string,
+which includes the responses of all members. For example:
+
+----
+/probe print-protocols
+#1: A [ip=192.168.1.110:7800, 2 mbr(s), cluster=chat, version=5.6.0.Final-SNAPSHOT (Vorder Höhi) (java 25.0.2+10-69)]
+protocols=TCP
+TCPPING
+FD_SOCK2
+VERIFY_SUSPECT2
+NAKACK2
+UNICAST3
+STABLE
+GMS
+MFC
+UFC
+FRAG2
+
+
+#2: B [ip=192.168.1.110:7801, 2 mbr(s), cluster=chat, version=5.6.0.Final-SNAPSHOT (Vorder Höhi) (java 25.0.2+10-69)]
+protocols=TCP
+TCPPING
+FD_SOCK2
+VERIFY_SUSPECT2
+NAKACK2
+UNICAST3
+STABLE
+GMS
+MFC
+UFC
+FRAG2
+----
+
+NOTE: The above output was created by running `Chat`, which allows for certain admin commands to be executed, such as
+`/probe`, `/switch`, `/view` etc. Consult the source code of `Chat` for more examples.
+
+
+[[PartitionHandler]]
+==== PartitionHandler
+This handler provides functionality to inject partitions into a cluster, for example split cluster `{A,B,C,D,E}` into
+partitions `{A,B,C}` and `{D,E}`. Subsequently, the partitions can be merged back into a single cluster.
+
+The method to create partitions is `injectView(String views)`. The argument needs to include a comma-separated list
+of cluster members and partitions are indicated with `||`. The above partitions can be created with argument
+`"A,B,C || D,E"`. This means view `{A,B,C}` is installed in members `A`, `B` and `C`, and `{D,E}` in `D` and `E`.
+
+To merge the partitions, method `injectMergeView(String view)` can be used with a comma-separated list of all member
+names that should be used to create a `MergeView`. Note that this triggers a real merge in `GMS`.
+
+Example code to create the 2 example partitions and heal them again:
+
+[source,java]
+----
+PartitionHandler h=channel.admin().get("partition");
+h.injectView("A,B,C || D,E");
+...
+// later
+h.injectMergeView("A,B,C,D,E");
+----
+
+NOTE: The second method may or may not necessarily lead to a `MergeView` `{A,B,C,D,E}`, but because real merge
+functionality is executed, the view order may be different. Refer to the section on <<MERGE3>> for details.
+
+In the `Chat` demo, the above example could be simulated with the commands below:
+
+----
+> /view A,B,C||D,E
+> ** view: [A|9] (3) [A, B, C]
+/merge A,B,C,D,E
+> ** view: MergeView::[D|10] (5) [D, E, A, B, C], 2 subgroups: [A|9] (3) [A, B, C], [D|9] (2) [D, E]
+----
+
+As noted above, the `MergeView` is `{D,E,A,B,C}`: the order is different from the original view before the split.
+
+[[SwitchAdminHandler]]
+==== SwitchAdminHandler: change to a different configuration on the fly
+An important functionality provided by the `SwitchAdminHandler` is to switch from a given configuration to a different
+one.
+
+For example, one might be using `tcp.xml` (using `UNICAST3` and `NAKACK2`) and there's a requirement to switch to
+the new `tcp-new.xml` configuration (including `UNICAST4` and `NAKACK4`).
+
+Such a change is not backward compatible; ie. one cannot run the old and new configuration in the same cluster, as
+members would not understand each other's messages.
+
+The handler discussed in this section implements a staged approach to switch from one configuration to another;
+the switch is implemented by *phases*. Each phase implements a two phase commit across the cluster. If one phase fails,
+it will be rolled back and all prior phases will also be rolled back, too.
+
+The effect of this is that either the entire cluster switches to a new configuration, or none of the members switches
+to the new configuration and all members continue running the existing configuration.
+
+To switch to a new configuration, one of the members has to invoke code similar to the one below:
+
+[source,java]
+----
+SwitchAdminHandler h=channel.admin().get("switch");
+h.listener((p, m) -> System.out.printf("-- [switch / %.2f %% done]: %s\n", p, m));
+boolean result=h.switchToNewConfiguration("tcp-new.xml");
+System.out.printf("-- result of attempting to switch to %s: %b\n", new_config, result);
+----
+
+First, the `SwitchAdminHandler` is fetched from `Admin`. This handler emits notifications during a switch to a new
+configuration. If this is desired, a listener can be added. It is called with a progress percentage and a message.
+
+The actual switch is invoked with `switchToNewConfiguration(String new_config)`. The configuration can be the absolute
+path to a file, or simply the file name (will be searched on the classpath).
+
+The method return `true` if all members successfully switched to the new configuration, or `false` if not.
+
+
+===== Implementation
+This section describes the implementation and its implications on applications. Before going into details, the most
+important implication is that the new cluster has exactly the same view as the old one, and all the members have the
+same identity (UUIDs). So member `A` in the old cluster has the same UUID as member `A` in the new cluster.
+
+This is important for example for applications like Infinispan (https://infinispan.org), which compute consistent
+hashes based on the identities (UUIDs) of cluster members. Providing the same view, and not even emitting a view change
+during a switch to a different configuration, means that no rebalancing will take place in Infinispan.
+
+The member in which `switchToNewConfiguration(String new_config)` is called, performs the following steps:
+
+. File `new_config` is read into a string. If not found, the switch terminates and returns false. The string is the
+  new configuration and is saved for later. This is done first because we want to fail early if the config is not found.
+  We'll later send the configuration as a string, so other members don't need to have the configuration present in
+  their file systems
+
+. A request to insert a protocol `VERSION` with `version=1` is sent to all members. On reception, every member inserts
+  `VERSION(1)` just above the transport (e.g. `TCP`). `VERSION` attaches a header with its version to all outgoing
+  messages. Incoming messages with different versions are discarded. Note that the new cluster members will insert
+  `VERSION(2)` into their stacks; this is to make sure old and new members cannot communicate. Note that - on a
+  rollback, `VERSION` is removed from the stack again.
+
+. A request is sent to all members to create a new channel with a new configuration. The configuration as a string
+  and the version (`2`) are sent as arguments.
+  A new stack is created and `VERSION(2)` inserted just above the transport.
+
+. A request to connect the new stack is sent to self. This ensures that we have a coordinator when sending the same
+  request to all members later. On reception of this request, the member makes sure that the address (UUID) this channel
+  is the same as that of the old channel, then connects the channel. If successful, the cluster has a size of 1.
+
+. Now the same connect request is sent to all members. The current member will reply with OK, as its channel is
+  already connected.
+  The other members connect their channel (also making sure their address has the same UUID as the old channel), and
+  wait until the new cluster has the same size as the old one.
+
+. When successful, a commit-connect request is sent to all members. On reception, every member switches to the new
+  stack and deletes the old channel. From now on, messages will be sent and received on the new channel. Also, the
+  `VERSION` protocol is removed from the stack.
+
+===== Caveats
+The above implementation has a few caveats, described below.
+
+Because the new stack is created and connected before the old one os destroyed, port numbers will differ. For example,
+if we have old member `A` listen on port `7800`, a new member `A` will listen on port `7801` (or higher, if taken).
+
+This has the following ramifications:
+
+* The new configuration will have to make sure that its discovery protocol (e.g. `TCPPING`) includes this port range
+  in order to discover all members of the new cluster
+* This has to be reflected in the firewall, too. E.g. new ports have to be opened in the firewall rules
+
+NOTE: When switching between configurations multiple times, or even switching back to the old configurations, ports
+      will switch between `7800` -> `7801` (as in the example above). However, when the old stack is destroyed, port
+      `7800` will be available again on the next switch, so the sequence is `7800` -> `7801` -> `7800` etc.
+      +
+      This needs to be reflected both in the configuration and the firewall rules.
+
+
+
+[[AdminClient]]
+==== AdminClient: invoke AdminHandlers with a message to a node
+So far, triggering of admin handlers has been doen through code, which typically resides in the application.
+
+However, if no application code executes admin handlers, we can still trigger this from outside the application, by
+sending a message carrying an `AdminHeader` to any of the cluster nodes.
+
+This is done with `AdminClient` (script: `bin/admin.sh`). The host (default: `localhost`) and port (default: `7800`)
+are passed via `-host host` and `-port port` respectively. The rest of the arguments need to be the key of the admin
+handler and a command.
+
+As an example, point `AdminClient` to any of the cluster nodes, pass the key for the
+admin handler (e.g. `"switch"`) and the command:
+
+----
+[mac] /Users/bela/JGroups$ bin/admin.sh -host 192.168.1.110 -port 7800 probe TCP.bind_,port
+B: B [ip=192.168.1.110:7801, 3 mbr(s), cluster=chat, version=5.6.0.Final-SNAPSHOT (Vorder Höhi) (java 25.0.2+10-69)]
+TCP={bind_addr=/192.168.1.110, bind_port=7800, port_range=10}
+
+A: A [ip=192.168.1.110:7800, 3 mbr(s), cluster=chat, version=5.6.0.Final-SNAPSHOT (Vorder Höhi) (java 25.0.2+10-69)]
+TCP={bind_addr=/192.168.1.110, bind_port=7800, port_range=10}
+
+C: C [ip=192.168.1.110:7802, 3 mbr(s), cluster=chat, version=5.6.0.Final-SNAPSHOT (Vorder Höhi) (java 25.0.2+10-69)]
+TCP={bind_addr=/192.168.1.110, bind_port=7800, port_range=10}
+
+[mac] /Users/bela/JGroups$
+----
+
+The above example invokes the `"probe"` admin handler with the argument `"TCP.bind_,port"`, which prints all bind
+addresses and ports.
+
+
+===== Dynamically install and remove admin handlers
+`AdminClient` can also dynamically install or remove admin handlers. An example to install a new handler is:
+
+----
+bin/admin.sh admin install-handler newkey org.jgroups.admin.ProbeAdminHandler
+----
+This will install a new handler `ProbeAdminHandler` across the cluster under key `newkey`.
+
+
+===== Using AdminClient to access UDP based transports
+tbd, not yet implemented
+ditto for TCP_NIO2: check if the default mode (TCP) works for TCP_NIO2
+
+===== Securing access to cluster nodes via `AdminClient`
+tbw: add TLS to TcpClient
