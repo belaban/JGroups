@@ -2643,8 +2643,6 @@ The effect of this is that - while there are beefy servers in a view - the oldes
         
 
 [[ForkChannel]]
-
-
 === ForkChannels: light-weight channels to piggy-back messages over an existing channel
 
 A ForkChannel is a subclass of JChannel (<<JChannel>>) implementing only a subset of methods
@@ -2837,14 +2835,100 @@ public ForkChannel(final Channel main_channel,
             
 ----
 
-In addition to passing the main channel, the fork stack and channel IDs and the list of protocols, this
-                constructor also allows a user to create FORK in the main stack if not present. To do so,
-                create_fork_if_absent has to be set to true (else an exception is thrown if FORK is not found), and the
-                neighbor protocol (e.g. FRAG2.class) has to be defined, plus the position (ProtocolStack.ABOVE/BELOW)
-                relative to the neighbor protocol has to be defined as well.
+In addition to passing the main channel, the fork stack and channel IDs and the list of protocols, this constructor also
+allows a user to create FORK in the main stack if not present. To do so, create_fork_if_absent has to be set to true
+(else an exception is thrown if FORK is not found), and the neighbor protocol (e.g. FRAG2.class) has to be defined, plus
+the position (ProtocolStack.ABOVE/BELOW) relative to the neighbor protocol has to be defined as well.
             
 
 The design of FORK / ForkChannel is discussed in more detail in
 link:$$https://github.com/belaban/JGroups/blob/master/doc/design/FORK.txt$$[FORK.txt]
         
+[[Admin]]
+=== Admin: out of band messages to cluster members
+In 5.6, classes `Admin` and `AdminHandler` (<<AdminHandler>>) were added. This allows for _administrative_ messages to
+be sent to individual nodes, or all nodes in a cluster, and to optionally receive responses.
 
+Administrative messages are messages which perform a task that's out of the scope of application messages, e.g.
+install/heal network partitions (<<PartitionHandler>>), invoke probe commands (<<ProbeAdminHandler>>) or switch to
+a new configuration without shutting down a channel (<<SwitchAdminHandler>>). But nothing prevents applications from
+sending other types of messages.
+
+Request and response messages are handled by a subclass of `AdminHandler`. `Admin` keeps track of admin handlers in a map:
+
+[ditaa]
+----
+
+   Admin
+   +---------------------------------------------+
+   |                                             |
+   |      handlers                               |
+   |      +----------------------------------+   |
+   |      | "switch"    | SwitchAdminHandler |   |
+   |      +----------------------------------+   |
+   |      | "probe"     | ProbeAdminHandler  |   |
+   |      +----------------------------------+   |
+   |      | "partition" | PartitionHandler   |   |
+   |      +----------------------------------+   |
+   |                                             |
+   +---------------------------------------------+
+----
+
+Each `AdminHandler` is registered with a key in `Admin`, e.g. an application can register an admin handler as follows:
+
+[source,java]
+----
+JChannel ch;
+ch.admin().register("switch", new SwitchAdminHandler(ch));
+----
+This registers a `SwitchAdminHandler` (see below) with the current channel.
+
+Every message sent via `Admin` carries an `AdminHeader` which has a key (string) and a type (request or response) to
+be used to dispatch a message to the correct `AdminHandler`. A typical
+
+[ditaa]
+----
+     +----------+             +-----+     +----------+              +-----+
+     | JChannel |  -------->  |Admin|     | JChannel |   -------->  |Admin|
+     +----------+  (req/rsp)  +-----+     +----------+   (req/rsp)  +-----+
+           |                                    |
+     +----------+                         +----------+
+     |    GMS   |                         |   GMS    |
+     +----------+                         +----------+
+     | UNICAST3 |                         | UNICAST3 |
+     +----------+                         +----------+
+     | NAKACK2  |                         |  NAKACK2 |
+     +----------+                         +----------+
+     |   ...    |                         |    ...   |
+     +----------+                         +----------+
+     |   TCP    |                         |   TCP    |
+     +----------+                         +----------+
+           ^                                   ^
+           |                                   |
+           +-----------------------------------+
+----
+
+E.g. when invoking a method in `SwitchAdminHandler` the request will carry an admin header
+with key `"switch"`. When the request is received, `SwitchAdminHandler.handleRequest(Message,AdminHeader)` will be
+called.
+
+==== Admin messages versus application messages
+
+
+[[AdminHandler]]
+==== AdminHandler
+
+==== Dynamically install or remove AdminHandlers
+
+[[ProbeAdminHandler]]
+==== ProbeAdminHandler
+
+[[PartitionHandler]]
+==== PartitionHandler
+
+[[SwitchAdminHandler]]
+==== SwitchAdminHandler: change to a different configuration on the fly
+
+[[admin.Client]]
+==== admin.Client: invoke AdminHandlers with a message to a node
+// TCP, TCP+TLS, NIO, UDP
