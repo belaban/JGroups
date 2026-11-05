@@ -33,7 +33,7 @@ public class Client implements Receiver {
             Util.writeMessage(msg, out, true);
             ByteArray buf=out.getBuffer();
             client.send(null, buf.array(), 0, buf.length());
-            Util.sleep(2000);
+            Util.sleep(500);
         }
     }
 

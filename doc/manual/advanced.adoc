@@ -2979,10 +2979,95 @@ to programmatically install or remove an admin handler.
 
 [[ProbeAdminHandler]]
 ==== ProbeAdminHandler
+This handler invokes <<Probe>> in all of its cluster members. This is done reliably, ie. every non-faulty member is
+guaranteed to receive requests and responses (none are dropped, or received in the wrong order). Contrary to Probe,
+the request is only sent to members of the cluster which the channel joined, not to the entire network.
+
+Also, whether <<Probe>> is enabled does not matter as the `ProbeAdminHandler` is always present, unless it is removed
+with `Admin.remove(String)`.
+
+A probe request can be sent as follows:
+
+[source,java]
+----
+ProbeAdminHandler h=channel.admin().get("probe");
+h.sendProbeRequest(null, "print-protocols");
+----
+
+First, the handler is fetched from `Admin`, then method `sendProbeRequest(Address dest, String cmd)` is sent. The null
+destination means that the command `"print-protocols"` is sent to all members. The result of this method is a string,
+which includes the responses of all members. For example:
+
+----
+/probe print-protocols
+#1: A [ip=192.168.1.110:7800, 2 mbr(s), cluster=chat, version=5.6.0.Final-SNAPSHOT (Vorder Höhi) (java 25.0.2+10-69)]
+protocols=TCP
+TCPPING
+FD_SOCK2
+VERIFY_SUSPECT2
+NAKACK2
+UNICAST3
+STABLE
+GMS
+MFC
+UFC
+FRAG2
+
+
+#2: B [ip=192.168.1.110:7801, 2 mbr(s), cluster=chat, version=5.6.0.Final-SNAPSHOT (Vorder Höhi) (java 25.0.2+10-69)]
+protocols=TCP
+TCPPING
+FD_SOCK2
+VERIFY_SUSPECT2
+NAKACK2
+UNICAST3
+STABLE
+GMS
+MFC
+UFC
+FRAG2
+----
+
+NOTE: The above output was created by running `Chat`, which allows for certain admin commands to be executed, such as
+`/probe`, `/switch`, `/view` etc. Consult the source code of `Chat` for more examples.
 
 
 [[PartitionHandler]]
 ==== PartitionHandler
+This handler provides functionality to inject partitions into a cluster, for example split cluster `{A,B,C,D,E}` into
+partitions `{A,B,C}` and `{D,E}`. Subsequently, the partitions can be merged back into a single cluster.
+
+The method to create partitions is `injectView(String views)`. The argument needs to include a comma-separated list
+of cluster members and partitions are indicated with `||`. The above partitions can be created with argument
+`"A,B,C || D,E"`. This means view `{A,B,C}` is installed in members `A`, `B` and `C`, and `{D,E}` in `D` and `E`.
+
+To merge the partitions, method `injectMergeView(String view)` can be used with a comma-separated list of all member
+names that should be used to create a `MergeView`. Note that this triggers a real merge in `GMS`.
+
+Example code to create the 2 example partitions and heal them again:
+
+[source,java]
+----
+PartitionHandler h=channel.admin().get("partition");
+h.injectView("A,B,C || D,E");
+...
+// later
+h.injectMergeView("A,B,C,D,E");
+----
+
+NOTE: The second method may or may not necessarily lead to a `MergeView` `{A,B,C,D,E}`, but because real merge
+functionality is executed, the view order may be different. Refer to the section on <<MERGE3>> for details.
+
+In the `Chat` demo, the above example could be simulated with the commands below:
+
+----
+> /view A,B,C||D,E
+> ** view: [A|9] (3) [A, B, C]
+/merge A,B,C,D,E
+> ** view: MergeView::[D|10] (5) [D, E, A, B, C], 2 subgroups: [A|9] (3) [A, B, C], [D|9] (2) [D, E]
+----
+
+As noted above, the `MergeView` is `{D,E,A,B,C}`: the order is different from the original view before the split.
 
 [[SwitchAdminHandler]]
 ==== SwitchAdminHandler: change to a different configuration on the fly
