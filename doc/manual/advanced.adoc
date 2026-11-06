@@ -3071,6 +3071,46 @@ As noted above, the `MergeView` is `{D,E,A,B,C}`: the order is different from th
 
 [[SwitchAdminHandler]]
 ==== SwitchAdminHandler: change to a different configuration on the fly
+An important functionality provided by the `SwitchAdminHandler` is to switch from a given configuration to a different
+one.
+
+For example, one might be using `tcp.xml` (using `UNICAST3` and `NAKACK2`) and there's a requirement to switch to
+the new `tcp-new.xml` configuration (including `UNICAST4` and `NAKACK4`).
+
+Such a change is not backward compatible; ie. one cannot run the old and new configuration in the same cluster, as
+members would not understand each other's messages.
+
+The handler discussed in this section implements a staged approach to switch from one configuration to another;
+the switch is implemented by phases. Each phase implements a two phase commit across the cluster. If one phase fails,
+it will be rolled back and all prior phases will also be rolled back, too.
+
+The effect of this is that either the entire cluster switches to a new configuration, or none of the members switches
+to the new configuration and all members continue running the existing configuration.
+
+To switch to a new configuration, one of the members has to invoke code similar to the one below:
+
+[source,java]
+----
+SwitchAdminHandler h=channel.admin().get("switch");
+h.listener((p, m) -> System.out.printf("-- [switch / %.2f %% done]: %s\n", p, m));
+boolean result=h.switchToNewConfiguration("tcp-new.xml");
+System.out.printf("-- result of attempting to switch to %s: %b\n", new_config, result);
+----
+
+First, the `SwitchAdminHandler` is fetched from `Admin`. This handler emits notifications during a switch to a new
+configuration. If this is desired, a listener can be added. It is called with a progress percentage and a message.
+
+The actual switch is invoked with `switchToNewConfiguration(String new_config)`. The configuration can be the absolute
+path to a file, or simply the file name (will be searched on the classpath).
+
+The method return `true` if all members successfully switched to the new configuration, or `false` if not.
+
+
+===== Implementation
+
+
+
+
 
 [[admin.Client]]
 ==== admin.Client: invoke AdminHandlers with a message to a node
