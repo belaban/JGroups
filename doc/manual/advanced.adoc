@@ -3081,7 +3081,7 @@ Such a change is not backward compatible; ie. one cannot run the old and new con
 members would not understand each other's messages.
 
 The handler discussed in this section implements a staged approach to switch from one configuration to another;
-the switch is implemented by phases. Each phase implements a two phase commit across the cluster. If one phase fails,
+the switch is implemented by *phases*. Each phase implements a two phase commit across the cluster. If one phase fails,
 it will be rolled back and all prior phases will also be rolled back, too.
 
 The effect of this is that either the entire cluster switches to a new configuration, or none of the members switches
@@ -3107,8 +3107,60 @@ The method return `true` if all members successfully switched to the new configu
 
 
 ===== Implementation
+This section describes the implementation and its implications on applications. Before going into details, the most
+important implication is that the new cluster has exactly the same view as the old one, and all the members have the
+same identity (UUIDs). So member `A` in the old cluster has the same UUID as member `A` in the new cluster.
 
+This is important for example for applications like Infinispan (https://infinispan.org), which compute consistent
+hashes based on the identities (UUIDs) of cluster members. Providing the same view, and not even emitting a view change
+during a switch to a different configuration, means that no rebalancing will take place in Infinispan.
 
+The member in which `switchToNewConfiguration(String new_config)` is called, performs the following steps:
+
+. File `new_config` is read into a string. If not found, the switch terminates and returns false. The string is the
+  new configuration and is saved for later. This is done first because we want to fail early if the config is not found.
+  We'll later send the configuration as a string, so other members don't need to have the configuration present in
+  their file systems
+
+. A request to insert a protocol `VERSION` with `version=1` is sent to all members. On reception, every member inserts
+  `VERSION(1)` just above the transport (e.g. `TCP`). `VERSION` attaches a header with its version to all outgoing
+  messages. Incoming messages with different versions are discarded. Note that the new cluster members will insert
+  `VERSION(2)` into their stacks; this is to make sure old and new members cannot communicate. Note that - on a
+  rollback, `VERSION` is removed from the stack again.
+
+. A request is sent to all members to create a new channel with a new configuration. The configuration as a string
+  and the version (`2`) are sent as arguments.
+  A new stack is created and `VERSION(2)` inserted just above the transport.
+
+. A request to connect the new stack is sent to self. This ensures that we have a coordinator when sending the same
+  request to all members later. On reception of this request, the member makes sure that the address (UUID) this channel
+  is the same as that of the old channel, then connects the channel. If successful, the cluster has a size of 1.
+
+. Now the same connect request is sent to all members. The current member will reply with OK, as its channel is
+  already connected.
+  The other members connect their channel (also making sure their address has the same UUID as the old channel), and
+  wait until the new cluster has the same size as the old one.
+
+. When successful, a commit-connect request is sent to all members. On reception, every member switches to the new
+  stack and deletes the old channel. From now on, messages will be sent and received on the new channel.
+
+===== Caveats
+The above implementation has a few caveats, described below.
+
+Because the new stack is created and connected before the old one os destroyed, port numbers will differ. For example,
+if we have old member `A` listen on port `7800`, a new member `A` will listen on port `7801` (or higher, if taken).
+
+This has the following ramifications:
+
+* The new configuration will have to make sure that its discovery protocol (e.g. `TCPPING`) includes this port range
+  in order to discover all members of the new cluster
+* This has to be reflected in the firewall, too. E.g. new ports have to be opened in the firewall rules
+
+NOTE: When switching between configurations multiple times, or even switching back to the old configurations, ports
+      will switch between `7800` -> `7801` (as in the example above). However, when the old stack is destroyed, port
+      `7800` will be available again on the next switch, so the sequence is `7800` -> `7801` -> `7800` etc.
+      +
+      This needs to be reflected both in the configuration and the firewall rules.
 
 
 
