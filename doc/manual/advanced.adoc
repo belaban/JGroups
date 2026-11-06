@@ -3172,6 +3172,30 @@ So far, triggering of admin handlers has been doen through code, which typically
 However, if no application code executes admin handlers, we can still trigger this from outside the application, by
 sending a message carrying an `AdminHeader` to any of the cluster nodes.
 
+This is done with `AdminClient` (script: `bin/admin.sh`). The host (default: `localhost`) and port (default: `7800`)
+are passed via `-host host` and `-port port` respectively. The rest of the arguments need to be the key of the admin
+handler and a command.
+
+As an example, point `AdminClient` to any of the cluster nodes, pass the key for the
+admin handler (e.g. `"switch"`) and the command:
+
+----
+[mac] /Users/bela/JGroups$ bin/admin.sh -host 192.168.1.110 -port 7800 probe TCP.bind_,port
+B: B [ip=192.168.1.110:7801, 3 mbr(s), cluster=chat, version=5.6.0.Final-SNAPSHOT (Vorder Höhi) (java 25.0.2+10-69)]
+TCP={bind_addr=/192.168.1.110, bind_port=7800, port_range=10}
+
+A: A [ip=192.168.1.110:7800, 3 mbr(s), cluster=chat, version=5.6.0.Final-SNAPSHOT (Vorder Höhi) (java 25.0.2+10-69)]
+TCP={bind_addr=/192.168.1.110, bind_port=7800, port_range=10}
+
+C: C [ip=192.168.1.110:7802, 3 mbr(s), cluster=chat, version=5.6.0.Final-SNAPSHOT (Vorder Höhi) (java 25.0.2+10-69)]
+TCP={bind_addr=/192.168.1.110, bind_port=7800, port_range=10}
+
+[mac] /Users/bela/JGroups$
+----
+
+The above example invokes the `"probe"` admin handler with the argument `"TCP.bind_,port"`, which prints all bind
+addresses and ports.
+
 // expain install-handler / remove-handler
 
 
