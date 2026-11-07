@@ -3196,9 +3196,19 @@ TCP={bind_addr=/192.168.1.110, bind_port=7800, port_range=10}
 The above example invokes the `"probe"` admin handler with the argument `"TCP.bind_,port"`, which prints all bind
 addresses and ports.
 
-// expain install-handler / remove-handler
+
+===== Dynamically install and remove admin handlers
+`AdminClient` can also dynamically install or remove admin handlers. An example to install a new handler is:
+
+----
+bin/admin.sh admin install-handler newkey org.jgroups.admin.ProbeAdminHandler
+----
+This will install a new handler `ProbeAdminHandler` across the cluster under key `newkey`.
 
 
-// TCP, TCP+TLS, NIO, UDP
+===== Using AdminClient to access UDP based transports
+tbd, not yet implemented
+ditto for TCP_NIO2: check if the default mode (TCP) works for TCP_NIO2
 
 ===== Securing access to cluster nodes via `AdminClient`
+tbw: add TLS to TcpClient
