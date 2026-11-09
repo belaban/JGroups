@@ -71,7 +71,6 @@ public class SwitchAdminHandler extends AdminHandler {
             listener.statusChange(0.0, String.format("%s read %s", OK, file));
 
         List<Address> members=ch.view().getMembers();
-        Address       local=ch.address();
 
         phases.clear();
 
@@ -87,17 +86,17 @@ public class SwitchAdminHandler extends AdminHandler {
                               ROLLBACK_NEW_STACK, null, timeout);
         phases.add(ph);
 
-        // 3. Connect the first (=current) member
-        ph=new TwoPhaseCommit(KEY, "connect first member", this, local, List.of(local),
-                              String.format("%s %d", PREPARE_CONNECT, 1),
-                              ROLLBACK_CONNECT, COMMIT_CONNECT_SINGLE, timeout);
-        phases.add(ph);
+        // 3. Connect each member separately, so the member order of the new view is the same as of the old view
+        // https://redhat.atlassian.net/browse/JGRP-3051
+        int expected_size=0;
+        for(Address target: members) {
+            expected_size++;
+            ph=new TwoPhaseCommit(KEY, String.format("connect %s", target), this, target, List.of(target),
+                                  String.format("%s %d", PREPARE_CONNECT, expected_size),
+                                  ROLLBACK_CONNECT, COMMIT_CONNECT_SINGLE, timeout);
+            phases.add(ph);
+        }
 
-        // 4. Connect the new channel in all other members (the current member will skip this)
-        ph=new TwoPhaseCommit(KEY, "connect all members", this, null, members,
-                              String.format("%s %d", PREPARE_CONNECT, members.size()),
-                              ROLLBACK_CONNECT, COMMIT_CONNECT, timeout);
-        phases.add(ph);
         int incr=100 / phases.size(), p=0;
         while(!phases.isEmpty()) {
             TwoPhaseCommit phase=phases.get(0);
@@ -121,6 +120,7 @@ public class SwitchAdminHandler extends AdminHandler {
                 return false;
             }
         }
+        sendRequest(KEY, new ObjectMessage(null, COMMIT_CONNECT));
         return true;
     }
 
@@ -250,12 +250,11 @@ public class SwitchAdminHandler extends AdminHandler {
     /**
      * Connects the channel and waits for expected_members. Returns true if cluster size == expected_members, false
      * oherwise
-     * @param sender
      */
     public boolean handleConnect(String s, Address sender) {
         AddressGenerator gen=ch::address;
-        String ok="%s connected new channel successfully, %d members: %s (expected: %d)",
-          fail="%s failed connecting new channel, %d members: %s (expected: %d)";
+        String ok="%s connected %s successfully, %d members: %s (expected: %d)",
+          fail="%s failed connecting %s, %d members: %s (expected: %d)";
         int expected_members=Integer.parseInt(s.trim());
         try {
             // Inject the *same* address as the old channel into the new channel. This prevents rebalancing in
@@ -268,12 +267,12 @@ public class SwitchAdminHandler extends AdminHandler {
             View v=tmp.view();
             String f;
             if(success) {
-                f=String.format(ok, OK, v.size(), v, expected_members);
+                f=String.format(ok, OK, tmp.name(), v.size(), v, expected_members);
                 ch.log().debug(f);
                 sendResponse(KEY, new ObjectMessage(sender, f));
             }
             else {
-                f=String.format(fail, FAIL, v.size(), v, expected_members);
+                f=String.format(fail, FAIL, tmp.name(), v.size(), v, expected_members);
                 ch.log().error(f);
                 sendResponse(KEY, new ObjectMessage(sender, f));
                 Util.close(new_channel);
