@@ -453,6 +453,21 @@
                             <value>false</value>
                         </property>
                     </properties>
+                    <systemPropertyVariables>
+                        <keystore.dir>${project.basedir}/keystore</keystore.dir>
+                        <INITIAL_MCAST_ADDR>224.8.8.8</INITIAL_MCAST_ADDR>
+                        <INITIAL_MCAST_PORT>23000</INITIAL_MCAST_PORT>
+                        <INITIAL_TCP_PORT>23000</INITIAL_TCP_PORT>
+                        <tcp.recv_buf_size>1000000</tcp.recv_buf_size>
+                        <tcp.send_buf_size>500000</tcp.send_buf_size>
+                        <jgroups.bind_addr>localhost</jgroups.bind_addr>
+                        <jgroups.udp.ip_ttl>0</jgroups.udp.ip_ttl>
+                        <jgroups.tcpping.initial_hosts>localhost[7800],localhost[7801]</jgroups.tcpping.initial_hosts>
+                        <jgroups.tunnel.gossip_router_hosts>localhost[12001]</jgroups.tunnel.gossip_router_hosts>
+                        <log4j.configurationFile>${project.basedir}/conf/log4j2.xml</log4j.configurationFile>
+                        <tests.tmp.dir>${project.build.directory}/tests-tmp</tests.tmp.dir>
+                        <jdk.attach.allowAttachSelf>true</jdk.attach.allowAttachSelf>
+                    </systemPropertyVariables>
                 </configuration>
                 <executions>
                     <!-- Suppress the default-test execution so only the defined suites run -->
@@ -471,21 +486,6 @@
                                 <suiteXmlFile>src/test/resources/testng/testng-functional.xml</suiteXmlFile>
                             </suiteXmlFiles>
                             <argLine>-XX:+HeapDumpOnOutOfMemoryError -Xms400M -Xmx800M</argLine>
-                            <systemPropertyVariables>
-                                <keystore.dir>${project.basedir}/keystore</keystore.dir>
-                                <INITIAL_MCAST_ADDR>224.8.8.8</INITIAL_MCAST_ADDR>
-                                <INITIAL_MCAST_PORT>23000</INITIAL_MCAST_PORT>
-                                <INITIAL_TCP_PORT>23000</INITIAL_TCP_PORT>
-                                <tcp.recv_buf_size>1000000</tcp.recv_buf_size>
-                                <tcp.send_buf_size>500000</tcp.send_buf_size>
-                                <jgroups.bind_addr>localhost</jgroups.bind_addr>
-                                <jgroups.udp.ip_ttl>0</jgroups.udp.ip_ttl>
-                                <jgroups.tcpping.initial_hosts>localhost[7800],localhost[7801]</jgroups.tcpping.initial_hosts>
-                                <jgroups.tunnel.gossip_router_hosts>localhost[12001]</jgroups.tunnel.gossip_router_hosts>
-                                <log4j.configurationFile>${project.basedir}/conf/log4j2.xml</log4j.configurationFile>
-                                <tests.tmp.dir>${project.build.directory}/tests-tmp</tests.tmp.dir>
-                                <jdk.attach.allowAttachSelf>true</jdk.attach.allowAttachSelf>
-                            </systemPropertyVariables>
                         </configuration>
                     </execution>
 
@@ -499,21 +499,6 @@
                                 <suiteXmlFile>src/test/resources/testng/testng-encrypt.xml</suiteXmlFile>
                             </suiteXmlFiles>
                             <argLine>-XX:+HeapDumpOnOutOfMemoryError -Xms400M -Xmx800M</argLine>
-                            <systemPropertyVariables>
-                                <keystore.dir>${project.basedir}/keystore</keystore.dir>
-                                <INITIAL_MCAST_ADDR>224.8.8.8</INITIAL_MCAST_ADDR>
-                                <INITIAL_MCAST_PORT>23000</INITIAL_MCAST_PORT>
-                                <INITIAL_TCP_PORT>23000</INITIAL_TCP_PORT>
-                                <tcp.recv_buf_size>1000000</tcp.recv_buf_size>
-                                <tcp.send_buf_size>500000</tcp.send_buf_size>
-                                <jgroups.bind_addr>localhost</jgroups.bind_addr>
-                                <jgroups.udp.ip_ttl>0</jgroups.udp.ip_ttl>
-                                <jgroups.tcpping.initial_hosts>localhost[7800],localhost[7801]</jgroups.tcpping.initial_hosts>
-                                <jgroups.tunnel.gossip_router_hosts>localhost[12001]</jgroups.tunnel.gossip_router_hosts>
-                                <log4j.configurationFile>${project.basedir}/conf/log4j2.xml</log4j.configurationFile>
-                                <tests.tmp.dir>${project.build.directory}/tests-tmp</tests.tmp.dir>
-                                <jdk.attach.allowAttachSelf>true</jdk.attach.allowAttachSelf>
-                            </systemPropertyVariables>
                         </configuration>
                     </execution>
 
@@ -531,21 +516,6 @@
                                 -Dorg.jboss.byteman.contrib.bmunit.agent.inhibit=true
                                 -javaagent:${settings.localRepository}/org/jboss/byteman/byteman/${byteman.version}/byteman-${byteman.version}.jar=listener:true
                             </argLine>
-                            <systemPropertyVariables>
-                                <keystore.dir>${project.basedir}/keystore</keystore.dir>
-                                <INITIAL_MCAST_ADDR>224.8.8.8</INITIAL_MCAST_ADDR>
-                                <INITIAL_MCAST_PORT>23000</INITIAL_MCAST_PORT>
-                                <INITIAL_TCP_PORT>23000</INITIAL_TCP_PORT>
-                                <tcp.recv_buf_size>1000000</tcp.recv_buf_size>
-                                <tcp.send_buf_size>500000</tcp.send_buf_size>
-                                <jgroups.bind_addr>localhost</jgroups.bind_addr>
-                                <jgroups.udp.ip_ttl>0</jgroups.udp.ip_ttl>
-                                <jgroups.tcpping.initial_hosts>localhost[7800],localhost[7801]</jgroups.tcpping.initial_hosts>
-                                <jgroups.tunnel.gossip_router_hosts>localhost[12001]</jgroups.tunnel.gossip_router_hosts>
-                                <log4j.configurationFile>${project.basedir}/conf/log4j2.xml</log4j.configurationFile>
-                                <tests.tmp.dir>${project.build.directory}/tests-tmp</tests.tmp.dir>
-                                <jdk.attach.allowAttachSelf>true</jdk.attach.allowAttachSelf>
-                            </systemPropertyVariables>
                         </configuration>
                     </execution>
 
@@ -559,21 +529,6 @@
                                 <suiteXmlFile>src/test/resources/testng/testng-jdbc.xml</suiteXmlFile>
                             </suiteXmlFiles>
                             <argLine>-XX:+HeapDumpOnOutOfMemoryError -Xms400M -Xmx800M</argLine>
-                            <systemPropertyVariables>
-                                <keystore.dir>${project.basedir}/keystore</keystore.dir>
-                                <INITIAL_MCAST_ADDR>224.8.8.8</INITIAL_MCAST_ADDR>
-                                <INITIAL_MCAST_PORT>23000</INITIAL_MCAST_PORT>
-                                <INITIAL_TCP_PORT>23000</INITIAL_TCP_PORT>
-                                <tcp.recv_buf_size>1000000</tcp.recv_buf_size>
-                                <tcp.send_buf_size>500000</tcp.send_buf_size>
-                                <jgroups.bind_addr>localhost</jgroups.bind_addr>
-                                <jgroups.udp.ip_ttl>0</jgroups.udp.ip_ttl>
-                                <jgroups.tcpping.initial_hosts>localhost[7800],localhost[7801]</jgroups.tcpping.initial_hosts>
-                                <jgroups.tunnel.gossip_router_hosts>localhost[12001]</jgroups.tunnel.gossip_router_hosts>
-                                <log4j.configurationFile>${project.basedir}/conf/log4j2.xml</log4j.configurationFile>
-                                <tests.tmp.dir>${project.build.directory}/tests-tmp</tests.tmp.dir>
-                                <jdk.attach.allowAttachSelf>true</jdk.attach.allowAttachSelf>
-                            </systemPropertyVariables>
                         </configuration>
                     </execution>
 
@@ -587,21 +542,6 @@
                                 <suiteXmlFile>src/test/resources/testng/testng-stack-independent.xml</suiteXmlFile>
                             </suiteXmlFiles>
                             <argLine>-XX:+HeapDumpOnOutOfMemoryError -Xms400M -Xmx800M</argLine>
-                            <systemPropertyVariables>
-                                <keystore.dir>${project.basedir}/keystore</keystore.dir>
-                                <INITIAL_MCAST_ADDR>224.8.8.8</INITIAL_MCAST_ADDR>
-                                <INITIAL_MCAST_PORT>23000</INITIAL_MCAST_PORT>
-                                <INITIAL_TCP_PORT>23000</INITIAL_TCP_PORT>
-                                <tcp.recv_buf_size>1000000</tcp.recv_buf_size>
-                                <tcp.send_buf_size>500000</tcp.send_buf_size>
-                                <jgroups.bind_addr>localhost</jgroups.bind_addr>
-                                <jgroups.udp.ip_ttl>0</jgroups.udp.ip_ttl>
-                                <jgroups.tcpping.initial_hosts>localhost[7800],localhost[7801]</jgroups.tcpping.initial_hosts>
-                                <jgroups.tunnel.gossip_router_hosts>localhost[12001]</jgroups.tunnel.gossip_router_hosts>
-                                <log4j.configurationFile>${project.basedir}/conf/log4j2.xml</log4j.configurationFile>
-                                <tests.tmp.dir>${project.build.directory}/tests-tmp</tests.tmp.dir>
-                                <jdk.attach.allowAttachSelf>true</jdk.attach.allowAttachSelf>
-                            </systemPropertyVariables>
                         </configuration>
                     </execution>
 
@@ -615,21 +555,6 @@
                                 <suiteXmlFile>src/test/resources/testng/testng-time-sensitive.xml</suiteXmlFile>
                             </suiteXmlFiles>
                             <argLine>-XX:+HeapDumpOnOutOfMemoryError -Xms400M -Xmx800M</argLine>
-                            <systemPropertyVariables>
-                                <keystore.dir>${project.basedir}/keystore</keystore.dir>
-                                <INITIAL_MCAST_ADDR>224.8.8.8</INITIAL_MCAST_ADDR>
-                                <INITIAL_MCAST_PORT>23000</INITIAL_MCAST_PORT>
-                                <INITIAL_TCP_PORT>23000</INITIAL_TCP_PORT>
-                                <tcp.recv_buf_size>1000000</tcp.recv_buf_size>
-                                <tcp.send_buf_size>500000</tcp.send_buf_size>
-                                <jgroups.bind_addr>localhost</jgroups.bind_addr>
-                                <jgroups.udp.ip_ttl>0</jgroups.udp.ip_ttl>
-                                <jgroups.tcpping.initial_hosts>localhost[7800],localhost[7801]</jgroups.tcpping.initial_hosts>
-                                <jgroups.tunnel.gossip_router_hosts>localhost[12001]</jgroups.tunnel.gossip_router_hosts>
-                                <log4j.configurationFile>${project.basedir}/conf/log4j2.xml</log4j.configurationFile>
-                                <tests.tmp.dir>${project.build.directory}/tests-tmp</tests.tmp.dir>
-                                <jdk.attach.allowAttachSelf>true</jdk.attach.allowAttachSelf>
-                            </systemPropertyVariables>
                         </configuration>
                     </execution>
 
@@ -644,19 +569,7 @@
                             </suiteXmlFiles>
                             <argLine>-XX:+HeapDumpOnOutOfMemoryError -Xms400M -Xmx800M</argLine>
                             <systemPropertyVariables>
-                                <keystore.dir>${project.basedir}/keystore</keystore.dir>
-                                <INITIAL_MCAST_ADDR>224.8.8.8</INITIAL_MCAST_ADDR>
                                 <INITIAL_MCAST_PORT>25000</INITIAL_MCAST_PORT>
-                                <INITIAL_TCP_PORT>25000</INITIAL_TCP_PORT>
-                                <tcp.recv_buf_size>1000000</tcp.recv_buf_size>
-                                <tcp.send_buf_size>500000</tcp.send_buf_size>
-                                <jgroups.bind_addr>localhost</jgroups.bind_addr>
-                                <jgroups.udp.ip_ttl>0</jgroups.udp.ip_ttl>
-                                <jgroups.tcpping.initial_hosts>localhost[7800],localhost[7801]</jgroups.tcpping.initial_hosts>
-                                <jgroups.tunnel.gossip_router_hosts>localhost[12001]</jgroups.tunnel.gossip_router_hosts>
-                                <log4j.configurationFile>${project.basedir}/conf/log4j2.xml</log4j.configurationFile>
-                                <tests.tmp.dir>${project.build.directory}/tests-tmp</tests.tmp.dir>
-                                <jdk.attach.allowAttachSelf>true</jdk.attach.allowAttachSelf>
                             </systemPropertyVariables>
                         </configuration>
                     </execution>
@@ -672,19 +585,7 @@
                             </suiteXmlFiles>
                             <argLine>-XX:+HeapDumpOnOutOfMemoryError -Xms400M -Xmx800M</argLine>
                             <systemPropertyVariables>
-                                <keystore.dir>${project.basedir}/keystore</keystore.dir>
-                                <INITIAL_MCAST_ADDR>224.8.8.8</INITIAL_MCAST_ADDR>
                                 <INITIAL_MCAST_PORT>26000</INITIAL_MCAST_PORT>
-                                <INITIAL_TCP_PORT>26000</INITIAL_TCP_PORT>
-                                <tcp.recv_buf_size>1000000</tcp.recv_buf_size>
-                                <tcp.send_buf_size>500000</tcp.send_buf_size>
-                                <jgroups.bind_addr>localhost</jgroups.bind_addr>
-                                <jgroups.udp.ip_ttl>0</jgroups.udp.ip_ttl>
-                                <jgroups.tcpping.initial_hosts>localhost[7800],localhost[7801]</jgroups.tcpping.initial_hosts>
-                                <jgroups.tunnel.gossip_router_hosts>localhost[12001]</jgroups.tunnel.gossip_router_hosts>
-                                <log4j.configurationFile>${project.basedir}/conf/log4j2.xml</log4j.configurationFile>
-                                <tests.tmp.dir>${project.build.directory}/tests-tmp</tests.tmp.dir>
-                                <jdk.attach.allowAttachSelf>true</jdk.attach.allowAttachSelf>
                             </systemPropertyVariables>
                         </configuration>
                     </execution>
@@ -700,19 +601,7 @@
                             </suiteXmlFiles>
                             <argLine>-XX:+HeapDumpOnOutOfMemoryError -Xms400M -Xmx800M</argLine>
                             <systemPropertyVariables>
-                                <keystore.dir>${project.basedir}/keystore</keystore.dir>
-                                <INITIAL_MCAST_ADDR>224.8.8.8</INITIAL_MCAST_ADDR>
-                                <INITIAL_MCAST_PORT>27000</INITIAL_MCAST_PORT>
                                 <INITIAL_TCP_PORT>27000</INITIAL_TCP_PORT>
-                                <tcp.recv_buf_size>1000000</tcp.recv_buf_size>
-                                <tcp.send_buf_size>500000</tcp.send_buf_size>
-                                <jgroups.bind_addr>localhost</jgroups.bind_addr>
-                                <jgroups.udp.ip_ttl>0</jgroups.udp.ip_ttl>
-                                <jgroups.tcpping.initial_hosts>localhost[7800],localhost[7801]</jgroups.tcpping.initial_hosts>
-                                <jgroups.tunnel.gossip_router_hosts>localhost[12001]</jgroups.tunnel.gossip_router_hosts>
-                                <log4j.configurationFile>${project.basedir}/conf/log4j2.xml</log4j.configurationFile>
-                                <tests.tmp.dir>${project.build.directory}/tests-tmp</tests.tmp.dir>
-                                <jdk.attach.allowAttachSelf>true</jdk.attach.allowAttachSelf>
                             </systemPropertyVariables>
                         </configuration>
                     </execution>
@@ -728,19 +617,7 @@
                             </suiteXmlFiles>
                             <argLine>-XX:+HeapDumpOnOutOfMemoryError -Xms400M -Xmx800M</argLine>
                             <systemPropertyVariables>
-                                <keystore.dir>${project.basedir}/keystore</keystore.dir>
-                                <INITIAL_MCAST_ADDR>224.8.8.8</INITIAL_MCAST_ADDR>
-                                <INITIAL_MCAST_PORT>28000</INITIAL_MCAST_PORT>
                                 <INITIAL_TCP_PORT>28000</INITIAL_TCP_PORT>
-                                <tcp.recv_buf_size>1000000</tcp.recv_buf_size>
-                                <tcp.send_buf_size>500000</tcp.send_buf_size>
-                                <jgroups.bind_addr>localhost</jgroups.bind_addr>
-                                <jgroups.udp.ip_ttl>0</jgroups.udp.ip_ttl>
-                                <jgroups.tcpping.initial_hosts>localhost[7800],localhost[7801]</jgroups.tcpping.initial_hosts>
-                                <jgroups.tunnel.gossip_router_hosts>localhost[12001]</jgroups.tunnel.gossip_router_hosts>
-                                <log4j.configurationFile>${project.basedir}/conf/log4j2.xml</log4j.configurationFile>
-                                <tests.tmp.dir>${project.build.directory}/tests-tmp</tests.tmp.dir>
-                                <jdk.attach.allowAttachSelf>true</jdk.attach.allowAttachSelf>
                             </systemPropertyVariables>
                         </configuration>
                     </execution>
@@ -756,19 +633,7 @@
                             </suiteXmlFiles>
                             <argLine>-XX:+HeapDumpOnOutOfMemoryError -Xms400M -Xmx800M</argLine>
                             <systemPropertyVariables>
-                                <keystore.dir>${project.basedir}/keystore</keystore.dir>
-                                <INITIAL_MCAST_ADDR>224.8.8.8</INITIAL_MCAST_ADDR>
-                                <INITIAL_MCAST_PORT>29000</INITIAL_MCAST_PORT>
                                 <INITIAL_TCP_PORT>30000</INITIAL_TCP_PORT>
-                                <tcp.recv_buf_size>1000000</tcp.recv_buf_size>
-                                <tcp.send_buf_size>500000</tcp.send_buf_size>
-                                <jgroups.bind_addr>localhost</jgroups.bind_addr>
-                                <jgroups.udp.ip_ttl>0</jgroups.udp.ip_ttl>
-                                <jgroups.tcpping.initial_hosts>localhost[7800],localhost[7801]</jgroups.tcpping.initial_hosts>
-                                <jgroups.tunnel.gossip_router_hosts>localhost[12001]</jgroups.tunnel.gossip_router_hosts>
-                                <log4j.configurationFile>${project.basedir}/conf/log4j2.xml</log4j.configurationFile>
-                                <tests.tmp.dir>${project.build.directory}/tests-tmp</tests.tmp.dir>
-                                <jdk.attach.allowAttachSelf>true</jdk.attach.allowAttachSelf>
                             </systemPropertyVariables>
                         </configuration>
                     </execution>
@@ -784,19 +649,7 @@
                             </suiteXmlFiles>
                             <argLine>-XX:+HeapDumpOnOutOfMemoryError -Xms400M -Xmx800M</argLine>
                             <systemPropertyVariables>
-                                <keystore.dir>${project.basedir}/keystore</keystore.dir>
-                                <INITIAL_MCAST_ADDR>224.8.8.8</INITIAL_MCAST_ADDR>
-                                <INITIAL_MCAST_PORT>31000</INITIAL_MCAST_PORT>
                                 <INITIAL_TCP_PORT>32000</INITIAL_TCP_PORT>
-                                <tcp.recv_buf_size>1000000</tcp.recv_buf_size>
-                                <tcp.send_buf_size>500000</tcp.send_buf_size>
-                                <jgroups.bind_addr>localhost</jgroups.bind_addr>
-                                <jgroups.udp.ip_ttl>0</jgroups.udp.ip_ttl>
-                                <jgroups.tcpping.initial_hosts>localhost[7800],localhost[7801]</jgroups.tcpping.initial_hosts>
-                                <jgroups.tunnel.gossip_router_hosts>localhost[12001]</jgroups.tunnel.gossip_router_hosts>
-                                <log4j.configurationFile>${project.basedir}/conf/log4j2.xml</log4j.configurationFile>
-                                <tests.tmp.dir>${project.build.directory}/tests-tmp</tests.tmp.dir>
-                                <jdk.attach.allowAttachSelf>true</jdk.attach.allowAttachSelf>
                             </systemPropertyVariables>
                         </configuration>
                     </execution>
