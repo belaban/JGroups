@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.util.*;
 import java.util.concurrent.Future;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -78,8 +79,11 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
     @ManagedAttribute(description="Number of suspect events emitted",type=AttributeType.SCALAR)
     protected int                            num_suspect_events;
 
-    @ManagedAttribute(description="True when this member is leaving the cluster, set to false when joining")
+    @ManagedAttribute(description="True when the failure detector is stopping or this member is leaving the cluster")
     protected volatile boolean               shutting_down;
+
+    @ManagedAttribute(description="Whether the failure detector is started")
+    protected volatile boolean               running;
 
     @ManagedAttribute(description="List of pingable members of a cluster")
     protected final Membership               pingable_mbrs=new Membership();
@@ -100,6 +104,8 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
     protected final BroadcastTask            bcast_task=new BroadcastTask(); // to resend SUSPECT message (until view change)
     protected final ProcessingQueue<Request> req_handler=new ProcessingQueue<Request>().setHandler(this);
     protected final BoundedList<String>      suspect_history=new BoundedList<>(20);
+    protected final ReentrantLock            lock=new ReentrantLock();
+    protected volatile long                  generation; // rejects delayed requests from a previous stop/start cycle
 
 
     public FD_SOCK2() {
@@ -155,28 +161,57 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
     public String printConnections() {return srv.printConnections();}
 
 
+    /** Restarts monitoring the current membership when the channel is still connected. */
     public void start() throws Exception {
-        super.start();
-        TP transport=getTransport();
-        timer=transport.getTimer();
-        if(timer == null)
-            throw new Exception("timer is null");
-        thread_pool=transport.getThreadPool();
-        PhysicalAddress addr=transport.getPhysicalAddress();
-        int actual_port=addr.getPort();
-        int[] bind_ports=computeBindPorts(actual_port);
-        srv=createServer(bind_ports);
-        srv.receiver(this).clientBindPort(client_bind_port).usePeerConnections(true).addConnectionListener(this).linger(linger);
-        srv.start();
-        log.info("server listening on %s", bind_addr != null? srv.getChannel().getLocalAddress() : "*:" + getActualBindPort());
+        lock.lock();
+        try {
+            if(running)
+                return;
+            shutting_down=false;
+            super.start();
+            generation++;
+            TP transport=getTransport();
+            timer=transport.getTimer();
+            if(timer == null)
+                throw new Exception("timer is null");
+            thread_pool=transport.getThreadPool();
+            PhysicalAddress addr=transport.getPhysicalAddress();
+            int actual_port=addr.getPort();
+            int[] bind_ports=computeBindPorts(actual_port);
+            srv=createServer(bind_ports);
+            srv.receiver(this).clientBindPort(client_bind_port).usePeerConnections(true).addConnectionListener(this).linger(linger);
+            srv.start();
+            running=true;
+            log.info("server listening on %s", bind_addr != null? srv.getChannel().getLocalAddress() : "*:" + getActualBindPort());
+            if(!members.isEmpty())
+                updatePingDest();
+        }
+        catch(Exception e) {
+            stop();
+            throw e;
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
+    /** Stops socket monitoring without disconnecting the channel or discarding its membership. */
     public void stop() {
-        Util.close(srv); // calls stop()
-        pingable_mbrs.clear();
-        suspected_mbrs.clear();
-        bcast_task.clear();
-        ping_dest.reset();
+        shutting_down=true;
+        ping_dest.setConnectResult(false); // wake a connection attempt before waiting for its handler
+        lock.lock();
+        try {
+            running=false;
+            generation++;
+            Util.close(srv); // calls stop()
+            pingable_mbrs.clear();
+            suspected_mbrs.clear();
+            bcast_task.clear();
+            ping_dest.reset();
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
     public void resetStats() {
@@ -221,6 +256,7 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
             case Event.DISCONNECT:
                 shutting_down=true;
                 cluster=null;
+                members.clear();
                 break;
 
             case Event.VIEW_CHANGE:
@@ -241,6 +277,8 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
     }
 
     public void receive(Address sender, DataInput in, int length) throws Exception {
+        if(!running || shutting_down)
+            return;
         Message msg=new EmptyMessage();
         msg.readFrom(in);
         FdHeader hdr=msg.getHeader(id);
@@ -284,15 +322,16 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
 
 
     public void connectionClosed(Connection conn) {
+        long current_generation=generation;
         Address peer=conn != null? conn.peerAddress() : null;
-        if(peer != null && Objects.equals(peer, ping_dest.destPhysical()) && !shutting_down) {
+        if(running && peer != null && Objects.equals(peer, ping_dest.destPhysical()) && !shutting_down) {
             Address dest=ping_dest.dest();
             if(dest != null) {
                 log.debug("%s: connection to %s closed", local_addr, dest);
-                pingable_mbrs.remove(dest);
                 // The reconnect might run on the NioConnection::acceptor's read() and thus block the CONNECT-RSP, and
                 // therefore has to be run in a separate thread: https://issues.redhat.com/browse/JGRP-2766
-                Runnable r=() -> req_handler.add(new Request(Request.Type.ConnectToNextPingDest, dest));
+                Request req=new Request(Request.Type.ConnectToNextPingDest, dest, current_generation);
+                Runnable r=() -> req_handler.add(req);
                 boolean rc=thread_pool.execute(r);
                 if(!rc)
                     getThreadFactory().newThread(r).start();
@@ -301,23 +340,31 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
     }
 
     protected Object handle(FdHeader hdr, Address sender) {
-        switch(hdr.type) {
-            case FdHeader.SUSPECT:
-                if(hdr.mbrs != null) {
-                    log.trace("%s: received SUSPECT message from %s: suspects=%s", local_addr, sender, hdr.mbrs);
-                    suspect(hdr.mbrs);
-                }
-                break;
+        lock.lock();
+        try {
+            if(!running || shutting_down)
+                return null;
+            switch(hdr.type) {
+                case FdHeader.SUSPECT:
+                    if(hdr.mbrs != null) {
+                        log.trace("%s: received SUSPECT message from %s: suspects=%s", local_addr, sender, hdr.mbrs);
+                        suspect(hdr.mbrs);
+                    }
+                    break;
 
-            case FdHeader.UNSUSPECT:
-                if(hdr.mbrs != null) {
-                    log.trace("%s: received UNSUSPECT message from %s: mbrs=%s", local_addr, sender, hdr.mbrs);
-                    hdr.mbrs.forEach(this::unsuspect);
-                    req_handler.add(new Request(Request.Type.ConnectToNextPingDest, null));
-                }
-                break;
+                case FdHeader.UNSUSPECT:
+                    if(hdr.mbrs != null) {
+                        log.trace("%s: received UNSUSPECT message from %s: mbrs=%s", local_addr, sender, hdr.mbrs);
+                        hdr.mbrs.forEach(this::unsuspect);
+                        req_handler.add(new Request(Request.Type.ConnectToNextPingDest, null, generation));
+                    }
+                    break;
+            }
+            return null;
         }
-        return null;
+        finally {
+            lock.unlock();
+        }
     }
 
     protected NioServer createServer(int[] bind_ports) {
@@ -355,37 +402,56 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
     }
 
     public void handle(@SuppressWarnings("ClassEscapesDefinedScope") Request req) throws Exception {
-        switch(req.type) {
-            case ConnectToNextPingDest:
-                connectToNextPingDest(req.suspect);
-                break;
-            case CloseConnectionToPingDest:
-                closeConnectionToPingDest();
-                break;
+        lock.lock();
+        try {
+            if(!running || shutting_down || req.generation != generation)
+                return;
+            switch(req.type) {
+                case ConnectToNextPingDest:
+                    connectToNextPingDest(req.suspect);
+                    break;
+                case CloseConnectionToPingDest:
+                    closeConnectionToPingDest();
+                    break;
+            }
+        }
+        finally {
+            lock.unlock();
         }
     }
 
     protected void handleView(View v) {
-        final List<Address> new_mbrs=v.getMembers();
-        members.set(new_mbrs);
-        suspected_mbrs.retainAll(new_mbrs);
-        bcast_task.adjustSuspects(new_mbrs);
-        pingable_mbrs.set(new_mbrs);
-        if(v.size() < 2)
-            req_handler.add(new Request(Request.Type.CloseConnectionToPingDest, null));
-        else
-            req_handler.add(new Request(Request.Type.ConnectToNextPingDest, null));
+        lock.lock();
+        try {
+            final List<Address> new_mbrs=v.getMembers();
+            members.set(new_mbrs);
+            if(!running)
+                return;
+            suspected_mbrs.retainAll(new_mbrs);
+            bcast_task.adjustSuspects(new_mbrs);
+            updatePingDest();
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+    protected void updatePingDest() {
+        pingable_mbrs.set(members.getMembers());
+        Request.Type type=members.size() < 2? Request.Type.CloseConnectionToPingDest : Request.Type.ConnectToNextPingDest;
+        req_handler.add(new Request(type, null, generation));
     }
 
 
     protected void connectToNextPingDest(Address already_suspect) {
         List<Address> suspected_members=new ArrayList<>();
-        if(already_suspect != null)
+        if(already_suspect != null) {
+            pingable_mbrs.remove(already_suspect);
             suspected_members.add(already_suspect);
-        while(!pingable_mbrs.isEmpty()) { // connectTo() removes unreachable members from pingable_mbrs
+        }
+        while(running && !shutting_down && !pingable_mbrs.isEmpty()) { // connectTo() removes unreachable members from pingable_mbrs
             Address new_ping_dest=pingable_mbrs.getNext(local_addr); // get the neighbor to my right
-            boolean hasNewPingDest=ping_dest.destChanged(new_ping_dest);
-            if(hasNewPingDest) {
+            if(new_ping_dest != null && (ping_dest.destChanged(new_ping_dest) || !ping_dest.connected())) {
                 if(connectTo(new_ping_dest, this.members)) // also sets ping_dest.dest if successful
                     break;
                 else {
@@ -398,7 +464,7 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
             else
                 break;
         }
-        if(!suspected_members.isEmpty())
+        if(running && !shutting_down && !suspected_members.isEmpty())
             broadcastSuspectMessage(suspected_members);
     }
 
@@ -410,6 +476,8 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
         log.debug("%s: trying to connect to %s", local_addr, new_ping_dest);
         long start=System.currentTimeMillis();
         for(IpAddress d: dests) {
+            if(!running || shutting_down)
+                break;
             if(connectTo(d, new_ping_dest)) {
                 long time=System.currentTimeMillis() - start;
                 ping_dest.dest(new_ping_dest).destPhysical(d).clientState(State.CONNECTED);
@@ -439,7 +507,10 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
             ping_dest.resetConnectResult();
             boolean existing_connection=srv.hasConnection(dest);
             srv.send(dest, buf.array(), buf.offset(), buf.length());
-            ping_dest.waitForConnect(connect_timeout); // returns on CONNECT-RSP, connection exception or timeout
+            if(running && !shutting_down)
+                ping_dest.waitForConnect(connect_timeout); // returns on CONNECT-RSP, connection exception or timeout
+            if(!running || shutting_down)
+                return false;
             if(ping_dest.connected())
                 return true;
             if(!existing_connection)  // close a new connection
@@ -542,7 +613,7 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
 
 
     protected void broadcastUnuspectMessage(Address mbr) {
-        if(mbr == null) return;
+        if(!running || shutting_down || mbr == null) return;
 
         log.debug("%s: broadcasting unsuspect(%s)", local_addr, mbr);
 
@@ -663,7 +734,7 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
     }
 
 
-    protected record Request(Type type, Address suspect) {
+    protected record Request(Type type, Address suspect, long generation) {
         protected enum Type {ConnectToNextPingDest, CloseConnectionToPingDest};
 
         public String toString() {
@@ -725,18 +796,26 @@ public class FD_SOCK2 extends Protocol implements Receiver, ConnectionListener, 
         }
 
         public void run() {
-            log.trace("%s: broadcasting SUSPECT message (suspected_mbrs=%s)", local_addr, suspects);
-            FdHeader hdr;
-            synchronized(this) {
-                if(suspects.isEmpty()) {
-                    stopTask();
+            lock.lock();
+            try {
+                if(!running || shutting_down)
                     return;
+                FdHeader hdr;
+                synchronized(this) {
+                    if(suspects.isEmpty()) {
+                        stopTask();
+                        return;
+                    }
+                    log.trace("%s: broadcasting SUSPECT message (suspected_mbrs=%s)", local_addr, suspects);
+                    hdr=new FdHeader(FdHeader.SUSPECT).mbrs(new HashSet<>(suspects));
                 }
-                hdr=new FdHeader(FdHeader.SUSPECT).mbrs(new HashSet<>(suspects));
+                // mcast SUSPECT to all members
+                Message suspect_msg=new EmptyMessage().putHeader(id, hdr);
+                down_prot.down(suspect_msg);
             }
-            // mcast SUSPECT to all members
-            Message suspect_msg=new EmptyMessage().putHeader(id, hdr);
-            down_prot.down(suspect_msg);
+            finally {
+                lock.unlock();
+            }
         }
 
         public String toString() {

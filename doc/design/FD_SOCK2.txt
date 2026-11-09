@@ -47,10 +47,19 @@ Fields
 On start():
 -----------
 * Create the NioServer and start it
+* If the channel is already connected, resume monitoring using the latest membership
 
 On stop():
 ----------
-* Stop the NioServer
+* Disable monitoring and invalidate connection work from this run
+* Wake pending connection waits and finish the active request before clearing monitoring state
+* Stop the NioServer, including established connections and the listening socket
+* Keep the membership so start() can resume without a channel disconnect/reconnect
+
+While stopped, view changes update the membership but do not initiate connections or suspicions.
+A channel DISCONNECT clears the membership so a later connection does not monitor members of the previous cluster.
+Stopping FD_SOCK2 is not a graceful leave or a guarantee of exclusion: other members can still verify liveness over
+the normal transport, and other failure detectors remain independent.
 
 
 On viewChanged(v):
@@ -95,7 +104,6 @@ On connectionClosed(member) callback:
 * Emit suspect(member)
 * Close connection to member
 * Set ping-dest to null, set client-state to DISCONNECTED
-
 
 
 
