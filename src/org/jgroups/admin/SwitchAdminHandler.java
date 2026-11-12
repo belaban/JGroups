@@ -40,7 +40,7 @@ public class SwitchAdminHandler extends AdminHandler {
     public static final String     CFG="cfg=";
     protected SwitchListener       listener;
     protected long                 timeout=10000; // ms
-    protected List<TwoPhaseCommit> phases=new ArrayList<>(), completed_phases=new ArrayList<>();
+    protected List<Phase>          phases=new ArrayList<>(), completed_phases=new ArrayList<>();
     protected JChannel             new_channel; // used in create-new-stack
 
 
@@ -75,15 +75,13 @@ public class SwitchAdminHandler extends AdminHandler {
         phases.clear();
 
         // 1. Insert VERSION(1) into the old stack
-        TwoPhaseCommit ph=new TwoPhaseCommit(KEY, "insert VERSION", this, null, members,
-                                             String.format("%s %d", INSERT_VERSION, 1),
-                                             ROLLBACK_INSERT_VERSION, null, timeout);
+        Phase ph=new TwoPhaseCommit(this, KEY, null, "insert VERSION",
+                                    String.format("%s %d", INSERT_VERSION, 1), ROLLBACK_INSERT_VERSION, null, timeout);
         phases.add(ph);
 
         // 2. Create the new channel in all cluster members, insert VERSION(2)
-        ph=new TwoPhaseCommit(KEY, "create new channel", this, null, members,
-                              createNewStack(new_config, 2),
-                              ROLLBACK_NEW_STACK, null, timeout);
+        ph=new TwoPhaseCommit(this, KEY, null, "create new channel",
+                              createNewStack(new_config, 2), ROLLBACK_NEW_STACK, null, timeout);
         phases.add(ph);
 
         // 3. Connect each member separately, so the member order of the new view is the same as of the old view
@@ -91,36 +89,35 @@ public class SwitchAdminHandler extends AdminHandler {
         int expected_size=0;
         for(Address target: members) {
             expected_size++;
-            ph=new TwoPhaseCommit(KEY, String.format("connect %s", target), this, target, List.of(target),
+            ph=new TwoPhaseCommit(this, KEY, target, String.format("connect %s", target),
                                   String.format("%s %d", PREPARE_CONNECT, expected_size),
                                   ROLLBACK_CONNECT, COMMIT_CONNECT_SINGLE, timeout);
             phases.add(ph);
         }
 
+        // 4. Commit the connect: switch to the new stack and destroy the old one
+        ph=new Phase(this, KEY, null, "switch to the new stack", COMMIT_CONNECT, timeout);
+        phases.add(ph);
+
         int incr=100 / phases.size(), p=0;
         while(!phases.isEmpty()) {
-            TwoPhaseCommit phase=phases.get(0);
+            Phase phase=phases.get(0);
             long start=System.nanoTime();
             boolean success=phase.execute();
             long time=System.nanoTime()-start;
             p+=incr;
             if(success) {
-                if(listener != null)
-                    listener.statusChange(p, String.format("OK: %s completed successfully in %s, results:\n%s",
-                                                           phase.name(), Util.printTime(time), print(phase.rsps())));
-                TwoPhaseCommit processed=phases.remove(0);
+                notifyListener(listener, phase, success, time, p);
+                Phase processed=phases.remove(0);
                 completed_phases.add(0, processed);
             }
             else {
-                if(listener != null)
-                    listener.statusChange(p, String.format("FAIL: %s failed in %s, results:\n%s",
-                                                           phase.name(), Util.printTime(time), print(phase.rsps())));
+                notifyListener(listener, phase, success, time, p);
                 rollbackCompletedPhases();
                 phases.clear();
                 return false;
             }
         }
-        sendRequest(KEY, new ObjectMessage(null, COMMIT_CONNECT));
         return true;
     }
 
@@ -201,7 +198,7 @@ public class SwitchAdminHandler extends AdminHandler {
     @Override
     public void handleResponse(Message msg, AdminHeader hdr) {
         String s=msg.getObject();
-        TwoPhaseCommit phase=phases.isEmpty()? null : phases.get(0);
+        Phase phase=phases.isEmpty()? null : phases.get(0);
         if(phase != null)
             phase.handleResponse(msg.src(), s);
     }
@@ -292,10 +289,10 @@ public class SwitchAdminHandler extends AdminHandler {
         return false;
     }
 
-    protected void notifyListener(double percentage, String msg) {
+    /*protected void notifyListener(double percentage, String msg) {
         if(listener != null)
             listener.statusChange(percentage, msg);
-    }
+    }*/
 
     protected static String print(ResponseCollector<String> r) {
         Map<Address, String> results=r.getResults();
@@ -319,7 +316,7 @@ public class SwitchAdminHandler extends AdminHandler {
 
     /** Rolls back already completed phases if a later phase fails (latest completed first) */
     protected void rollbackCompletedPhases() {
-        for(TwoPhaseCommit phase: completed_phases)
+        for(Phase phase: completed_phases)
             phase.performRollback();
         completed_phases.clear();
     }
@@ -327,6 +324,15 @@ public class SwitchAdminHandler extends AdminHandler {
     protected static String readFile(String filename) {
         InputStream input=Util.getResourceAsStream(filename, Thread.currentThread().getContextClassLoader());
         return Util.readContents(input);
+    }
+
+    protected static void notifyListener(SwitchListener listener, Phase ph, boolean success, long time, double p) {
+        if(listener == null)
+            return;
+        String f=String.format("%s: %s completed successfully", success? "OK" : "FAIL", ph.name());
+        if(ph instanceof TwoPhaseCommit)
+            f=String.format("%s in %s, results:\n%s", f, Util.printTime(time), print(((TwoPhaseCommit)ph).rsps()));
+        listener.statusChange(p, f);
     }
 
 }

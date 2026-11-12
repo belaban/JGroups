@@ -15,25 +15,34 @@ import java.util.Map;
  * @author Bela Ban
  * @since  5.6.0
  */
-public record TwoPhaseCommit(String key, String name, AdminHandler admin, Address dest, List<Address> targets,
-                             String prepare, String rollback, String commit,
-                             long timeout, ResponseCollector<String> rsps) {
+public class TwoPhaseCommit extends Phase {
+    protected String                    rollback, commit;
+    protected ResponseCollector<String> rsps;
 
 
-    public TwoPhaseCommit(String key, String name, AdminHandler admin, Address dest, List<Address> targets,
-                                 String prepare, String rollback, String commit,
-                                 long timeout) {
-        this(key, name, admin, dest, targets, prepare, rollback, commit, timeout, new ResponseCollector<>(targets));
+    public String                    commit()                             {return commit;}
+    public void                      commit(String commit)                {this.commit=commit;}
+    public String                    rollback()                           {return rollback;}
+    public void                      rollback(String rollback)            {this.rollback=rollback;}
+    public ResponseCollector<String> rsps()                               {return rsps;}
+    public void                      rsps(ResponseCollector<String> rsps) {this.rsps=rsps;}
+
+    public TwoPhaseCommit(AdminHandler admin, String key, Address dest, String name,
+                          String prepare, String rollback, String commit, long timeout) {
+        super(admin, key, dest, name, prepare, timeout);
+        this.rollback=rollback;
+        this.commit=commit;
+        this.rsps=new ResponseCollector<>(dest == null? admin.channel().view().getMembers() : List.of(dest));
     }
 
     public boolean execute() {
-        admin.sendRequest(key, new ObjectMessage(dest, prepare));
+        super.execute();
         boolean result=rsps.waitForAllResponses(timeout);
 
         // check responses for "FAIL: " instances
         if(result) // received responses from all members
             result=checkAllResponsesOK(rsps);
-        if(result == false) {
+        if(result == false && rollback != null) {
             // send an async request and don't wait for responses
             admin.sendRequest(key, new ObjectMessage(dest, rollback));
             return false;
@@ -44,7 +53,8 @@ public record TwoPhaseCommit(String key, String name, AdminHandler admin, Addres
     }
 
     public void performRollback() {
-        admin.sendRequest(key, new ObjectMessage(dest, rollback));
+        if(rollback != null)
+            admin.sendRequest(key, new ObjectMessage(dest, rollback));
     }
 
     public void handleResponse(Address sender, String rsp) {
