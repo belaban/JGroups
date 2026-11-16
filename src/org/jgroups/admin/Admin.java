@@ -3,9 +3,11 @@ package org.jgroups.admin;
 import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.logging.Log;
+import org.jgroups.util.ResponseCollector;
 import org.jgroups.util.Util;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -17,14 +19,17 @@ import java.util.stream.Collectors;
  * @since  5.6.0
  */
 public class Admin implements Lifecycle {
-    protected final JChannel                 ch;
-    protected final Log                      log;
-    public static final short                ID;
-    public static final String               ADMIN_KEY="admin";
-    public static final String               ADMIN_EXEC_KEY="admin-exec";
-    public static final String               INSTALL_HANDLER="install-handler"; // | <key> | <classname> |
-    public static final String               REMOVE_HANDLER="remove-handler"; // | <key> |
-    protected final Map<String,AdminHandler> handlers=new ConcurrentHashMap<>();
+    protected final JChannel                  ch;
+    protected final Log                       log;
+    protected long                            timeout=1000;
+    public static final short                 ID;
+    public static final String                ADMIN_KEY="admin";
+    public static final String                ADMIN_EXEC_KEY="admin-exec";
+    public static final String                INSTALL_HANDLER="install-handler"; // | <key> | <classname> |
+    public static final String                REMOVE_HANDLER="remove-handler"; // | <key> |
+    public static final String                GET_HANDLERS="get-handlers";
+    protected final Map<String,AdminHandler>  handlers=new ConcurrentHashMap<>();
+    protected final ResponseCollector<String> rsps=new ResponseCollector<>();
 
     static {
         ID=ClassConfigurator.getProtocolId(Admin.class);
@@ -35,7 +40,10 @@ public class Admin implements Lifecycle {
         this.log=ch.log();
     }
 
-    public JChannel                   channel()       {return ch;}
+    public JChannel  channel()             {return ch;}
+    public long      timeout()             {return timeout;}
+    public Admin     timeout(long timeout) {this.timeout=timeout; return this;}
+
     public <T extends AdminHandler> T get(String key) {return (T)handlers.get(key);}
 
     public Admin register(String key, AdminHandler handler) {
@@ -75,6 +83,11 @@ public class Admin implements Lifecycle {
           .collect(Collectors.joining("\n"));
     }
 
+    @Override
+    public String toString() {
+        return String.format("%d handlers: %s", handlers.size(), handlers.keySet());
+    }
+
     protected AdminHandler getHandler(String key) {
         AdminHandler handler=handlers.get(key);
         if(handler == null)
@@ -100,7 +113,9 @@ public class Admin implements Lifecycle {
         }
         String args=s.substring(command.length()).trim();
         if(command.equals(ADMIN_KEY)) {
-            sendAdminRequest(null, ADMIN_KEY, args);
+            String rsp=sendAdminRequest(null, ADMIN_KEY, args);
+            if(rsp != null)
+                sendAdminResponse(msg.src(), hdr.key(), rsp);
             return;
         }
         AdminHandler h=getHandler(command);
@@ -142,16 +157,35 @@ public class Admin implements Lifecycle {
                 String key=s.trim();
                 deregister(key);
                 break;
+            case GET_HANDLERS:
+                String tmp=handlers.entrySet().stream()
+                  .map(e -> String.format("%s: %s", e.getKey(), e.getValue().getClass().getName()))
+                  .collect(Collectors.joining("\n"));
+                sendAdminResponse(msg.src(), Admin.ADMIN_KEY, tmp);
+                break;
             default:
                 log.error("%s: command %s not known", ch.address(), cmd);
         }
     }
 
     protected void handleInternalResponse(Message msg, AdminHeader hdr) {
+        rsps.add(msg.src(), msg.getObject());
     }
 
-    protected void sendAdminRequest(Address dest, String key, String args) {
-        Message msg=new ObjectMessage(dest, args).putHeader(Admin.ID, new AdminHeader(key, AdminHeader.Type.request));
+    protected String sendAdminRequest(Address dest, String key, String args) {
+        rsps.reset(dest == null? ch.view().getMembers() : List.of(dest));
+        send(dest, key, args, AdminHeader.Type.request);
+        rsps.waitForAllResponses(timeout);
+        Map<Address, String> results=rsps.getResults();
+        return results == null || results.isEmpty()? "n/a" : print(results);
+    }
+
+    protected void sendAdminResponse(Address dest, String key, String args) {
+        send(dest, key, args, AdminHeader.Type.response);
+    }
+
+    protected void send(Address dest, String key, String args, AdminHeader.Type type) {
+        Message msg=new ObjectMessage(dest, args).putHeader(Admin.ID, new AdminHeader(key, type));
         try {
             ch.send(msg);
         }
@@ -160,8 +194,12 @@ public class Admin implements Lifecycle {
         }
     }
 
-    @Override
-    public String toString() {
-        return String.format("%d handlers: %s", handlers.size(), handlers.keySet());
+    protected static String print(Map<Address,String> m) {
+        StringBuilder sb=new StringBuilder();
+        for(Map.Entry<Address,String> e: m.entrySet()) {
+            sb.append(e.getKey()).append(":\n").append(e.getValue()).append("\n\n");
+        }
+        return sb.toString();
     }
+
 }

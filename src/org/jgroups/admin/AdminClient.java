@@ -151,12 +151,6 @@ public class AdminClient implements Receiver {
             System.err.println("no command given");
             return;
         }
-        /*tls.enabled(true).setKeystoreType("pkcs12").setKeystorePassword("password")
-                .setKeystorePath("keystore.jks").setClientAuth(TLSClientAuth.NEED)
-                  .setKeystoreAlias("server");
-              tls.init();*/
-
-
         new AdminClient().start(host, port, command, timeout, udp, tls);
     }
 
