@@ -88,7 +88,7 @@ public class Chat implements Receiver {
                     long start=System.nanoTime();
                     boolean result=h.switchToNewConfiguration(new_config);
                     long time=System.nanoTime()-start;
-                    System.out.printf("-- result of attempting to switch to %s: %b (%s)\n",
+                    System.out.printf("== result of attempting to switch to %s: %b (%s)\n",
                                       new_config, result, Util.printTime(time));
                     h.listener(null);
                     continue;
@@ -124,6 +124,10 @@ public class Chat implements Receiver {
                     channel.send(msg);
                     continue;
                 }
+                if(line.startsWith("/help")) {
+                    System.out.println(cmdLineHelp());
+                    continue;
+                }
                 Message msg=new ObjectMessage(null, line);
                 channel.send(msg);
             }
@@ -143,17 +147,19 @@ public class Chat implements Receiver {
         boolean nohup=false;
 
         for(int i=0; i < args.length; i++) {
-            if(args[i].equals("-props")) {
-                props=args[++i];
-                continue;
-            }
-            if(args[i].equals("-name")) {
-                name=args[++i];
-                continue;
-            }
-            if(args[i].equals("-nohup")) {
-                nohup=true;
-                continue;
+            switch(args[i]) {
+                case "-props" -> {
+                    props=args[++i];
+                    continue;
+                }
+                case "-name" -> {
+                    name=args[++i];
+                    continue;
+                }
+                case "-nohup" -> {
+                    nohup=true;
+                    continue;
+                }
             }
             help();
             return;
@@ -165,6 +171,23 @@ public class Chat implements Receiver {
 
     protected static void help() {
         System.out.println("Chat [-props XML config] [-name name] [-nohup]");
+    }
+
+    protected static String cmdLineHelp() {
+        return """
+          /help: this help
+          /quit: exits this process
+          /exit: exits this process
+          /handlers: lists all registered handlers
+          /probe <command>: invokes probe commands on all cluster members
+          /switch <file>: switches to a new configuration (absolute path, or file must be found on the classpath)
+          /view <views>: injects the views into the cluster.
+                         Example: "/view A,B||C" injects view {A,B} into A and B, and C into C
+          /merge <members>: merges the members into a single view. Example: /merge A,B,C
+          /install-handler <key> <class>: installs a new handler under the given key in all cluster members
+          /remove-handler <key>: removes the handler with the given key
+          /X: terminates all cluster members
+          """;
     }
 
 
