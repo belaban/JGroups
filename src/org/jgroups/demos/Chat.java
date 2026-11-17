@@ -96,7 +96,7 @@ public class Chat implements Receiver {
                 if(line.startsWith("/view")) {
                     String partitions=line.substring("/view".length()).trim();
                     PartitionHandler h=channel.admin().get(PartitionHandler.KEY);
-                    h.injectView(partitions);
+                    h.injectViews(partitions);
                     continue;
                 }
                 if(line.startsWith("/merge")) {

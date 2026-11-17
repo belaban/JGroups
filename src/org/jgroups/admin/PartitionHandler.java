@@ -10,11 +10,12 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
- * Injects partitions into a cluster (via injectView()). The syntax is string based, and partitions are separated
- * by '||'. Example: if we have member A,B,C,D,E, we can inject a partition with injectView("A,B,C || D,E"). To
- * heal this, injectView("A,B,C,D") can be used. Note that view IDs will be incremented by 1, but no MergeViews
+ * Injects partitions into a cluster (via injectViews()). The syntax is string based, and partitions are separated
+ * by '||'. Example: if we have member A,B,C,D,E, we can inject a partition with injectViews("A,B,C || D,E"). To
+ * heal this, injectViews("A,B,C,D") can be used. Note that view IDs will be incremented by 1, but no MergeViews
  * will be installed.
  * @author Bela Ban
  * @since  5.6.0
@@ -43,7 +44,7 @@ public class PartitionHandler extends AdminHandler {
         String rest=req.substring(command.length());
         switch(command) {
             case INJECT_VIEW:
-                injectView(rest);
+                injectViews(rest);
                 break;
             case INJECT_MERGE_VIEW:
                 injectMergeView(rest);
@@ -58,14 +59,17 @@ public class PartitionHandler extends AdminHandler {
      * {D,E} into D and E. "A,B,C,D,E" injects view {A,B,C,D,E} into all members, healing the partition.
      * @param views The partition to be injected
      */
-    public void injectView(String views) {
+    public void injectViews(String views) {
         List<String> tmp=Util.parseStringList(views, "||");
-        for(String view: tmp) {
-            View v=createView(view);
-            if(v == null)
-                continue;
-            for(Address target: v)
-                sendRequest(KEY, new ObjectMessage(target, v), INJECT_VIEW);
+        List<View> l=tmp.stream().map(this::createView).filter(Objects::nonNull).toList();
+        if(!l.isEmpty())
+            injectViews(l);
+    }
+
+    public void injectViews(List<View> views) {
+        for(View view: views) {
+            for(Address target: view)
+                sendRequest(KEY, new ObjectMessage(target, view), INJECT_VIEW);
         }
     }
 
@@ -75,12 +79,16 @@ public class PartitionHandler extends AdminHandler {
      */
     public void injectMergeView(String view) {
         final List<Address> members=getMembers(view);
+        injectMergeView(members);
+    }
+
+    public void injectMergeView(List<Address> members) {
         rsp_coll.reset(members);
         for(Address mbr: members)
             sendRequest(KEY, new ObjectMessage(mbr), GET_VIEW);
         boolean success=rsp_coll.waitForAllResponses(timeout);
         if(!success) {
-            ch.log().error("%s failed fetching all responses from %s: rsps:\n%s\n", ch.address(), view, rsp_coll);
+            ch.log().error("%s failed fetching all responses from %s: rsps:\n%s\n", ch.address(), members, rsp_coll);
             return;
         }
         Map<Address,View> views=rsp_coll.getResults();
@@ -124,7 +132,7 @@ public class PartitionHandler extends AdminHandler {
     }
 
     protected List<Address> getMembers(String view) {
-        Map<Address, String> cache=NameCache.getContents(true), all_cache=NameCache.getContents(false);
+        Map<Address,String> cache=NameCache.getContents(true), all_cache=NameCache.getContents(false);
         List<String> addrs=Util.parseCommaDelimitedStrings(view.trim());
         List<Address> retval=new FastArray<>();
         for(String addr: addrs) {
