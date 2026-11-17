@@ -34,7 +34,6 @@ public class SwitchAdminHandler extends AdminHandler {
     public static final String     PREPARE_CONNECT="prepare-connect"; // | expected cluster size |
     public static final String     ROLLBACK_CONNECT="rollback-connect";
     public static final String     COMMIT_CONNECT="commit-connect";
-    public static final String     COMMIT_CONNECT_SINGLE="commit-connect-single";
 
     public static final String     VERSION="version=";
     public static final String     CFG="cfg=";
@@ -91,7 +90,7 @@ public class SwitchAdminHandler extends AdminHandler {
             expected_size++;
             ph=new TwoPhaseCommit(this, KEY, target, String.format("connect %s", target),
                                   String.format("%s %d", PREPARE_CONNECT, expected_size),
-                                  ROLLBACK_CONNECT, COMMIT_CONNECT_SINGLE, timeout);
+                                  ROLLBACK_CONNECT, null, timeout);
             phases.add(ph);
         }
 
@@ -171,8 +170,6 @@ public class SwitchAdminHandler extends AdminHandler {
                 break;
             case ROLLBACK_CONNECT:
                 Util.close(new_channel);
-                break;
-            case COMMIT_CONNECT_SINGLE:
                 break;
             case COMMIT_CONNECT:
                 // 1. Make channel use the new stack, delete the old stack
