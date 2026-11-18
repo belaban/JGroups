@@ -9,7 +9,8 @@ all of them. It includes a timeout, which throws an exception when draining is u
 
 Message draining needs to be implemented in the UNICAST3-4 and NAKACK2-4 protocols.
 
-To prevent new messages from being sent on the stack, senders are usually blocked until the draining has been completed.
+To prevent new messages from being sent on the stack, senders are required to be blocked until the draining has
+been completed.
 
 The first use case of this is switching over from an existing to a new configuration (SwitchAdminHandler): the old
 stack needs to be drained before switching over to the new stack and destroying the old stack. We need to make sure
@@ -21,7 +22,8 @@ their messages.
 There are 2 alternatives to draining: (1) sending DRAIN messages and (2) draining the send- and receive- tables
 explicitly. We'll describe the advantages / disadvantages below.
 
-Assume a cluster of {A,B,C}.
+Below, we assume a cluster of {A,B,C}.
+
 
 DRAIN messages
 --------------
@@ -29,14 +31,43 @@ Every member A sends a unicast DRAIN message to all other members, in this case 
 
 Every member A also sends a multicast DRAIN message to the cluster.
 
-On reception of a DRAIN message from A, every member sends back a DRAIN-OK message to A.
+On reception of a DRAIN message from A, every member sends back a DRAIN-OK message to A. The reception of a DRAIN
+message from A means that all prior messages from A have also been delivered, and therefore no messages from A
+are pending or in-flight.
 
 When A has received DRAIN-OK messages from every other member (*twice*: once for unicasts and once for multicasts),
 it returns OK. When the timeout kicks in, it throws an exception.
 
+The advantage of DRAIN messages is that the implementation is relatively simple, and that this works for all protocols
+(e.g. NAKACK2 and NAKACK4).
+
+The disadvantage is that OOB messages cannot be drained that way: when we send OOB messages A:5 and A:6, the DRAIN
+message might be A:7. This is a regular message, which would be delivered after A:5 and A:6 if those messages were
+regular messages, but they are not! So, in the worst case, A:7 might get delivered *before* A:5 and/or A:6.
+This is a showstopper for Infinispan, because it uses OOB messages for synchronous invocation!
+
 
 Explicit draining of send- and receive-tables
 ---------------------------------------------
+Contrary to the above approach, this approach works for both regular and OOB messages, but is a bit more complicated,
+as different code is needed for (e.g.) NAKACK2 and NAKACK4.
+
+UNICAST3 and UNICAST4:
+The send tables are drained first: we wait until, for every member B (and C), B's send table
+has B.acked == B.highest_sent. That is, A has received an ACK for the highest seqno it sent to B.
+This should not take long as the xmit_interval will resend the highest seqno to B, until B acks it (or crashes).
+
+Next, the receive tables are drained. Every member B checks the receive tables of A: the highest *delivered* seqno
+from A needs to be equal to the highest *received* seqno from A. Same as above: we can wait until this is the case
+as retransmission (every xmit_interval milliseconds) makes sure of this.
+This step is required as draining needs to make sure messages are *delivered* to the application, not just *received*.
+
+Note that *UNICAST2* would need a different approach, as it is negative-ack based (similar to NAKACK2): we'll therefore
+not support draining for this protocol.
+
+NAKACK2 and NAKACK4:
+
+
 
 
 [1] http://www.jgroups.org/manual5/index.html#Admin
