@@ -5,7 +5,7 @@ Author: Bela Ban
 Date: Nov 2026
 
 Message draining is the process of sending all pending messages and making sure every cluster member has _delivered_
-all of them. It includes a timeout, which throws an exception when draining is unable to complete within it.
+all of them. It includes a timeout, which throws an exception when draining is unable to complete within the timeout.
 
 Message draining needs to be implemented in the UNICAST3-4 and NAKACK2-4 protocols.
 
@@ -15,3 +15,28 @@ The first use case of this is switching over from an existing to a new configura
 stack needs to be drained before switching over to the new stack and destroying the old stack. We need to make sure
 that all messages in the old stack have been sent and delivered before we can perform the switch.
 
+The draining process is kicked off by an initiator, which sends admin messages [1] to all members to ask them to drain
+their messages.
+
+There are 2 alternatives to draining: (1) sending DRAIN messages and (2) draining the send- and receive- tables
+explicitly. We'll describe the advantages / disadvantages below.
+
+Assume a cluster of {A,B,C}.
+
+DRAIN messages
+--------------
+Every member A sends a unicast DRAIN message to all other members, in this case to B and C.
+
+Every member A also sends a multicast DRAIN message to the cluster.
+
+On reception of a DRAIN message from A, every member sends back a DRAIN-OK message to A.
+
+When A has received DRAIN-OK messages from every other member (*twice*: once for unicasts and once for multicasts),
+it returns OK. When the timeout kicks in, it throws an exception.
+
+
+Explicit draining of send- and receive-tables
+---------------------------------------------
+
+
+[1] http://www.jgroups.org/manual5/index.html#Admin
