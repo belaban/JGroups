@@ -53,6 +53,7 @@ Contrary to the above approach, this approach works for both regular and OOB mes
 as different code is needed for (e.g.) NAKACK2 and NAKACK4.
 
 UNICAST3 and UNICAST4:
+
 The send tables are drained first: we wait until, for every member B (and C), B's send table
 has B.acked == B.highest_sent. That is, A has received an ACK for the highest seqno it sent to B.
 This should not take long as the xmit_interval will resend the highest seqno to B, until B acks it (or crashes).
@@ -65,9 +66,22 @@ This step is required as draining needs to make sure messages are *delivered* to
 Note that *UNICAST2* would need a different approach, as it is negative-ack based (similar to NAKACK2): we'll therefore
 not support draining for this protocol.
 
-NAKACK2 and NAKACK4:
+NAKACK2, NAKACK3 and NAKACK4:
+
+NAKACK2 uses a negative ack strategy where receivers ask senders for retransmission of missing messages. NAKACK3 and
+NAKACK4 use a mixture of negative and positive acks (the latter has receivers ack received messages).
+
+NAKACK2 therefore has to (similarly to UNICAST3,4) check its receiver tables and wait until the highest delivered
+seqno for every sender is equal to the highest received seqno. This will eventually be the case, as retransmission
+re-sends missing messages.
+
+The same applies to NAKACK3,4, but these also have to check (first) their send-tables: draining needs to ensure that
+the highest sent messages seqnos are equal to the highest acks received for every cluster member.
 
 
+We'll probably introduce a `Drainable` interface with method
+`drain(boolean unicasts, boolean multicasts, long timeout)`. This would be implemented by UNICAST3,4 and NAKACK2,3,4.
+Depending on the actual protocol and the arguments, this method drains messages in the send- and receive-tables.
 
 
 [1] http://www.jgroups.org/manual5/index.html#Admin
