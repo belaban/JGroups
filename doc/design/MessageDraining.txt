@@ -1,0 +1,17 @@
+
+Message draining
+================
+Author: Bela Ban
+Date: Nov 2026
+
+Message draining is the process of sending all pending messages and making sure every cluster member has _delivered_
+all of them. It includes a timeout, which throws an exception when draining is unable to complete within it.
+
+Message draining needs to be implemented in the UNICAST3-4 and NAKACK2-4 protocols.
+
+To prevent new messages from being sent on the stack, senders are usually blocked until the draining has been completed.
+
+The first use case of this is switching over from an existing to a new configuration (SwitchAdminHandler): the old
+stack needs to be drained before switching over to the new stack and destroying the old stack. We need to make sure
+that all messages in the old stack have been sent and delivered before we can perform the switch.
+
