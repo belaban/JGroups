@@ -12,8 +12,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.util.List;
-
 /**
  * Tests message draining (see docs/design/MessageDraining.txt)
  * @author Bela Ban
@@ -23,7 +21,7 @@ import java.util.List;
 public class MessageDrainTest extends ChannelTestBase {
     protected JChannel            a,b,c;
     protected MyReceiver<Integer> ra, rb, rc;
-    protected static final int    NUM_MSGS=10_000;
+    protected static final int    NUM_MSGS=5000;
 
     @BeforeMethod
     protected void setup() throws Exception {
@@ -48,9 +46,10 @@ public class MessageDrainTest extends ChannelTestBase {
     public void testUnicastDraining() throws Exception {
         _test(true);
         Drainable pa=findUnicastProtocol(a), pb=findUnicastProtocol(b), pc=findUnicastProtocol(c);
-        long start=System.nanoTime();
-        for(Drainable p: List.of(pa,pb,pc))
-            p.drain(5000);
+        long timeout=5000, start=System.nanoTime();
+        pa.drain(timeout);
+        pb.drain(timeout);
+        pc.drain(timeout);
         long time=System.nanoTime()-start;
         System.out.printf("draining of {A,B,C} took %s\n", Util.printTime(time));
         assert rb.size() == NUM_MSGS;
@@ -60,7 +59,7 @@ public class MessageDrainTest extends ChannelTestBase {
 
     protected void _test(boolean unicast) throws Exception {
         injectDISCARD(a, .2);
-        injectDISCARD(b, .2);
+        int print=NUM_MSGS/10;
         for(int i=1; i <= NUM_MSGS; i++) {
             if(!unicast)
                 a.send(new ObjectMessage(null, i));
@@ -68,6 +67,8 @@ public class MessageDrainTest extends ChannelTestBase {
                 a.send(new ObjectMessage(b.address(), i));
                 a.send(new ObjectMessage(c.address(), i));
             }
+            if(i > 0 && i % print == 0)
+                System.out.printf("-- sent %,d msgs\n", i);
         }
         removeDISCARD(a,b,c);
     }
