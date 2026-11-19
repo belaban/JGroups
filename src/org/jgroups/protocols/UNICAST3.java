@@ -830,13 +830,13 @@ public class UNICAST3 extends Protocol implements AgeOutCache.Handler<Address>, 
 
         // for all members (-self): wait until low (highest ack received) == hr (highest message sent)
         BooleanSupplier all_acks_received=() -> send_table.values().stream()
-          .allMatch(e -> e.msgs.getLow() == e.msgs.getHighestDelivered());
+          .allMatch(e -> e.msgs.getLow() == e.msgs.getHighestReceived());
 
         // for all senders: wait until the highest delivered messages are equal to the highest received messages
         BooleanSupplier all_msgs_delivered=() -> recv_table.values().stream()
           .allMatch(e -> e.msgs.getHighestDelivered() == e.msgs.getHighestReceived());
 
-        timeout/=2;
+        timeout/=2; // 50% of the timeout is used for draining of send tables, 50% for receive tables
         interval/=2;
         Util.waitUntil(timeout, interval, all_acks_received,
                        () -> String.format("%s's send-window:\n%s\n", local_addr, sendWindowMessages()));

@@ -14,6 +14,7 @@ import org.jgroups.util.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -276,7 +277,6 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
         return this;
     }
 
-
     public long getNumAcksSent()         {return num_acks_sent.sum();}
     public long getNumAcksReceived()     {return num_acks_received.sum();}
     public long getNumXmits()            {return num_xmits.sum();}
@@ -344,6 +344,12 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
     @ManagedOperation(description="Prints the contents of the receive windows for all members")
     public String printReceiveWindowMessages() {
         StringBuilder ret=new StringBuilder(local_addr + ":\n");
+        return ret.append(receiveWindowMessages()).toString();
+    }
+
+    @ManagedOperation(description="Prints the contents of the receive windows for all members")
+    public String receiveWindowMessages() {
+        StringBuilder ret=new StringBuilder();
         for(Map.Entry<Address,ReceiverEntry> entry: recv_table.entrySet()) {
             Address addr=entry.getKey();
             Buffer<Message> buf=entry.getValue().buf;
@@ -355,6 +361,12 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
     @ManagedOperation(description="Prints the contents of the send windows for all members")
     public String printSendWindowMessages() {
         StringBuilder ret=new StringBuilder(local_addr + ":\n");
+        return ret.append(sendWindowMessages()).toString();
+    }
+
+    @ManagedOperation(description="Prints the contents of the send windows for all members")
+    public String sendWindowMessages() {
+        StringBuilder ret=new StringBuilder();
         for(Map.Entry<Address,SenderEntry> entry: send_table.entrySet()) {
             Address addr=entry.getKey();
             Buffer<Message> buf=entry.getValue().buf;
@@ -747,6 +759,26 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
         recv_table.clear();
     }
 
+    @Override
+    public void drain(long timeout, long interval) throws TimeoutException {
+        sendPendingAcks();
+
+        // for all members (-self): wait until low (highest ack received) == hr (highest message sent)
+        BooleanSupplier all_acks_received=() -> send_table.values().stream()
+          .allMatch(e -> e.buf.low() == e.buf.high());
+
+        // for all senders: wait until the highest delivered messages are equal to the highest received messages
+        BooleanSupplier all_msgs_delivered=() -> recv_table.values().stream()
+          .allMatch(e -> e.buf.highestDelivered() == e.buf.high());
+
+        timeout/=2; // 50% of the timeout is used for draining of send tables, 50% for receive tables
+        interval/=2;
+        Util.waitUntil(timeout, interval, all_acks_received,
+                       () -> String.format("%s's send-window:\n%s\n", local_addr, sendWindowMessages()));
+        Util.waitUntil(timeout, interval, all_msgs_delivered,
+                       () -> String.format("%s's recv-window:\n%s\n", local_addr, receiveWindowMessages()));
+    }
+
     /** Sends a retransmit request to the given sender */
     protected void retransmit(SeqnoList missing, Address sender, Address real_dest) {
         Message xmit_msg=new ObjectMessage(sender, missing).setFlag(OOB, NO_FC)
@@ -869,7 +901,6 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
         }
         removeAndDeliver(entry, sender, null, msgs.size());
     }
-
 
     /**
      * Try to remove as many messages as possible from the table as pass them up.
@@ -1146,7 +1177,6 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
         return rc;
     }
 
-
     protected void resend(Message msg) { // needed for byteman ProtPerf script - don't remove!
         down_prot.down(msg);
     }
@@ -1225,7 +1255,6 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
         }
     }
 
-
     protected synchronized short getNewConnectionId() {
         short retval=last_conn_id;
         if(last_conn_id == Short.MAX_VALUE || last_conn_id < 0)
@@ -1234,7 +1263,6 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
             last_conn_id++;
         return retval;
     }
-
 
     protected void sendRequestForFirstSeqno(Address dest, Address original_dest) {
         if(last_sync_sent.addIfAbsentOrExpired(dest)) {
@@ -1281,7 +1309,6 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
             }
         }
     }
-
 
     @ManagedOperation(description="Removes connections that have been closed for more than conn_close_timeout ms")
     public int removeExpiredConnections() {
@@ -1362,7 +1389,7 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
             if(win != null && val.needToSendAck()) // sendAck() resets send_ack to false
                 sendAck(target, val, val.realDest());
 
-                // receiver: retransmit missing messages (getNumMissing() is fast)
+            // receiver: retransmit missing messages (getNumMissing() is fast)
             SeqnoList missing;
             if(win != null && win.numMissing() > 0 && (missing=win.getMissing(max_xmit_req_size)) != null) {
                 long highest=missing.getLast();
@@ -1391,7 +1418,7 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
         for(SenderEntry val : send_table.values()) {
             Buffer<Message> win=val != null? val.buf : null;
             if(win != null) {
-                long highest_acked=win.highestDelivered(); // highest delivered == highest ack (sender win)
+                long highest_acked=win.highestDelivered(); // highest delivered == highest acked (sender win)
                 long highest_sent=win.high();   // we use table as a *sender* win, so it's highest *sent*...
 
                 if(highest_acked < highest_sent && val.watermark[0] == highest_acked && val.watermark[1] == highest_sent) {
@@ -1412,7 +1439,6 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
         if(conn_close_timeout > 0)
             removeExpiredConnections();
     }
-
 
     @ManagedOperation(description="Sends ACKs immediately for entries which are marked as pending (ACK hasn't been sent yet)")
     public void sendPendingAcks() {

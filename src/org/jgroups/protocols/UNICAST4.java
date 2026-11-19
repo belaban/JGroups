@@ -22,7 +22,7 @@ import static org.jgroups.conf.AttributeType.SCALAR;
 @Preview
 public class UNICAST4 extends ReliableUnicast {
     @Property(description="Size of the send/receive buffers, in messages",writable=false)
-    protected int capacity=2048;
+    protected int capacity=8192;
 
     @Property(description="Number of ACKs to skip before one is sent. For example, a value of 500 means that only " +
       "every 500th ACk is sent; all others are dropped. If not set, defaulted to capacity/4",type=SCALAR)
