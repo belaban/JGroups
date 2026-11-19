@@ -38,7 +38,7 @@ import static org.jgroups.protocols.UnicastHeader.DATA;
  * @since  5.4
  */
 @MBean(description="Reliable unicast layer")
-public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Handler<Address> {
+public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Handler<Address>, Drainable {
     protected static final long DEFAULT_FIRST_SEQNO=Global.DEFAULT_FIRST_UNICAST_SEQNO;
     protected static final long DEFAULT_XMIT_INTERVAL=500;
 

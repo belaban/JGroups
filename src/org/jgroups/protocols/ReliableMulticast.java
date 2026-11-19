@@ -33,7 +33,7 @@ import static org.jgroups.conf.AttributeType.SCALAR;
  * @since  5.4
  */
 @MBean(description="Reliable multicast (one-to-many) protocol")
-public abstract class ReliableMulticast extends Protocol implements DiagnosticsHandler.ProbeHandler {
+public abstract class ReliableMulticast extends Protocol implements DiagnosticsHandler.ProbeHandler, Drainable {
 
     /** Retransmit messages using multicast rather than unicast. This has the advantage that, if many receivers
      * lost a message, the sender only retransmits once */

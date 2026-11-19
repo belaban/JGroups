@@ -8,6 +8,7 @@ import java.io.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
@@ -26,13 +27,32 @@ public class MyReceiver<T> implements Receiver, Closeable {
     protected String                   name;
     protected boolean                  verbose;
     protected boolean                  raw_msgs;
+    protected boolean                  drop_msgs;
     protected final Map<String,String> state=new HashMap<>();
+    protected final AtomicInteger      num_msgs=new AtomicInteger();
+
+    public MyReceiver<T>      rawMsgs(boolean flag)      {this.raw_msgs=flag; return this;}
+    public List<T>            list()                     {return list;}
+    public List<String>       list(Function<T,String> f) {return list.stream().map(f).collect(Collectors.toList());}
+    public List<View>         views()                    {return views;}
+    public Map<String,String> state()                    {return state;}
+    public MyReceiver<T>      verbose(boolean flag)      {verbose=flag; return this;}
+    public String             name()                     {return name;}
+    public MyReceiver<T>      name(String name)          {this.name=name; return this;}
+    public MyReceiver<T>      reset()                    {list.clear(); views.clear(); return this;}
+    public int                size()                     {return drop_msgs? num_msgs.get() : list.size();}
+    public boolean            dropMsgs()                 {return drop_msgs;}
+    public MyReceiver<T>      dropMsgs(boolean d)        {this.drop_msgs=d; return this;}
+    public void               close() throws IOException {reset();}
 
     @Override public void receive(Message msg) {
         T obj=raw_msgs? (T)msg : (T)msg.getObject();
         lock.lock();
         try {
-            list.add(obj);
+            if(drop_msgs)
+                num_msgs.incrementAndGet();
+            else
+                list.add(obj);
         }
         finally {
             lock.unlock();
@@ -74,20 +94,8 @@ public class MyReceiver<T> implements Receiver, Closeable {
         }
     }
 
-    public MyReceiver<T>      rawMsgs(boolean flag)      {this.raw_msgs=flag; return this;}
-    public List<T>            list()                     {return list;}
-    public List<String>       list(Function<T,String> f) {return list.stream().map(f).collect(Collectors.toList());}
-    public List<View>         views()                    {return views;}
-    public Map<String,String> state()                    {return state;}
-    public MyReceiver<T>      verbose(boolean flag)      {verbose=flag; return this;}
-    public String             name()                     {return name;}
-    public MyReceiver<T>      name(String name)          {this.name=name; return this;}
-    public MyReceiver<T>      reset()                    {list.clear(); views.clear(); return this;}
-    public int                size()                     {return list.size();}
-    public void               close() throws IOException {reset();}
-
     @Override
     public String toString() {
-        return String.format("%d elements (%d views)", list.size(), views.size());
+        return String.format("%d elements (%d views)", size(), views.size());
     }
 }

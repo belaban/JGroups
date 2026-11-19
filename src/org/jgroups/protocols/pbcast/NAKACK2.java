@@ -6,6 +6,7 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.AttributeType;
+import org.jgroups.protocols.Drainable;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.DiagnosticsHandler;
 import org.jgroups.stack.Protocol;
@@ -38,7 +39,7 @@ import static org.jgroups.Message.TransientFlag.*;
  * @author Bela Ban
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
-public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler {
+public class NAKACK2 extends Protocol implements DiagnosticsHandler.ProbeHandler, Drainable {
 
     /**
      * Retransmit messages using multicast rather than unicast. This has the advantage that, if many receivers

@@ -173,7 +173,7 @@ public class DISCARD extends Protocol {
             if(msg != null && shouldDropUpMessage(msg, msg.getSrc()))
                 it.remove();
         }
-        if(!batch.isEmpty())
+        if(!batch.isEmpty() && up_prot != null)
             up_prot.up(batch);
     }
 
