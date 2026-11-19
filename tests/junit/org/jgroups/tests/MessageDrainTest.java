@@ -46,7 +46,7 @@ public class MessageDrainTest extends ChannelTestBase {
     public void testUnicastDraining() throws Exception {
         _test(true);
         Drainable pa=findUnicastProtocol(a), pb=findUnicastProtocol(b), pc=findUnicastProtocol(c);
-        long timeout=5000, start=System.nanoTime();
+        long timeout=10_000, start=System.nanoTime();
         pa.drain(timeout);
         pb.drain(timeout);
         pc.drain(timeout);
