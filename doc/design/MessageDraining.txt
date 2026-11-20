@@ -64,7 +64,7 @@ as retransmission (every xmit_interval milliseconds) makes sure of this.
 This step is required as draining needs to make sure messages are *delivered* to the application, not just *received*.
 
 Note that *UNICAST2* would need a different approach, as it is negative-ack based (similar to NAKACK2): we'll therefore
-not support draining for this protocol.
+not support draining for this protocol. This should not be a problem as UNICAST2 is not widely used anymore.
 
 NAKACK2, NAKACK3 and NAKACK4:
 
@@ -78,10 +78,17 @@ re-sends missing messages.
 The same applies to NAKACK3,4, but these also have to check (first) their send-tables: draining needs to ensure that
 the highest sent messages seqnos are equal to the highest acks received for every cluster member.
 
+We'll probably introduce a `Drainable` interface with method `drain(long timeout)`.
+This would be implemented by UNICAST3,4 and NAKACK2,3,4. Depending on the actual protocol and the arguments,
+this method drains messages in the send- and receive-tables.
 
-We'll probably introduce a `Drainable` interface with method
-`drain(boolean unicasts, boolean multicasts, long timeout)`. This would be implemented by UNICAST3,4 and NAKACK2,3,4.
-Depending on the actual protocol and the arguments, this method drains messages in the send- and receive-tables.
+Blocking
+--------
+To be able to drain send- and receive tables, senders need to be stopped. Otherwise, draining would not complete as
+highest sent / acked and highest received / delivered seqnos would never be the same.
+
+Blocking can be implemented as a protocol (BLOCK) which is inserted somewhere above the NAKACK / UNICAST protocols.
+Note that, if FORK is used, it needs to be *below* FORK to block senders using fork channels.
 
 
 [1] http://www.jgroups.org/manual5/index.html#Admin

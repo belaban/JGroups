@@ -10,11 +10,11 @@ import java.util.concurrent.TimeoutException;
  */
 public interface Drainable {
     default void drain(long timeout) throws TimeoutException {
-        drain(timeout, timeout/10);
+        drain(timeout, timeout/10, true, true);
     }
 
 
-    default void drain(long timeout, long interval) throws TimeoutException {
+    default void drain(long timeout, long interval, boolean send_table, boolean recv_table) throws TimeoutException {
         throw new UnsupportedOperationException(String.format("%s: %s is not implemented",
                                                               getClass().getSimpleName(), Drainable.class.getSimpleName()));
     }

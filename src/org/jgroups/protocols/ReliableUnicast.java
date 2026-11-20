@@ -760,7 +760,10 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
     }
 
     @Override
-    public void drain(long timeout, long interval) throws TimeoutException {
+    public void drain(long timeout, long interval, boolean drain_send_table, boolean drain_recv_table)
+      throws TimeoutException {
+        if(!drain_send_table && !drain_recv_table)
+            return;
         sendPendingAcks();
 
         // for all members (-self): wait until low (highest ack received) == hr (highest message sent)
@@ -771,12 +774,16 @@ public abstract class ReliableUnicast extends Protocol implements AgeOutCache.Ha
         BooleanSupplier all_msgs_delivered=() -> recv_table.values().stream()
           .allMatch(e -> e.buf.highestDelivered() == e.buf.high());
 
-        timeout/=2; // 50% of the timeout is used for draining of send tables, 50% for receive tables
-        interval/=2;
-        Util.waitUntil(timeout, interval, all_acks_received,
-                       () -> String.format("%s's send-window:\n%s\n", local_addr, sendWindowMessages()));
-        Util.waitUntil(timeout, interval, all_msgs_delivered,
-                       () -> String.format("%s's recv-window:\n%s\n", local_addr, receiveWindowMessages()));
+        if(drain_send_table && drain_recv_table) {
+            timeout/=2; // 50% of the timeout is used for draining of send tables, 50% for receive tables
+            interval/=2;
+        }
+        if(drain_send_table)
+            Util.waitUntil(timeout, interval, all_acks_received,
+                           () -> String.format("%s's send-window:\n%s\n", local_addr, sendWindowMessages()));
+        if(drain_recv_table)
+            Util.waitUntil(timeout, interval, all_msgs_delivered,
+                           () -> String.format("%s's recv-window:\n%s\n", local_addr, receiveWindowMessages()));
     }
 
     /** Sends a retransmit request to the given sender */
