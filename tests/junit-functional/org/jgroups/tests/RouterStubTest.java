@@ -11,6 +11,7 @@ import org.jgroups.util.*;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.net.InetAddress;
@@ -100,5 +101,40 @@ public class RouterStubTest {
         assert stub_a.isConnected();
         assert stub_b.isConnected();
 
+    }
+
+    @DataProvider
+    public static Object[][] clientTypes() {
+        return new Object[][] {{false}, {true}};
+    }
+
+    @Test(dataProvider="clientTypes")
+    public void testRepeatedRouterRestart(boolean use_nio) throws Exception {
+        stub_mgr=new RouterStubManager(LOG, timer, GROUP, Util.createRandomAddress("restarting-member"),
+                                       "restarting-member", null, 200).useNio(use_nio);
+        RouterStub stable=stub_mgr.createAndRegisterStub(null, new InetSocketAddress(BIND_ADDR, router_a.port()));
+        RouterStub restarting=stub_mgr.createAndRegisterStub(null, new InetSocketAddress(BIND_ADDR, router_b.port()));
+        stub_mgr.connectStubs();
+        Util.waitUntil(5000, 100, () -> stable.isConnected() && restarting.isConnected()
+          && router_a.numRegisteredClients() == 1 && router_b.numRegisteredClients() == 1);
+        assert !stub_mgr.heartbeaterRunning();
+        assert !stub_mgr.timeouterRunning();
+
+        for(int i=0; i < 3; i++) {
+            final int restart=i+1;
+            int port=router_b.port();
+            router_b.stop();
+            Util.waitUntil(5000, 100, () -> !restarting.isConnected() && stub_mgr.reconnectorRunning(),
+                           () -> "no reconnector after router restart " + restart + " (use_nio=" + use_nio + ")");
+            assert stable.isConnected();
+            assert router_a.numRegisteredClients() == 1;
+
+            router_b=new GossipRouter(BIND_ADDR, port).start();
+            Util.waitUntil(5000, 100, () -> restarting.isConnected() && router_b.numRegisteredClients() == 1
+              && !stub_mgr.reconnectorRunning(),
+                           () -> "no registration after router restart " + restart + " (use_nio=" + use_nio + ")");
+            assert stable.isConnected();
+            assert router_a.numRegisteredClients() == 1;
+        }
     }
 }
