@@ -157,8 +157,10 @@ This runs the same 11 TestNG suites, in the same order, as Ant's `all-tests` tar
 functional, encrypt, udp, udp-new, tcp, tcp-new, tcp-nio, tcp-nio-new,
 stack-independent, time-sensitive, byteman.
 
-The `jdbc` suite is opt-in, like Ant's `jdbc` target. Note that the profile adds it
-*in addition to* the 11 suites above; to run only jdbc:
+The `jdbc` suite is opt-in, like Ant's `jdbc` target. It needs a running PostgreSQL
+and its JDBC driver on the classpath; without the driver both of its tests are
+skipped. Note that the profile adds the suite *in addition to* the 11 suites above;
+to run only jdbc:
 
 [source,bash]
 ----

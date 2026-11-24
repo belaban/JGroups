@@ -35,7 +35,10 @@ public class JDBC_PING2_Test {
         try {
             Class.forName("org.postgresql.Driver");
         } catch (ClassNotFoundException e) {
-            throw new SkipException("Environment not set for JDBC_PING2_Test", e);
+            // Deliberately no cause: TestNG looks at the *cause* of an exception thrown by a
+            // configuration method, so passing `e` turns this skip into a failure when the
+            // suite is started from a suite XML file (e.g. Maven Surefire).
+            throw new SkipException("Environment not set for JDBC_PING2_Test: " + e);
         }
     }
 
