@@ -758,6 +758,14 @@
 
     <profiles>
         <profile>
+            <!-- CI must fail on test failures. Ant's haltonfailure=false is the local
+                 default; this profile restores a proper CI gate. -->
+            <id>ci</id>
+            <properties>
+                <test.failure.ignore>false</test.failure.ignore>
+            </properties>
+        </profile>
+        <profile>
             <!-- Ant's "all-tests-eap" adds "eap-excluded" to the excluded groups -->
             <id>eap</id>
             <build>

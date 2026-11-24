@@ -13,7 +13,7 @@ pipeline {
             steps {
                 script {
                     def mvnHome = tool 'Maven'
-                    sh "${mvnHome}/bin/mvn clean install"
+                    sh "${mvnHome}/bin/mvn clean install -Pci"
                 }
             }
         }
