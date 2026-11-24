@@ -237,14 +237,12 @@
                 <configuration>
                     <followSymLinks>false</followSymLinks>
                     <filesets>
-                        <fileset>
-                            <directory>${basedir}/keystore</directory>
-                            <directory>${basedir}/test-output</directory>
-                            <directory>${basedir}/doc/build</directory>
-                            <directory>${basedir}/tutorial/build</directory>
-                            <directory>${basedir}/tmp</directory>
-                            <directory>${basedir}/dist</directory>
-                        </fileset>
+                        <fileset><directory>${basedir}/keystore</directory></fileset>
+                        <fileset><directory>${basedir}/test-output</directory></fileset>
+                        <fileset><directory>${basedir}/doc/build</directory></fileset>
+                        <fileset><directory>${basedir}/tutorial/build</directory></fileset>
+                        <fileset><directory>${basedir}/tmp</directory></fileset>
+                        <fileset><directory>${basedir}/dist</directory></fileset>
                     </filesets>
                 </configuration>
             </plugin>
@@ -444,7 +442,8 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.5.6</version>
                 <configuration>
-                    <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
+                    <!-- Match Ant's outputdir: tmp/test-results/xml -->
+                    <reportsDirectory>${project.basedir}/tmp/test-results/xml</reportsDirectory>
                     <properties>
                         <!-- Disable TestNG's default reports (index.html, emailable-report.html,
                              junitreports/); the suites register JUnitXMLReporter instead -->
@@ -465,7 +464,8 @@
                         <jgroups.tcpping.initial_hosts>localhost[7800],localhost[7801]</jgroups.tcpping.initial_hosts>
                         <jgroups.tunnel.gossip_router_hosts>localhost[12001]</jgroups.tunnel.gossip_router_hosts>
                         <log4j.configurationFile>${project.basedir}/conf/log4j2.xml</log4j.configurationFile>
-                        <tests.tmp.dir>${project.build.directory}/tests-tmp</tests.tmp.dir>
+                        <!-- Match Ant's -Dtests.tmp.dir=${tmp.dir} -->
+                        <tests.tmp.dir>${project.basedir}/tmp</tests.tmp.dir>
                         <jdk.attach.allowAttachSelf>true</jdk.attach.allowAttachSelf>
                     </systemPropertyVariables>
                 </configuration>
@@ -677,6 +677,19 @@
                     </dependency>
                 </dependencies>
                 <executions>
+                    <!-- Ant's "all-tests" depends on "delete-reports"; mirror that so a
+                         run never mixes reports from previous runs. -->
+                    <execution>
+                        <id>delete-reports</id>
+                        <phase>initialize</phase>
+                        <goals><goal>run</goal></goals>
+                        <configuration>
+                            <target>
+                                <delete dir="${project.basedir}/tmp/test-results" failonerror="false"/>
+                            </target>
+                        </configuration>
+                    </execution>
+
                     <!-- Generates the frames HTML report from JUnitXMLReporter's TESTS-*.xml files -->
                     <execution>
                         <id>test-reports</id>
@@ -684,13 +697,13 @@
                         <goals><goal>run</goal></goals>
                         <configuration>
                             <target>
-                                <mkdir dir="${project.build.directory}/test-results/html"/>
-                                <mkdir dir="${project.build.directory}/surefire-reports"/>
-                                <junitreport todir="${project.build.directory}/test-results/html">
-                                    <fileset dir="${project.build.directory}/surefire-reports">
+                                <mkdir dir="${project.basedir}/tmp/test-results/xml"/>
+                                <mkdir dir="${project.basedir}/tmp/test-results/html"/>
+                                <junitreport todir="${project.basedir}/tmp/test-results/html">
+                                    <fileset dir="${project.basedir}/tmp/test-results/xml">
                                         <include name="**/TESTS-*.xml"/>
                                     </fileset>
-                                    <report format="frames" todir="${project.build.directory}/test-results/html"/>
+                                    <report format="frames" todir="${project.basedir}/tmp/test-results/html"/>
                                 </junitreport>
                             </target>
                         </configuration>
