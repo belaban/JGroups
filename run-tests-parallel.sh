@@ -13,9 +13,13 @@ mvn test-compile || exit 1
 
 run_lane() {
     for suite in "$@"; do
-        mvn surefire:test@"$suite" || return 1
+        mvn surefire:test@"$suite" ${MVN_ARGS[@]+"${MVN_ARGS[@]}"} || return 1
     done
 }
+
+# Extra Maven flags are forwarded to every lane, e.g.
+#   ./run-tests-parallel.sh -Dtest.failure.ignore=false
+MVN_ARGS=("$@")
 
 run_lane functional                                  &
 p1=$!
