@@ -191,8 +191,18 @@ Stale reports are removed automatically before a `mvn test` run, mirroring Ant's
 
 The Maven suites run sequentially in the same order as Ant's `all-tests` target,
 and — like Ant's `<testng>` task — continue running the remaining suites when one
-suite fails. Use `mvn test -Dtest.failure.ignore=false` to fail on the first failing
-suite instead (useful in CI).
+suite fails. Use `mvn test -Dtest.failure.ignore=false` (or the `-Pci` profile) to
+fail on the first failing suite instead:
+
+[source,bash]
+----
+mvn test -Pci
+----
+
+CI uses `-Pci` so a failing test fails the build. Note that when fail-fast is active,
+the HTML report for that run is not generated; generate it separately with
+`mvn antrun:run@test-reports` if needed. The conventional `-Dmaven.test.failure.ignore`
+flag does not apply here — use `-Dtest.failure.ignore` as shown above.
 
 Other Ant test targets have these Maven equivalents:
 
