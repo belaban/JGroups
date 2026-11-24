@@ -3,23 +3,27 @@
 # concurrently, suites inside a lane sequentially (port ranges are lane-specific).
 # Maven cannot express this in a single-module POM (-T only parallelises modules).
 #
-# Usage: ./run-tests-parallel.sh
+# Usage: ./run-tests-parallel.sh [maven flags...]
+#   e.g. ./run-tests-parallel.sh -o -Dtest.failure.ignore=false
 # HTML report: tmp/test-results/html/index.html (generate with
 #              mvn antrun:run@test-reports after the run)
 set -u
 cd "$(dirname "$0")" || exit 1
 
-mvn test-compile || exit 1
+# Extra flags are forwarded to every Maven invocation.
+MVN_ARGS=("$@")
+
+mvn ${MVN_ARGS[@]+"${MVN_ARGS[@]}"} test-compile || exit 1
+
+# Ant's all-tests-parallel depends on "delete-reports". "mvn test-compile" does not
+# clean (so single-suite runs can be combined), so do it here before the lanes start.
+rm -rf tmp/test-results
 
 run_lane() {
     for suite in "$@"; do
-        mvn surefire:test@"$suite" ${MVN_ARGS[@]+"${MVN_ARGS[@]}"} || return 1
+        mvn ${MVN_ARGS[@]+"${MVN_ARGS[@]}"} surefire:test@"$suite" || return 1
     done
 }
-
-# Extra Maven flags are forwarded to every lane, e.g.
-#   ./run-tests-parallel.sh -Dtest.failure.ignore=false
-MVN_ARGS=("$@")
 
 run_lane functional                                  &
 p1=$!

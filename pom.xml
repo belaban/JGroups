@@ -26,8 +26,8 @@
         <gpg.plugin.version>3.2.8</gpg.plugin.version>
         <byteman.version>4.0.28.1</byteman.version>
         <!-- Ant's <testng> task defaults to haltonfailure=false: all suites run even
-             when one fails. Default to the same behaviour; CI can opt out with
-             -Dtest.failure.ignore=false to fail on the first failing suite. -->
+             when one fails. Default to the same behaviour; CI opts out through the "ci"
+             profile (or -Dtest.failure.ignore=false) to fail on the first failing suite. -->
         <test.failure.ignore>true</test.failure.ignore>
     </properties>
 
@@ -249,6 +249,29 @@
                         <fileset><directory>${basedir}/dist</directory></fileset>
                     </filesets>
                 </configuration>
+                <executions>
+                    <!-- Ant's "all-tests" depends on "delete-reports", but its individual suite
+                         targets do not. Binding this to the test phase keeps the same split: the
+                         plugin is declared before Surefire, so it runs first within the phase,
+                         while "mvn compile", "mvn test-compile" and direct "surefire:test@<suite>"
+                         invocations leave existing reports alone. Skipped when tests are skipped.
+
+                         excludeDefaultDirectories is essential: without it clean:clean also
+                         removes the project build directory (target/), i.e. the freshly compiled
+                         classes, right before the tests start. -->
+                    <execution>
+                        <id>delete-reports</id>
+                        <phase>test</phase>
+                        <goals><goal>clean</goal></goals>
+                        <configuration>
+                            <excludeDefaultDirectories>true</excludeDefaultDirectories>
+                            <skip>${skipTests}</skip>
+                            <filesets>
+                                <fileset><directory>${basedir}/tmp/test-results</directory></fileset>
+                            </filesets>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
            <plugin>
               <groupId>org.codehaus.mojo</groupId>
@@ -477,6 +500,8 @@
                     </systemPropertyVariables>
                 </configuration>
                 <executions>
+                    <!-- Suite order mirrors Ant's "all-tests" target (build.xml:522-532). -->
+
                     <!-- Suppress the default-test execution so only the defined suites run -->
                     <execution>
                         <id>default-test</id>
@@ -610,7 +635,7 @@
                             </systemPropertyVariables>
                         </configuration>
                     </execution>
-                    <!-- Execution order mirrors Ant's "all-tests" (build.xml:522-532) -->
+
                     <!-- Stack-independent suite -->
                     <execution>
                         <id>stack-independent</id>
@@ -671,19 +696,6 @@
                     </dependency>
                 </dependencies>
                 <executions>
-                    <!-- Ant's "all-tests" depends on "delete-reports"; mirror that so a
-                         run never mixes reports from previous runs. -->
-                    <execution>
-                        <id>delete-reports</id>
-                        <phase>initialize</phase>
-                        <goals><goal>run</goal></goals>
-                        <configuration>
-                            <target>
-                                <delete dir="${project.basedir}/tmp/test-results" failonerror="false"/>
-                            </target>
-                        </configuration>
-                    </execution>
-
                     <!-- Generates the frames HTML report from JUnitXMLReporter's TESTS-*.xml files -->
                     <execution>
                         <id>test-reports</id>

@@ -187,9 +187,14 @@ mvn antrun:run@test-reports
 ----
 
 The report is written to `tmp/test-results/html/index.html`, the same location as
-the Ant `reports` target. Per-suite TestNG output goes to `tmp/test-results/xml`.
-Stale reports are removed automatically before a `mvn test` run, mirroring Ant's
-`delete-reports` dependency; `mvn clean test` also clears them.
+the Ant `reports` target. Per-suite TestNG output goes to `tmp/test-results/xml`,
+in one sub-directory per suite named after the suite.
+
+As with Ant, only a full run cleans up first: `mvn test` removes stale reports
+(mirroring the `delete-reports` dependency of `all-tests`), whereas single-suite
+invocations do not. You can therefore run several suites one after the other and
+combine them into one report with `mvn antrun:run@test-reports`. Runs with
+`-DskipTests` also leave existing reports in place.
 
 The Maven suites run sequentially in the same order as Ant's `all-tests` target,
 and — like Ant's `<testng>` task — continue running the remaining suites when one
@@ -216,8 +221,11 @@ mvn test-compile surefire:test -Dtest=SomeTest  # ant single-test -Dtest-class=S
 ----
 
 `run-tests-parallel.sh` runs Ant's five lanes concurrently (Maven cannot express
-this in a single-module POM; `mvn -T` only parallelises modules). Generate the
-combined HTML report afterwards with `mvn antrun:run@test-reports`.
+this in a single-module POM; `mvn -T` only parallelises modules). Like
+`ant all-tests-parallel`, it removes previous reports before it starts, and it
+forwards extra flags to every Maven invocation, e.g.
+`./run-tests-parallel.sh -o -Dtest.failure.ignore=false`. Generate the combined
+HTML report afterwards with `mvn antrun:run@test-reports`.
 
 NOTE: unlike Ant, which passed `channel.conf` as a JVM system property (ignored by
 TestNG's `@Parameters`, so stack-dependent tests always fell back to `udp.xml`),
