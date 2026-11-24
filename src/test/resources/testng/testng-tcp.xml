@@ -17,7 +17,7 @@
             </run>
         </groups>
         <packages>
-            <!-- Recursive catch-all: covers every test package, like Ant's classfileset -->
+            <!-- Recursive catch-all: org.jgroups.* including future sub-packages -->
             <package name="org.jgroups.*"/>
             <package name="org.jgroups.tests.*"/>
             <package name="org.jgroups.tests.byteman.*"/>
