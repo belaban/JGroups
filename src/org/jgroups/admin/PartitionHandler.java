@@ -1,7 +1,10 @@
 package org.jgroups.admin;
 
 import org.jgroups.*;
+import org.jgroups.protocols.DISCARD;
+import org.jgroups.protocols.TP;
 import org.jgroups.protocols.pbcast.GMS;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.*;
 
 import java.io.DataInput;
@@ -23,6 +26,9 @@ import java.util.Objects;
 public class PartitionHandler extends AdminHandler {
     public static final String KEY="partition";
     public static final String INJECT_VIEW="inject-view"; // "A,B,C || D,E"
+    public static final String INJECT_VIEW_INTO = "inject-view-into"; // "D D,E": installs {D,E} only to D
+    public static final String DISCARD_FROM = "discard-from"; // "A,B": this node drops every message from A and B
+    public static final String STOP_DISCARD = "stop-discard"; // This node accepts messages from every member again
     public static final String INJECT_MERGE_VIEW="inject-merge-view";
     public static final String INJECT_MERGE_EVENT="inject-merge-event"; // Map<Address,View> injected into GMS
     public static final String GET_VIEW="get-view"; // fetches the views of all members, e.g. "A,B,C,D,E"
@@ -46,13 +52,118 @@ public class PartitionHandler extends AdminHandler {
             case INJECT_VIEW:
                 injectViews(rest);
                 break;
+            case INJECT_VIEW_INTO:
+                String[] args = rest.trim().split("\\s+", 2);
+                if (args.length < 2) {
+                    ch.log().error("%s: %s needs a target and the view's members, e.g., \"D D,E\"",
+                          ch.address(), INJECT_VIEW_INTO);
+                    break;
+                }
+                injectView(args[0], args[1]);
+                break;
             case INJECT_MERGE_VIEW:
                 injectMergeView(rest);
+                break;
+            case DISCARD_FROM:
+                discardFrom(rest);
+                break;
+            case STOP_DISCARD:
+                stopDiscard();
                 break;
             default:
                 ch.log().error("%s: command %s not known", ch.address(), command);
         }
         return null;
+    }
+
+    /**
+     * Drops every message this member receives from the given members.
+     *
+     * <p>
+     * Simulates a one-way partition. This member stops hearing from the given members, while they still receive
+     * messages from this member. Repeated calls add to the set of dropped members. The effect lasts until
+     * {@link #stopDiscard()} is called.
+     * </p>
+     *
+     * <p>
+     * Names that do not resolve to a known member are skipped. If the {@link DISCARD} protocol cannot be added to the
+     * stack, an error is logged and no messages are dropped.
+     * </p>
+     *
+     * @param members comma-separated logical names of the members to drop messages from, e.g. {@code "A,B"}.
+     */
+    public void discardFrom(String members) {
+        DISCARD discard = ch.stack().findProtocol(DISCARD.class);
+        if (discard == null) {
+            discard = new DISCARD();
+            try {
+                ch.stack().insertProtocol(discard, ProtocolStack.Position.ABOVE, TP.class);
+            } catch (Exception e) {
+                ch.log().error("%s: failed inserting %s: %s", ch.address(), DISCARD.class, e);
+                return;
+            }
+        }
+
+        List<Address> mbrs = getMembers(members);
+        discard.addIgnoredMembers(mbrs.toArray(Address[]::new));
+    }
+
+    /**
+     * Makes this member accept messages from every member again.
+     *
+     * <p>
+     * Reverts all previous {@link #discardFrom(String)} calls, so this member hears from every member again.
+     * Does nothing if this member was never set to drop messages.
+     * </p>
+     */
+    public void stopDiscard() {
+        DISCARD discard = ch.stack().findProtocol(DISCARD.class);
+        if (discard == null)
+            return;
+
+        discard.resetIgnoredMembers();
+    }
+
+    /**
+     * Installs a view in a single member, leaving the other members of that view untouched.
+     *
+     * <p>
+     * Creates views that differ between members. For example, target {@code "D"} with members {@code "D,E"} installs
+     * {@code {D,E}} in D only, while E keeps its current view.
+     * </p>
+     *
+     * <p>
+     * Nothing is sent if the target or any of the view's members cannot be resolved.
+     * </p>
+     *
+     * @param target logical name of the member that installs the view.
+     * @param members comma-separated logical names of the view's members, which must include the target.
+     */
+    public void injectView(String target, String members) {
+        View view = createView(members);
+        List<Address> t = getMembers(target);
+        if (view != null && !t.isEmpty())
+            injectView(t.get(0), view);
+    }
+
+    /**
+     * Installs the given view in a single member.
+     *
+     * <p>
+     * The request is sent without waiting for confirmation. If the target is not a member of the view, nothing is sent.
+     * </p>
+     *
+     * @param target the member that installs the view.
+     * @param view the view to install, which must contain the target.
+     */
+    public void injectView(Address target, View view) {
+        if (!view.containsMember(target)) {
+            // GMS would drop it anyways.
+            // A member never install a view it is not part of.
+            ch.log().warn("%s: %s is not part of %s; not injecting it", ch.address(), target, view);
+            return;
+        }
+        sendRequest(KEY, new ObjectMessage(target, view), INJECT_VIEW);
     }
 
     /** Injects non-overlapping views into members. Example: "A,B,C || D,E" injects view {A,B,C} into A, B and C, and
@@ -137,7 +248,7 @@ public class PartitionHandler extends AdminHandler {
         List<Address> retval=new FastArray<>();
         for(String addr: addrs) {
             String a=addr.trim();
-            Address target=getByValue(cache, a);
+            Address target = Objects.equals(a, ch.name()) ? ch.address() : getByValue(cache, a);
             // Find a non-removed address first, before finding a removed address, e.g. in a split cluster
             if(target == null && (target=getByValue(all_cache, a)) == null) {
                 ch.log().warn("%s: failed to find address for \"%s\"; cannot send %s", ch.address(), a, INJECT_VIEW);
@@ -154,7 +265,7 @@ public class PartitionHandler extends AdminHandler {
         List<String> addrs=Util.parseCommaDelimitedStrings(mbrs);
         for(String addr: addrs) {
             String a=addr.trim();
-            Address target=getByValue(cache, a);
+            Address target = Objects.equals(a, ch.name()) ? ch.address() : getByValue(cache, a);
             // Find a non-removed address first, before finding a removed address, e.g. in a split cluster
             if(target == null && (target=getByValue(all_cache, a)) == null) {
                 ch.log().warn("%s: failed to find address for \"%s\"", ch.address(), a);
