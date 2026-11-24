@@ -25,6 +25,10 @@
         <enforcer.plugin.version>3.6.3</enforcer.plugin.version>
         <gpg.plugin.version>3.2.8</gpg.plugin.version>
         <byteman.version>4.0.28.1</byteman.version>
+        <!-- Ant's <testng> task defaults to haltonfailure=false: all suites run even
+             when one fails. Default to the same behaviour; CI can opt out with
+             -Dtest.failure.ignore=false to fail on the first failing suite. -->
+        <test.failure.ignore>true</test.failure.ignore>
     </properties>
 
     <organization>
@@ -444,6 +448,9 @@
                 <configuration>
                     <!-- Match Ant's outputdir: tmp/test-results/xml -->
                     <reportsDirectory>${project.basedir}/tmp/test-results/xml</reportsDirectory>
+                    <testFailureIgnore>${test.failure.ignore}</testFailureIgnore>
+                    <!-- Ant's <testng timeout="..."> is a 30-min watchdog on the forked JVM -->
+                    <forkedProcessTimeoutInSeconds>1800</forkedProcessTimeoutInSeconds>
                     <properties>
                         <!-- Disable TestNG's default reports (index.html, emailable-report.html,
                              junitreports/); the suites register JUnitXMLReporter instead -->
