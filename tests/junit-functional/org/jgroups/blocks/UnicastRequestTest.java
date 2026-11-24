@@ -215,7 +215,11 @@ public class UnicastRequestTest {
 
 
     protected static JChannel create(String name) throws Exception {
-        return new JChannel(Util.getTestStack()).name(name).connect("demo");
+        // Use a class-specific cluster name. The functional suite runs test classes in
+        // parallel, and GroupRequestTest also creates channels named A/B on "demo"; a
+        // shared cluster lets the two pairs merge into a 4-member view, breaking the
+        // waitUntilAllChannelsHaveSameView(...) assertion in this test.
+        return new JChannel(Util.getTestStack()).name(name).connect("UnicastRequestTest");
     }
 
     protected static class MyCorrelator extends RequestCorrelator {
