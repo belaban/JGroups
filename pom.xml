@@ -502,23 +502,6 @@
                         </configuration>
                     </execution>
 
-                    <!-- Byteman suite -->
-                    <execution>
-                        <id>byteman</id>
-                        <phase>test</phase>
-                        <goals><goal>test</goal></goals>
-                        <configuration>
-                            <suiteXmlFiles>
-                                <suiteXmlFile>src/test/resources/testng/testng-byteman.xml</suiteXmlFile>
-                            </suiteXmlFiles>
-                            <argLine>
-                                -XX:+HeapDumpOnOutOfMemoryError -Xms400M -Xmx800M
-                                -Dorg.jboss.byteman.contrib.bmunit.agent.inhibit=true
-                                -javaagent:${settings.localRepository}/org/jboss/byteman/byteman/${byteman.version}/byteman-${byteman.version}.jar=listener:true
-                            </argLine>
-                        </configuration>
-                    </execution>
-
                     <!-- JDBC suite -->
                     <execution>
                         <id>jdbc</id>
@@ -527,32 +510,6 @@
                         <configuration>
                             <suiteXmlFiles>
                                 <suiteXmlFile>src/test/resources/testng/testng-jdbc.xml</suiteXmlFile>
-                            </suiteXmlFiles>
-                            <argLine>-XX:+HeapDumpOnOutOfMemoryError -Xms400M -Xmx800M</argLine>
-                        </configuration>
-                    </execution>
-
-                    <!-- Stack-independent suite -->
-                    <execution>
-                        <id>stack-independent</id>
-                        <phase>test</phase>
-                        <goals><goal>test</goal></goals>
-                        <configuration>
-                            <suiteXmlFiles>
-                                <suiteXmlFile>src/test/resources/testng/testng-stack-independent.xml</suiteXmlFile>
-                            </suiteXmlFiles>
-                            <argLine>-XX:+HeapDumpOnOutOfMemoryError -Xms400M -Xmx800M</argLine>
-                        </configuration>
-                    </execution>
-
-                    <!-- Time-sensitive suite -->
-                    <execution>
-                        <id>time-sensitive</id>
-                        <phase>test</phase>
-                        <goals><goal>test</goal></goals>
-                        <configuration>
-                            <suiteXmlFiles>
-                                <suiteXmlFile>src/test/resources/testng/testng-time-sensitive.xml</suiteXmlFile>
                             </suiteXmlFiles>
                             <argLine>-XX:+HeapDumpOnOutOfMemoryError -Xms400M -Xmx800M</argLine>
                         </configuration>
@@ -659,6 +616,50 @@
                             </systemPropertyVariables>
                         </configuration>
                     </execution>
+                    <!-- Execution order mirrors Ant's "all-tests" (build.xml:522-532) -->
+                    <!-- Stack-independent suite -->
+                    <execution>
+                        <id>stack-independent</id>
+                        <phase>test</phase>
+                        <goals><goal>test</goal></goals>
+                        <configuration>
+                            <suiteXmlFiles>
+                                <suiteXmlFile>src/test/resources/testng/testng-stack-independent.xml</suiteXmlFile>
+                            </suiteXmlFiles>
+                            <argLine>-XX:+HeapDumpOnOutOfMemoryError -Xms400M -Xmx800M</argLine>
+                        </configuration>
+                    </execution>
+
+                    <!-- Time-sensitive suite -->
+                    <execution>
+                        <id>time-sensitive</id>
+                        <phase>test</phase>
+                        <goals><goal>test</goal></goals>
+                        <configuration>
+                            <suiteXmlFiles>
+                                <suiteXmlFile>src/test/resources/testng/testng-time-sensitive.xml</suiteXmlFile>
+                            </suiteXmlFiles>
+                            <argLine>-XX:+HeapDumpOnOutOfMemoryError -Xms400M -Xmx800M</argLine>
+                        </configuration>
+                    </execution>
+
+                    <!-- Byteman suite -->
+                    <execution>
+                        <id>byteman</id>
+                        <phase>test</phase>
+                        <goals><goal>test</goal></goals>
+                        <configuration>
+                            <suiteXmlFiles>
+                                <suiteXmlFile>src/test/resources/testng/testng-byteman.xml</suiteXmlFile>
+                            </suiteXmlFiles>
+                            <argLine>
+                                -XX:+HeapDumpOnOutOfMemoryError -Xms400M -Xmx800M
+                                -Dorg.jboss.byteman.contrib.bmunit.agent.inhibit=true
+                                -javaagent:${settings.localRepository}/org/jboss/byteman/byteman/${byteman.version}/byteman-${byteman.version}.jar=listener:true
+                            </argLine>
+                        </configuration>
+                    </execution>
+
                 </executions>
             </plugin>
 
