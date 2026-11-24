@@ -50,11 +50,12 @@ public class VERSION_Test {
             b.connect("ver");
 
             // won't be true
-            Util.waitUntilTrue(2000, 100, () -> a.view().size() == 2 && b.view().size() == 2);
+            Util.waitUntilTrue(20000, 100, () -> a.view().size() == 2 && b.view().size() == 2);
             assert a.view().size() == 1;
             assert b.view().size() == 1;
             assert v1.dropped() > 0;
-            assert v2.dropped() == 0; // B doesn't receive any traffic because A drops B's messages
+            // B doesn't receive any traffic because A drops B's messages
+            assert v2.dropped() == 0 : String.format("v2 should have dropped 0, but dropped %d msgs", v2.dropped());
         }
     }
 
