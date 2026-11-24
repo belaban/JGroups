@@ -509,19 +509,6 @@
                         </configuration>
                     </execution>
 
-                    <!-- JDBC suite -->
-                    <execution>
-                        <id>jdbc</id>
-                        <phase>test</phase>
-                        <goals><goal>test</goal></goals>
-                        <configuration>
-                            <suiteXmlFiles>
-                                <suiteXmlFile>src/test/resources/testng/testng-jdbc.xml</suiteXmlFile>
-                            </suiteXmlFiles>
-                            <argLine>-XX:+HeapDumpOnOutOfMemoryError -Xms400M -Xmx800M</argLine>
-                        </configuration>
-                    </execution>
-
                     <!-- UDP suite -->
                     <execution>
                         <id>udp</id>
@@ -770,6 +757,32 @@
     </build>
 
     <profiles>
+        <profile>
+            <!-- Ant runs the jdbc suite only via "ant jdbc", not in "all-tests".
+                 Keep the same behaviour here: opt in with "mvn test -Pjdbc". -->
+            <id>jdbc</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>jdbc</id>
+                                <phase>test</phase>
+                                <goals><goal>test</goal></goals>
+                                <configuration>
+                                    <suiteXmlFiles>
+                                        <suiteXmlFile>src/test/resources/testng/testng-jdbc.xml</suiteXmlFile>
+                                    </suiteXmlFiles>
+                                    <argLine>-XX:+HeapDumpOnOutOfMemoryError -Xms400M -Xmx800M</argLine>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
         <profile>
             <id>release</id>
             <activation>
