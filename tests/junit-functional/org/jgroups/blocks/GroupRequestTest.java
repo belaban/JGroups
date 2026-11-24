@@ -467,7 +467,10 @@ public class GroupRequestTest {
 
 
     protected static JChannel create(String name) throws Exception {
-        return new JChannel(Util.getTestStack()).name(name).connect("demo");
+        // Class-specific cluster name: when the functional suite runs test classes in
+        // parallel, sharing "demo" with UnicastRequestTest lets their A/B channels
+        // merge into a single 4-member view and break the view assertions.
+        return new JChannel(Util.getTestStack()).name(name).connect("GroupRequestTest");
     }
 
 
