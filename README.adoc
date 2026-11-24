@@ -192,8 +192,20 @@ Stale reports are removed automatically before a `mvn test` run, mirroring Ant's
 The Maven suites run sequentially in the same order as Ant's `all-tests` target,
 and — like Ant's `<testng>` task — continue running the remaining suites when one
 suite fails. Use `mvn test -Dtest.failure.ignore=false` to fail on the first failing
-suite instead (useful in CI). Ant's `all-tests-parallel` target is not ported;
-`mvn -T` cannot emulate it because this is a single-module build.
+suite instead (useful in CI).
+
+Other Ant test targets have these Maven equivalents:
+
+[source,bash]
+----
+mvn test -Peap                                  # ant all-tests-eap
+mvn test-compile surefire:test -Dtest=SomeTest  # ant single-test -Dtest-class=SomeTest
+./run-tests-parallel.sh                         # ant all-tests-parallel
+----
+
+`run-tests-parallel.sh` runs Ant's five lanes concurrently (Maven cannot express
+this in a single-module POM; `mvn -T` only parallelises modules). Generate the
+combined HTML report afterwards with `mvn antrun:run@test-reports`.
 
 NOTE: unlike Ant, which passed `channel.conf` as a JVM system property (ignored by
 TestNG's `@Parameters`, so stack-dependent tests always fell back to `udp.xml`),
