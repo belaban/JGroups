@@ -570,6 +570,7 @@
                             <argLine>-XX:+HeapDumpOnOutOfMemoryError -Xms400M -Xmx800M</argLine>
                             <systemPropertyVariables>
                                 <INITIAL_MCAST_PORT>25000</INITIAL_MCAST_PORT>
+                                <INITIAL_TCP_PORT>25000</INITIAL_TCP_PORT>
                             </systemPropertyVariables>
                         </configuration>
                     </execution>
@@ -586,6 +587,7 @@
                             <argLine>-XX:+HeapDumpOnOutOfMemoryError -Xms400M -Xmx800M</argLine>
                             <systemPropertyVariables>
                                 <INITIAL_MCAST_PORT>26000</INITIAL_MCAST_PORT>
+                                <INITIAL_TCP_PORT>26000</INITIAL_TCP_PORT>
                             </systemPropertyVariables>
                         </configuration>
                     </execution>
@@ -601,6 +603,7 @@
                             </suiteXmlFiles>
                             <argLine>-XX:+HeapDumpOnOutOfMemoryError -Xms400M -Xmx800M</argLine>
                             <systemPropertyVariables>
+                                <INITIAL_MCAST_PORT>27000</INITIAL_MCAST_PORT>
                                 <INITIAL_TCP_PORT>27000</INITIAL_TCP_PORT>
                             </systemPropertyVariables>
                         </configuration>
@@ -617,6 +620,7 @@
                             </suiteXmlFiles>
                             <argLine>-XX:+HeapDumpOnOutOfMemoryError -Xms400M -Xmx800M</argLine>
                             <systemPropertyVariables>
+                                <INITIAL_MCAST_PORT>28000</INITIAL_MCAST_PORT>
                                 <INITIAL_TCP_PORT>28000</INITIAL_TCP_PORT>
                             </systemPropertyVariables>
                         </configuration>
@@ -633,6 +637,7 @@
                             </suiteXmlFiles>
                             <argLine>-XX:+HeapDumpOnOutOfMemoryError -Xms400M -Xmx800M</argLine>
                             <systemPropertyVariables>
+                                <INITIAL_MCAST_PORT>29000</INITIAL_MCAST_PORT>
                                 <INITIAL_TCP_PORT>30000</INITIAL_TCP_PORT>
                             </systemPropertyVariables>
                         </configuration>
@@ -649,6 +654,7 @@
                             </suiteXmlFiles>
                             <argLine>-XX:+HeapDumpOnOutOfMemoryError -Xms400M -Xmx800M</argLine>
                             <systemPropertyVariables>
+                                <INITIAL_MCAST_PORT>31000</INITIAL_MCAST_PORT>
                                 <INITIAL_TCP_PORT>32000</INITIAL_TCP_PORT>
                             </systemPropertyVariables>
                         </configuration>
