@@ -61,14 +61,6 @@ public class DefaultDNSResolver implements DNSResolver {
         };
     }
 
-    protected List<Address> resolveAEntries(String dnsQuery) {
-        return resolveAEntries(dnsQuery, "0");
-    }
-
-    protected List<Address> resolveAEntries(String dnsQuery, String srcPort) {
-        return resolveIPEntries(dnsQuery, srcPort);
-    }
-
     protected DirContext getDnsContext() {
         return dnsContext;
     }
@@ -91,7 +83,7 @@ public class DefaultDNSResolver implements DNSResolver {
                             String srcDNSRecord = matcher.group(2);
                             // The implementation here is not optimal but it's easy to read. SRV discovery will be performed
                             // extremely rarely, only when a fine grained discovery using ports is needed (ie: when using containers).
-                            addresses.addAll(resolveIPEntries(srcDNSRecord, srcPort));
+                            addresses.addAll(resolveAEntries(srcDNSRecord, srcPort));
                         }
                     } catch (Exception e) {
                         log.trace("non critical DNS resolution error", e);
@@ -127,7 +119,11 @@ public class DefaultDNSResolver implements DNSResolver {
         return addresses;
     }
 
-    protected List<Address> resolveIPEntries(String dnsQuery, String srcPort) {
+    protected List<Address> resolveAEntries(String dnsQuery) {
+        return resolveAEntries(dnsQuery, "0");
+    }
+
+    protected List<Address> resolveAEntries(String dnsQuery, String srcPort) {
         List<Address> addresses = new ArrayList<>();
         try {
             InetAddress[] inetAddresses = InetAddress.getAllByName(dnsQuery);

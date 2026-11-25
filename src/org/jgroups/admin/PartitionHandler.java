@@ -142,8 +142,10 @@ public class PartitionHandler extends AdminHandler {
     public void injectView(String target, String members) {
         View view = createView(members);
         List<Address> t = getMembers(target);
-        if (view != null && !t.isEmpty())
-            injectView(t.get(0), view);
+        if (view != null && !t.isEmpty()) {
+            for(Address dest: t)
+                injectView(dest, view);
+        }
     }
 
     /**

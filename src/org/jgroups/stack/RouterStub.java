@@ -167,14 +167,13 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
     @GuardedBy("lock")
     protected void _doConnect() throws Exception {
         metadata_out=new ByteBufferOutputStream(32, false, use_direct_memory);
-        if(client != null)
-            client.start();
-        else {
-            if(resolveRemoteAddress() && (client=createClient(this.socket_factory)) != null)
-                client.start();
-            else
+        if(client == null) {
+            if(!resolveRemoteAddress() || (client=createClient(this.socket_factory)) == null)
                 throw new IllegalStateException("client could not be created as remote address has not yet been resolved");
         }
+        // Stopping the client clears its listeners, so register on every connection attempt.
+        client.addConnectionListener(this);
+        client.start();
     }
 
     public void disconnect(String group, Address addr) throws Exception {
@@ -324,7 +323,6 @@ public class RouterStub extends ReceiverAdapter implements Comparable<RouterStub
           : new TcpClient(local, remote).nonBlockingSends(non_blocking_sends).maxSendQueue(max_send_queue);
         if(sf != null) cl.socketFactory(sf);
         cl.receiver(this);
-        cl.addConnectionListener(this);
         cl.socketConnectionTimeout(sock_conn_timeout).tcpNodelay(tcp_nodelay).linger(linger);
         return cl;
     }

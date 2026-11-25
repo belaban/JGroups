@@ -7,6 +7,7 @@ import org.jgroups.util.Util;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.List;
 
 public class Chat implements Receiver {
     protected JChannel channel;
@@ -93,10 +94,29 @@ public class Chat implements Receiver {
                     h.listener(null);
                     continue;
                 }
+                if(line.startsWith("/view-into")) {
+                    String rest=line.substring("/view-into".length()).trim();
+                    List<String> l=Util.parseStringList(rest, " ");
+                    String target=l.get(0), partitions=l.get(1);
+                    PartitionHandler h=channel.admin().get(PartitionHandler.KEY);
+                    h.injectView(target, partitions);
+                    continue;
+                }
                 if(line.startsWith("/view")) {
                     String partitions=line.substring("/view".length()).trim();
                     PartitionHandler h=channel.admin().get(PartitionHandler.KEY);
                     h.injectViews(partitions);
+                    continue;
+                }
+                if(line.startsWith("/discard-from")) {
+                    String discard_from=line.substring("/discard-from".length()).trim();
+                    PartitionHandler h=channel.admin().get(PartitionHandler.KEY);
+                    h.discardFrom(discard_from);
+                    continue;
+                }
+                if(line.startsWith("/stop-discard")) {
+                    PartitionHandler h=channel.admin().get(PartitionHandler.KEY);
+                    h.stopDiscard();
                     continue;
                 }
                 if(line.startsWith("/merge")) {
@@ -183,6 +203,10 @@ public class Chat implements Receiver {
           /switch <file>: switches to a new configuration (absolute path, or file must be found on the classpath)
           /view <views>: injects the views into the cluster.
                          Example: "/view A,B||C" injects view {A,B} into A and B, and C into C
+          /view-into <targets> <view>: injects <view> into <targets>
+                         Example: /view-into A,B A,B,C
+          /discard-from <members>: discards messages from <members>
+          /stop-discard: stops discarding messages from any members
           /merge <members>: merges the members into a single view. Example: /merge A,B,C
           /install-handler <key> <class>: installs a new handler under the given key in all cluster members
           /remove-handler <key>: removes the handler with the given key
