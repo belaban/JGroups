@@ -8,7 +8,7 @@ Binary network format for marshalled messages
 
 Note: this specification may become outdated; the authoritative source is the code
       (primarily Util.writeMessage/writeMessageList, BaseMessage.writeTo/writeToNoAddrs,
-      and Headers.writeHeaders in src/org/jgroups/).
+      and Headers.writeHeaders in src/main/java/org/jgroups/).
 
 
 ================================================================================

@@ -116,7 +116,7 @@
     </dependencies>
 
     <build>
-        <sourceDirectory>src</sourceDirectory>
+        <sourceDirectory>src/main/java</sourceDirectory>
         <resources>
             <resource>
                 <directory>conf</directory>
@@ -289,23 +289,6 @@
                           <!-- These tests have to go in the main jar -->
                           <source>tests/other</source>
                           <source>tests/perf</source>
-                       </sources>
-                    </configuration>
-                 </execution>
-                 <execution>
-                    <id>add-test-source</id>
-                    <phase>generate-test-sources</phase>
-                    <goals>
-                       <goal>add-test-source</goal>
-                    </goals>
-                    <configuration>
-                       <sources>
-                          <source>tests/byteman</source>
-                          <source>tests/junit</source>
-                          <source>tests/junit-functional</source>
-                           <source>tests/util</source>
-                          <!-- tests/other and tests/perf are included in the normal sources -->
-                          <source>tests/stress</source>
                        </sources>
                     </configuration>
                  </execution>

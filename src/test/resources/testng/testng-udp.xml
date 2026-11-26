@@ -19,13 +19,6 @@
         <packages>
             <!-- Recursive catch-all: org.jgroups.* including future sub-packages -->
             <package name="org.jgroups.*"/>
-            <package name="org.jgroups.tests.*"/>
-            <package name="org.jgroups.tests.byteman.*"/>
-            <package name="org.jgroups.tests.helpers.*"/>
-            <package name="org.jgroups.protocols.*"/>
-            <package name="org.jgroups.protocols.dns.*"/>
-            <package name="org.jgroups.blocks.*"/>
-            <package name="org.jgroups.util.*"/>
         </packages>
     </test>
 
