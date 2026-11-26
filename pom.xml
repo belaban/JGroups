@@ -304,18 +304,6 @@
                        </sources>
                     </configuration>
                  </execution>
-                 <execution>
-                    <id>add-test-source</id>
-                    <phase>generate-test-sources</phase>
-                    <goals>
-                       <goal>add-test-source</goal>
-                    </goals>
-                    <configuration>
-                       <sources>
-                          <!-- tests/other and tests/perf are included in the normal sources -->
-                       </sources>
-                    </configuration>
-                 </execution>
               </executions>
            </plugin>
            <plugin>
