@@ -312,7 +312,6 @@
                     </goals>
                     <configuration>
                        <sources>
-                          <source>tests/byteman</source>
                           <source>tests/junit</source>
                           <source>tests/junit-functional</source>
                           <!-- tests/other and tests/perf are included in the normal sources -->
