@@ -16,7 +16,6 @@
     <property name="src.dir"               value="${root.dir}/src"/>
     <property name="tests.dir"             value="${root.dir}/tests"/>
     <property name="other.dir"             value="${tests.dir}/other"/>
-    <property name="junit.dir"             value="${tests.dir}/junit"/>
     <property name="junit-functional.dir"  value="${tests.dir}/junit-functional"/>
     <property name="time-sensitive.dir"    value="${tests.dir}/time-sensitive"/>
     <property name="perf.dir"              value="${tests.dir}/perf"/>
@@ -164,7 +163,6 @@
                includes="org/jgroups/**">
             <compilerarg value="-proc:none"/>
             <src path="${other.dir}"/>
-            <src path="${junit.dir}"/>
             <src path="${junit-functional.dir}"/>
             <src path="${perf.dir}"/>
             <src path="${root.dir}/src/test/java"/>
