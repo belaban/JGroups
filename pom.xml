@@ -210,18 +210,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${compiler.plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>default-compile</id>
-                        <configuration>
-                            <!-- The main source root is "src" and the test sources live in src/test/java,
-                                 i.e. inside it. Never compile the tests as main code. -->
-                            <excludes>
-                                <exclude>test/**/*.java</exclude>
-                            </excludes>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -402,8 +390,6 @@
                         <exclude>
                             JGROUPS_VERSION.properties
                         </exclude>
-                        <!-- tests live in src/test/java, inside the main source root "src" -->
-                        <exclude>test/java/**</exclude>
                     </excludes>
                     <archive>
                         <manifest>
@@ -449,9 +435,6 @@
                 <version>${javadoc.plugin.version}</version>
                 <configuration>
                     <doclint>none</doclint>
-                    <!-- src/test/java lies inside the main source root "src", so javadoc sees its
-                         directories as packages named test.java.*; keep the tests out of the javadoc jar -->
-                    <excludePackageNames>test.java.*</excludePackageNames>
                 </configuration>
                 <executions>
                     <execution>

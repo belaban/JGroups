@@ -268,8 +268,6 @@
         <jar jarfile="${dist.dir}/jgroups-${version}-sources.jar"
              basedir="${src.dir}"
              manifest="${dist.dir}/MANIFEST.MF">
-            <!-- tests live in src/test/java, inside ${src.dir} -->
-            <exclude name="test/java/**"/>
         </jar>
     </target>
 
