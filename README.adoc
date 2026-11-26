@@ -144,6 +144,14 @@ total ordering and so on.
 JGroups ships with multiple sample configurations, e.g. `tcp.xml`, which uses TCP instead of UDP as transport
 protocol. Consult the manual (link below) for more details.
 
+== Source layout
+
+The sources follow Maven's standard layout: the main sources are in `src/main/java`, the
+tests in `src/test/java`, and the TestNG suite files in `src/test/resources/testng`.
+Two directories are deliberately different: `tests/other` and `tests/perf` contain
+command-line tools that are shipped in the jar, so they are compiled as main sources
+from where they are. Configuration files live in `conf/`.
+
 == Running the tests
 
 The unit tests are executed with Maven:

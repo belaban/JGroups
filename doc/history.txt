@@ -240,7 +240,7 @@ Version 2.2.8
 - Fixed JGRP-42 (MethodCall doesn't correctly handle inheritance)
   org.jgroups.blocks.MethodCall was updated to walk the class hierarchy and locate method not only 
   in the current class, but also in the superclasses and superinterfaces. There is a new test that
-  contains use cases: tests/junit/org/jgroups/blocks/MethodCallTest.java
+  contains use cases: src/test/java/org/jgroups/blocks/MethodCallTest.java
   (ovidiuf Feb 18 2005)
 
 - org.jgroups.util.Rsp: changed the sender's type from Object to Address.
