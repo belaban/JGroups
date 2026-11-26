@@ -20,7 +20,6 @@
     <property name="junit-functional.dir"  value="${tests.dir}/junit-functional"/>
     <property name="byteman.dir"           value="${tests.dir}/byteman"/>
     <property name="time-sensitive.dir"    value="${tests.dir}/time-sensitive"/>
-    <property name="stress.dir"            value="${tests.dir}/stress"/>
     <property name="perf.dir"              value="${tests.dir}/perf"/>
     <property name="lib.dir"               value="${root.dir}/lib"/>
     <property name="dist.dir"              value="${root.dir}/dist"/>
@@ -169,7 +168,6 @@
             <src path="${junit.dir}"/>
             <src path="${junit-functional.dir}"/>
             <src path="${byteman.dir}"/>
-            <src path="${stress.dir}"/>
             <src path="${perf.dir}"/>
             <src path="${root.dir}/src/test/java"/>
         </javac>
