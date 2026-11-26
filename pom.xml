@@ -312,7 +312,6 @@
                     </goals>
                     <configuration>
                        <sources>
-                          <source>tests/junit-functional</source>
                           <!-- tests/other and tests/perf are included in the normal sources -->
                        </sources>
                     </configuration>
