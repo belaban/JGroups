@@ -315,7 +315,6 @@
                           <source>tests/byteman</source>
                           <source>tests/junit</source>
                           <source>tests/junit-functional</source>
-                           <source>tests/util</source>
                           <!-- tests/other and tests/perf are included in the normal sources -->
                           <source>tests/stress</source>
                        </sources>

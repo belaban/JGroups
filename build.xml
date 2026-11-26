@@ -22,7 +22,6 @@
     <property name="time-sensitive.dir"    value="${tests.dir}/time-sensitive"/>
     <property name="stress.dir"            value="${tests.dir}/stress"/>
     <property name="perf.dir"              value="${tests.dir}/perf"/>
-    <property name="util.dir"              value="${tests.dir}/util"/>
     <property name="lib.dir"               value="${root.dir}/lib"/>
     <property name="dist.dir"              value="${root.dir}/dist"/>
     <property name="tmp.dir"               value="${root.dir}/tmp"/>
@@ -172,7 +171,7 @@
             <src path="${byteman.dir}"/>
             <src path="${stress.dir}"/>
             <src path="${perf.dir}"/>
-            <src path="${util.dir}"/>
+            <src path="${root.dir}/src/test/java"/>
         </javac>
         <set-version/>
     </target>
