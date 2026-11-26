@@ -13,7 +13,7 @@
     <property name="version.file"          value="JGROUPS_VERSION.properties"/>
     <property name="build.properties.file" value="build.properties"/>
     <property file="${build.properties.file}"/>
-    <property name="src.dir"               value="${root.dir}/src"/>
+    <property name="src.dir"               value="${root.dir}/src/main/java"/>
     <property name="tests.dir"             value="${root.dir}/tests"/>
     <property name="other.dir"             value="${tests.dir}/other"/>
     <property name="time-sensitive.dir"    value="${tests.dir}/time-sensitive"/>
